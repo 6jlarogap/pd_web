@@ -289,7 +289,190 @@
 
 <div style="page-break-after: always; page-break-inside: auto;">&nbsp;</div>
 
-<!-- Квитанция на склад -->
+<!-- Акт выполненных работ -->
+
+<TABLE FRAME=VOID CELLSPACING=0 COLS=6 RULES=NONE BORDER=0>
+    <COLGROUP>
+        <COL style="width:15mm">
+        <COL style="width:70mm">
+        <COL style="width:4mm">
+        <COL style="width:31mm">
+        <COL style="width:10mm">
+        <COL style="width:19mm">
+        <COL style="width:20mm">
+    </COLGROUP>
+    <TBODY>
+    <TR>
+        <TD COLSPAN=7 ALIGN=CENTER>
+            <B><FONT SIZE=2>Акт</FONT></B>
+        </TD>
+    </TR>
+        <TD COLSPAN=7 ALIGN=CENTER>
+            <B><FONT SIZE=2>выполненных работ</FONT></B>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=4>
+            г.
+        </TD>
+        <TD COLSPAN=3>
+            «____» ___________ 20___г.
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=7>
+        <BR />
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=7>
+        Мы, нижеподписавшиеся:
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=7>
+        <BR />
+        </TD>
+    </TR>
+    <TR>
+        <TD STYLE="border-bottom: 1px solid;" COLSPAN=3>
+        </TD>
+        <TD COLSPAN=4>
+        , Представитель Исполнителя, и
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=7>
+        <BR />
+        </TD>
+    </TR>
+    <TR>
+        <TD STYLE="border-bottom: 1px solid;" COLSPAN=3>
+            {% if order.applicant %}{{ order.applicant.full_name_complete }}{% endif %}
+        </TD>
+        <TD COLSPAN=4>
+        Заказчик
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=7>
+        <BR />
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=7>
+            составили настоящий акт о том, что что Исполнителем были выполнены качественно и в полном объеме
+            работы согласно счета-заказа № {{ order.number_verbose }} по захоронению
+            {% if order.deadman %}
+                умершего
+                {{ order.deadman }}&nbsp;
+            {% else %}
+            _________________________________
+            {% endif %}
+            на кладбище 
+            {% if order.cemetery %}
+                {{ order.cemetery }}&nbsp;
+            {% else %}
+            _________________________________
+            {% endif %}
+        </TD>
+    </TR>
+    <TR>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+            № п/п
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" COLSPAN=4 ALIGN=CENTER>
+            Наименование
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid;" ALIGN=CENTER>
+            Ед.измерения
+        </TD>
+        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid;" ALIGN=CENTER>
+            Кол-во
+        </TD>
+    </TR>
+    {% counter reset %}
+    {% for p in order.stockable_products %}
+        <TR>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                {% counter %}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-left:0.5em;" COLSPAN=4 >
+                {{ p.product.name }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                {{ p.product.measure }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid;" ALIGN=CENTER>
+                {{ p.quantity_round }}
+            </TD>
+        </TR>
+    {% endfor %}
+    <TR>
+        <TD COLSPAN=4>
+            Всего оказано услуг на
+            {% if order.total %}
+                <b>{{ order.total_float|floatformat:"2" }}</b>
+            {% else %}
+            _____________
+            {% endif %}
+            {% if order.total_float %}
+                <b>({{ order.total_int|rubles|capfirst }} {{ order.total_copecks }} коп.)</b>
+            {% endif %}
+
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=7>
+        <BR />
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=2>
+            <B>Заказчик</B>
+        </TD>
+        <TD>
+        </TD>
+        <TD COLSPAN=4>
+            <B>Исполнитель</B>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=7>
+        <BR />
+        </TD>
+    </TR>
+    <TR>
+        <TD STYLE="border-bottom: 1px solid;" COLSPAN=2>
+        </TD>
+        <TD>
+        </TD>
+        <TD STYLE="border-bottom: 1px solid;" COLSPAN=4>
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=7>
+        <BR />
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=2>
+            {% if order.applicant_organization  %}
+            М.П.
+            {% endif  %}
+        </TD>
+        <TD>
+        </TD>
+        <TD COLSPAN=4>
+            М.П.
+        </TD>
+    </TR>
+    </TBODY>
+</TABLE>
+
+<div style="page-break-after: always; page-break-inside: auto;">&nbsp;</div>
+
+<!-- Наряд-заказ -->
 
 <TABLE FRAME=VOID CELLSPACING=0 COLS=6 RULES=NONE BORDER=0>
     <COLGROUP>
