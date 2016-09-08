@@ -550,7 +550,7 @@ class Order(GetLogsMixin, BaseModel):
             try:
                 result = self.orderdeadperson
             except (OrderDeadPerson.DoesNotExist, AttributeError,):
-                result = _(u'Неизвестный')
+                pass
         return result
 
     def cemetery(self):
