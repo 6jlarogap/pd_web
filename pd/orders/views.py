@@ -321,7 +321,7 @@ class OrderList(LORURequiredMixin, PaginateListView):
                     k,
                     '25' if k == 'per_page' else '',
                 )
-            get_attrs += u"sort=%s" % self.SORT_DEFAULT
+            get_attrs += u"sort=%s" % u"-order_num"
             return redirect(reverse('order_list') + get_attrs)
         return super(OrderList, self).get(request, *args, **kwargs)
 
