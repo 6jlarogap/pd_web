@@ -564,12 +564,10 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
 
     @transaction.commit_on_success
     def post(self, request, area_id):
-        area = get_object_or_404(
-            Area,
-            pk=area_id,
-            cemetery__pk__in = [c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
-        )
+        area = get_object_or_404(Area, pk=area_id)
         cemetery = area.cemetery
+        if cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
+            raise PermissionDenied
         placeName = request.DATA.get('placeName') or ''
         if not placeName and cemetery.places_algo in (
             Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER,
@@ -985,6 +983,7 @@ class ApiPlacePhotoUpload(APIView):
     permission_classes = (PermitIfUgh,)
     def get(self, request) :
         return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту:")})
+
     def post(self, request) :
         placeId = request.POST['place']
         try:
@@ -1044,6 +1043,7 @@ class ApiPlacePhotoDelete(APIView):
     permission_classes = (PermitIfUgh,)
     def get(self, request) :
         return render_to_response('mobile_remove_placephoto.html', {'message': _(u"Удалить фотографию к месту:")})
+
     def post(self, request) :
         placePhotoId = request.POST['placePhotoId']
         try :
