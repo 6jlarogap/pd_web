@@ -12,9 +12,13 @@
 
     <STYLE>
         <!--
-        BODY, DIV, TABLE, THEAD, TBODY, TFOOT, TR, TH, TD, P {
+        BODY {
             font-family: "Arial";
-            font-size: x-small
+            font-size: small
+        }
+        TABLE.font-medium {
+            font-family: "Arial";
+            font-size: medium
         }
         -->
     </STYLE>
@@ -291,7 +295,7 @@
 
 <!-- Акт выполненных работ -->
 
-<TABLE FRAME=VOID CELLSPACING=0 COLS=6 RULES=NONE BORDER=0>
+<TABLE FRAME=VOID CELLSPACING=0 COLS=7 RULES=NONE BORDER=0>
     <COLGROUP>
         <COL style="width:15mm">
         <COL style="width:70mm">
@@ -362,7 +366,7 @@
     <TR>
         <TD COLSPAN=7>
             составили настоящий акт о том, что что Исполнителем были выполнены качественно и в полном объеме
-            работы согласно счета-заказа № {{ order.number_verbose }} по захоронению
+            работы согласно квитанции-договора № {{ order.number_verbose }} по захоронению
             {% if order.deadman %}
                 умершего
                 {{ order.deadman }}&nbsp;
@@ -474,7 +478,7 @@
 
 <!-- Наряд-заказ -->
 
-<TABLE FRAME=VOID CELLSPACING=0 COLS=6 RULES=NONE BORDER=0>
+<TABLE FRAME=VOID CELLSPACING=0 COLS=4 RULES=NONE BORDER=0>
     <COLGROUP>
         <COL style="width:15mm">
         <COL style="width:19mm">
@@ -593,21 +597,22 @@
 
 <!-- Наряды -->
 
-<TABLE FRAME=VOID CELLSPACING=0 COLS=6 RULES=NONE BORDER=0>
+<TABLE FRAME=VOID CELLSPACING=0 COLS=1 RULES=NONE BORDER=0>
     <COLGROUP>
         <COL style="width:169mm">
     </COLGROUP>
     <TBODY>
     </TBODY>
     <TR>
-        <TD STYLE="border-bottom: 1px dashed;">
+        <TD STYLE="border-top: 1px dashed;">
+            <BR />
         </TD>
     </TR>
 </TABLE>
 
 {% if order.has_loaders %}
 
-    <TABLE FRAME=VOID CELLSPACING=0 COLS=6 RULES=NONE BORDER=0>
+    <TABLE CLASS="font-medium" FRAME=VOID CELLSPACING=0 COLS=7 RULES=NONE BORDER=0>
         <COLGROUP>
             <COL style="width:27mm">
             <COL style="width:23mm">
@@ -620,7 +625,6 @@
         <TBODY>
         <TR>
             <TD COLSPAN=7>
-                <BR />
             </TD>
         </TR>
         <TR>
@@ -692,7 +696,6 @@
         </TR>
         <TR>
             <TD COLSPAN=7>
-                <BR />
             </TD>
         </TR>
         <TR>
@@ -707,7 +710,7 @@
 
 {% if order.has_catafalque %}
 
-    <TABLE FRAME=VOID CELLSPACING=0 COLS=6 RULES=NONE BORDER=0>
+    <TABLE CLASS="font-medium" FRAME=VOID CELLSPACING=0 COLS=7 RULES=NONE BORDER=0>
         <COLGROUP>
             <COL style="width:27mm">
             <COL style="width:23mm">
@@ -796,7 +799,6 @@
         </TR>
         <TR>
             <TD COLSPAN=7>
-                <BR />
             </TD>
         </TR>
         <TR>
@@ -808,7 +810,7 @@
     </TABLE>
 {% endif %}
 
-<TABLE FRAME=VOID CELLSPACING=0 COLS=6 RULES=NONE BORDER=0>
+<TABLE CLASS="font-medium" FRAME=VOID CELLSPACING=0 COLS=7 RULES=NONE BORDER=0>
     <COLGROUP>
         <COL style="width:27mm">
         <COL style="width:23mm">
@@ -908,7 +910,6 @@
     </TR>
     <TR>
         <TD COLSPAN=7>
-            <BR />
         </TD>
     </TR>
     <TR>
