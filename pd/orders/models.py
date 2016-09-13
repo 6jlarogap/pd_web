@@ -1,4 +1,4 @@
-# coding=utf-8
+## coding=utf-8
 from __builtin__ import property
 import datetime, time
 import os, shutil, decimal
@@ -127,11 +127,13 @@ class ProductGroup(models.Model):
 
 class Product(BaseModel):
     PRODUCT_CATAFALQUE = 'catafalque'
+    PRODUCT_CATAFALQUE_COMFORT = 'catafalque_comfort'
     PRODUCT_LOADERS = 'loaders'
     PRODUCT_DIGGERS = 'diggers'
     PRODUCT_SIGN = 'SIGN'
     PRODUCT_TYPES = (
         (PRODUCT_CATAFALQUE, _(u"Автокатафалк")),
+        (PRODUCT_CATAFALQUE_COMFORT, _(u"Катафалк повыш. комфортности")),
         (PRODUCT_LOADERS, _(u"Грузчики")),
         (PRODUCT_DIGGERS, _(u"Рытье могилы")),
         (PRODUCT_SIGN, _(u"Написание надмогильной таблички")),
@@ -375,6 +377,9 @@ class Order(GetLogsMixin, BaseModel):
     def has_catafalque(self):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE).exists()
 
+    def has_catafalque_comfort(self):
+        return self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE_COMFORT).exists()
+
     def get_addinfodata(self):
         try:
             return self.addinfodata
@@ -538,6 +543,14 @@ class Order(GetLogsMixin, BaseModel):
 
     def stockable_products(self):
         return self.orderitem_set.filter(product__stockable=True)
+
+    def items_to_act(self):
+        """
+        Товары и услуги, которые заносятся в Акт, для Ялты
+        """
+        return self.orderitem_set.filter(
+            Q(product__stockable=True) | Q(product__ptype__isnull=False)
+        ).distinct()
 
     def deadman(self):
         """
