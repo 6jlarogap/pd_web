@@ -1,4 +1,4 @@
-## coding=utf-8
+# coding=utf-8
 from __builtin__ import property
 import datetime, time
 import os, shutil, decimal
