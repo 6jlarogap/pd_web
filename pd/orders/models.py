@@ -549,7 +549,7 @@ class Order(GetLogsMixin, BaseModel):
         Товары и услуги, которые заносятся в Акт, для Ялты
         """
         return self.orderitem_set.filter(
-            product__stockable=False
+            product__ptype__isnull=False
         )
 
     def total_to_act(self):
