@@ -127,11 +127,13 @@ class ProductGroup(models.Model):
 
 class Product(BaseModel):
     PRODUCT_CATAFALQUE = 'catafalque'
+    PRODUCT_CATAFALQUE_COMFORT = 'catafalque_comfort'
     PRODUCT_LOADERS = 'loaders'
     PRODUCT_DIGGERS = 'diggers'
     PRODUCT_SIGN = 'SIGN'
     PRODUCT_TYPES = (
         (PRODUCT_CATAFALQUE, _(u"Автокатафалк")),
+        (PRODUCT_CATAFALQUE_COMFORT, _(u"Катафалк повыш. комфортности")),
         (PRODUCT_LOADERS, _(u"Грузчики")),
         (PRODUCT_DIGGERS, _(u"Рытье могилы")),
         (PRODUCT_SIGN, _(u"Написание надмогильной таблички")),
@@ -375,6 +377,9 @@ class Order(GetLogsMixin, BaseModel):
     def has_catafalque(self):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE).exists()
 
+    def has_catafalque_comfort(self):
+        return self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE_COMFORT).exists()
+
     def get_addinfodata(self):
         try:
             return self.addinfodata
@@ -438,7 +443,7 @@ class Order(GetLogsMixin, BaseModel):
         return u"%d-%d-%d" % (
             self.dt.year,
             self.loru.pk,
-            self.number,
+            self.number or 0,
         )
 
     number_webpay = number_verbose
@@ -539,6 +544,14 @@ class Order(GetLogsMixin, BaseModel):
     def stockable_products(self):
         return self.orderitem_set.filter(product__stockable=True)
 
+    def items_to_act(self):
+        """
+        Товары и услуги, которые заносятся в Акт, для Ялты
+        """
+        return self.orderitem_set.filter(
+            Q(product__stockable=True) | Q(product__ptype__isnull=False)
+        ).distinct()
+
     def deadman(self):
         """
         усопший при заказе, для отчета
@@ -550,7 +563,7 @@ class Order(GetLogsMixin, BaseModel):
             try:
                 result = self.orderdeadperson
             except (OrderDeadPerson.DoesNotExist, AttributeError,):
-                result = _(u'Неизвестный')
+                pass
         return result
 
     def cemetery(self):

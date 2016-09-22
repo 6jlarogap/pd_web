@@ -312,6 +312,19 @@ class OrderList(LORURequiredMixin, PaginateListView):
         q = reduce(operator.and_, query)
         return queryset.filter(q)
 
+    def get(self, request, *args, **kwargs):
+        if not request.GET and request.user.profile.org.inn == '9103078189':
+            form = self.get_form()
+            get_attrs = u'?'
+            for k in form.fields.keys():
+                get_attrs += u'%s=%s&' % (
+                    k,
+                    '25' if k == 'per_page' else '',
+                )
+            get_attrs += u"sort=%s" % u"-order_num"
+            return redirect(reverse('order_list') + get_attrs)
+        return super(OrderList, self).get(request, *args, **kwargs)
+
 order_list = OrderList.as_view()
 
 class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
