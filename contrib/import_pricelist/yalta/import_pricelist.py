@@ -2,7 +2,7 @@
 
 # import_pricelist.py,
 
-TO_IMPORT_ODS = '/home/suprune20/musor/pricelist.ods'
+TO_IMPORT_ODS = '/home/suprune20/pricelist.ods'
 # Название организации изменено, чтоб еще раз сдуру не запустить процесс
 LORU_NAME = u'ООО "ЯЛТИНСКАЯ ПОХОРОННАЯ КОМПАНИЯ" ---'
 
@@ -49,11 +49,8 @@ def main():
             name = ods_cell(cells[1])
             description = ''
             measure = ods_cell(cells[2])
+            stockable = measure.lower() != u"услуга"
             price_str = ods_cell(cells[3]).replace(' ', '')
-            try:
-                stockable = not bool(ods_cell(cells[5]))
-            except IndexError:
-                stockable = True
             try:
                 price = price_wholesale = float(price_str)
             except ValueError:
