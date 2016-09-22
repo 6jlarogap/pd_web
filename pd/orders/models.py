@@ -9,7 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction, IntegrityError
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
-from django.db.models import Sum
+from django.db.models import Sum, F
 from django.db.models.query_utils import Q
 
 from burials.models import Burial, OrderPlace
@@ -549,8 +549,26 @@ class Order(GetLogsMixin, BaseModel):
         Товары и услуги, которые заносятся в Акт, для Ялты
         """
         return self.orderitem_set.filter(
-            Q(product__stockable=True) | Q(product__ptype__isnull=False)
-        ).distinct()
+            product__stockable=False
+        )
+
+    def total_to_act(self):
+        #result = self.items_to_act().aggregate(total=Sum(F('cost') * F('quantity'))['total']) or \
+                #decimal.Decimal('0.00')
+            # не получилось с F()*F()
+        #return decimal.Decimal("{:.2f}".format(result))
+        result = decimal.Decimal('0.00')
+        items = self.items_to_act()
+        for item in items:
+            result += item.total
+        return decimal.Decimal("{:.2f}".format(result))
+
+    def total_to_act_int(self):
+        return int(self.total_to_act())
+
+    def total_to_act_copecks(self):
+        total = self.total_to_act()
+        return int((total - int(total)) * 100)
 
     def deadman(self):
         """
