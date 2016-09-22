@@ -152,7 +152,7 @@
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="39" model="orders.productcategory">
-        <field type="CharField" name="name">Услуги кладбища</field>
+        <field type="CharField" name="name">Копщики</field>
         <field type="FileField" name="icon"></field>
     </object>
     <!--- Service: возможные услуги -->
