@@ -295,225 +295,227 @@
 
 <!-- Акт выполненных работ -->
 
-<TABLE FRAME=VOID CELLSPACING=0 COLS=8 RULES=NONE BORDER=0>
-    <COLGROUP>
-        <COL style="width:12mm">
-        <COL style="width:12mm">
-        <COL style="width:60mm"> <!-- середина  -->
-        <COL style="width:10mm">
-        <COL style="width:16mm">
-        <COL style="width:15mm">
-        <COL style="width:22mm">
-        <COL style="width:22mm">
-    </COLGROUP>
-    <TBODY>
-    <TR>
-        <TD  STYLE="border-bottom: 2px solid;" COLSPAN=8 ALIGN=LEFT>
-            <B><FONT SIZE=2>Акт № {{ order.number_verbose }}</FONT></B> от «____» ___________ 20___г.
-        </TD>
-    <TR>
-        <TD COLSPAN=8>
-        <BR />
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=2 VALIGN=TOP>
-            Исполнитель:
-        </TD>
-        <TD COLSPAN=6 VALIGN=TOP>
-             <b>ИП Бобрышев Евгений Владимирович</b>,
-             ИНН 910311233619,
-             ул.Горького, д.21, кв.13, Ялта, Республика Крым, Россия 298604
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=2 VALIGN=TOP>
-            Заказчик:
-        </TD>
-        <TD COLSPAN=6 VALIGN=TOP>
-            <b>{{ user.profile.org.name }}</b>,
-            ИНН {{ user.profile.org.inn }},
-            {{ user.profile.org.off_address }}
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8>
-        <BR />
-        </TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
-            <b>№</b>
-        </TD>
-        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" COLSPAN=3 ALIGN=CENTER>
-            <b>Услуга</b>
-        </TD>
-        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
-            <b>Кол-во</b>
-        </TD>
-        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
-            <b>Ед.</b>
-        </TD>
-        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
-            <b>Цена</b>
-        </TD>
-        <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid;" ALIGN=CENTER>
-            <b>Сумма</b>
-        </TD>
-    </TR>
-    {% counter reset %}
-    {% for p in order.items_to_act %}
+{% if order.items_to_act %}
+    <TABLE FRAME=VOID CELLSPACING=0 COLS=8 RULES=NONE BORDER=0>
+        <COLGROUP>
+            <COL style="width:12mm">
+            <COL style="width:12mm">
+            <COL style="width:60mm"> <!-- середина  -->
+            <COL style="width:10mm">
+            <COL style="width:16mm">
+            <COL style="width:15mm">
+            <COL style="width:22mm">
+            <COL style="width:22mm">
+        </COLGROUP>
+        <TBODY>
         <TR>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
-                {% counter %}
+            <TD  STYLE="border-bottom: 2px solid;" COLSPAN=8 ALIGN=LEFT>
+                <B><FONT SIZE=2>Акт № {{ order.number_verbose }}</FONT></B> от «____» ___________ 20___г.
             </TD>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-left:0.5em;" COLSPAN=3 >
-                {{ p.product.name }}
-            </TD>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=RIGHT>
-                {{ p.quantity }}
-            </TD>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
-                {{ p.product.measure }}
-            </TD>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=RIGHT>
-                {{ p.cost }}
-            </TD>
-            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;  padding-right:0.5em; border-right: 1px solid;" ALIGN=RIGHT>
-                {{ p.total|floatformat:"2" }}
+        <TR>
+            <TD COLSPAN=8>
+            <BR />
             </TD>
         </TR>
-    {% endfor %}
-    <TR>
-        <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" COLSPAN=6>
-        </TD>
-        <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=RIGHT>
-            <b>Итого</b>
-        </TD>
-        <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em; border-right: 1px solid;" ALIGN=RIGHT>
-            <b>{{ order.total_to_act|floatformat:"2" }}</b>
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8>
-        <BR />
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8>
-            <b>Всего оказано услуг на сумму:
-                {{ order.total_int|rubles|capfirst }} {{ order.total_to_act_copecks }} коп.</b>
+        <TR>
+            <TD COLSPAN=2 VALIGN=TOP>
+                Исполнитель:
+            </TD>
+            <TD COLSPAN=6 VALIGN=TOP>
+                <b>ИП Бобрышев Евгений Владимирович</b>,
+                ИНН 910311233619,
+                ул.Горького, д.21, кв.13, Ялта, Республика Крым, Россия 298604
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=2 VALIGN=TOP>
+                Заказчик:
+            </TD>
+            <TD COLSPAN=6 VALIGN=TOP>
+                <b>{{ user.profile.org.name }}</b>,
+                ИНН {{ user.profile.org.inn }},
+                {{ user.profile.org.off_address }}
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8>
+            <BR />
+            </TD>
+        </TR>
+        <TR>
+            <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                <b>№</b>
+            </TD>
+            <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" COLSPAN=3 ALIGN=CENTER>
+                <b>Услуга</b>
+            </TD>
+            <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                <b>Кол-во</b>
+            </TD>
+            <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                <b>Ед.</b>
+            </TD>
+            <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                <b>Цена</b>
+            </TD>
+            <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid;" ALIGN=CENTER>
+                <b>Сумма</b>
+            </TD>
+        </TR>
+        {% counter reset %}
+        {% for p in order.items_to_act %}
+            <TR>
+                <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                    {% counter %}
+                </TD>
+                <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-left:0.5em;" COLSPAN=3 >
+                    {{ p.product.name }}
+                </TD>
+                <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=RIGHT>
+                    {{ p.quantity }}
+                </TD>
+                <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
+                    {{ p.product.measure }}
+                </TD>
+                <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=RIGHT>
+                    {{ p.cost }}
+                </TD>
+                <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;  padding-right:0.5em; border-right: 1px solid;" ALIGN=RIGHT>
+                    {{ p.total|floatformat:"2" }}
+                </TD>
+            </TR>
+        {% endfor %}
+        <TR>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid;" COLSPAN=6>
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em;" ALIGN=RIGHT>
+                <b>Итого</b>
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-right:0.5em; border-right: 1px solid;" ALIGN=RIGHT>
+                <b>{{ order.total_to_act|floatformat:"2" }}</b>
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8>
+            <BR />
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8>
+                <b>Всего оказано услуг на сумму:
+                    {{ order.total_to_act_int|rubles|capfirst }} {{ order.total_to_act_copecks }} коп.</b>
 
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8>
-        <BR />
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8>
-            Вышеперечисленные услуги выполнены полностью и в срок.
-            Заказчик претензий по объему, качеству и срокам оказания услуг
-            не имеет
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8>
-        <BR />
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=2>
-            <B>Заказчик</B>
-        </TD>
-        <TD>
-        </TD>
-        <TD COLSPAN=4>
-            <B>Исполнитель</B>
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8 ALIGN=CENTER>
-        <BR />
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8 ALIGN=CENTER>
-        <BR />
-        </TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-bottom: 1px solid;" COLSPAN=3 ALIGN=CENTER>
-        </TD>
-        <TD>
-        </TD>
-        <TD STYLE="border-bottom: 1px solid;" COLSPAN=4 ALIGN=CENTER>
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=3 ALIGN=CENTER VALIGN=TOP>
-            <i>должность</i>
-        </TD>
-        <TD>
-        </TD>
-        <TD COLSPAN=4 ALIGN=CENTER VALIGN=TOP>
-            <i>должность</i>
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8>
-        <BR />
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8>
-        <BR />
-        </TD>
-    </TR>
-    <TR>
-        <TD STYLE="border-bottom: 1px solid;" COLSPAN=3 ALIGN=CENTER>
-        </TD>
-        <TD>
-        </TD>
-        <TD STYLE="border-bottom: 1px solid;" COLSPAN=4 ALIGN=CENTER>
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=2 ALIGN=LEFT VALIGN=TOP>
-            <i>подпись</i>
-        </TD>
-        <TD COLSPAN=1 ALIGN=RIGHT VALIGN=TOP>
-            <i>расшифровка подписи</i>
-        </TD>
-        <TD>
-        </TD>
-        <TD COLSPAN=2 ALIGN=LEFT VALIGN=TOP>
-            <i>подпись</i>
-        </TD>
-        <TD COLSPAN=2 ALIGN=RIGHT VALIGN=TOP>
-            <i>расшифровка подписи</i>
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=8>
-        <BR />
-        </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=3  ALIGN=CENTER>
-            М.П.
-        </TD>
-        <TD>
-        </TD>
-        <TD COLSPAN=4  ALIGN=CENTER>
-            М.П.
-        </TD>
-    </TR>
-    </TBODY>
-</TABLE>
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8>
+            <BR />
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8>
+                Вышеперечисленные услуги выполнены полностью и в срок.
+                Заказчик претензий по объему, качеству и срокам оказания услуг
+                не имеет
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8>
+            <BR />
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=2>
+                <B>Заказчик</B>
+            </TD>
+            <TD>
+            </TD>
+            <TD COLSPAN=4>
+                <B>Исполнитель</B>
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8 ALIGN=CENTER>
+            <BR />
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8 ALIGN=CENTER>
+            <BR />
+            </TD>
+        </TR>
+        <TR>
+            <TD STYLE="border-bottom: 1px solid;" COLSPAN=3 ALIGN=CENTER>
+            </TD>
+            <TD>
+            </TD>
+            <TD STYLE="border-bottom: 1px solid;" COLSPAN=4 ALIGN=CENTER>
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=3 ALIGN=CENTER VALIGN=TOP>
+                <i>должность</i>
+            </TD>
+            <TD>
+            </TD>
+            <TD COLSPAN=4 ALIGN=CENTER VALIGN=TOP>
+                <i>должность</i>
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8>
+            <BR />
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8>
+            <BR />
+            </TD>
+        </TR>
+        <TR>
+            <TD STYLE="border-bottom: 1px solid;" COLSPAN=3 ALIGN=CENTER>
+            </TD>
+            <TD>
+            </TD>
+            <TD STYLE="border-bottom: 1px solid;" COLSPAN=4 ALIGN=CENTER>
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=2 ALIGN=LEFT VALIGN=TOP>
+                <i>подпись</i>
+            </TD>
+            <TD COLSPAN=1 ALIGN=RIGHT VALIGN=TOP>
+                <i>расшифровка подписи</i>
+            </TD>
+            <TD>
+            </TD>
+            <TD COLSPAN=2 ALIGN=LEFT VALIGN=TOP>
+                <i>подпись</i>
+            </TD>
+            <TD COLSPAN=2 ALIGN=RIGHT VALIGN=TOP>
+                <i>расшифровка подписи</i>
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=8>
+            <BR />
+            </TD>
+        </TR>
+        <TR>
+            <TD COLSPAN=3  ALIGN=CENTER>
+                М.П.
+            </TD>
+            <TD>
+            </TD>
+            <TD COLSPAN=4  ALIGN=CENTER>
+                М.П.
+            </TD>
+        </TR>
+        </TBODY>
+    </TABLE>
 
-<div style="page-break-after: always; page-break-inside: auto;">&nbsp;</div>
+    <div style="page-break-after: always; page-break-inside: auto;">&nbsp;</div>
+{% endif %}
 
 <!-- Наряд-заказ -->
 
