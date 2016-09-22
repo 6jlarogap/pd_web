@@ -229,6 +229,8 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
         for k in fields_got:
             if fields_got[k] is not None:
                 fields[k] = fields_got[k]
+        if not fields_got['ptype'] or fields_got['ptype'] == 'null':
+            fields['ptype'] = None
         if instance:
             for k in fields:
                 setattr(instance, k, fields[k])
