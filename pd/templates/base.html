@@ -132,6 +132,26 @@
                                         <span class="caret"></span>
                                     </a>
                                     <ul class="dropdown-menu">
+                                        {% if user.profile.pk %}
+                                            {% if user.profile.org.pk %}
+                                                <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
+                                                <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
+                                                {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
+                                                    {% if user.profile.is_ugh %}
+                                                        <li><a href="{{ global_context_FRONT_END_URL }}oms/orgplaces">{% trans "Подразделения" %}</a></li>
+                                                    {% elif user.profile.is_loru %}
+                                                        <li><a href="{{ global_context_FRONT_END_URL }}loru/orgplaces">{% trans "Подразделения" %}</a></li>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if user.profile.org.pk %}
+                                                <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
+                                            {% endif %}
+                                            {% if user.profile.is_ugh and global_context_SHOW_OPER_STATS %}
+                                                <li><a href="{% url oms_oper_stats %}">{% trans "Статистика операций" %}</a></li>
+                                            {% endif %}
+                                            <li class="divider"></li>
+                                        {% endif %}
                                         {% if user.profile.is_ugh %}
                                             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
                                                 <li><a href="{{ global_context_FRONT_END_URL }}oms/placesmap">{% trans "Карта захоронений" %}</a></li>
@@ -144,7 +164,7 @@
                                         {% endif %}
                                         {% if user.profile.is_trade %}
                                             <li><a href="{{ global_context_FRONT_END_URL }}loru/products">{% trans "Товары и услуги" %}</a></li>
-                                            <li><a href="{{ global_context_FRONT_END_URL }}">{% trans "Каталог" %}</a></li>
+                                            {# <li><a href="{{ global_context_FRONT_END_URL }}">{% trans "Каталог" %}</a></li> #}
                                             <li><a href="{{ global_context_FRONT_END_URL }}price/{{ user.profile.org.pk }}">{% trans "Интернет-магазин" %}{% if user.profile.org.favorites_for_template %}&nbsp;&nbsp;<span class="caret-right"></span>{% endif %}</a>
                                             {% for favorite in user.profile.org.favorites_for_template %}
                                                 {% if forloop.first %}
@@ -156,28 +176,8 @@
                                                 {% endif %}
                                             {% endfor  %}
                                             </li>
-                                            <li><a href="{{ global_context_FRONT_END_URL }}loru/own-orders/add">{% trans "Заказ похорон" %}</a></li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}orders">{% trans "Архив заказов" %}</a></li>
-                                            <li class="divider"></li>
-                                        {% endif %}
-                                        {% if user.profile.pk %}
-                                            {% if user.profile.org.pk %}
-                                                <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
-                                                {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
-                                                    {% if user.profile.is_ugh %}
-                                                        <li><a href="{{ global_context_FRONT_END_URL }}oms/orgplaces">{% trans "Подразделения" %}</a></li>
-                                                    {% elif user.profile.is_loru %}
-                                                        <li><a href="{{ global_context_FRONT_END_URL }}loru/orgplaces">{% trans "Подразделения" %}</a></li>
-                                                    {% endif %}
-                                                {% endif %}
-                                            {% endif %}
-                                            <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
-                                            {% if user.profile.org.pk %}
-                                                <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
-                                            {% endif %}
-                                        {% if user.profile.is_ugh and global_context_SHOW_OPER_STATS %}
-                                            <li><a href="{% url oms_oper_stats %}">{% trans "Статистика операций" %}</a></li>
-                                        {% endif %}
+                                            <li><a href="{{ global_context_FRONT_END_URL }}loru/own-orders/add">{% trans "Заказ похорон" %}</a></li>
                                             <li class="divider"></li>
                                         {% endif %}
                                         {% if user.profile.is_supervisor %}
