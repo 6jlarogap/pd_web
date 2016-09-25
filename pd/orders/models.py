@@ -549,8 +549,11 @@ class Order(GetLogsMixin, BaseModel):
         Товары и услуги, которые заносятся в Акт, для Ялты
         """
         return self.orderitem_set.filter(
-            product__ptype__isnull=False
-        )
+            product__ptype__in = (
+                Product.PRODUCT_CATAFALQUE,
+                Product.PRODUCT_CATAFALQUE_COMFORT,
+                Product.PRODUCT_LOADERS,
+        ))
 
     def total_to_act(self):
         #result = self.items_to_act().aggregate(total=Sum(F('cost') * F('quantity'))['total']) or \
