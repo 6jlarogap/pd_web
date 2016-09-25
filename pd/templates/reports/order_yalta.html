@@ -129,7 +129,11 @@
         <TD COLSPAN=5>
             Дата похорон
             {% if order.burial and order.burial.plan_date %}
-                {{ order.burial.plan_date|date:"d.m.Y"|safe }}&nbsp;
+                {{ order.burial.plan_date|date:"d.m.Y"|safe }}.&nbsp;
+            {% elif order.dt_due %}
+                {{ order.dt_due|date:"d.m.Y"|safe }}.&nbsp;
+            {% else %}
+                ____________
             {% endif %}
             Время подачи транспорта к моргу ___________
          </TD>
@@ -236,14 +240,6 @@
          </TD>
     </TR>
     <TR>
-        <TD COLSPAN=4>
-            С объемом работ согласен ______________________________
-         </TD>
-        <TD COLSPAN=2>
-            Подпись заказчика
-         </TD>
-    </TR>
-    <TR>
         <TD COLSPAN=6>
             <B>Оплачено</B>: наличными денежными средствами _____________ руб. _____ коп. 
          </TD>
@@ -260,7 +256,7 @@
     </TR>
     <TR>
         <TD COLSPAN=6>
-            <B>Заказ выполнен полностью, полученную с меня сумму подтверждаю</B>
+            <B>С объемом работ согласен. Заказ выполнен полностью, полученную с меня сумму подтверждаю.</B>
          </TD>
     </TR>
     <TR>
@@ -310,7 +306,12 @@
         <TBODY>
         <TR>
             <TD  STYLE="border-bottom: 2px solid;" COLSPAN=8 ALIGN=LEFT>
-                <B><FONT SIZE=2>Акт № {{ order.number_verbose }}</FONT></B> от «____» ___________ 20___г.
+                <B><FONT SIZE=2>Акт № {{ order.number_verbose }}</FONT></B> от
+                {% if order.dt_due %}
+                    {{ order.dt_due|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                {% else %}
+                    «____» ___________ 20___г.
+                {% endif %}
             </TD>
         <TR>
             <TD COLSPAN=8>
