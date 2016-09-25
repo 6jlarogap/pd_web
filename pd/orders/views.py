@@ -2523,6 +2523,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
 api_loru_orders = ApiLoruOrdersView.as_view()
 
 class ApiLoruCategoriesView(APIView):
+    permission_classes = (PermitIfTrade,)
 
     def get(self, request):
         return Response(
