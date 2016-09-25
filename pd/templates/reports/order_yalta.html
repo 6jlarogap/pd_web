@@ -306,7 +306,12 @@
         <TBODY>
         <TR>
             <TD  STYLE="border-bottom: 2px solid;" COLSPAN=8 ALIGN=LEFT>
-                <B><FONT SIZE=2>Акт № {{ order.number_verbose }}</FONT></B> от «____» ___________ 20___г.
+                <B><FONT SIZE=2>Акт № {{ order.number_verbose }}</FONT></B> от
+                {% if order.dt_due %}
+                    {{ order.dt_due|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                {% else %}
+                    «____» ___________ 20___г.
+                {% endif %}
             </TD>
         <TR>
             <TD COLSPAN=8>
