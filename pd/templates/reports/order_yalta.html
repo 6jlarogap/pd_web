@@ -129,7 +129,11 @@
         <TD COLSPAN=5>
             Дата похорон
             {% if order.burial and order.burial.plan_date %}
-                {{ order.burial.plan_date|date:"d.m.Y"|safe }}&nbsp;
+                {{ order.burial.plan_date|date:"d.m.Y"|safe }}.&nbsp;
+            {% elif order.dt_due %}
+                {{ order.dt_due|date:"d.m.Y"|safe }}.&nbsp;
+            {% else %}
+                ____________
             {% endif %}
             Время подачи транспорта к моргу ___________
          </TD>
