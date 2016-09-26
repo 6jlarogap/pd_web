@@ -184,11 +184,11 @@
         <field type="CharField" name="sorting">AA</field>
         <field type="FileField" name="icon"></field>
     </object>
-    <object pk="39" model="orders.productcategory">
+<!--    <object pk="39" model="orders.productcategory">
         <field type="CharField" name="name">Копщики</field>
         <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
-    </object>
+    </object>-->
     <!--- Service: возможные услуги -->
     <object pk="1" model="orders.service">
         <field type="CharField" name="name">photo</field>
