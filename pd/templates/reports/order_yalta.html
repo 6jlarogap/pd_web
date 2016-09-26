@@ -694,23 +694,17 @@
                 </TD>
             </TR>
             <TR>
-                <TD>
+                <TD COLSPAN=7>
                     Умерший:
-                </TD>
-                <TD COLSPAN=6 ALIGN="CENTER">
-                    {% if order.burial.deadman %}
+                    {% if order.deadman %}
                         <B>{{ order.deadman }}</B>
+                    {% else %}
+                        __________________________________
                     {% endif %}
                 </TD>
             </TR>
             <TR>
-                <TD>
-                    Адрес:
-                </TD>
-                <TD COLSPAN=6 ALIGN="CENTER">
-                    {% if order.deadman and order.deadman.address %}
-                        {{ order.deadman.address }}
-                    {% endif %}
+                <TD COLSPAN=7>
                 </TD>
             </TR>
             <TR>
@@ -795,12 +789,12 @@
                 </TD>
             </TR>
             <TR>
-                <TD>
+                <TD COLSPAN=7>
                     Умерший:
-                </TD>
-                <TD COLSPAN=6 ALIGN="CENTER">
                     {% if order.deadman %}
                         <B>{{ order.deadman }}</B>
+                    {% else %}
+                        __________________________________
                     {% endif %}
                 </TD>
             </TR>
@@ -898,12 +892,12 @@
                 </TD>
             </TR>
             <TR>
-                <TD>
+                <TD COLSPAN=7>
                     Умерший:
-                </TD>
-                <TD COLSPAN=6 ALIGN="CENTER">
                     {% if order.deadman %}
                         <B>{{ order.deadman }}</B>
+                    {% else %}
+                        __________________________________
                     {% endif %}
                 </TD>
             </TR>
