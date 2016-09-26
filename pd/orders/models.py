@@ -97,6 +97,7 @@ class ProductCategory(models.Model):
     )
 
     name = models.CharField(_(u"Название"), max_length=255)
+    sorting = models.CharField(_(u"Порядок сортировки"), max_length=2, editable=False, default=u'ZZ')
     icon = models.ImageField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
 
     class Meta:

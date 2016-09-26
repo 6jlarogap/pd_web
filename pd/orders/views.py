@@ -2530,7 +2530,9 @@ class ApiLoruCategoriesView(APIView):
             data=[ProductCategory2Serializer(
                     category,
                     context=dict(request=request),
-                ).data for category in ProductCategory.objects.all()
+                ).data for category in ProductCategory.objects. \
+                             filter(product__loru=request.user.profile.org). \
+                             order_by('sorting', 'name').distinct()
             ],
             status=200,
         )
