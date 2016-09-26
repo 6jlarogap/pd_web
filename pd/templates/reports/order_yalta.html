@@ -135,16 +135,28 @@
             {% else %}
                 ____________
             {% endif %}
-            Время подачи транспорта к моргу ___________
+            Время подачи транспорта к моргу
+            {% if order.initial_time %}
+            {{ order.initial_time|time:"H:i" }}
+            {% else %}
+                ____________
+            {% endif %}
          </TD>
     </TR>
     <TR>
         <TD COLSPAN=5>
-            Время отпевания _____________
+            Время отпевания
+            {% if order.service_time %}
+            {{ order.service_time|time:"H:i" }}
+            {% else %}
+            _____________
+            {% endif %}
             &nbsp;
             Время захоронения
             {% if order.burial and order.burial.plan_time %}
-                {{ order.burial.plan_time|time:"H" }}:{{ order.burial.plan_time|time:"i" }}
+                {{ order.burial.plan_time|time:"H:i" }}
+            {% elif order.burial_plan_time %}
+                {{ order.burial_plan_time|time:"H:i" }}
             {% else %}
             _____________
             {% endif %}
@@ -709,29 +721,57 @@
             </TR>
             <TR>
                 <TD>
-                    Время:
+                    Подача:
                 </TD>
-                <TD COLSPAN=6 ALIGN="CENTER">
-                <B>{% now "H:i:s" %}</B>
+                <TD COLSPAN=2>
+                    время:
+                    {% if order.get_catafalquedata.start_time %}
+                        {{ order.get_catafalquedata.start_time|time:"H:i" }}
+                    {% elif order.initial_time %}
+                        {{ order.initial_time|time:"H:i" }}
+                    {% endif %}
+                </TD>
+                <TD COLSPAN=4>
+                    место:
+                    {% if order.get_catafalquedata.start_place %}
+                        {{ order.get_catafalquedata.start_place }}
+                    {% else %}
+                        {{ order.initial_place }}
+                    {% endif %}
+                </TD>
+            </TR>
+            <TR>
+                <TD>
+                    Отпевание:
+                </TD>
+                <TD COLSPAN=2>
+                    время:
+                    {% if order.service_time %}
+                        {{ order.service_time|time:"H:i" }}
+                    {% endif %}
+                </TD>
+                <TD COLSPAN=4>
+                    место:
+                    {{ order.service_place }}
                 </TD>
             </TR>
             <TR>
                 <TD>
                     Похороны:
                 </TD>
-                <TD COLSPAN=2 ALIGN="CENTER">
+                <TD COLSPAN=2>
+                    время:
                 {% if order.burial and order.burial.plan_date %}
-                    <B>{{ order.burial.plan_date|date:"d.m.Y"|safe }}</B>
-                {% endif  %}
-                {% if order.burial and order.burial.plan_time %}
-                    <B>{{ order.burial.plan_time|time:"H:i" }}</B>
+                    {{ order.burial.plan_date|date:"d.m.Y"|safe }}
+                {% elif order.burial_plan_time %}
+                    {{ order.burial_plan_time|time:"H:i" }}
                 {% endif  %}
                 </TD>
                 <TD>
                     Кладбище:
                 </TD>
-                <TD COLSPAN=3 ALIGN="CENTER">
-                    <B>{{ order.cemetery }}</B>
+                <TD COLSPAN=3>
+                    {{ order.cemetery }}
                 </TD>
             </TR>
             <TR>
@@ -803,10 +843,20 @@
                     Подача:
                 </TD>
                 <TD COLSPAN=2>
-                    время: {{ order.get_catafalquedata.start_time|time:"H:i" }}
+                    время:
+                    {% if order.get_catafalquedata.start_time %}
+                        {{ order.get_catafalquedata.start_time|time:"H:i" }}
+                    {% elif order.initial_time %}
+                        {{ order.initial_time|time:"H:i" }}
+                    {% endif %}
                 </TD>
                 <TD COLSPAN=4>
-                    место: {{ order.get_catafalquedata.start_place|default_if_none:"" }}
+                    место:
+                    {% if order.get_catafalquedata.start_place %}
+                        {{ order.get_catafalquedata.start_place }}
+                    {% else %}
+                        {{ order.initial_place }}
+                    {% endif %}
                 </TD>
             </TR>
             <TR>
@@ -815,28 +865,32 @@
                 </TD>
                 <TD COLSPAN=2>
                     время:
+                    {% if order.service_time %}
+                        {{ order.service_time|time:"H:i" }}
+                    {% endif %}
                 </TD>
                 <TD COLSPAN=4>
                     место:
+                    {{ order.service_place }}
                 </TD>
             </TR>
             <TR>
                 <TD>
                     Похороны:
                 </TD>
-                <TD COLSPAN=2 ALIGN="CENTER">
+                <TD COLSPAN=2>
+                    время:
                 {% if order.burial and order.burial.plan_date %}
-                    <B>{{ order.burial.plan_date|date:"d.m.Y"|safe }}</B>
-                {% endif  %}
-                {% if order.burial and order.burial.plan_time %}
-                    <B>{{ order.burial.plan_time|time:"H:i" }}</B>
+                    {{ order.burial.plan_date|date:"d.m.Y"|safe }}
+                {% elif order.burial_plan_time %}
+                    {{ order.burial_plan_time|time:"H:i" }}
                 {% endif  %}
                 </TD>
                 <TD>
                     Кладбище:
                 </TD>
-                <TD COLSPAN=3 ALIGN="CENTER">
-                    <B>{{ order.cemetery }}</B>
+                <TD COLSPAN=3>
+                    {{ order.cemetery }}
                 </TD>
             </TR>
             <TR>
@@ -907,9 +961,19 @@
                 </TD>
                 <TD COLSPAN=2>
                     время:
+                    {% if order.get_catafalquedata.start_time %}
+                        {{ order.get_catafalquedata.start_time|time:"H:i" }}
+                    {% elif order.initial_time %}
+                        {{ order.initial_time|time:"H:i" }}
+                    {% endif %}
                 </TD>
                 <TD COLSPAN=4>
                     место:
+                    {% if order.get_catafalquedata.start_place %}
+                        {{ order.get_catafalquedata.start_place }}
+                    {% else %}
+                        {{ order.initial_place }}
+                    {% endif %}
                 </TD>
             </TR>
             <TR>
@@ -918,28 +982,32 @@
                 </TD>
                 <TD COLSPAN=2>
                     время:
+                    {% if order.service_time %}
+                        {{ order.service_time|time:"H:i" }}
+                    {% endif %}
                 </TD>
                 <TD COLSPAN=4>
                     место:
+                    {{ order.service_place }}
                 </TD>
             </TR>
             <TR>
                 <TD>
                     Похороны:
                 </TD>
-                <TD COLSPAN=2 ALIGN="CENTER">
+                <TD COLSPAN=2>
+                    время:
                 {% if order.burial and order.burial.plan_date %}
-                    <B>{{ order.burial.plan_date|date:"d.m.Y"|safe }}</B>
-                {% endif  %}
-                {% if order.burial and order.burial.plan_time %}
-                    <B>{{ order.burial.plan_time|time:"H:i" }}</B>
+                    {{ order.burial.plan_date|date:"d.m.Y"|safe }}
+                {% elif order.burial_plan_time %}
+                    {{ order.burial_plan_time|time:"H:i" }}
                 {% endif  %}
                 </TD>
                 <TD>
                     Кладбище:
                 </TD>
-                <TD COLSPAN=3 ALIGN="CENTER">
-                    <B>{{ order.cemetery }}</B>
+                <TD COLSPAN=3>
+                    {{ order.cemetery }}
                 </TD>
             </TR>
             <TR>
@@ -948,9 +1016,13 @@
                 </TD>
                 <TD COLSPAN=2>
                     время:
+                    {% if order.repast_time %}
+                        {{ order.repast_time|time:"H:i" }}
+                    {% endif  %}
                 </TD>
                 <TD COLSPAN=4>
                     место:
+                    {{ order.repast_place }}
                 </TD>
             </TR>
             <TR>
