@@ -2433,6 +2433,27 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 except ValueError:
                     raise ServiceException(_(u"Неверная дата исполнения заказа"))
             dt = request.DATA.get('createdDate') or None
+            mapping = dict(
+                burialPlanTime='burial_plan_time',
+                initialTime='initial_time',
+                serviceTime='service_time',
+                repastTime='repast_time',
+            )
+            other_keys = dict()
+            for k in mapping:
+                if request.DATA.get(k):
+                    try:
+                        other_keys[mapping[k]] = datetime.datetime.strptime(request.DATA[k], '%H:%M')
+                    except ValueError:
+                        raise ServiceException(_(u"Неверное время: %s") % k)
+            mapping = dict(
+                initialPlace='initial_place',
+                servicePlace='service_place',
+                repastPlace='repast_place',
+            )
+            for k in mapping:
+                if request.DATA.get(k):
+                    other_keys[mapping[k]] = request.DATA[k]
             if dt:
                 try:
                     dt = datetime.datetime.strptime(dt, "%d.%m.%Y").date()
@@ -2444,6 +2465,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 dt=dt or datetime.date.today(),
                 dt_due=dt_due,
                 type=Order.TYPE_FUNERAL,
+                **other_keys
             )
             deadman = request.DATA.get('deadman')
             if deadman:
