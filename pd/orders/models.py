@@ -245,7 +245,6 @@ class Order(GetLogsMixin, BaseModel):
     archived = models.BooleanField(_(u'Архивирован'), editable=False, default=False)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateField(_(u"Дата заказа"))
-    dt_due = models.DateField(_(u"Дата исполнения заказа"), editable=False, null=True)
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
 
     customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"),
@@ -258,6 +257,17 @@ class Order(GetLogsMixin, BaseModel):
     title = models.CharField(_(u"Наименование покупателя"), max_length=255, default='', editable=False)
     phones = models.TextField(_(u"Телефоны"), null=True, editable=False)
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"), null=True, editable=False)
+
+    # Для заказа похорон
+    dt_due = models.DateField(_(u"Дата исполнения заказа/Дата похорон"), editable=False, null=True)
+
+    burial_plan_time = models.TimeField(_(u"План. время захоронения"), null=True, editable=False)
+    initial_place = models.CharField(_(u"Место подачи катафалка"), max_length=255, editable=False, default='')
+    initial_time = models.TimeField(_(u"Время подачи катафалка"), null=True, editable=False)
+    service_place = models.CharField(_(u"Место отпевания"), max_length=255, editable=False, default='')
+    service_time = models.TimeField(_(u"Время отпевания"), null=True, editable=False)
+    repast_place = models.CharField(_(u"Место отпевания"), max_length=255, editable=False, default='')
+    repast_time = models.TimeField(_(u"Время отпевания"), null=True, editable=False)
 
     class Meta:
         verbose_name = _(u"Заказ")
