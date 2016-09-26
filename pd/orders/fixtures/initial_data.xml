@@ -3,74 +3,92 @@
     <!--- ProductCategory -->
     <object pk="1" model="orders.productcategory">
         <field type="CharField" name="name">Памятники</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="2" model="orders.productcategory">
         <field type="CharField" name="name">Ограды</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="3" model="orders.productcategory">
         <field type="CharField" name="name">Гробы</field>
+        <field type="CharField" name="sorting">AF</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="4" model="orders.productcategory">
         <field type="CharField" name="name">Урны</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="5" model="orders.productcategory">
         <field type="CharField" name="name">Венки</field>
+        <field type="CharField" name="sorting">AM</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="6" model="orders.productcategory">
         <field type="CharField" name="name">Цветы искусственные</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="7" model="orders.productcategory">
         <field type="CharField" name="name">Цветы живые</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="8" model="orders.productcategory">
         <field type="CharField" name="name">Цветочницы</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="9" model="orders.productcategory">
         <field type="CharField" name="name">Траурные ленты</field>
+        <field type="CharField" name="sorting">AO</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="10" model="orders.productcategory">
         <field type="CharField" name="name">Надмогильные таблички</field>
+        <field type="CharField" name="sorting">AL</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="11" model="orders.productcategory">
         <field type="CharField" name="name">Кресты</field>
+        <field type="CharField" name="sorting">AK</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="12" model="orders.productcategory">
         <field type="CharField" name="name">Автокатафалки</field>
+        <field type="CharField" name="sorting">AB</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="13" model="orders.productcategory">
         <field type="CharField" name="name">Грузчики</field>
+        <field type="CharField" name="sorting">AC</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="14" model="orders.productcategory">
         <field type="CharField" name="name">Погребение</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="15" model="orders.productcategory">
         <field type="CharField" name="name">Доставка принадлежностей</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="16" model="orders.productcategory">
         <field type="CharField" name="name">Благоустройство (установка памятника и ограды...)</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="17" model="orders.productcategory">
         <field type="CharField" name="name">Уход/уборка</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="20" model="orders.productcategory">
         <field type="CharField" name="name">Прочие товары и услуги</field>
+        <field type="CharField" name="sorting">AP</field>
         <field type="FileField" name="icon"></field>
     </object>
     <!--- 
@@ -86,6 +104,7 @@
     </object>
     <object pk="23" model="orders.productcategory">
         <field type="CharField" name="name">Швейные ритуальные изделия</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <!--- 
@@ -97,62 +116,77 @@
      -->
     <object pk="25" model="orders.productcategory">
         <field type="CharField" name="name">Фурнитура для гробов</field>
+        <field type="CharField" name="sorting">AH</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="26" model="orders.productcategory">
         <field type="CharField" name="name">Каркасы для венков</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="27" model="orders.productcategory">
         <field type="CharField" name="name">Букеты</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="28" model="orders.productcategory">
         <field type="CharField" name="name">Свечи</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="29" model="orders.productcategory">
         <field type="CharField" name="name">Лампады</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="30" model="orders.productcategory">
         <field type="CharField" name="name">Корзины</field>
+        <field type="CharField" name="sorting">AN</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="31" model="orders.productcategory">
         <field type="CharField" name="name">Ритуальная одежда</field>
+        <field type="CharField" name="sorting">AJ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="32" model="orders.productcategory">
         <field type="CharField" name="name">Комплекты погребальные</field>
+        <field type="CharField" name="sorting">AI</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="33" model="orders.productcategory">
         <field type="CharField" name="name">Покрывала</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="34" model="orders.productcategory">
         <field type="CharField" name="name">Подушки и наволочки</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="35" model="orders.productcategory">
         <field type="CharField" name="name">Постели</field>
+        <field type="CharField" name="sorting">AG</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="36" model="orders.productcategory">
         <field type="CharField" name="name">Демонтаж</field>
+        <field type="CharField" name="sorting">AE</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="37" model="orders.productcategory">
         <field type="CharField" name="name">Копка</field>
+        <field type="CharField" name="sorting">AD</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="38" model="orders.productcategory">
         <field type="CharField" name="name">Оформление документов</field>
+        <field type="CharField" name="sorting">AA</field>
         <field type="FileField" name="icon"></field>
     </object>
     <object pk="39" model="orders.productcategory">
         <field type="CharField" name="name">Копщики</field>
+        <field type="CharField" name="sorting">ZZ</field>
         <field type="FileField" name="icon"></field>
     </object>
     <!--- Service: возможные услуги -->
