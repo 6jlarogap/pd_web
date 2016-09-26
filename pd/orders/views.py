@@ -2603,6 +2603,35 @@ class ApiLoruOrdersDetailView(
                 if order.dt != dt:
                     order.dt = dt
                     order_save = True
+            mapping = dict(
+                burialPlanTime='burial_plan_time',
+                initialTime='initial_time',
+                serviceTime='service_time',
+                repastTime='repast_time',
+            )
+            other_keys = dict()
+            for k in mapping:
+                if k in request.DATA:
+                    f = request.DATA[k] and request.DATA[k].strip() or None
+                    if f is not None:
+                        try:
+                            f = datetime.datetime.strptime(f, '%H:%M')
+                        except ValueError:
+                            raise ServiceException(_(u"Неверное время: %s") % k)
+                    if f != getattr(order, mapping[k]):
+                        order_save = True
+                        setattr(order, mapping[k], f)
+            mapping = dict(
+                initialPlace='initial_place',
+                servicePlace='service_place',
+                repastPlace='repast_place',
+            )
+            for k in mapping:
+                if k in request.DATA:
+                    f = request.DATA[k] and request.DATA[k].strip() or ''
+                    if f != getattr(order, mapping[k]):
+                        order_save = True
+                        setattr(order, mapping[k], f)
             if 'customer' in request.DATA:
                 customer = request.DATA['customer']
                 if customer is None:
