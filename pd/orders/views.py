@@ -2433,6 +2433,27 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 except ValueError:
                     raise ServiceException(_(u"Неверная дата исполнения заказа"))
             dt = request.DATA.get('createdDate') or None
+            mapping = dict(
+                burialPlanTime='burial_plan_time',
+                initialTime='initial_time',
+                serviceTime='service_time',
+                repastTime='repast_time',
+            )
+            other_keys = dict()
+            for k in mapping:
+                if request.DATA.get(k):
+                    try:
+                        other_keys[mapping[k]] = datetime.datetime.strptime(request.DATA[k], '%H:%M')
+                    except ValueError:
+                        raise ServiceException(_(u"Неверное время: %s") % k)
+            mapping = dict(
+                initialPlace='initial_place',
+                servicePlace='service_place',
+                repastPlace='repast_place',
+            )
+            for k in mapping:
+                if request.DATA.get(k):
+                    other_keys[mapping[k]] = request.DATA[k]
             if dt:
                 try:
                     dt = datetime.datetime.strptime(dt, "%d.%m.%Y").date()
@@ -2444,6 +2465,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 dt=dt or datetime.date.today(),
                 dt_due=dt_due,
                 type=Order.TYPE_FUNERAL,
+                **other_keys
             )
             deadman = request.DATA.get('deadman')
             if deadman:
@@ -2581,6 +2603,35 @@ class ApiLoruOrdersDetailView(
                 if order.dt != dt:
                     order.dt = dt
                     order_save = True
+            mapping = dict(
+                burialPlanTime='burial_plan_time',
+                initialTime='initial_time',
+                serviceTime='service_time',
+                repastTime='repast_time',
+            )
+            other_keys = dict()
+            for k in mapping:
+                if k in request.DATA:
+                    f = request.DATA[k] and request.DATA[k].strip() or None
+                    if f is not None:
+                        try:
+                            f = datetime.datetime.strptime(f, '%H:%M')
+                        except ValueError:
+                            raise ServiceException(_(u"Неверное время: %s") % k)
+                    if f != getattr(order, mapping[k]):
+                        order_save = True
+                        setattr(order, mapping[k], f)
+            mapping = dict(
+                initialPlace='initial_place',
+                servicePlace='service_place',
+                repastPlace='repast_place',
+            )
+            for k in mapping:
+                if k in request.DATA:
+                    f = request.DATA[k] and request.DATA[k].strip() or ''
+                    if f != getattr(order, mapping[k]):
+                        order_save = True
+                        setattr(order, mapping[k], f)
             if 'customer' in request.DATA:
                 customer = request.DATA['customer']
                 if customer is None:
