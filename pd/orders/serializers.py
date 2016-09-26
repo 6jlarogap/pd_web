@@ -367,7 +367,7 @@ class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
                   'customer', 'deadman', 'place', 'products',
                   'createdAt', 'modifiedAt', 'totalPrice', 'currency',
                   'burialPlanTime', 'initialTime', 'serviceTime', 'repastTime',
-                  'initial_place', 'servicePlace', 'repastPlace',
+                  'initialPlace', 'servicePlace', 'repastPlace',
         )
 
     def deadman_func(self, instance):
