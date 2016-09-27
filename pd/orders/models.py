@@ -259,7 +259,7 @@ class Order(GetLogsMixin, BaseModel):
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"), null=True, editable=False)
 
     # Для заказа похорон
-    dt_due = models.DateField(_(u"Дата исполнения заказа/Дата похорон"), editable=False, null=True)
+    dt_due = models.DateField(_(u"Дата похорон"), editable=False, null=True)
 
     burial_plan_time = models.TimeField(_(u"План. время захоронения"), null=True, editable=False)
     initial_place = models.CharField(_(u"Место подачи катафалка"), max_length=255, editable=False, default='')

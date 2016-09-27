@@ -2431,7 +2431,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 try:
                     dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
                 except ValueError:
-                    raise ServiceException(_(u"Неверная дата исполнения заказа"))
+                    raise ServiceException(_(u"Неверная дата похорон"))
             dt = request.DATA.get('createdDate') or None
             mapping = dict(
                 burialPlanTime='burial_plan_time',
@@ -2445,7 +2445,9 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                     try:
                         other_keys[mapping[k]] = datetime.datetime.strptime(request.DATA[k], '%H:%M')
                     except ValueError:
-                        raise ServiceException(_(u"Неверное время: %s") % k)
+                        raise ServiceException(_(u"Неверное %s") %
+                            Order._meta.get_field(mapping[k]).verbose_name.lower()
+                        )
             mapping = dict(
                 initialPlace='initial_place',
                 servicePlace='service_place',
@@ -2590,7 +2592,7 @@ class ApiLoruOrdersDetailView(
                     try:
                         dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
                     except ValueError:
-                        raise ServiceException(_(u"Неверная дата исполнения заказа"))
+                        raise ServiceException(_(u"Неверная дата похорон"))
                 if order.dt_due != dt_due:
                     order.dt_due = dt_due
                     order_save = True
@@ -2617,7 +2619,9 @@ class ApiLoruOrdersDetailView(
                         try:
                             f = datetime.datetime.strptime(f, '%H:%M')
                         except ValueError:
-                            raise ServiceException(_(u"Неверное время: %s") % k)
+                            raise ServiceException(_(u"Неверное %s") %
+                                Order._meta.get_field(mapping[k]).verbose_name.lower()
+                            )
                     if f != getattr(order, mapping[k]):
                         order_save = True
                         setattr(order, mapping[k], f)
