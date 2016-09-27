@@ -743,6 +743,8 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
         return Order.objects.filter(loru=self.request.user.profile.org).distinct()
 
     def post(self, request, *args, **kwargs):
+        referer = kwargs.get('referer')
+        http_referer = request.META.get('HTTP_REFERER', '')
         o = self.get_object()
         if request.GET.get('recover'):
             o.recover()
@@ -756,7 +758,13 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
             write_log(request, o, _(u'Заказ аннулирован'))
             if b and b.annulated and not old_annulated:
                 write_log(request, b, _(u'Захоронение аннулировано'))
-        return redirect('order_edit', o.pk)
+        if referer == 'edit':
+            return redirect('order_edit', o.pk)
+        else:
+            if http_referer:
+                return redirect(http_referer)
+            else:
+                return redirect('order_list')
 
 order_annulate = AnnulateOrder.as_view()
 
