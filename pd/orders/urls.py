@@ -20,7 +20,8 @@ urlpatterns = patterns('orders.views',
     url(r'^order/(?P<pk>\d+)/receipt/print/$', 'order_receipt_print', name='order_receipt_print'),
     url(r'^order/(?P<pk>\d+)/contract/$', 'order_contract', name='order_contract'),
     url(r'^order/(?P<pk>\d+)/comment/$', 'order_comment', name='order_comment'),
-    url(r'^order/(?P<pk>\d+)/annulate/$', 'order_annulate', name='order_annulate'),
+    url(r'^order/(?P<pk>\d+)/annulate/$', 'order_annulate', {'referer': 'edit'}, name='order_annulate'),
+    url(r'^order/(?P<pk>\d+)/annulate_from_list/$', 'order_annulate', {'referer': 'list'}, name='order_annulate_from_list'),
 
     url(r'^api/loru/product_places/?$', 'api_loru_product_places', name='api_loru_product_places'),
 

@@ -394,8 +394,21 @@ class OrderEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
         })
         return data
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, pk, *args, **kwargs):
         self.request = request
+        try:
+            o = Order.objects.get(loru=self.request.user.profile.org, pk=pk)
+        except Order.DoesNotExist:
+            raise Http404
+        front_end_url = get_front_end_url(request)
+        if o.is_type_funeral():
+            return redirect("%sloru/own-orders/%s" % (front_end_url, pk))
+        elif o.is_type_trade():
+            return redirect("%sorder/%s" % (front_end_url, pk))
+        elif o.is_type_customer():
+            return redirect("%sorders/%s" % (front_end_url, pk))
+        # else o.is_type_burial()
+        # pass
         if self.request.session.get('order_burial_saved'):
             del self.request.session['order_burial_saved']
             if self.get_object().has_services:
@@ -743,6 +756,8 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
         return Order.objects.filter(loru=self.request.user.profile.org).distinct()
 
     def post(self, request, *args, **kwargs):
+        referer = kwargs.get('referer')
+        http_referer = request.META.get('HTTP_REFERER', '')
         o = self.get_object()
         if request.GET.get('recover'):
             o.recover()
@@ -756,7 +771,13 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
             write_log(request, o, _(u'Заказ аннулирован'))
             if b and b.annulated and not old_annulated:
                 write_log(request, b, _(u'Захоронение аннулировано'))
-        return redirect('order_edit', o.pk)
+        if referer == 'edit':
+            return redirect('order_edit', o.pk)
+        else:
+            if http_referer:
+                return redirect(http_referer)
+            else:
+                return redirect('order_list')
 
 order_annulate = AnnulateOrder.as_view()
 
@@ -2431,7 +2452,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 try:
                     dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
                 except ValueError:
-                    raise ServiceException(_(u"Неверная дата исполнения заказа"))
+                    raise ServiceException(_(u"Неверная дата похорон"))
             dt = request.DATA.get('createdDate') or None
             mapping = dict(
                 burialPlanTime='burial_plan_time',
@@ -2445,7 +2466,9 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                     try:
                         other_keys[mapping[k]] = datetime.datetime.strptime(request.DATA[k], '%H:%M')
                     except ValueError:
-                        raise ServiceException(_(u"Неверное время: %s") % k)
+                        raise ServiceException(_(u"Неверное %s") %
+                            Order._meta.get_field(mapping[k]).verbose_name.lower()
+                        )
             mapping = dict(
                 initialPlace='initial_place',
                 servicePlace='service_place',
@@ -2535,6 +2558,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
         except ServiceException as excpt:
             transaction.rollback()
             return Response(data=dict(status='error', message=excpt.message), status=400)
+        write_log(request, order, _(u'Заказ создан'))
         return Response(
             data=LoruOrderSerializer(order,
                 context=dict(request=request),
@@ -2590,7 +2614,7 @@ class ApiLoruOrdersDetailView(
                     try:
                         dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
                     except ValueError:
-                        raise ServiceException(_(u"Неверная дата исполнения заказа"))
+                        raise ServiceException(_(u"Неверная дата похорон"))
                 if order.dt_due != dt_due:
                     order.dt_due = dt_due
                     order_save = True
@@ -2617,7 +2641,9 @@ class ApiLoruOrdersDetailView(
                         try:
                             f = datetime.datetime.strptime(f, '%H:%M')
                         except ValueError:
-                            raise ServiceException(_(u"Неверное время: %s") % k)
+                            raise ServiceException(_(u"Неверное %s") %
+                                Order._meta.get_field(mapping[k]).verbose_name.lower()
+                            )
                     if f != getattr(order, mapping[k]):
                         order_save = True
                         setattr(order, mapping[k], f)
@@ -2805,6 +2831,7 @@ class ApiLoruOrdersDetailView(
         except ServiceException as excpt:
             transaction.rollback()
             return Response(data=dict(status='error', message=excpt.message), status=400)
+        write_log(request, order, _(u'Заказ изменен'))
         return Response(
             data=LoruOrderSerializer(order,
                 context=dict(request=request),
