@@ -58,7 +58,7 @@ class PaginateListView(ListView):
     
     * В классе-потомке могут быть переопределены переменные, см. ниже:
     """
-    DISPLAY_OPTIONS = ['page', 'print', 'sort']
+    DISPLAY_OPTIONS = ['page', 'print', 'sort', 'export_csv']
     
     # Параметр get-запроса для сортировки по умолчанию
     # (именно get-запроса, а поля из таблицы!)
@@ -209,8 +209,19 @@ def media_xsendfile(request, path, document_root):
             # имеет ли к ним доступ пользователь request.user
         else:
             # Для товаров, их категорий, поддержки и др.: открыто всем
-            if re.search(r'^/?(?:product\-photo|icons|support)/',path):
+            m_anyone = re.search(r'^/?(?:product\-photo|icons|support)/',path)
+            # Для экспорта захоронений организации
+            m_export = re.search(r'^/?tmp/export/burials/(\d+)/',path)
+            if m_anyone:
                 pass
+            elif m_export:
+                try:
+                    Org = get_model('users', 'Org')
+                    pk = m_export.group(1)
+                    if pk != str(request.user.profile.org.pk):
+                        raise Http404
+                except (AttributeError, Org.DoesNotExist, ):
+                    raise Http404
             else:
                 raise Http404
         response = HttpResponse()
