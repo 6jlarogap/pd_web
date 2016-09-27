@@ -231,7 +231,7 @@ class Location(models.Model):
             addr += u', %s' % self.info
         return addr
 
-    def address_(self, is_short=False):
+    def address_(self, is_short=False, empty=False):
         if self.addr_str and self.addr_str.strip():
             return self.addr_str.strip()
         elif self.street or self.region or self.country:
@@ -263,7 +263,10 @@ class Location(models.Model):
 
             return addr.replace(', ,', ', ')
         else:
-            return _(u"незаполненный адрес")
+            if empty:
+                return ''
+            else:
+                return _(u"незаполненный адрес")
 
     def __unicode__(self):
         return self.address_(is_short=False)
