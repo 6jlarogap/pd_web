@@ -158,47 +158,22 @@
                 <th>
                     {% if sort == 'account_number' %}
                         {% if sort == 'account_number' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=-account_number">{% trans "Номер в книге" %}</a>
+                        <a href="?{{ GET_PARAMS }}&sort=-account_number">{% trans "Учетный номер захоронения" %}</a>
                     {% else %}
                         {% if sort == '-account_number' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=account_number">{% trans "Номер в книге" %}</a>
+                        <a href="?{{ GET_PARAMS }}&sort=account_number">{% trans "Учетный номер захоронения" %}</a>
                     {% endif %}
                 </th>
                 <th>
-                    {% if sort == 'deadman' %}
-                        {% if sort == 'deadman' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=-deadman">{% trans "Усопший" %}</a>
-                    {% else %}
-                        {% if sort == '-deadman' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=deadman">{% trans "Усопший" %}</a>
-                    {% endif %}
+                    {% trans "Усопший" %}
                 </th>
                 <th>
-                    {% if sort == 'plan_date' %}
-                        {% if sort == 'plan_date' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=-plan_date">{% trans "Дата захоронения" %}</a>
-                    {% else %}
-                        {% if sort == '-plan_date' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=plan_date">{% trans "Дата захоронения" %}</a>
-                    {% endif %}
+                    {% trans "Дата захоронения" %}
                 </th>
                 <th>
-                    {% if sort == 'place' %}
-                        {% if sort == 'place' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=-place">{% trans "Место" %}</a>
-                    {% else %}
-                        {% if sort == '-place' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=place">{% trans "Место" %}</a>
-                    {% endif %}
-                </th>
+                    {% trans "Кладбище" %}
                 <th>
-                    {% if sort == 'cemetery' %}
-                        {% if sort == 'cemetery' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=-cemetery">{% trans "Кладбище" %}</a>
-                    {% else %}
-                        {% if sort == '-cemetery' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                        <a href="?{{ GET_PARAMS }}&sort=cemetery">{% trans "Кладбище" %}</a>
-                    {% endif %}
+                    {% trans "Место" %}
                 </th>
                 <th>
                     {% if sort == 'burial' %}
@@ -255,12 +230,35 @@
                     {% if c.burial.is_inspecting %}burial_yellow{% endif %}
                 ">
                     <td>{{ c.burial.account_number|default:"" }}</td>
-                    <td>{{ c.burial.deadman_or_bio }}</td>
-                    <td>{{ c.burial.combined_date }}</td>
+                    <td>{{ c.deadman }}</td>
                     <td>
-                        {% with burial=c.burial %}{% include "burial_place.html" %}{% endwith %}
+                        {% if c.burial.combined_date %}
+                            {{ c.burial.combined_date|date:"d.m.Y" }}
+                        {% elif c.dt_due %}
+                            {{ c.dt_due|date:"d.m.Y" }}
+                        {% endif %}
                     </td>
-                    <td>{% if c.burial.cemetery %}{{ c.burial.cemetery }} / {{ c.burial.ugh_name }}{% endif %}</td>
+                    <td>
+                        {% if c.burial.cemetery %}
+                            {{ c.burial.cemetery }} / {{ c.burial.ugh_name }}
+                        {% else %}
+                            {{ c.cemetery }}
+                        {% endif %}</td>
+                    <td>
+                        {% if c.burial %}
+                            {% with burial=c.burial %}{% include "burial_place.html" %}{% endwith %}
+                        {% elif c.orderplace %}
+                            {% if c.orderplace.area %}
+                                {% trans "Участок" %} {{ c.orderplace.area }} <br />
+                            {% endif %}
+                            {% if c.orderplace.row %}
+                                {% trans "Ряд" %} {{ c.orderplace.row }} <br />
+                            {% endif %}
+                            {% if c.orderplace.place %}
+                                {% trans "Место" %} {{ c.orderplace.place }} <br />
+                            {% endif %}
+                        {% endif %}
+                    </td>
                     <td>{{ c.burial.pk|default:"" }}</td>
                     <td>
                         {% if c.applicant %}
@@ -277,7 +275,7 @@
                         {% endif %}
                     </td>
                     <td>{{ c.total|floatformat:2|default:"" }}</td>
-                    <td>{{ c.dt|default:"" }}</td>
+                    <td>{{ c.dt|date:"d.m.Y" }}</td>
                     <td class="no-print">
                         {% if c.is_type_burial %}
                             <a href="{% url order_edit c.pk %}" class="btn">{% trans "править" %}</a>
@@ -301,7 +299,7 @@
                                 </form>
                             {% else %}
                                 <a href="{{ global_context_FRONT_END_URL }}loru/own-orders/{{c.pk}}" class="btn">{% trans "править" %}</a>
-                                <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "квитанция-наряды" %}</a>
+                                <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "печать" %}</a>
                                 <form action="{% url order_annulate_from_list c.pk %}" method="POST">
                                     {% csrf_token %}
                                     <input type="submit" class="btn" value="{% trans "аннулировать" %}" onclick="return confirm('{% trans "Вы уверены?" %}');" />
