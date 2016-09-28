@@ -314,13 +314,13 @@
                                     </tr>
                                     <tr>
                                         <td style="border:0;">
-                                            <form action="{% url order_status c.pk %}?advanced=1" method="POST">
+                                            <form action="{% url order_status c.pk %}?advanced=1" method="POST" style="margin-bottom:3px;" >
                                                 {% csrf_token %}
                                                 <input type="submit" class="btn" value={% if c.is_advanced %}"{% trans "аванс:отмена" %}"{% else %}{% trans "аванс" %}{% endif %} {% if c.is_paid %}disabled{% endif %} />
                                             </form>
                                         </td>
                                         <td style="border:0;">
-                                            <form action="{% url order_status c.pk %}?paid=1" method="POST">
+                                            <form action="{% url order_status c.pk %}?paid=1" method="POST" style="margin-bottom:3px;" >
                                                 {% csrf_token %}
                                                 <input type="submit" class="btn" value={% if c.is_paid %}"{% trans "оплата:отмена" %}"{% else %}{% trans "оплата" %}{% endif %} />
                                             </form>
@@ -328,7 +328,7 @@
                                     </tr>
                                     <tr>
                                         <td style="border:0;" colspan=2>
-                                            <form action="{% url order_annulate_from_list c.pk %}" method="POST">
+                                            <form action="{% url order_annulate_from_list c.pk %}" method="POST" style="margin-bottom:0;" >
                                                 {% csrf_token %}
                                                 <input type="submit" class="btn" value="{% trans "аннулировать" %}" onclick="return confirm('{% trans "Вы уверены?" %}');" />
                                             </form>

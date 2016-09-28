@@ -663,7 +663,7 @@
 
 <!-- Наряды -->
 
-{% if order.has_loaders or order.has_catafalque or order.has_catafalque_comfort %}
+{% if order.has_vip or order.has_loaders or order.has_catafalque or order.has_catafalque_comfort %}
 
     <TABLE FRAME=VOID CELLSPACING=0 COLS=1 RULES=NONE BORDER=0>
         <COLGROUP>
@@ -677,6 +677,132 @@
             </TD>
         </TR>
     </TABLE>
+
+    {% if order.has_vip %}
+
+        <TABLE CLASS="font-medium" FRAME=VOID CELLSPACING=0 COLS=7 RULES=NONE BORDER=0>
+            <COLGROUP>
+                <COL style="width:27mm">
+                <COL style="width:23mm">
+                <COL style="width:23mm">
+                <COL style="width:23mm">
+                <COL style="width:23mm">
+                <COL style="width:25mm">
+                <COL style="width:25mm">
+            </COLGROUP>
+            <TBODY>
+            <TR>
+                <TD COLSPAN=7>
+                </TD>
+            </TR>
+            <TR>
+                <TD ROWSPAN=2 ALIGN="CENTER">
+                    {% if order.dt_due %}
+                        {{ order.dt_due|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% else %}
+                        {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% endif %}
+                </TD>
+                <TD COLSPAN=4 ALIGN="CENTER">
+                    <B>{{ user.profile.org.name }}</B>
+                </TD>
+                <TD COLSPAN=2 ROWSPAN=2 ALIGN="CENTER">
+                    Тел: {{ user.profile.org.phones|default_if_none:"" }}
+                </TD>
+            </TR>
+            <TR>
+                <TD ROWSPAN=2 COLSPAN=4 ALIGN="CENTER">
+                    <B>Наряд № {{ order.number_verbose }}/вип-бригада</B>
+                </TD>
+            </TR>
+            <TR style="height:2mm;">
+                <TD COLSPAN=7>
+                </TD>
+            </TR>
+            <TR>
+                <TD COLSPAN=7>
+                    Умерший:
+                    {% if order.deadman %}
+                        <B>{{ order.deadman }}</B>
+                    {% else %}
+                        __________________________________
+                    {% endif %}
+                </TD>
+            </TR>
+            <TR>
+                <TD COLSPAN=7>
+                </TD>
+            </TR>
+            <TR>
+                <TD>
+                    Подача:
+                </TD>
+                <TD COLSPAN=2>
+                    время:
+                    {% if order.get_catafalquedata.start_time %}
+                        {{ order.get_catafalquedata.start_time|time:"H:i" }}
+                    {% elif order.initial_time %}
+                        {{ order.initial_time|time:"H:i" }}
+                    {% endif %}
+                </TD>
+                <TD COLSPAN=4>
+                    место:
+                    {% if order.get_catafalquedata.start_place %}
+                        {{ order.get_catafalquedata.start_place }}
+                    {% else %}
+                        {{ order.initial_place }}
+                    {% endif %}
+                </TD>
+            </TR>
+            <TR>
+                <TD>
+                    Отпевание:
+                </TD>
+                <TD COLSPAN=2>
+                    время:
+                    {% if order.service_time %}
+                        {{ order.service_time|time:"H:i" }}
+                    {% endif %}
+                </TD>
+                <TD COLSPAN=4>
+                    место:
+                    {{ order.service_place }}
+                </TD>
+            </TR>
+            <TR>
+                <TD>
+                    Похороны:
+                </TD>
+                <TD COLSPAN=2>
+                    время:
+                {% if order.burial and order.burial.plan_date %}
+                    {{ order.burial.plan_date|date:"d.m.Y"|safe }}
+                {% elif order.burial_plan_time %}
+                    {{ order.burial_plan_time|time:"H:i" }}
+                {% endif  %}
+                </TD>
+                <TD>
+                    Кладбище:
+                </TD>
+                <TD COLSPAN=3>
+                    {{ order.cemetery }}
+                </TD>
+            </TR>
+            <TR>
+                <TD COLSPAN=7>
+                </TD>
+            </TR>
+            {% if order.has_loaders or order.has_catafalque or order.has_catafalque_comfort %}
+                <TR>
+                    <TD STYLE="border-bottom: 1px solid;" COLSPAN=7 >
+                        <BR />
+                    </TD>
+                </TR>
+            {% endif %}
+            </TBODY>
+        </TABLE>
+
+    {% endif %}
 
     {% if order.has_loaders %}
 
