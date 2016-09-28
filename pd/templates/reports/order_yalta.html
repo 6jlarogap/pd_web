@@ -697,7 +697,11 @@
             </TR>
             <TR>
                 <TD ROWSPAN=2 ALIGN="CENTER">
-                    {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% if order.dt_due %}
+                        {{ order.dt_due|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% else %}
+                        {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% endif %}
                 </TD>
                 <TD COLSPAN=4 ALIGN="CENTER">
                     <B>{{ user.profile.org.name }}</B>
@@ -820,7 +824,11 @@
             </TR>
             <TR>
                 <TD ROWSPAN=2 ALIGN="CENTER">
-                    {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% if order.dt_due %}
+                        {{ order.dt_due|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% else %}
+                        {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% endif %}
                 </TD>
                 <TD COLSPAN=4 ALIGN="CENTER">
                     <B>{{ user.profile.org.name }}</B>
@@ -937,7 +945,11 @@
             </TR>
             <TR>
                 <TD ROWSPAN=2 ALIGN="CENTER">
-                    {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% if order.dt_due %}
+                        {{ order.dt_due|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% else %}
+                        {{ now|ru_strftime:"&laquo;%d&raquo; %B %Y"|safe }}г.
+                    {% endif %}
                 </TD>
                 <TD COLSPAN=4 ALIGN="CENTER">
                     <B>{{ user.profile.org.name }}</B>
