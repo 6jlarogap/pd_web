@@ -225,8 +225,8 @@
             {% for c in object_list %}
                 <tr class="
                     {% if c.burial.is_ready %}burial_blue{% endif %}
-                    {% if c.burial.is_approved %}burial_green{% endif %}
-                    {% if c.burial.is_declined or c.burial.is_backed %}burial_red{% endif %}
+                    {% if c.burial.is_approved or c.is_paid %}burial_green{% endif %}
+                    {% if c.burial.is_declined or c.burial.is_backed or c.is_advanced %}burial_red{% endif %}
                     {% if c.burial.is_inspecting %}burial_yellow{% endif %}
                 ">
                     <td>{{ c.burial.account_number|default:"" }}</td>
@@ -290,7 +290,7 @@
                             <i>{% trans "Заказ<br />пользователя" %}</i></br >
                             <a href="{{ global_context_FRONT_END_URL }}orders/{{c.pk}}" class="btn">{% trans "просмотр" %}</a>
                         {% elif c.is_type_funeral %}
-                            <i>{% trans "Заказ<br />похорон" %}</i></br >
+                            <i>{% trans "Заказ похорон" %}</i>
                             {% if c.annulated %}
                                 <b><span style="color:red">{% trans "АННУЛИРОВАН" %}</span></b>
                                 <form action="{% url order_annulate_from_list c.pk %}?recover=1" method="POST">
@@ -298,12 +298,43 @@
                                     <input type="submit" class="btn" value="{% trans "де-аннулировать" %}" />
                                 </form>
                             {% else %}
-                                <a href="{{ global_context_FRONT_END_URL }}loru/own-orders/{{c.pk}}" class="btn">{% trans "править" %}</a>
-                                <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "печать" %}</a>
-                                <form action="{% url order_annulate_from_list c.pk %}" method="POST">
-                                    {% csrf_token %}
-                                    <input type="submit" class="btn" value="{% trans "аннулировать" %}" onclick="return confirm('{% trans "Вы уверены?" %}');" />
-                                </form>
+                                {% if c.is_advanced %}
+                                    <br />{% trans "Получен аванс" %}
+                                {% elif c.is_paid %}
+                                    <br />{% trans "Оплачен" %}
+                                {% endif %}
+                                <table class="table-void">
+                                    <tr>
+                                        <td style="border:0;">
+                                            <a href="{{ global_context_FRONT_END_URL }}loru/own-orders/{{c.pk}}" class="btn">{% trans "править" %}</a>
+                                        </td>
+                                        <td style="border:0;">
+                                            <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "печать" %}</a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border:0;">
+                                            <form action="{% url order_status c.pk %}?advanced=1" method="POST" style="margin-bottom:3px;" >
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn" value={% if c.is_advanced %}"{% trans "аванс:отмена" %}"{% else %}{% trans "аванс" %}{% endif %} {% if c.is_paid %}disabled{% endif %} />
+                                            </form>
+                                        </td>
+                                        <td style="border:0;">
+                                            <form action="{% url order_status c.pk %}?paid=1" method="POST" style="margin-bottom:3px;" >
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn" value={% if c.is_paid %}"{% trans "оплата:отмена" %}"{% else %}{% trans "оплата" %}{% endif %} />
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border:0;" colspan=2>
+                                            <form action="{% url order_annulate_from_list c.pk %}" method="POST" style="margin-bottom:0;" >
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn" value="{% trans "аннулировать" %}" onclick="return confirm('{% trans "Вы уверены?" %}');" />
+                                            </form>
+                                        </td>
+                                    </tr>
+                                </table>
                             {% endif %}
                         {% endif %}
                     </td>
