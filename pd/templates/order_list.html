@@ -301,6 +301,7 @@
                                 </form>
                             {% else %}
                                 <a href="{{ global_context_FRONT_END_URL }}loru/own-orders/{{c.pk}}" class="btn">{% trans "править" %}</a>
+                                <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "квитанция-наряды" %}</a>
                                 <form action="{% url order_annulate_from_list c.pk %}" method="POST">
                                     {% csrf_token %}
                                     <input type="submit" class="btn" value="{% trans "аннулировать" %}" onclick="return confirm('{% trans "Вы уверены?" %}');" />
