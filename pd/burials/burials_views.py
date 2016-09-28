@@ -1,5 +1,5 @@
 # coding=utf-8
-import datetime
+import datetime, time, os, csv
 import json
 from django import db
 
@@ -29,6 +29,8 @@ from pd.utils import re_search
 from pd.forms import CommentForm
 from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
 from reports.models import make_report
+
+csv.register_dialect("4minsk", escapechar="\\", quoting=csv.QUOTE_ALL, doublequote=False)
 
 class BurialGetOrderMixin:
     """
@@ -495,6 +497,113 @@ class BurialsListView(PaginateListView):
         super(BurialsListView, self).__init__(*args, **kwargs)
         self.SORT_DEFAULT = '-pk'
         
+    def get(self, *args, **kwargs):
+        if self.request.GET.get('export_csv'):
+            # Экспорт в csv в предложенном в Волковысске формате
+            #  0. Усопший: фамилия
+            #  1. Усопший: имя
+            #  2. Усопший: отчество
+            #  3. Адрес
+            #  4. Наименование кладбища
+            #  5. Участок (сектор)
+            #  6. Ряд
+            #  7. Место
+            #  8.  Дата рождения
+            #       в формате гггг-мм-дд или гггг-ии или гггг.
+            #       Если пусто, то дата не введена
+            #  9.  Дата смерти
+            #       в формате гггг-мм-дд или гггг-ии или гггг.
+            #       Если пусто, то дата не введена
+            # 10. Документ о смерти: тип
+            #       zags, если Свидетелство о смерти
+            #       medic, если медицинская справка
+            # 11. Документ о смерти: серия
+            # 12. Документ о смерти: номер
+            # 13. Документ о смерти: дата в формате гггг-мм-дд
+            # 14. Документ о смерти: Кем Выдан
+            # 15. Заявитель: фамилия
+            # 16. Заявитель: имя
+            # 17. Заявитель: отчество
+            # 18. Заявитель: адрес
+            
+            burials = self.get_queryset()
+            org_pk = self.request.user.profile.org.pk
+            media_path = os.path.join('tmp', 'export', 'burials',
+                '%s' % org_pk,
+            )
+            export_path = os.path.join(settings.MEDIA_ROOT, media_path)
+            if not os.path.exists(export_path):
+                try:
+                    os.makedirs(export_path)
+                except OSError:
+                    path
+            # удалим предыдущие .csv в катаоге экспорты
+            for fname in os.listdir(export_path):
+                fname_full = os.path.join(export_path, fname)
+                if fname.endswith('.csv'):
+                    try:
+                        os.remove(os.path.join(export_path, fname))
+                    except OSError:
+                        pass
+            timestamp = datetime.datetime.now()
+            csv_fname = 'burials-%s-%s.csv' % (org_pk, time.time())
+            csv_export_dialect = csv.get_dialect("4minsk")
+            csv_file = open(os.path.join(export_path,csv_fname), 'w')
+            writer = csv.writer(csv_file, csv_export_dialect)
+            n = 0
+            for b in burials:
+                if n % 1000 == 0:
+                    print n
+                n += 1
+                deadman = b.deadman or ''
+                try:
+                    dc = deadman and deadman.deathcertificate or None
+                except (AttributeError, DeathCertificate.DoesNotExist):
+                    dc = None
+                applicant = b.applicant
+                row = [
+                    deadman and deadman.last_name or '',                    #  0
+                    deadman and deadman.first_name or '',                   #  1
+                    deadman and deadman.middle_name or '',                  #  2
+                    deadman and deadman.address and \
+                        deadman.address.address_(empty=True) or '',         #  3
+                    b.cemetery and b.cemetery.name or '',                   #  4
+                    b.area and b.area.name or '',                           #  5
+                    b.row,                                                  #  6
+                    b.place_number,                                         #  7
+                    deadman and deadman.birth_date and \
+                        deadman.birth_date.str_safe() or '',                #  8
+                    deadman and deadman.death_date and \
+                        deadman.death_date.str_safe() or '',                #  9
+                    dc and dc.type or '',                                   # 10
+                    dc and dc.series or '',                                 # 11
+                    dc and dc.s_number or '',                               # 12
+                    dc and dc.release_date and \
+                        datetime.datetime.strftime(
+                            dc.release_date, '%Y-%m-%d'
+                        ) or '',                                            # 13
+                    dc and dc.zags and dc.zags.name or '',                  # 14
+                    applicant and applicant.last_name or '',                # 15
+                    applicant and applicant.first_name or '',               # 16
+                    applicant and applicant.middle_name or '',              # 17
+                    applicant and applicant.address and \
+                        applicant.address.address_(empty=True) or '',       # 18
+                ]
+                if csv_export_dialect.escapechar:
+                    # escapecharсам себя не экранирует!
+                    for i in range(len(row)):
+                        row[i] = row[i].replace(
+                                csv_export_dialect.escapechar,
+                                csv_export_dialect.escapechar * 2
+                        )
+                writer.writerow(map(lambda u: u.encode("utf8"), row))
+            csv_file.close()
+
+            return redirect(os.path.join(settings.MEDIA_URL, media_path, csv_fname))
+        # Если это не экспорт csv, то обычный GET
+        #
+        return super(BurialsListView, self).get(*args, **kwargs)
+
     def get_queryset(self):
         if not self.request.GET:
             return Burial.objects.none()
