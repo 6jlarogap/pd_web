@@ -781,6 +781,40 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
 
 order_annulate = AnnulateOrder.as_view()
 
+class OrderStatus(LORURequiredMixin, DetailView):
+    def get_queryset(self):
+        return Order.objects.filter(loru=self.request.user.profile.org).distinct()
+
+    def post(self, request, *args, **kwargs):
+        http_referer = request.META.get('HTTP_REFERER', '')
+        o = self.get_object()
+        if request.GET.get('advanced') and not o.is_paid():
+            if o.is_advanced():
+                o.status = Order.STATUS_POSTED
+                msg = _(u'Заказ: отмена получения аванса')
+            else:
+                o.status = Order.STATUS_ADVANCED
+                msg = _(u'Заказ: получен аванс')
+            o.save()
+            messages.success(self.request, msg)
+            write_log(request, o, msg)
+        elif request.GET.get('paid'):
+            if o.is_paid():
+                o.status = Order.STATUS_POSTED
+                msg = _(u'Заказ: отмена получения оплаты')
+            else:
+                o.status = Order.STATUS_PAID
+                msg = _(u'Заказ: оплачен')
+            o.save()
+            messages.success(self.request, msg)
+            write_log(request, o, msg)
+        if http_referer:
+            return redirect(http_referer)
+        else:
+            return redirect('order_list')
+
+order_status = OrderStatus.as_view()
+
 class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
     """
     Cоздание или привязка захоронения к заказу
