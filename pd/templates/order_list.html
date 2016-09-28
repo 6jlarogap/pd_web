@@ -293,9 +293,18 @@
                             <a href="{{ global_context_FRONT_END_URL }}orders/{{c.pk}}" class="btn">{% trans "просмотр" %}</a>
                         {% elif c.is_type_funeral %}
                             <i>{% trans "Заказ<br />похорон" %}</i></br >
-                            <a href="{{ global_context_FRONT_END_URL }}loru/own-orders/{{c.pk}}" class="btn">{% trans "править" %}</a>
-                            {% if not c.annulated %}
-                                <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "квитанция/наряды" %}</a>
+                            {% if c.annulated %}
+                                <b><span style="color:red">{% trans "АННУЛИРОВАН" %}</span></b>
+                                <form action="{% url order_annulate_from_list c.pk %}?recover=1" method="POST">
+                                    {% csrf_token %}
+                                    <input type="submit" class="btn" value="{% trans "де-аннулировать" %}" />
+                                </form>
+                            {% else %}
+                                <a href="{{ global_context_FRONT_END_URL }}loru/own-orders/{{c.pk}}" class="btn">{% trans "править" %}</a>
+                                <form action="{% url order_annulate_from_list c.pk %}" method="POST">
+                                    {% csrf_token %}
+                                    <input type="submit" class="btn" value="{% trans "аннулировать" %}" onclick="return confirm('{% trans "Вы уверены?" %}');" />
+                                </form>
                             {% endif %}
                         {% endif %}
                     </td>

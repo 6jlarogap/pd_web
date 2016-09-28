@@ -47,7 +47,7 @@ def main():
             cells = row.getElementsByType(TableCell)
             sku = ods_cell(cells[0])
             name = ods_cell(cells[1])
-            description = ''
+            description = name
             measure = ods_cell(cells[2])
             stockable = measure.lower() != u"услуга"
             price_str = ods_cell(cells[3]).replace(' ', '')

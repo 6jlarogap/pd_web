@@ -9,7 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction, IntegrityError
 from django.db.models.loading import get_model
 from django.utils.translation import ugettext as _
-from django.db.models import Sum
+from django.db.models import Sum, F
 from django.db.models.query_utils import Q
 
 from burials.models import Burial, OrderPlace
@@ -97,6 +97,7 @@ class ProductCategory(models.Model):
     )
 
     name = models.CharField(_(u"Название"), max_length=255)
+    sorting = models.CharField(_(u"Порядок сортировки"), max_length=2, editable=False, default=u'ZZ')
     icon = models.ImageField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
 
     class Meta:
@@ -244,7 +245,6 @@ class Order(GetLogsMixin, BaseModel):
     archived = models.BooleanField(_(u'Архивирован'), editable=False, default=False)
     cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateField(_(u"Дата заказа"))
-    dt_due = models.DateField(_(u"Дата исполнения заказа"), editable=False, null=True)
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
 
     customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"),
@@ -257,6 +257,17 @@ class Order(GetLogsMixin, BaseModel):
     title = models.CharField(_(u"Наименование покупателя"), max_length=255, default='', editable=False)
     phones = models.TextField(_(u"Телефоны"), null=True, editable=False)
     address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"), null=True, editable=False)
+
+    # Для заказа похорон
+    dt_due = models.DateField(_(u"Дата похорон"), editable=False, null=True)
+
+    burial_plan_time = models.TimeField(_(u"План. время захоронения"), null=True, editable=False)
+    initial_place = models.CharField(_(u"Место подачи катафалка"), max_length=255, editable=False, default='')
+    initial_time = models.TimeField(_(u"Время подачи катафалка"), null=True, editable=False)
+    service_place = models.CharField(_(u"Место отпевания"), max_length=255, editable=False, default='')
+    service_time = models.TimeField(_(u"Время отпевания"), null=True, editable=False)
+    repast_place = models.CharField(_(u"Место отпевания"), max_length=255, editable=False, default='')
+    repast_time = models.TimeField(_(u"Время отпевания"), null=True, editable=False)
 
     class Meta:
         verbose_name = _(u"Заказ")
@@ -549,8 +560,29 @@ class Order(GetLogsMixin, BaseModel):
         Товары и услуги, которые заносятся в Акт, для Ялты
         """
         return self.orderitem_set.filter(
-            Q(product__stockable=True) | Q(product__ptype__isnull=False)
-        ).distinct()
+            product__ptype__in = (
+                Product.PRODUCT_CATAFALQUE,
+                Product.PRODUCT_CATAFALQUE_COMFORT,
+                Product.PRODUCT_LOADERS,
+        ))
+
+    def total_to_act(self):
+        #result = self.items_to_act().aggregate(total=Sum(F('cost') * F('quantity'))['total']) or \
+                #decimal.Decimal('0.00')
+            # не получилось с F()*F()
+        #return decimal.Decimal("{:.2f}".format(result))
+        result = decimal.Decimal('0.00')
+        items = self.items_to_act()
+        for item in items:
+            result += item.total
+        return decimal.Decimal("{:.2f}".format(result))
+
+    def total_to_act_int(self):
+        return int(self.total_to_act())
+
+    def total_to_act_copecks(self):
+        total = self.total_to_act()
+        return int((total - int(total)) * 100)
 
     def deadman(self):
         """

@@ -229,6 +229,8 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
         for k in fields_got:
             if fields_got[k] is not None:
                 fields[k] = fields_got[k]
+        if not fields_got['ptype'] or fields_got['ptype'] == 'null':
+            fields['ptype'] = None
         if instance:
             for k in fields:
                 setattr(instance, k, fields[k])
@@ -351,12 +353,21 @@ class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     totalPrice = serializers.Field(source='total_float')
     currency = serializers.Field(source='loru.currency.code')
     products = serializers.SerializerMethodField('products_func')
+    burialPlanTime = serializers.TimeField(source='burial_plan_time', format='%H:%M')
+    initialTime = serializers.TimeField(source='initial_time', format='%H:%M')
+    serviceTime = serializers.TimeField(source='service_time', format='%H:%M')
+    repastTime = serializers.TimeField(source='repast_time', format='%H:%M')
+    initialPlace = serializers.Field(source='initial_place')
+    servicePlace = serializers.Field(source='service_place')
+    repastPlace = serializers.Field(source='repast_place')
 
     class Meta:
         model = Order
         fields = ('id', 'number', 'createdDate', 'dueDate',
                   'customer', 'deadman', 'place', 'products',
                   'createdAt', 'modifiedAt', 'totalPrice', 'currency',
+                  'burialPlanTime', 'initialTime', 'serviceTime', 'repastTime',
+                  'initialPlace', 'servicePlace', 'repastPlace',
         )
 
     def deadman_func(self, instance):
