@@ -1296,6 +1296,12 @@ table {
 .table-condensed td {
   padding: 4px 5px;
 }
+
+.table-void th,
+.table-void td {
+  padding: 1px;
+  border: 0;
+}
 .table-bordered {
   border: 1px solid #dddddd;
   border-collapse: separate;

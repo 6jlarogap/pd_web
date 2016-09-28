@@ -132,12 +132,14 @@ class Product(BaseModel):
     PRODUCT_LOADERS = 'loaders'
     PRODUCT_DIGGERS = 'diggers'
     PRODUCT_SIGN = 'SIGN'
+    PRODUCT_VIP = 'VIP'
     PRODUCT_TYPES = (
         (PRODUCT_CATAFALQUE, _(u"Автокатафалк")),
         (PRODUCT_CATAFALQUE_COMFORT, _(u"Катафалк повыш. комфортности")),
         (PRODUCT_LOADERS, _(u"Грузчики")),
         (PRODUCT_DIGGERS, _(u"Рытье могилы")),
         (PRODUCT_SIGN, _(u"Написание надмогильной таблички")),
+        (PRODUCT_VIP, _(u"ВИП бригада послепохоронного обслуживания")),
     )
     
     PRODUCT_NAME_MAXLEN = 60
@@ -217,12 +219,14 @@ class Order(GetLogsMixin, BaseModel):
     # Оптовые заказы
     STATUS_POSTED = 'posted'
     STATUS_ACCEPTED = 'accepted'
+    STATUS_ADVANCED = 'advanced'
     STATUS_PAID = 'paid'
     STATUS_DONE = 'done'
 
     STATUS_TYPES = (
         (STATUS_POSTED, _(u"Размещен")),
         (STATUS_ACCEPTED, _(u"Принят")),
+        (STATUS_ADVANCED, _(u"Выплачен аванс")),
         (STATUS_PAID, _(u"Оплачен")),
         (STATUS_DONE, _(u"Выполнен")),
     )
@@ -384,6 +388,9 @@ class Order(GetLogsMixin, BaseModel):
             return self.catafalquedata
         except CatafalqueData.DoesNotExist:
             return
+
+    def has_vip(self):
+        return self.orderitem_set.filter(product__ptype=Product.PRODUCT_VIP).exists()
 
     def has_catafalque(self):
         return self.orderitem_set.filter(product__ptype=Product.PRODUCT_CATAFALQUE).exists()
@@ -615,6 +622,12 @@ class Order(GetLogsMixin, BaseModel):
             except (OrderPlace.DoesNotExist, AttributeError,):
                 pass
         return result
+
+    def is_advanced(self):
+        return self.status == Order.STATUS_ADVANCED
+
+    def is_paid(self):
+        return self.status == Order.STATUS_PAID
 
 class OrderItemMixin(object):
 
