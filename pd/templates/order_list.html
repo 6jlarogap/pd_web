@@ -4,6 +4,21 @@
 
 {% block content %}
     <h1>{% trans "Заказы" %}</h1>
+    <script type="text/javascript">
+        $(function() {
+            $("button[id^=order_status_]").click(function() {
+                var id_ = $(this).attr('id');
+                var found = id_.match(/_(advanced|paid)_(\d+)$/);
+                if (found) {
+                    var data = new Object();
+                    $.post('/api/order/' + found[1] + '/' + found[2] + '/status/', data, function(data){
+                        location.reload();
+                    });
+                }
+            });
+        });
+    </script>
+
     <div class="row-fluid no-print">
         <div class="span12">
             <div class="row-fluid">
@@ -314,16 +329,10 @@
                                     </tr>
                                     <tr>
                                         <td style="border:0;">
-                                            <form action="{% url order_status c.pk %}?advanced=1" method="POST" style="margin-bottom:3px;" >
-                                                {% csrf_token %}
-                                                <input type="submit" class="btn" value={% if c.is_advanced %}"{% trans "аванс:отмена" %}"{% else %}{% trans "аванс" %}{% endif %} {% if c.is_paid %}disabled{% endif %} />
-                                            </form>
+                                            <button type="button" class="btn" id="order_status_advanced_{{ c.pk }}" {% if c.is_paid %}disabled{% endif %} />{% if c.is_advanced %}{% trans "аванс:отмена" %}{% else %}{% trans "аванс" %}{% endif %}</button>
                                         </td>
                                         <td style="border:0;">
-                                            <form action="{% url order_status c.pk %}?paid=1" method="POST" style="margin-bottom:3px;" >
-                                                {% csrf_token %}
-                                                <input type="submit" class="btn" value={% if c.is_paid %}"{% trans "оплата:отмена" %}"{% else %}{% trans "оплата" %}{% endif %} />
-                                            </form>
+                                            <button type="button" class="btn"  id="order_status_paid_{{ c.pk }}" >{% if c.is_paid %}{% trans "оплата:отмена" %}{% else %}{% trans "оплата" %}{% endif %}</button>
                                         </td>
                                     </tr>
                                     <tr>
