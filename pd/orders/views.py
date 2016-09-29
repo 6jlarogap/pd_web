@@ -781,14 +781,16 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
 
 order_annulate = AnnulateOrder.as_view()
 
-class OrderStatus(LORURequiredMixin, DetailView):
-    def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org).distinct()
+class ApiOrderStatus(APIView):
 
-    def post(self, request, *args, **kwargs):
-        http_referer = request.META.get('HTTP_REFERER', '')
-        o = self.get_object()
-        if request.GET.get('advanced') and not o.is_paid():
+    def post(self, request, what, pk):
+        """
+        Установить статус заказа в what (advanced|paid)
+        """
+        if what.lower() not in (Order.STATUS_ADVANCED, Order.STATUS_PAID,):
+            raise Http404
+        o = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
+        if what == Order.STATUS_ADVANCED and not o.is_paid():
             if o.is_advanced():
                 o.status = Order.STATUS_POSTED
                 msg = _(u'Заказ: отмена получения аванса')
@@ -796,9 +798,8 @@ class OrderStatus(LORURequiredMixin, DetailView):
                 o.status = Order.STATUS_ADVANCED
                 msg = _(u'Заказ: получен аванс')
             o.save()
-            messages.success(self.request, msg)
             write_log(request, o, msg)
-        elif request.GET.get('paid'):
+        elif what == Order.STATUS_PAID:
             if o.is_paid():
                 o.status = Order.STATUS_POSTED
                 msg = _(u'Заказ: отмена получения оплаты')
@@ -806,14 +807,10 @@ class OrderStatus(LORURequiredMixin, DetailView):
                 o.status = Order.STATUS_PAID
                 msg = _(u'Заказ: оплачен')
             o.save()
-            messages.success(self.request, msg)
             write_log(request, o, msg)
-        if http_referer:
-            return redirect(http_referer)
-        else:
-            return redirect('order_list')
+        return Response(data={}, status=200)
 
-order_status = OrderStatus.as_view()
+api_order_status = ApiOrderStatus.as_view()
 
 class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
     """
