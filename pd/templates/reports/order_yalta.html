@@ -801,6 +801,17 @@
                 </TD>
             </TR>
             <TR>
+                <TD>
+                    Гроб:
+                </TD>
+                <TD COLSPAN=6>
+                    размер:
+                    {% if order.orderplace %}
+                        {{ order.orderplace.size }}
+                    {% endif  %}
+                </TD>
+            </TR>
+            <TR>
                 <TD COLSPAN=7>
                 </TD>
             </TR>
@@ -927,6 +938,17 @@
                 </TD>
             </TR>
             <TR>
+                <TD>
+                    Гроб:
+                </TD>
+                <TD COLSPAN=6>
+                    размер:
+                    {% if order.orderplace %}
+                        {{ order.orderplace.size }}
+                    {% endif  %}
+                </TD>
+            </TR>
+            <TR>
                 <TD COLSPAN=7>
                 </TD>
             </TR>
@@ -1047,6 +1069,17 @@
                 </TD>
                 <TD COLSPAN=3>
                     {{ order.cemetery }}
+                </TD>
+            </TR>
+            <TR>
+                <TD>
+                    Гроб:
+                </TD>
+                <TD COLSPAN=6>
+                    размер:
+                    {% if order.orderplace %}
+                        {{ order.orderplace.size }}
+                    {% endif  %}
                 </TD>
             </TR>
             <TR>
@@ -1183,6 +1216,17 @@
                 <TD COLSPAN=4>
                     место:
                     {{ order.repast_place }}
+                </TD>
+            </TR>
+            <TR>
+                <TD>
+                    Гроб:
+                </TD>
+                <TD COLSPAN=6>
+                    размер:
+                    {% if order.orderplace %}
+                        {{ order.orderplace.size }}
+                    {% endif  %}
                 </TD>
             </TR>
             <TR>
