@@ -30,8 +30,6 @@ from pd.forms import CommentForm
 from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
 from reports.models import make_report
 
-csv.register_dialect("4minsk", escapechar="\\", quoting=csv.QUOTE_ALL, doublequote=False)
-
 class BurialGetOrderMixin:
     """
     Правка, просмотр захоронений пользователем-ЛОРУ производится
@@ -507,7 +505,7 @@ class BurialsListView(PaginateListView):
                 u'Усопший: отчество',                       #  2
                 u'Усопший: адрес',                          #  3
                 u'Захоронение: кладбище',                   #  4
-                u'Захоронение: участок (сектор)'            #  5
+                u'Захоронение: участок (сектор)',           #  5
                 u'Захоронение: ряд',                        #  6
                 u'Захоронение: место',                      #  7
                 u'Усопший: дата рождения (гггг-мм-дд)',     #  8
@@ -546,7 +544,7 @@ class BurialsListView(PaginateListView):
                         pass
             timestamp = datetime.datetime.now()
             csv_fname = 'burials-%s-%s.csv' % (org_pk, time_)
-            csv_export_dialect = csv.get_dialect("4minsk")
+            csv_export_dialect = csv.get_dialect("excel")
             csv_file = open(os.path.join(export_path,csv_fname), 'w')
             writer = csv.writer(csv_file, csv_export_dialect)
             writer.writerow(map(lambda u: u.encode("utf8"), row0))
