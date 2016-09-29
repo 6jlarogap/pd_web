@@ -361,6 +361,18 @@
             </TD>
         </TR>
         <TR>
+            <TD COLSPAN=2 VALIGN=TOP>
+                Умерший:
+            </TD>
+            <TD COLSPAN=6 VALIGN=TOP>
+                {% if order.deadman %}
+                    <b>{{ order.deadman }}</b>
+                {% else %}
+                _________________________________
+                {% endif %}
+            </TD>
+        </TR>
+       <TR>
             <TD COLSPAN=8>
             <BR />
             </TD>
