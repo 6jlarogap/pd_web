@@ -1,5 +1,5 @@
 # coding=utf-8
-import datetime, time, os, csv
+import datetime, time, os, csv, re
 import json
 from django import db
 
@@ -29,8 +29,6 @@ from pd.utils import re_search
 from pd.forms import CommentForm
 from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
 from reports.models import make_report
-
-csv.register_dialect("4minsk", escapechar="\\", quoting=csv.QUOTE_ALL, doublequote=False)
 
 class BurialGetOrderMixin:
     """
@@ -499,32 +497,29 @@ class BurialsListView(PaginateListView):
         
     def get(self, *args, **kwargs):
         if self.request.GET.get('export_csv'):
-            # Экспорт в csv в предложенном в Волковысске формате
-            #  0. Усопший: фамилия
-            #  1. Усопший: имя
-            #  2. Усопший: отчество
-            #  3. Адрес
-            #  4. Наименование кладбища
-            #  5. Участок (сектор)
-            #  6. Ряд
-            #  7. Место
-            #  8.  Дата рождения
-            #       в формате гггг-мм-дд или гггг-ии или гггг.
-            #       Если пусто, то дата не введена
-            #  9.  Дата смерти
-            #       в формате гггг-мм-дд или гггг-ии или гггг.
-            #       Если пусто, то дата не введена
-            # 10. Документ о смерти: тип
-            #       zags, если Свидетелство о смерти
-            #       medic, если медицинская справка
-            # 11. Документ о смерти: серия
-            # 12. Документ о смерти: номер
-            # 13. Документ о смерти: дата в формате гггг-мм-дд
-            # 14. Документ о смерти: Кем Выдан
-            # 15. Заявитель: фамилия
-            # 16. Заявитель: имя
-            # 17. Заявитель: отчество
-            # 18. Заявитель: адрес
+            # Экспорт в csv в предложенном в Волковысске формате,
+            #
+            row0 = (
+                u'Усопший: фамилия',                        #  0
+                u'Усопший: имя',                            #  1
+                u'Усопший: отчество',                       #  2
+                u'Усопший: адрес',                          #  3
+                u'Захоронение: кладбище',                   #  4
+                u'Захоронение: участок (сектор)',           #  5
+                u'Захоронение: ряд',                        #  6
+                u'Захоронение: место',                      #  7
+                u'Усопший: дата рождения (гггг-мм-дд)',     #  8
+                u'Усопший: дата смерти (гггг-мм-дд)',       #  9
+                u'Документ о смерти: тип (zags|medic)',     # 10
+                u'Документ о смерти: серия',                # 11
+                u'Документ о смерти: номер',                # 12
+                u'Документ о смерти: дата (гггг-мм-дд)',    # 13
+                u'Документ о смерти: кем выдан',            # 14
+                u'Заявитель: фамилия',                      # 15
+                u'Заявитель: имя',                          # 16
+                u'Заявитель: отчество',                     # 17
+                u'Заявитель: адрес',                        # 18
+            )
             
             burials = self.get_queryset()
             org_pk = self.request.user.profile.org.pk
@@ -537,23 +532,26 @@ class BurialsListView(PaginateListView):
                     os.makedirs(export_path)
                 except OSError:
                     path
-            # удалим предыдущие .csv в катаоге экспорты
+            # удалим предыдущие .csv в катаоге экспорты, старше пары часов
+            time_ = time.time()
             for fname in os.listdir(export_path):
                 fname_full = os.path.join(export_path, fname)
-                if fname.endswith('.csv'):
+                m = re.search(r'^burials-%s-(\d+\.?\d*)\.csv' % org_pk, fname)
+                if m and time_ - float(m.group(1)) > 7200:
                     try:
                         os.remove(os.path.join(export_path, fname))
                     except OSError:
                         pass
             timestamp = datetime.datetime.now()
-            csv_fname = 'burials-%s-%s.csv' % (org_pk, time.time())
-            csv_export_dialect = csv.get_dialect("4minsk")
+            csv_fname = 'burials-%s-%s.csv' % (org_pk, time_)
+            csv_export_dialect = csv.get_dialect("excel")
             csv_file = open(os.path.join(export_path,csv_fname), 'w')
             writer = csv.writer(csv_file, csv_export_dialect)
+            writer.writerow(map(lambda u: u.encode("utf8"), row0))
             n = 0
             for b in burials:
                 if n % 1000 == 0:
-                    print n
+                    print u"Burial export. %s burials processed" % n
                 n += 1
                 deadman = b.deadman or ''
                 try:
