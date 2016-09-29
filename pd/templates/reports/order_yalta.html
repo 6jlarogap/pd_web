@@ -164,6 +164,13 @@
          </TD>
     </TR>
     <TR>
+        {% if order.orderplace and order.orderplace.size %}
+            <TD COLSPAN=5>
+                Размер гроба: {{ order.orderplace.size }}
+            </TD>
+        {% endif %}
+    </TR>
+    <TR>
         <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
             № п/п
         </TD>
@@ -361,6 +368,18 @@
             </TD>
         </TR>
         <TR>
+            <TD COLSPAN=2 VALIGN=TOP>
+                Умерший:
+            </TD>
+            <TD COLSPAN=6 VALIGN=TOP>
+                {% if order.deadman %}
+                    <b>{{ order.deadman }}</b>
+                {% else %}
+                _________________________________
+                {% endif %}
+            </TD>
+        </TR>
+       <TR>
             <TD COLSPAN=8>
             <BR />
             </TD>
@@ -1171,6 +1190,17 @@
                 <TD COLSPAN=4>
                     место:
                     {{ order.repast_place }}
+                </TD>
+            </TR>
+            <TR>
+                <TD>
+                    Гроб:
+                </TD>
+                <TD COLSPAN=6>
+                    размер:
+                    {% if order.orderplace %}
+                        {{ order.orderplace.size }}
+                    {% endif  %}
                 </TD>
             </TR>
             <TR>
