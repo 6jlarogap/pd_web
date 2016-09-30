@@ -328,6 +328,13 @@ class UserProfileMixin(object):
         profile = get_profile(user)
         return profile.user_last_name or ''
 
+    def fullName_func(self, user):
+        profile = get_profile(user)
+        if profile:
+            return profile.full_name()
+        else:
+            return (u"%s %s" % (user.first_name, user.user_last_name)).strip()
+
     def userPhotoUrl_func(self, user):
         try:
             userphoto = UserPhoto.objects.get(user=user)
@@ -359,6 +366,13 @@ class UserFioSerializer(UserProfileMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'firstName', 'lastName', 'middleName')
+
+class UserFullNameSerializer(UserProfileMixin, serializers.ModelSerializer):
+    fullName = serializers.SerializerMethodField('fullName_func')
+
+    class Meta:
+        model = User
+        fields = ('fullName',)
 
 class UserFioLoginSerializer(UserProfileMixin, serializers.ModelSerializer):
     fio = serializers.SerializerMethodField('fio_func')
