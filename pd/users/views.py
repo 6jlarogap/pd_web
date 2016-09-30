@@ -81,7 +81,8 @@ from users.serializers import StoreSerializer, Store2Serializer, \
                               OrgClientSiteSerializer, ProfileClientSiteSerializer, \
                               UserSettings2Serializer, OauthSerializer, \
                               YoutubeVoteSerializer, YoutubeVideoSerializer, \
-                              YoutubeCaptionSerializer, YoutubeCaptionVoteSerializer
+                              YoutubeCaptionSerializer, YoutubeCaptionVoteSerializer, \
+                              UserFullNameSerializer
 
 from sms_service.utils import send_sms
 
@@ -3605,6 +3606,24 @@ class ApiVideoVotesView(ApiVideoMixin, APIView):
         return Response(serializer.data, status=200)
 
 api_video_votes = ApiVideoVotesView.as_view()
+
+class ApiVideoTimestampsVotes(ApiVideoMixin, APIView):
+
+    def get(self, request, yid, second):
+        """
+        Список проголосовавших
+        """
+        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
+        time = second and int(second) or 0
+        q = Q(youtubevideo=youtubevideo, time=time)
+        like = request.GET.get('type')
+        if like:
+            q &= Q(like=like)
+        return Response(data=[ UserFullNameSerializer(vote.user).data \
+            for vote in YoutubeVote.objects.filter(q).distinct('user')
+        ])
+
+api_video_timestamps_votes = ApiVideoTimestampsVotes.as_view()
 
 class ApiVideoAggregatedVotesView(APIView):
 
