@@ -180,18 +180,45 @@ class OrderList(LORURequiredMixin, PaginateListView):
                     'burial__deadman__middle_name__iregex'
                 ]
                 orders = self.filter_by_name(queryset=orders, search_by=search_by, name_string=form.cleaned_data['fio'])
-            if form.cleaned_data['birth_date_from']:
-                orders = orders.filter(burial__deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
-            if form.cleaned_data['birth_date_to']:
-                orders = orders.filter(burial__deadman__birth_date__lte=form.cleaned_data['birth_date_to'])
-            if form.cleaned_data['death_date_from']:
-                orders = orders.filter(burial__deadman__death_date__gte=form.cleaned_data['death_date_from'])
-            if form.cleaned_data['death_date_to']:
-                orders = orders.filter(burial__deadman__death_date__lte=form.cleaned_data['death_date_to'])
-            if form.cleaned_data['burial_date_from']:
-                orders = orders.filter(burial__plan_date__gte=form.cleaned_data['burial_date_from'])
-            if form.cleaned_data['burial_date_to']:
-                orders = orders.filter(burial__plan_date__lte=form.cleaned_data['burial_date_to'])
+            birth_date_from = form.cleaned_data['birth_date_from']
+            if birth_date_from:
+                orders = orders.filter(
+                    Q(burial__deadman__birth_date__gte=birth_date_from) | \
+                    Q(orderdeadperson__birth_date__gte=birth_date_from)
+                )
+            birth_date_to = form.cleaned_data['birth_date_to']
+            if birth_date_to:
+                birth_date_to = birth_date_to + datetime.timedelta(days=1)
+                orders = orders.filter(
+                    Q(burial__deadman__birth_date__lt=birth_date_to) | \
+                    Q(orderdeadperson__birth_date__lt=birth_date_to)
+                )
+            death_date_from = form.cleaned_data['death_date_from']
+            if death_date_from:
+                orders = orders.filter(
+                    Q(burial__deadman__death_date__gte=death_date_from) | \
+                    Q(orderdeadperson__death_date__gte=death_date_from)
+                )
+            death_date_to = form.cleaned_data['death_date_to']
+            if death_date_to:
+                death_date_to = death_date_to + datetime.timedelta(days=1)
+                orders = orders.filter(
+                    Q(burial__deadman__death_date__lt=death_date_to) | \
+                    Q(orderdeadperson__death_date__lt=death_date_to)
+                )
+            burial_date_from = form.cleaned_data['burial_date_from']
+            if burial_date_from:
+                orders = orders.filter(
+                    Q(burial__plan_date__gte=burial_date_from) | \
+                    Q(dt_due__gte=burial_date_from)
+                )
+            burial_date_to = form.cleaned_data['burial_date_to']
+            if burial_date_to:
+                burial_date_to = burial_date_to + datetime.timedelta(days=1)
+                orders = orders.filter(
+                    Q(burial__plan_date__lte=burial_date_to) | \
+                    Q(dt_due__lt=burial_date_to)
+                )
             if form.cleaned_data['account_number_from']:
                 orders = orders.filter(loru_number__gte=form.cleaned_data['account_number_from'])
             if form.cleaned_data['account_number_to']:
