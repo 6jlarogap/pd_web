@@ -19,6 +19,15 @@
         });
     </script>
 
+    <script type="text/javascript">
+        function setDeathDate() {
+            var tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            $("#id_burial_date_from").val(tomorrow.toLocaleDateString());
+            $("#id_burial_date_to").val(tomorrow.toLocaleDateString());
+            }
+    </script>
+
     <div class="row-fluid no-print">
         <div class="span12">
             <div class="row-fluid">
@@ -76,7 +85,7 @@
                         </p>
                         <p>
                             <label for="id_death_date_to">{{form.death_date_to.label}}</label>
-                            {{form.burial_date_to}}
+                            {{form.death_date_to}}
                         </p>
                         <p>
                             <label for="id_burial_date_from">{{form.burial_date_from.label}}</label>
@@ -86,6 +95,10 @@
                             <label for="id_burial_date_to">{{form.burial_date_to.label}}</label>
                             {{form.burial_date_to}}
                         </p>
+                        <p>
+                            <input type="button" class="btn" value="{% trans "завтра" %}" onclick="setDeathDate()" id="burial_date_btn_tomorrow" />
+                        </p>
+
                     </fieldset>
                     <fieldset>
                         <p>
