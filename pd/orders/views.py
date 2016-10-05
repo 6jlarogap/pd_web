@@ -368,7 +368,7 @@ class OrderList(LORURequiredMixin, PaginateListView):
             cur_date = None
             dates = []
             for order in orders:
-                order_date = order.dt_due or order.burial.plan_time
+                order_date = order.dt_due or order.burial.plan_date
                 if order_date != cur_date:
                     new_date=dict(date=order_date,orders=[])
                     cur_date = order_date
