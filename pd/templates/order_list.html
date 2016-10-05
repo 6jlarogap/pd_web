@@ -16,6 +16,22 @@
                     });
                 }
             });
+            $("#id_burial_date_from").change(function() {
+                var href_orig = $("#id_burial_plan_a").attr("href");
+                console.log(href_orig);
+                href_orig = href_orig.replace(/\&burial_date_from\=(\d{2}\.\d{2}\.\d{4})?/, '');
+                console.log(href_orig);
+                href_new = href_orig + '&burial_date_from=' + $("#id_burial_date_from").val()
+                $("#id_burial_plan_a").attr("href", href_new);
+            });
+            $("#id_burial_date_to").change(function() {
+                var href_orig = $("#id_burial_plan_a").attr("href");
+                href_orig = href_orig.replace(/\&burial_date_to\=(\d{2}\.\d{2}\.\d{4})?/, '');
+                var href_new = href_orig + '&burial_date_to=' + $("#id_burial_date_to").val()
+                $("#id_burial_plan_a").attr("href", href_new);
+            });
+            $("#id_burial_date_to").change();
+            $("#id_burial_date_from").change();
         });
     </script>
 
@@ -24,8 +40,53 @@
             var tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             $("#id_burial_date_from").val(tomorrow.toLocaleDateString());
+            $("#id_burial_date_from").change()
             $("#id_burial_date_to").val(tomorrow.toLocaleDateString());
+            $("#id_burial_date_to").change()
             }
+
+        function plan_pohoron_ckeck() {
+            var valid_date_from = false;
+            var burial_date_from = $("#id_burial_date_from").val();
+            var burial_date_to = $("#id_burial_date_to").val();
+            var valid_date_from = false;
+            found = burial_date_from.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+            if (found) {
+                var year = parseInt(found[3], 10);
+                var month = parseInt(found[2], 10);
+                var day = parseInt(found[1], 10);
+                burial_date_from = new Date(year, month-1, day);
+                valid_date_from = burial_date_from.getFullYear() == year && 
+                    (burial_date_from.getMonth() + 1) == month && 
+                    burial_date_from.getDate() === day; 
+            }
+            var valid_date_to = false;
+            if (valid_date_from) {
+                found = burial_date_to.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+                if (found) {
+                    var year = parseInt(found[3], 10);
+                    var month = parseInt(found[2], 10);
+                    var day = parseInt(found[1], 10);
+                    burial_date_to = new Date(year, month-1, day);
+                    valid_date_to = burial_date_to.getFullYear() == year && 
+                        (burial_date_to.getMonth() + 1) == month && 
+                        burial_date_to.getDate() === day; 
+                }
+            }
+            if (!valid_date_from || !valid_date_to) {
+                alert('Задайте даты захоронений: с и по');
+                return false;
+            }
+            if (burial_date_to < burial_date_from) {
+                alert('"Дата захоронений: с" больше "Дата захоронений: по"');
+                return false;
+            }
+            if (burial_date_to - burial_date_from > 30 * 86400000) {
+                alert('План захоронений показывается за интервал не больше месяца');
+                return false;
+            }
+            return true;
+        }
     </script>
 
     <div class="row-fluid no-print">
@@ -170,7 +231,8 @@
                         </p>
                         <input type="submit" value="искать" class="btn btn-primary" />
                         <input type="hidden" name="sort"  value="{{ sort }}" />
-
+                            <a id="id_burial_plan_a" href="{% if GET_PARAMS %}?{{ GET_PARAMS }}&{% else %}?{% endif %}burial_plan=1"
+ class="btn" target="_blank" onclick='return plan_pohoron_ckeck()' >{% trans "план похорон" %}</a>
                     </div>
 
                 </form>

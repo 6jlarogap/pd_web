@@ -1,0 +1,110 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+{% load counter %}
+{% load pytils_numeral %}
+{% load pytils_dt %}
+<HTML>
+<HEAD>
+
+    <META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+    <TITLE>План похорон</TITLE>
+
+    <STYLE>
+        <!--
+        BODY {
+            font-family: "Arial";
+            font-size: small
+        }
+        TABLE.font-medium {
+            font-family: "Arial";
+            font-size: medium
+        }
+        -->
+    </STYLE>
+
+</HEAD>
+
+<BODY TEXT="#000000">
+
+<H2>
+    ПЛАН ПОХОРОН на {{ start_date }} {% if end_date != start_date %} &mdash; {{ end_date }}{% endif %}
+</H2>
+
+{% for date in dates %}
+
+    {% if end_date != start_date %}
+        <h3>{{ date.date }}</h3>
+    {% endif %}
+    <TABLE FRAME=1 CELLSPACING=0 CELLPADDING=0 COLS=4 RULES=NONE BORDER=1>
+        <COLGROUP>
+            <COL style="width:43mm">
+            <COL style="width:42mm">
+            <COL style="width:42mm">
+            <COL style="width:42mm">
+        </COLGROUP>
+        <TBODY>
+
+        <TR>
+            <TH STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid; padding-left:0.2em;" ALIGN=LEFT>
+                Усопший
+            </TH>
+            <TH STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid; padding-left:0.2em;" ALIGN=LEFT>
+                Подача
+            </TH>
+            <TH STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid; padding-left:0.2em;" ALIGN=LEFT>
+                Отпевание
+            </TH>
+            <TH STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid; padding-left:0.2em;" ALIGN=LEFT>
+                Похороны
+            </TH>
+        </TR>
+        {% for order in date.orders %}
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-left:0.2em;" >
+                {{ order.deadman }}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-left:0.2em;" >
+                {% if order.get_catafalquedata.start_time %}
+                    {{ order.get_catafalquedata.start_time|time:"H:i" }}
+                {% elif order.initial_time %}
+                    {{ order.initial_time|time:"H:i" }}
+                {% endif %}
+                <br >
+                {% if order.get_catafalquedata.start_place %}
+                    {{ order.get_catafalquedata.start_place }}
+                {% else %}
+                    {{ order.initial_place }}
+                {% endif %}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; padding-left:0.2em;" >
+                {% if order.service_time %}
+                    {{ order.service_time|time:"H:i" }}
+                {% endif %}<br />
+                {% if order.service_place %}
+                    {{ order.service_place }}
+                {% endif %}
+            </TD>
+            <TD STYLE="border-left: 1px solid; border-bottom: 1px solid; border-right: 1px solid; padding-left:0.2em;" >
+                {% if order.burial and order.burial.plan_time %}
+                    {{ order.burial.plan_time|time:"H:i" }}
+                {% elif order.burial_plan_time %}
+                    {{ order.burial_plan_time|time:"H:i" }}
+                {% endif %}<br />
+                {{ order.cemetery }}
+            </TD>
+        </TR>
+        {% endfor %}
+            </TBODY>
+    </TABLE>
+{% endfor %}
+
+{% if print_now %}
+    <script type="text/javascript">
+        window.onload = function () {
+            window.print();
+        }
+    </script>
+{% endif %}
+</BODY>
+
+</HTML>
