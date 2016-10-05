@@ -339,14 +339,6 @@ class OrderList(LORURequiredMixin, PaginateListView):
         q = reduce(operator.and_, query)
         return queryset.filter(q)
 
-    def get_context_data(self, *args, **kwargs):
-        context = super(OrderList, self).get_context_data(*args, **kwargs)
-        if self.request.user.profile.org.inn == '9103078189':
-            context.update(dict(
-                user_like_yalta=True,
-            ))
-        return context
-
     def get(self, request, *args, **kwargs):
         if self.request.GET.get('burial_plan'):
             form = self.get_form()
