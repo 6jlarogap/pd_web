@@ -16,7 +16,7 @@ from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.views.generic.base import View
@@ -339,7 +339,55 @@ class OrderList(LORURequiredMixin, PaginateListView):
         q = reduce(operator.and_, query)
         return queryset.filter(q)
 
+    def get_context_data(self, *args, **kwargs):
+        context = super(OrderList, self).get_context_data(*args, **kwargs)
+        if self.request.user.profile.org.inn == '9103078189':
+            context.update(dict(
+                user_like_yalta=True,
+            ))
+        return context
+
     def get(self, request, *args, **kwargs):
+        if self.request.GET.get('burial_plan'):
+            form = self.get_form()
+            no_dates = True
+            if form.data and form.is_valid():
+                burial_date_from = form.cleaned_data['burial_date_from']
+                burial_date_to = form.cleaned_data['burial_date_to']
+                no_dates = not (burial_date_from and burial_date_to)
+            if no_dates:
+                return render_to_response(
+                    'simple_message.html',
+                    dict(message=_(u"Не задан интервал дат захоронения"))
+                )
+            if burial_date_from > burial_date_to:
+                return render_to_response(
+                    'simple_message.html',
+                    dict(message=_(u'"Дата захоронений: с" больше "Дата захоронений: по"'))
+                )
+            orders = self.filtered_orders()
+            if not orders:
+                return render_to_response(
+                    'simple_message.html',
+                    dict(message=_(u'Не найдены заказы по выбранным критериям'))
+                )
+            # Это почистит предыдущий order_by
+            orders = orders.order_by('dt_due', 'burial__plan_date')
+            cur_date = None
+            dates = []
+            for order in orders:
+                order_date = order.dt_due or order.burial.plan_time
+                if order_date != cur_date:
+                    new_date=dict(date=order_date,orders=[])
+                    cur_date = order_date
+                    dates.append(new_date)
+                new_date['orders'].append(order)
+            context = dict(
+                dates=dates,
+                start_date=burial_date_from,
+                end_date=burial_date_to,
+            )
+            return render_to_response('reports/burial_plan.html', context)
         if not request.GET and request.user.profile.org.inn == '9103078189':
             form = self.get_form()
             get_attrs = u'?'
