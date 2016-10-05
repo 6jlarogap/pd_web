@@ -378,6 +378,7 @@ class OrderList(LORURequiredMixin, PaginateListView):
                 dates=dates,
                 start_date=burial_date_from,
                 end_date=burial_date_to,
+                print_now=True,
             )
             return render_to_response('reports/burial_plan.html', context)
         if not request.GET and request.user.profile.org.inn == '9103078189':
