@@ -366,14 +366,14 @@ class OrderList(LORURequiredMixin, PaginateListView):
             # Это почистит предыдущий order_by
             orders = orders.order_by('dt_due', 'burial__plan_date')
             cur_date = None
-            dates = []
+            dates_pre = dict()
             for order in orders:
                 order_date = order.dt_due or order.burial.plan_date
-                if order_date != cur_date:
-                    new_date=dict(date=order_date,orders=[])
-                    cur_date = order_date
-                    dates.append(new_date)
-                new_date['orders'].append(order)
+                if order_date in dates_pre:
+                    dates_pre[order_date].append(order)
+                else:
+                    dates_pre[order_date] = [order]
+            dates = [dict(date=date, orders=dates_pre[date]) for date in sorted(dates_pre.keys())]
             context = dict(
                 dates=dates,
                 start_date=burial_date_from,
