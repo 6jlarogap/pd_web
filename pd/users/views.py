@@ -3582,18 +3582,26 @@ class ApiVideoVotesView(ApiVideoMixin, APIView):
         #serializer = YoutubeVoteSerializer(votes, many=True)
         # data = serializer.data
 
+        # Надо не показывать несколько голосов от одного пользователя в секунду
+
         req_str = '''
-            SELECT \'%(yid)s\' as id, "datetime", "timestamp", "type" from (
-                SELECT distinct on (time, user_id)
-                    "dt_created",
-                     to_char(dt_created AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "datetime",
-                    "time" as "timestamp",
-                    "like" as "type",
-                    "user_id"
-                FROM users_youtubevote 
-                WHERE youtubevideo_id = %(youtubevideo_id)s
-                ORDER BY "time", "user_id"
-            )
+            SELECT
+                '%(yid)s' AS id,
+                "datetime",
+                "timestamp",
+                "type"
+            FROM
+                (
+                    SELECT DISTINCT ON (time, user_id)
+                        "dt_created",
+                        to_char(dt_created AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "datetime",
+                        "time" as "timestamp",
+                        "like" as "type",
+                        "user_id"
+                    FROM users_youtubevote 
+                    WHERE youtubevideo_id = %(youtubevideo_id)s
+                    ORDER BY "time", "user_id"
+                )
             AS foo
             ORDER BY "datetime" DESC
             %(limit_str)s %(offset_str)s;
@@ -3655,6 +3663,8 @@ class ApiVideoAggregatedVotesView(APIView):
     def get(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
         data = dict()
+
+        # Надо не показывать несколько голосов от одного пользователя в секунду
 
         req_str = '''
             SELECT
