@@ -63,7 +63,7 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          YoutubeVideo, YoutubeVote, YoutubeCaption, YoutubeCaptionVote
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image, SeriesTable, \
-                     utcstr2local, utcisoformat
+                     utcstr2local, utcisoformat, dictfetchall
 from persons.models import AlivePerson, Phone, CustomPlace, CustomPerson
 from burials.models import Cemetery, Area, Burial, Place, Grave
 from billing.models import Wallet, Rate, Currency
@@ -3568,20 +3568,45 @@ class ApiVideoVotesView(ApiVideoMixin, APIView):
 
     def get(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
-        votes = YoutubeVote.objects.filter(youtubevideo=youtubevideo).\
-                    order_by('-dt_created')
-
         offset = request.GET.get('offset') and int(request.GET['offset'])
         count = int(request.GET.get('count', '20'))
-        if offset and count:
-            votes = votes[offset:offset+count]
-        elif offset:
-            votes = votes[offset:]
-        elif count:
-            votes = votes[:count]
 
-        serializer = YoutubeVoteSerializer(votes, many=True)
-        return Response(serializer.data)
+        #votes = YoutubeVote.objects.filter(youtubevideo=youtubevideo).\
+                    #order_by('-dt_created')
+        #if offset and count:
+            #votes = votes[offset:offset+count]
+        #elif offset:
+            #votes = votes[offset:]
+        #elif count:
+            #votes = votes[:count]
+        #serializer = YoutubeVoteSerializer(votes, many=True)
+        # data = serializer.data
+
+        req_str = '''
+            SELECT \'%(yid)s\' as id, "datetime", "timestamp", "type" from (
+                SELECT distinct on (time, user_id)
+                    "dt_created",
+                     to_char(dt_created AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "datetime",
+                    "time" as "timestamp",
+                    "like" as "type",
+                    "user_id"
+                FROM users_youtubevote 
+                WHERE youtubevideo_id = %(youtubevideo_id)s
+                ORDER BY "time", "user_id"
+            )
+            AS foo
+            ORDER BY "datetime" DESC
+            %(limit_str)s %(offset_str)s;
+        ''' % dict(
+                yid=yid,
+                youtubevideo_id=youtubevideo.pk,
+                offset_str='OFFSET %s' % offset if offset else '',
+                limit_str='LIMIT %s' % count if count else '',
+        )
+        cursor = connection.cursor()
+        cursor.execute(req_str)
+        data = dictfetchall(cursor)
+        return Response(data=data)
 
     def post(self, request, yid):
         if not request.user.is_authenticated():
@@ -3630,12 +3655,37 @@ class ApiVideoAggregatedVotesView(APIView):
     def get(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
         data = dict()
+
+        req_str = '''
+            SELECT
+                "time" as "timestamp",
+                count(*) as "total"
+            FROM
+                (
+                    SELECT
+                        "time",
+                        "user_id"
+                    FROM "users_youtubevote"
+                    WHERE "youtubevideo_id"=%(youtubevideo_id)s AND "like"='%(like)s'
+                    GROUP BY "time", "user_id"
+                    ORDER BY "time"
+                )
+            AS "foo"
+            GROUP BY "time";
+        '''
+        cursor = connection.cursor()
         for like in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
-            data[like] = YoutubeVote.objects.\
-                            extra(select={'timestamp': 'time'}). \
-                            values('timestamp'). \
-                            filter(like=like, youtubevideo=youtubevideo).order_by('time').\
-                            annotate(total=Count('time'))
+            cursor.execute(req_str % dict(
+                youtubevideo_id=youtubevideo.pk,
+                like=like,
+            ))
+            data[like] = dictfetchall(cursor)
+
+            #data[like] = YoutubeVote.objects.\
+                            #extra(select={'timestamp': 'time'}). \
+                            #values('timestamp'). \
+                            #filter(like=like, youtubevideo=youtubevideo).order_by('time').\
+                            #annotate(total=Count('time'))
         return Response(data, status=200)
 
 api_video_aggregated_votes = ApiVideoAggregatedVotesView.as_view()
