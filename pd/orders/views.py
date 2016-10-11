@@ -16,7 +16,7 @@ from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.views.generic.base import View
@@ -180,18 +180,45 @@ class OrderList(LORURequiredMixin, PaginateListView):
                     'burial__deadman__middle_name__iregex'
                 ]
                 orders = self.filter_by_name(queryset=orders, search_by=search_by, name_string=form.cleaned_data['fio'])
-            if form.cleaned_data['birth_date_from']:
-                orders = orders.filter(burial__deadman__birth_date__gte=form.cleaned_data['birth_date_from'])
-            if form.cleaned_data['birth_date_to']:
-                orders = orders.filter(burial__deadman__birth_date__lte=form.cleaned_data['birth_date_to'])
-            if form.cleaned_data['death_date_from']:
-                orders = orders.filter(burial__deadman__death_date__gte=form.cleaned_data['death_date_from'])
-            if form.cleaned_data['death_date_to']:
-                orders = orders.filter(burial__deadman__death_date__lte=form.cleaned_data['death_date_to'])
-            if form.cleaned_data['burial_date_from']:
-                orders = orders.filter(burial__plan_date__gte=form.cleaned_data['burial_date_from'])
-            if form.cleaned_data['burial_date_to']:
-                orders = orders.filter(burial__plan_date__lte=form.cleaned_data['burial_date_to'])
+            birth_date_from = form.cleaned_data['birth_date_from']
+            if birth_date_from:
+                orders = orders.filter(
+                    Q(burial__deadman__birth_date__gte=birth_date_from) | \
+                    Q(orderdeadperson__birth_date__gte=birth_date_from)
+                )
+            birth_date_to = form.cleaned_data['birth_date_to']
+            if birth_date_to:
+                birth_date_to = birth_date_to + datetime.timedelta(days=1)
+                orders = orders.filter(
+                    Q(burial__deadman__birth_date__lt=birth_date_to) | \
+                    Q(orderdeadperson__birth_date__lt=birth_date_to)
+                )
+            death_date_from = form.cleaned_data['death_date_from']
+            if death_date_from:
+                orders = orders.filter(
+                    Q(burial__deadman__death_date__gte=death_date_from) | \
+                    Q(orderdeadperson__death_date__gte=death_date_from)
+                )
+            death_date_to = form.cleaned_data['death_date_to']
+            if death_date_to:
+                death_date_to = death_date_to + datetime.timedelta(days=1)
+                orders = orders.filter(
+                    Q(burial__deadman__death_date__lt=death_date_to) | \
+                    Q(orderdeadperson__death_date__lt=death_date_to)
+                )
+            burial_date_from = form.cleaned_data['burial_date_from']
+            if burial_date_from:
+                orders = orders.filter(
+                    Q(burial__plan_date__gte=burial_date_from) | \
+                    Q(dt_due__gte=burial_date_from)
+                )
+            burial_date_to = form.cleaned_data['burial_date_to']
+            if burial_date_to:
+                burial_date_to = burial_date_to + datetime.timedelta(days=1)
+                orders = orders.filter(
+                    Q(burial__plan_date__lte=burial_date_to) | \
+                    Q(dt_due__lt=burial_date_to)
+                )
             if form.cleaned_data['account_number_from']:
                 orders = orders.filter(loru_number__gte=form.cleaned_data['account_number_from'])
             if form.cleaned_data['account_number_to']:
@@ -313,6 +340,47 @@ class OrderList(LORURequiredMixin, PaginateListView):
         return queryset.filter(q)
 
     def get(self, request, *args, **kwargs):
+        if self.request.GET.get('burial_plan'):
+            form = self.get_form()
+            no_dates = True
+            if form.data and form.is_valid():
+                burial_date_from = form.cleaned_data['burial_date_from']
+                burial_date_to = form.cleaned_data['burial_date_to']
+                no_dates = not (burial_date_from and burial_date_to)
+            if no_dates:
+                return render_to_response(
+                    'simple_message.html',
+                    dict(message=_(u"Не задан интервал дат захоронения"))
+                )
+            if burial_date_from > burial_date_to:
+                return render_to_response(
+                    'simple_message.html',
+                    dict(message=_(u'"Дата захоронений: с" больше "Дата захоронений: по"'))
+                )
+            orders = self.filtered_orders()
+            if not orders:
+                return render_to_response(
+                    'simple_message.html',
+                    dict(message=_(u'Не найдены заказы по выбранным критериям'))
+                )
+            # Это почистит предыдущий order_by
+            orders = orders.order_by('dt_due', 'burial__plan_date')
+            cur_date = None
+            dates_pre = dict()
+            for order in orders:
+                order_date = order.dt_due or order.burial.plan_date
+                if order_date in dates_pre:
+                    dates_pre[order_date].append(order)
+                else:
+                    dates_pre[order_date] = [order]
+            dates = [dict(date=date, orders=dates_pre[date]) for date in sorted(dates_pre.keys())]
+            context = dict(
+                dates=dates,
+                start_date=burial_date_from,
+                end_date=burial_date_to,
+                print_now=True,
+            )
+            return render_to_response('reports/burial_plan.html', context)
         if not request.GET and request.user.profile.org.inn == '9103078189':
             form = self.get_form()
             get_attrs = u'?'
@@ -781,14 +849,16 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
 
 order_annulate = AnnulateOrder.as_view()
 
-class OrderStatus(LORURequiredMixin, DetailView):
-    def get_queryset(self):
-        return Order.objects.filter(loru=self.request.user.profile.org).distinct()
+class ApiOrderStatus(APIView):
 
-    def post(self, request, *args, **kwargs):
-        http_referer = request.META.get('HTTP_REFERER', '')
-        o = self.get_object()
-        if request.GET.get('advanced') and not o.is_paid():
+    def post(self, request, what, pk):
+        """
+        Установить статус заказа в what (advanced|paid)
+        """
+        if what.lower() not in (Order.STATUS_ADVANCED, Order.STATUS_PAID,):
+            raise Http404
+        o = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
+        if what == Order.STATUS_ADVANCED and not o.is_paid():
             if o.is_advanced():
                 o.status = Order.STATUS_POSTED
                 msg = _(u'Заказ: отмена получения аванса')
@@ -796,9 +866,8 @@ class OrderStatus(LORURequiredMixin, DetailView):
                 o.status = Order.STATUS_ADVANCED
                 msg = _(u'Заказ: получен аванс')
             o.save()
-            messages.success(self.request, msg)
             write_log(request, o, msg)
-        elif request.GET.get('paid'):
+        elif what == Order.STATUS_PAID:
             if o.is_paid():
                 o.status = Order.STATUS_POSTED
                 msg = _(u'Заказ: отмена получения оплаты')
@@ -806,14 +875,10 @@ class OrderStatus(LORURequiredMixin, DetailView):
                 o.status = Order.STATUS_PAID
                 msg = _(u'Заказ: оплачен')
             o.save()
-            messages.success(self.request, msg)
             write_log(request, o, msg)
-        if http_referer:
-            return redirect(http_referer)
-        else:
-            return redirect('order_list')
+        return Response(data={}, status=200)
 
-order_status = OrderStatus.as_view()
+api_order_status = ApiOrderStatus.as_view()
 
 class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
     """
