@@ -13,7 +13,7 @@
                     <p class="buttons">
                         <input type="submit" value="{% trans "искать" %}" class="btn btn-primary" />
                         <input type="submit" value="{% trans "печать" %}" class="btn" name="print" />
-                        {% if user.profile.is_ugh and user.profile.is_admin %}
+                        {% if user.profile.is_ugh and user.profile.is_admin and global_context_HOST_COUNTRY_CODE == "by" %}
                             <input type="submit" value="{% trans "экспорт в csv" %}" class="btn" name="export_csv" onclick="return confirm('{% trans "Экспорт может быть долгим и с нагрузкой на систему." %} Начать экспорт?');"/ title="{% trans "Экспорт данных, выбранных здесь, в csv-файл. Может занять длительное время и нагрузить систему. Запускайте экспорт только если это необходимо." %}">
                         {% endif %}
                         <input type="hidden" name="sort"  value="{{ sort }}" />
