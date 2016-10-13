@@ -25,7 +25,7 @@ from persons.models import DeathCertificate
 from logs.models import write_log
 from orders.models import Order
 from users.models import Org, Profile, is_cabinet_user
-from pd.utils import re_search
+from pd.utils import re_search, host_country_code
 from pd.forms import CommentForm
 from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
 from reports.models import make_report
@@ -496,7 +496,9 @@ class BurialsListView(PaginateListView):
         self.SORT_DEFAULT = '-pk'
         
     def get(self, *args, **kwargs):
-        if self.request.GET.get('export_csv'):
+        if self.request.GET.get('export_csv') and \
+           self.request.user.profile.is_admin() and \
+           host_country_code(self.request) == 'by':
             # Экспорт в csv в предложенном в Волковысске формате,
             #
             row0 = (

@@ -5,16 +5,15 @@
 
 # Конфигурационный файл для check_disk_space.py
 
-# Разделы, которые надо проверять:
+# Разделы, которые надо проверять, 
+# с порогами в процентах срабатывания,
+# когда надо отправлять почту:
 #
-CDS_PARTITIONS = (
-    '/',
-    '/home/www-data/django/MEDIA/pd_prod',
-)
-
-# В процентах, когда слать почту
-#
-CDS_THRESHOLD = 90
+CDS_THRESHOLD = {
+    '/': 90,
+    '/home': 95,
+    '/var/lib/postgresql': 85,
+}
 
 CDS_MANAGERS = (
     'suprune20@gmail.com',
