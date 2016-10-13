@@ -38,7 +38,7 @@ def email_(partition, usage, size, used, avail):
                    "Size:       %s\n" \
                    "Used:       %s\n" \
                    "Available:  %s\n" % \
-                    (partition, usage, CDS_THRESHOLD,
+                    (partition, usage, CDS_THRESHOLD[partition],
                      size, used, avail)
 
     msg = "From: %s\n%s\nSubject: %s\nDate: %s\n\n%s" \
@@ -47,7 +47,7 @@ def email_(partition, usage, size, used, avail):
     smtp.sendmail(from_addr, to_addr, msg)
     smtp.quit()
 
-for partition in CDS_PARTITIONS:
+for partition in CDS_THRESHOLD:
     outp = subprocess.check_output(
         r"df -H | egrep ' %s'$" % partition,
         stderr=subprocess.STDOUT,
@@ -59,8 +59,11 @@ for partition in CDS_PARTITIONS:
     size = splitted[1]
     used = splitted[2]
     avail = splitted[3]
-    if usage >= CDS_THRESHOLD:
+    if usage >= CDS_THRESHOLD[partition]:
         print " - reached the threshold! Sending mail"
         email_(partition, usage, size, used, avail)
     else:
-        print " - OK: not more than the threshold yet"
+        print " - OK: usage, %s%%, is not more than the threshold, %s%%, yet" % (
+            usage,
+            CDS_THRESHOLD[partition],
+        )
