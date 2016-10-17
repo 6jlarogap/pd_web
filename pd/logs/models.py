@@ -202,7 +202,6 @@ def compare_obj(verbose_name, old_val, new_val):
         elif isinstance(value, datetime.datetime):
             datetime_format = '%Y-%m-%d %H:%M:%S'
             if value.tzinfo:
-                local_tz = timezone(settings.TIME_ZONE)
                 value = value.astimezone(timezone(settings.TIME_ZONE)).replace(tzinfo=None)
             result = value.strftime(datetime_format)
         else:
