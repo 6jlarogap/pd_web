@@ -161,6 +161,10 @@
                                                 <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
+                                            {% if user.profile.org.inn == '9103075406' %}
+                                                <li><a href="{% url burials_doubles %}">{% trans "Дубли захоронений" %}</a></li>
+                                                <li class="divider"></li>
+                                            {% endif %}
                                         {% endif %}
                                         {% if user.profile.is_trade %}
                                             <li><a href="{{ global_context_FRONT_END_URL }}loru/products">{% trans "Товары и услуги" %}</a></li>
