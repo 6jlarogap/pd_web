@@ -1,4 +1,9 @@
 # coding=utf-8
+
+import datetime
+from pytz import timezone
+
+from django.conf import settings
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -190,6 +195,20 @@ def write_log(request, obj=None, msg='', reason=None, code=None, operation=None)
 
 
 def compare_obj(verbose_name, old_val, new_val):
+
+    def val_repr(value):
+        if value is None:
+            result = u'<пусто>'
+        elif isinstance(value, datetime.datetime):
+            datetime_format = '%Y-%m-%d %H:%M:%S'
+            if value.tzinfo:
+                local_tz = timezone(settings.TIME_ZONE)
+                value = value.astimezone(timezone(settings.TIME_ZONE)).replace(tzinfo=None)
+            result = value.strftime(datetime_format)
+        else:
+            result= unicode(value)
+        return result
+
     if isinstance(old_val, bool) or isinstance(new_val, bool):
          if old_val:
              old_val=_(u'Да')
@@ -199,8 +218,8 @@ def compare_obj(verbose_name, old_val, new_val):
              new_val=_(u'Да')
          else:
              new_val=_(u'Нет')
-    old_val = old_val is None and u'<пусто>' or unicode(old_val) #.__unicode__()
-    new_val = new_val is None and u'<пусто>' or unicode(new_val)
+    old_val = val_repr(old_val)
+    new_val = val_repr(new_val)
     if old_val=="None":
         res = _(u"'%(verbose_name)s': добавлено '%(new_val)s'") % dict(
             verbose_name=verbose_name, new_val=new_val
