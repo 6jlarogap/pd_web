@@ -64,6 +64,16 @@
             {% include "oper_stats_users.html" %}
         {% endwith  %}
 
+        <div id="place_certificates_grid">
+            <h3>{{ mark.place_certificates.caption }}, {% trans "всего за период" %}: {{ mark.place_certificates.total }}</h3>
+            <div id="place_certificates"></div>
+        </div>
+        <br />
+
+        {% with mark_mark=mark.place_certificates %}
+            {% include "oper_stats_users.html" %}
+        {% endwith  %}
+
         {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
             <div id="rejected_photos_grid">
                 <h3>{{ mark.rejected_photos.caption }}, {% trans "всего за период" %}: {{ mark.rejected_photos.total }}</h3>
@@ -117,6 +127,11 @@
                 {% col "number" "Число фото" %}{{ val }}{% endcol %}
             {% enddata %}
 
+            {% data mark.place_certificates.values "place_certificates" %}
+                {% col "string" "Date" %}"{{ val|date:"M j" }}"{% endcol %}
+                {% col "number" "Число паспортов" %}{{ val }}{% endcol %}
+            {% enddata %}
+
             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
 
                 {% data mark.rejected_photos.values "rejected_photos" %}
@@ -164,6 +179,10 @@
 
             {% if mark.inventoried_photos.total %}
                 {% graph "inventoried_photos" "inventoried_photos" %}
+            {% endif %}
+
+            {% if mark.place_certificates.total %}
+                {% graph "place_certificates" "place_certificates" %}
             {% endif %}
 
             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
