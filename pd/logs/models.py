@@ -28,6 +28,7 @@ class LogOperation(object):
     CLOSED_BURIAL_UGH =            13
     PHOTO_TO_PLACE_MOBILE =        14
     BURIAL_CREATE_IN_MOBILE =      15
+    PLACE_PASSPORT_ISSUED =        16
 
     Operation = [
         _(u'Установка признака "Занято" для могилы'),                                       #  1
@@ -45,6 +46,7 @@ class LogOperation(object):
         _(u'Ручное захоронение закрыто'),                                                   # 13
         _(u'Сделано фото места из мобильного приложения'),                                  # 14
         _(u'Захоронение создано из мобильного приложения'),                                 # 15
+        _(u'Выдан паспорт места'),                                                          # 16
     ]
 
 class Log(models.Model):

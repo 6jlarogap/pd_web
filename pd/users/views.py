@@ -1795,6 +1795,11 @@ class OmsOperStatsView(UGHRequiredMixin, ReportDatesMixin, PaginateListView):
                 qs=Q(operation=LogOperation.PHOTO_TO_PLACE_MOBILE),
                 caption=_(u"Фото мест с мобильного приложения"),
             ),
+            dict(
+                name='place_certificates',
+                qs=Q(operation=LogOperation.PLACE_PASSPORT_ISSUED),
+                caption=_(u"Паспорта мест захоронений"),
+            ),
         ]
         if settings.REDIRECT_LOGIN_TO_FRONT_END:
             parms += [

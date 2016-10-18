@@ -1475,6 +1475,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
             place_photo = PlacePhoto.objects.filter(place=place).order_by('-date_of_creation')[0].bfile
         except IndexError:
             place_photo = None
+        write_log(self.request, place, operation=LogOperation.PLACE_PASSPORT_ISSUED)
         return dict(
             table1=table1,
             table2=table2,
