@@ -1835,6 +1835,7 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
             WHERE
                 last_name > '' AND
                 "burials_burial"."annulated" = False AND
+                "burials_burial"."status" = 'closed' AND
                 "burials_cemetery"."id" IN (%(cemetery_pk_in_str)s) AND
                 "burials_cemetery"."ugh_id" = %(ugh_pk)s
 
