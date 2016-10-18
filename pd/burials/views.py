@@ -1560,6 +1560,11 @@ class ApiOmsPhotoPlacesDetail(APIView):
             data=PlaceLockSerializer(place, context=dict(request=request)).data
         )
 
+api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
+
+class ApiOmsPhotoPlacesChange(ApiOmsPhotoPlacesDetail):
+    permission_classes = (PermitIfUgh,)
+
     def put(self, request, pk):
         place, status, message = Place.check_invent_place(request, pk)
         if message:
@@ -1605,7 +1610,7 @@ class ApiOmsPhotoPlacesDetail(APIView):
                 write_log(request, place, m)
         return Response(status=status, data={})
 
-api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
+api_oms_photo_places_change = ApiOmsPhotoPlacesChange.as_view()
 
 class ApiOmsPhotoPlacesCounts(APIView):
     permission_classes = (PermitIfUgh,)
