@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+<h1>"{% trans "Дубль захороненных" %}"</h1>
+<br />
+<table class="table table-bordered table-striped">
+    <tr>
+        <th>
+            {% trans "Номер в книге" %}
+        </th>
+        <th>
+            {% trans "Источник" %}
+        </th>
+        <th>
+            {% trans "Заявитель" %}
+        </th>
+        <th>
+            {% trans "Кладбище" %}
+        </th>
+        <th>
+            {% trans "Место" %}
+        </th>
+        <th>
+            {% trans "Усопший" %}
+        </th>
+        <th>
+            {% trans "Дата" %}
+        </th>
+        <th>
+            {% trans "Статус" %}
+        </th>
+        <th>
+            {% trans "Комментарии" %}
+        </th>
+        <th>
+        </th>
+    </tr>
+    {% for b in burials %}
+        <tr>
+            <td>{{ b.account_number|default:"" }}</td>
+            <td>{{ b.get_source_type_display }}
+                {% if b.loru %}
+                    <br /> ({{ b.loru }})
+                {% endif %}
+            </td>
+            <td>
+                {% if b.applicant_organization %}
+                    {{ b.applicant_organization }}
+                {% elif b.applicant %}
+                    {{ b.applicant }}
+                    {% for phone in b.applicant.phone_str_list %}
+                        <br />{{ phone }}
+                    {% endfor %}
+                    {% if b.applicant.address %}
+                        <br/><br/>{{ b.applicant.address.short }}
+                    {% endif %}
+                {% endif %}
+            </td>
+            <td>
+                <b>{{ b.cemetery }}</b>
+            </td>
+            <td>
+                {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
+                <br /><a href="{% url burial_list %}?cemetery={{ b.cemetery.name }}&area={{ b.area.name }}&row={{ b.row|default_if_none:"" }}&place={{ b.place_number }}&per_page=10" target="_blank" >{% trans "Поиск по месту" %}</a>
+            </td>
+            <td><b>{{ b.deadman_or_bio }}</b>
+                {% if b.deadman.birth_date or b.deadman.death_date %}
+                    <br/>
+                    {{ b.deadman.birth_date|default_if_none:"..."}}
+                    &mdash;
+                    {{ b.deadman.death_date|default_if_none:"..." }}
+                {% endif %}
+            </td>
+            <td>{{ b.combined_date }}</td>
+            <td>
+                <b>{{ b.status_str|default:"" }}</b>
+                <br/>
+                {{ b.status_dt|default:"" }}
+                <br/>
+                {{ b.changed_by.profile|default:"" }}
+            </td>
+            <td>
+                {% for comment in b.burialcomment_set.all %}
+                    <i>{{ comment.dt_created.date }}</i><br>
+                    {{ comment.comment|linebreaksbr }}
+                    {% if not forloop.last %}
+                        <br />
+                    {% endif %}
+                {% endfor %}
+            </td>
+            <td>
+                <a class="btn" href="{% url view_burial b.pk %}" target="_blank">{% trans "просмотр" %}</a>
+                <br /><a class="btn" href="{% url edit_burial b.pk %}" target="_blank">{% trans "правка" %}</a>
+                {% if b.get_place %}
+                    <br /><a class="btn" href="{{ b.get_place.url }}" target="_blank">{% trans "место" %}</a>
+                {% endif %}
+                {% if b.burialfiles_set.all or b.get_place.placephoto_set.all %}
+                    <br /><br />
+                {% endif %}
+                {% if b.burialfiles_set.all %}
+                    <span class="badge" title="{% trans "Есть прикрепленные файлы" %}"><i class="icon-book icon-white"></i></span>
+                {% endif %}
+                {% if b.get_place.placephoto_set.all %}
+                    <span class="badge" title="{% trans "Место имеет фото" %}"><i class="icon-camera icon-white"></i></span>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

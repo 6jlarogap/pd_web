@@ -25,7 +25,7 @@ from django.contrib.contenttypes.models import ContentType
 from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
-from pd.models import validate_phone_as_number
+from pd.models import UnclearDate, validate_phone_as_number
 from pd.utils import utcisoformat, re_search, dictfetchall
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, \
@@ -1785,24 +1785,20 @@ api_client_site_placephotos = ApiClientSitePlacePhotosView.as_view()
 class BurialDoublesView(UGHRequiredMixin, TemplateView):
     template_name = 'burial_doubles.html'
 
-    def dates(self, d, what):
+    def date_str(self, d, what):
         date = '%s_date' % what
-        date_str = date_search_str = ''
+        result = ''
         if d[date]:
             date_no_day = '%s_date_no_day' % what
             date_no_month = '%s_date_no_month' % what
-            date_str = date_search_str = str(d[date].year)
-            if d[date_no_month]:
-                date_search_str = "01.%s" % date_search_str
-            else:
-                date_search_str = "%02d.%s" % (d[date].month, date_search_str)
-                date_str = date_search_str
-            if d[date_no_day]:
-                date_search_str = "01.%s" % date_search_str
-            else:
-                date_search_str = "%02d.%s" % (d[date].day, date_search_str)
-                date_str = date_search_str
-        return date_str, date_search_str
+            result = UnclearDate(
+                year=d[date].year,
+                month=None if d[date_no_month] else d[date].month,
+                day=None if d[date_no_day] else d[date].day,
+            ).str_safe(format='d.m.y')
+        else:
+            result = ''
+        return result
 
     def get_context_data(self, **kwargs):
         ugh_pk = self.request.user.profile.org.pk
@@ -1866,28 +1862,67 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
         cursor.execute(req_str)
         doubles = dictfetchall(cursor)
         for d in doubles:
+            d['search_str'] = "&".join([
+                "%s=%s" % (key, d[key],) for key in d if key not in ('cemetery_name', )
+            ])
             d['fio'] = d['last_name']
             if d['first_name']:
                 d['fio'] += u" %s" % d['first_name']
                 if d['middle_name']:
                     d['fio'] += u" %s" % d['middle_name']
-            d['birthdate'], birth_date_search_str = self.dates(d, 'birth')
-            d['deathdate'], death_date_search_str = self.dates(d, 'death')
-            d['search_str'] = \
-                "fio=%(fio)s&" \
-                "birth_date_from=%(birth_date_search_str)s&" \
-                "birth_date_to=%(birth_date_search_str)s&" \
-                "death_date_from=%(death_date_search_str)s&" \
-                "death_date_to=%(death_date_search_str)s&" \
-                "cemetery=%(cemetery_name)s&" \
-                "sort=-pk" \
-                 % dict(
-                     fio=d['fio'],
-                     birth_date_search_str=birth_date_search_str,
-                     death_date_search_str=death_date_search_str,
-                     cemetery_name=d['cemetery_name']
-            )
+            d['birthdate'] = self.date_str(d, 'birth')
+            d['deathdate'] = self.date_str(d, 'death')
 
         return dict(doubles=doubles)
 
 burials_doubles = BurialDoublesView.as_view()
+
+class BurialDoubleView(UGHRequiredMixin, TemplateView):
+    template_name = 'burial_double_table.html'
+
+    def unclear_date(self, what):
+        date = '%s_date' % what
+        date_no_day = '%s_date_no_day' % what
+        date_no_month = '%s_date_no_month' % what
+        bool_dict = { 'True': True, 'False': False }
+        if self.request.GET[date] != 'None':
+            clear_date = datetime.datetime.strptime(self.request.GET[date], '%Y-%m-%d')
+            result = UnclearDate(
+                year=clear_date.year,
+                month=None if bool_dict[self.request.GET[date_no_month]] else clear_date.month,
+                day=None if bool_dict[self.request.GET[date_no_day]] else clear_date.day,
+            )
+        else:
+            result = None
+        return result
+
+    def get_context_data(self, **kwargs):
+        burials=[]
+        try:
+            birth_date = self.unclear_date('birth')
+            death_date = self.unclear_date('death')
+            cemetery_pk = self.request.GET['cemetery_pk']
+            if cemetery_pk not in \
+                [str(c.pk) for c in Cemetery.editable_ugh_cemeteries(self.request.user)]:
+                raise Http404
+            burials = Burial.objects.filter(
+                status=Burial.STATUS_CLOSED,
+                annulated=False,
+                deadman__last_name=self.request.GET['last_name'],
+                deadman__first_name=self.request.GET['first_name'],
+                deadman__middle_name=self.request.GET['middle_name'],
+                deadman__birth_date__gte=birth_date.d,
+                deadman__birth_date__lt=birth_date.d + datetime.timedelta(days=1),
+                deadman__birth_date_no_month=birth_date.no_month,
+                deadman__birth_date_no_day=birth_date.no_day,
+                deadman__death_date__gte=death_date.d,
+                deadman__death_date__lt=death_date.d + datetime.timedelta(days=1),
+                deadman__death_date_no_month=death_date.no_month,
+                deadman__death_date_no_day=death_date.no_day,
+                cemetery__pk=cemetery_pk,
+            ).order_by('-pk')
+        except (ValueError, KeyError, TypeError, ):
+            raise Http404
+        return dict(burials=burials)
+            
+burials_double = BurialDoubleView.as_view()

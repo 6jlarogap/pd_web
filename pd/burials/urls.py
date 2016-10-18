@@ -86,4 +86,5 @@ urlpatterns = patterns('burials.views',
         'api_client_site_placephotos', name='api_client_site_placephotos'),
 
     url(r'^burials/doubles/$', 'burials_doubles', name='burials_doubles'),
+    url(r'^burials/double/$', 'burials_double', name='burials_double'),
 )
