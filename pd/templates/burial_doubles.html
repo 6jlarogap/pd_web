@@ -5,6 +5,11 @@
 {% block content %}
     <h1>{% trans "Дублируемые захороненные" %}</h1>
     <br />
+    <h4>
+        {% trans "Всего" %} {{ doubles|length }} "{% trans "дублей" %}".
+        <i>{% trans "Поиск только закрытых захоронений на доступных кладбищах" %}!</i>
+    </h4>
+    <br />
     <table class="table table-bordered">
     <tr>
         <th>
