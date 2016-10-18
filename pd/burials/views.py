@@ -1828,7 +1828,9 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
             INNER JOIN "burials_cemetery" ON ("burials_burial"."cemetery_id" = "burials_cemetery"."id")
             INNER JOIN "persons_baseperson" ON ("persons_deadperson"."baseperson_ptr_id" = "persons_baseperson"."id")
 
-            WHERE last_name > '' and "burials_cemetery"."ugh_id" = %(ugh_pk)s
+            WHERE last_name > '' AND
+                  "burials_burial"."annulated" = False AND
+                  "burials_cemetery"."ugh_id" = %(ugh_pk)s
 
             GROUP BY
                 last_name,
