@@ -1806,6 +1806,9 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ugh_pk = self.request.user.profile.org.pk
+        cemetery_pk_in=[c.pk for c in Cemetery.editable_ugh_cemeteries(self.request.user)]
+        if not cemetery_pk_in:
+            raise Http404
         req_str = '''
         SELECT
             "persons_baseperson"."last_name" as last_name,
@@ -1820,7 +1823,8 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
             "persons_deadperson"."death_date_no_day" as death_date_no_day,
             "persons_deadperson"."death_date" as death_date,
 
-            "burials_cemetery"."name" as cemetery_name
+            "burials_cemetery"."name" as cemetery_name,
+            "burials_cemetery"."id" as cemetery_pk
 
             FROM "persons_deadperson"
 
@@ -1828,7 +1832,12 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
             INNER JOIN "burials_cemetery" ON ("burials_burial"."cemetery_id" = "burials_cemetery"."id")
             INNER JOIN "persons_baseperson" ON ("persons_deadperson"."baseperson_ptr_id" = "persons_baseperson"."id")
 
-            WHERE last_name > '' and "burials_cemetery"."ugh_id" = %(ugh_pk)s
+            WHERE
+                last_name > '' AND
+                "burials_burial"."annulated" = False AND
+                "burials_burial"."status" = 'closed' AND
+                "burials_cemetery"."id" IN (%(cemetery_pk_in_str)s) AND
+                "burials_cemetery"."ugh_id" = %(ugh_pk)s
 
             GROUP BY
                 last_name,
@@ -1848,7 +1857,10 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
                 first_name,
                 middle_name
             ;
-        ''' % dict(ugh_pk=ugh_pk)
+        ''' % dict(
+                cemetery_pk_in_str=", ".join([str(pk) for pk in cemetery_pk_in]),
+                ugh_pk=ugh_pk,
+            )
 
         cursor = connection.cursor()
         cursor.execute(req_str)
