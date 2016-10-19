@@ -194,7 +194,7 @@ class PlaceDeadmenMixin(object):
 
     def deadmen_func(self, place):
         result = []
-        for burial in place.burial_set.all():
+        for burial in place.burial_set.filter(annulated=False):
             if burial.deadman:
                 result.append(DeadPerson2Serializer(burial.deadman).data)
         return result

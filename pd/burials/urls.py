@@ -67,7 +67,8 @@ urlpatterns = patterns('burials.views',
     url(r'^api/cemetery-editors/?$', 'api_cemeteries_editors', name='api_cemeteries_editors'),
 
     url(r'^api/oms/photo-places/?$', 'api_oms_photo_places', name='api_oms_photo_places'),
-    url(r'^api/oms/photo-places/(?P<pk>\d+)/?$', 'api_oms_photo_places_detail', name='api_oms_photo_places_detail'),
+    url(r'^api/oms/photo-places/(?P<pk>\d+)/?$', 'api_oms_photo_places_change', name='api_oms_photo_places_change'),
+    url(r'^api/oms/photo-places/place/(?P<pk>\d+)/?$', 'api_oms_photo_places_detail', name='api_oms_photo_places_detail'),
     url(r'^api/oms/photo-places/counts/?$', 'api_oms_photo_places_counts', name='api_oms_photo_places_counts'),
 
     url(r'^api/oms/cemeteries/?$', 'api_oms_cemeteries', name='api_oms_cemeteries'),
@@ -84,4 +85,5 @@ urlpatterns = patterns('burials.views',
         r'^api/clients/(?P<ugh_token>[0-9a-f]+)/burials-places/(?P<place_pk>\d+)/photos/?$',
         'api_client_site_placephotos', name='api_client_site_placephotos'),
 
+    url(r'^burials/doubles/$', 'burials_doubles', name='burials_doubles'),
 )

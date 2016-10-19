@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Дублируемые захороненные" %}</h1>
+    <br />
+    <h4>
+        {% trans "Всего" %} {{ doubles|length }} "{% trans "дублей" %}".
+        <i>{% trans "Поиск только закрытых захоронений на доступных кладбищах" %}!</i>
+    </h4>
+    <br />
+    <table class="table table-bordered">
+    <tr>
+        <th>
+            {% trans "ФИО" %}
+        </th>
+        <th>
+            {% trans "Дата рождения" %}
+        </th>
+        <th>
+            {% trans "Дата смерти" %}
+        </th>
+        <th>
+            {% trans "Кладбище" %}
+        </th>
+        <th>
+        </th>
+    </tr>
+    {% for d in doubles %}
+        <tr>
+            <td>
+                {{ d.fio }}
+            </td>
+            <td>
+                {{ d.birthdate }}
+            </td>
+            <td>
+                {{ d.deathdate }}
+            </td>
+            <td>
+                {{ d.cemetery_name }}
+            </td>
+            <td>
+                <a href="{% url burial_list %}?{{ d.search_str }}" target="_blank" >{% trans "Найти" %}</a>
+            </td>
+        </tr>
+    {% endfor %}
+    </table>
+
+{% endblock %}

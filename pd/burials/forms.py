@@ -594,11 +594,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                         # Мало ли какие поля будут в форме в добавление к тем,
                         # что из модели, на которой форма основана:
                         pass
-        applicant_id_form_initial['flag_no_applicant_doc_required'] = self.instance.flag_no_applicant_doc_required \
-            if self.instance.pk and \
-               self.instance.applicant and \
-               self.instance.can_personal_data(self.request) \
-            else True
+        applicant_id_form_initial['flag_no_applicant_doc_required'] = True
+        if self.instance.pk:
+            if self.instance.applicant and \
+               self.instance.can_personal_data(self.request):
+                applicant_id_form_initial['flag_no_applicant_doc_required'] = \
+                    self.instance.flag_no_applicant_doc_required
+            elif self.instance.is_archive():
+                applicant_id_form_initial['flag_no_applicant_doc_required'] = False
 
         self.applicant_form = AlivePersonForm(data=data, prefix='applicant',
                                               instance=applicant,

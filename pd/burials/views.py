@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 from django.db.models.query_utils import Q
 from django.db.models import Count, Avg
 from django.shortcuts import redirect, render, get_object_or_404
@@ -26,7 +26,7 @@ from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from pd.models import validate_phone_as_number
-from pd.utils import utcisoformat, re_search
+from pd.utils import utcisoformat, re_search, dictfetchall
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, \
                           AreaMergeForm, BurialfileCommentEditForm, BurialCommentEditFormSet, \
@@ -1475,6 +1475,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
             place_photo = PlacePhoto.objects.filter(place=place).order_by('-date_of_creation')[0].bfile
         except IndexError:
             place_photo = None
+        # write_log(self.request, place, operation=LogOperation.PLACE_PASSPORT_ISSUED)
         return dict(
             table1=table1,
             table2=table2,
@@ -1560,6 +1561,11 @@ class ApiOmsPhotoPlacesDetail(APIView):
             data=PlaceLockSerializer(place, context=dict(request=request)).data
         )
 
+api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
+
+class ApiOmsPhotoPlacesChange(ApiOmsPhotoPlacesDetail):
+    permission_classes = (PermitIfUgh,)
+
     def put(self, request, pk):
         place, status, message = Place.check_invent_place(request, pk)
         if message:
@@ -1605,7 +1611,7 @@ class ApiOmsPhotoPlacesDetail(APIView):
                 write_log(request, place, m)
         return Response(status=status, data={})
 
-api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
+api_oms_photo_places_change = ApiOmsPhotoPlacesChange.as_view()
 
 class ApiOmsPhotoPlacesCounts(APIView):
     permission_classes = (PermitIfUgh,)
@@ -1775,3 +1781,113 @@ class ApiClientSitePlacePhotosView(ApiClientSiteMixin, APIView):
         return Response(status=200, data=place.get_photo_gallery(request))
 
 api_client_site_placephotos = ApiClientSitePlacePhotosView.as_view()
+
+class BurialDoublesView(UGHRequiredMixin, TemplateView):
+    template_name = 'burial_doubles.html'
+
+    def dates(self, d, what):
+        date = '%s_date' % what
+        date_str = date_search_str = ''
+        if d[date]:
+            date_no_day = '%s_date_no_day' % what
+            date_no_month = '%s_date_no_month' % what
+            date_str = date_search_str = str(d[date].year)
+            if d[date_no_month]:
+                date_search_str = "01.%s" % date_search_str
+            else:
+                date_search_str = "%02d.%s" % (d[date].month, date_search_str)
+                date_str = date_search_str
+            if d[date_no_day]:
+                date_search_str = "01.%s" % date_search_str
+            else:
+                date_search_str = "%02d.%s" % (d[date].day, date_search_str)
+                date_str = date_search_str
+        return date_str, date_search_str
+
+    def get_context_data(self, **kwargs):
+        ugh_pk = self.request.user.profile.org.pk
+        cemetery_pk_in=[c.pk for c in Cemetery.editable_ugh_cemeteries(self.request.user)]
+        if not cemetery_pk_in:
+            raise Http404
+        req_str = '''
+        SELECT
+            "persons_baseperson"."last_name" as last_name,
+            "persons_baseperson"."first_name" as first_name,
+            "persons_baseperson"."middle_name" as middle_name,
+
+            "persons_baseperson"."birth_date_no_month" as birth_date_no_month,
+            "persons_baseperson"."birth_date_no_day" as birth_date_no_day,
+            "persons_baseperson"."birth_date" as birth_date,
+
+            "persons_deadperson"."death_date_no_month" as death_date_no_month,
+            "persons_deadperson"."death_date_no_day" as death_date_no_day,
+            "persons_deadperson"."death_date" as death_date,
+
+            "burials_cemetery"."name" as cemetery_name,
+            "burials_cemetery"."id" as cemetery_pk
+
+            FROM "persons_deadperson"
+
+            INNER JOIN "burials_burial" ON ("persons_deadperson"."baseperson_ptr_id" = "burials_burial"."deadman_id")
+            INNER JOIN "burials_cemetery" ON ("burials_burial"."cemetery_id" = "burials_cemetery"."id")
+            INNER JOIN "persons_baseperson" ON ("persons_deadperson"."baseperson_ptr_id" = "persons_baseperson"."id")
+
+            WHERE
+                last_name > '' AND
+                "burials_burial"."annulated" = False AND
+                "burials_burial"."status" = 'closed' AND
+                "burials_cemetery"."id" IN (%(cemetery_pk_in_str)s) AND
+                "burials_cemetery"."ugh_id" = %(ugh_pk)s
+
+            GROUP BY
+                last_name,
+                first_name,
+                middle_name,
+                birth_date_no_month,
+                birth_date_no_day, birth_date,
+                death_date_no_month,
+                death_date_no_day,
+                death_date,
+                "burials_cemetery"."id"
+
+            HAVING Count(*) > 1
+
+            ORDER BY
+                last_name,
+                first_name,
+                middle_name
+            ;
+        ''' % dict(
+                cemetery_pk_in_str=", ".join([str(pk) for pk in cemetery_pk_in]),
+                ugh_pk=ugh_pk,
+            )
+
+        cursor = connection.cursor()
+        cursor.execute(req_str)
+        doubles = dictfetchall(cursor)
+        for d in doubles:
+            d['fio'] = d['last_name']
+            if d['first_name']:
+                d['fio'] += u" %s" % d['first_name']
+                if d['middle_name']:
+                    d['fio'] += u" %s" % d['middle_name']
+            d['birthdate'], birth_date_search_str = self.dates(d, 'birth')
+            d['deathdate'], death_date_search_str = self.dates(d, 'death')
+            d['search_str'] = \
+                "fio=%(fio)s&" \
+                "birth_date_from=%(birth_date_search_str)s&" \
+                "birth_date_to=%(birth_date_search_str)s&" \
+                "death_date_from=%(death_date_search_str)s&" \
+                "death_date_to=%(death_date_search_str)s&" \
+                "cemetery=%(cemetery_name)s&" \
+                "sort=-pk" \
+                 % dict(
+                     fio=d['fio'],
+                     birth_date_search_str=birth_date_search_str,
+                     death_date_search_str=death_date_search_str,
+                     cemetery_name=d['cemetery_name']
+            )
+
+        return dict(doubles=doubles)
+
+burials_doubles = BurialDoublesView.as_view()
