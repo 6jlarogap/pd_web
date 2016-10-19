@@ -129,7 +129,7 @@
 
             {% data mark.place_certificates.values "place_certificates" %}
                 {% col "string" "Date" %}"{{ val|date:"M j" }}"{% endcol %}
-                {% col "number" "Число паспортов" %}{{ val }}{% endcol %}
+                {% col "number" "Количество" %}{{ val }}{% endcol %}
             {% enddata %}
 
             {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}

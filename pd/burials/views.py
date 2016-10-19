@@ -643,8 +643,6 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
             phone_set = object.responsible.phone_set.all()
             self.new_msg += prepare_m2m_log(_(u'Телефон'), old_phones,  phone_set)
             
-          
-                
         try:
             old_address = self.old_object.responsible.address
         except AttributeError:
@@ -658,10 +656,15 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
         if unicode(old_address)!= unicode(new_address):
             self.new_msg += [compare_obj(_(u'Адрес'), old_address, new_address)]
         
+        responsible_changed = False
         if self.old_responsible and unicode(self.old_responsible) != unicode(object.responsible):
             self.new_msg += [compare_obj(_(u'Ответственный'), self.old_responsible, object.responsible)]
+            responsible_changed = True
 
         log_object(self.request, obj=object, old=self.old_object, new=object, reason=_(u'Место %s изменено') % object.place, new_msg=self.new_msg)
+
+        if not self.old_responsible and object.responsible or responsible_changed:
+            write_log(self.request, object, operation=LogOperation.PLACE_PASSPORT_ISSUED)
 
         if object.responsible:
             object.responsible.save()
@@ -1475,7 +1478,6 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
             place_photo = PlacePhoto.objects.filter(place=place).order_by('-date_of_creation')[0].bfile
         except IndexError:
             place_photo = None
-        # write_log(self.request, place, operation=LogOperation.PLACE_PASSPORT_ISSUED)
         return dict(
             table1=table1,
             table2=table2,
