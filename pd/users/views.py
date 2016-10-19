@@ -1798,7 +1798,7 @@ class OmsOperStatsView(UGHRequiredMixin, ReportDatesMixin, PaginateListView):
             dict(
                 name='place_certificates',
                 qs=Q(operation=LogOperation.PLACE_PASSPORT_ISSUED),
-                caption=_(u"Паспорта мест захоронений"),
+                caption=_(u"Место получило ответственного, выдача паспорта места"),
             ),
         ]
         if settings.REDIRECT_LOGIN_TO_FRONT_END:
