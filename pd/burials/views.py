@@ -1883,16 +1883,17 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
     template_name = 'burial_double_table.html'
 
     def unclear_date(self, what):
+        req = self.request.GET
         date = '%s_date' % what
         date_no_day = '%s_date_no_day' % what
         date_no_month = '%s_date_no_month' % what
         bool_dict = { 'True': True, 'False': False }
-        if self.request.GET[date] != 'None':
-            clear_date = datetime.datetime.strptime(self.request.GET[date], '%Y-%m-%d')
+        if req[date] != 'None':
+            clear_date = datetime.datetime.strptime(req[date], '%Y-%m-%d')
             result = UnclearDate(
                 year=clear_date.year,
-                month=None if bool_dict[self.request.GET[date_no_month]] else clear_date.month,
-                day=None if bool_dict[self.request.GET[date_no_day]] else clear_date.day,
+                month=None if bool_dict[req[date_no_month]] else clear_date.month,
+                day=None if bool_dict[req[date_no_day]] else clear_date.day,
             )
         else:
             result = None
@@ -1900,19 +1901,21 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         burials=[]
+        get_parms = []
+        req = self.request.GET
         try:
             birth_date = self.unclear_date('birth')
             death_date = self.unclear_date('death')
-            cemetery_pk = self.request.GET['cemetery_pk']
+            cemetery_pk = req['cemetery_pk']
             if cemetery_pk not in \
                 [str(c.pk) for c in Cemetery.editable_ugh_cemeteries(self.request.user)]:
                 raise Http404
             burials = Burial.objects.filter(
                 status=Burial.STATUS_CLOSED,
                 annulated=False,
-                deadman__last_name=self.request.GET['last_name'],
-                deadman__first_name=self.request.GET['first_name'],
-                deadman__middle_name=self.request.GET['middle_name'],
+                deadman__last_name=req['last_name'],
+                deadman__first_name=req['first_name'],
+                deadman__middle_name=req['middle_name'],
                 deadman__birth_date__gte=birth_date.d,
                 deadman__birth_date__lt=birth_date.d + datetime.timedelta(days=1),
                 deadman__birth_date_no_month=birth_date.no_month,
@@ -1925,6 +1928,26 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
             ).order_by('-pk')
         except (ValueError, KeyError, TypeError, ):
             raise Http404
-        return dict(burials=burials)
-            
+
+        message = ''
+        burials_count = burials.count()
+        put_controls = False
+        if burials_count < 1:
+            message = _(u"Не найдены одни и те же захороненные по заданным параметрам поиска")
+        elif burials_count == 1:
+            message = _(u"Найдено только одно захоронение.")
+        else:
+            put_controls = True
+
+        return dict(
+            burials=burials,
+            message=message,
+            put_controls=put_controls,
+        )
+
+    def post(self, request, *args, **kwargs):
+        print request.POST
+        print request.GET
+        return redirect(request.get_full_path())
+
 burials_double = BurialDoubleView.as_view()
