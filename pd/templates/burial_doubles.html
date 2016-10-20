@@ -42,7 +42,7 @@
                 {{ d.cemetery_name }}
             </td>
             <td>
-                <a href="{% url burial_list %}?{{ d.search_str }}" target="_blank" >{% trans "Найти" %}</a>
+                <a href="{% url burials_double %}?{{ d.search_str }}" target="_blank" >{% trans "Найти" %}</a>
             </td>
         </tr>
     {% endfor %}
