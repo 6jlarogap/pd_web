@@ -11,28 +11,21 @@
             var val = $(this).val();
             var found = val.match(/^destination_(\d+)$/);
             var checked = $(this).attr('checked');
-            console.log(checked);
             if (found) {
+                if ($("input[name=submit_merge_]").attr("disabled")) {
+                    $("input[name=submit_merge_]").removeAttr("disabled");
+                }
                 pk = found[1];
-                $('input[name=source_photo_]').each(function() {
-                    var found = $(this).val().match(/^source_photo_(\d+)$/);
-                    if (found) {
-                        if (found[1] == pk) {
-                            $(this).removeAttr("checked");
-                            $(this).closest('p').hide();
-                        } else {
-                            $(this).closest('p').show();
-                        }
-                    }
-                });
                 $('input[name=source_responsible_]').each(function() {
                     var found = $(this).val().match(/^source_responsible_(\d+)$/);
                     if (found) {
                         if (found[1] == pk) {
-                            $(this).removeAttr("checked");
-                            $(this).closest('p').hide();
+                            if (!$(this).attr("checked")) {
+                                $(this).prop("checked", true);
+                            }
+                            $("#source_responsible_text_" + found[1]).html("{% trans "Здесь ответственный сохранится" %}");
                         } else {
-                            $(this).closest('p').show();
+                            $("#source_responsible_text_" + found[1]).html("{% trans "Отсюда берём ответственного" %}");
                         }
                     }
                 });
@@ -40,10 +33,25 @@
                     var found = $(this).val().match(/^source_place_(\d+)$/);
                     if (found) {
                         if (found[1] == pk) {
-                            $(this).removeAttr("checked");
-                            $(this).closest('p').hide();
+                            if (!$(this).attr("checked")) {
+                                $(this).prop("checked", true);
+                            }
+                            $("#source_place_text_" + found[1]).html("{% trans "Здесь место сохранится" %}");
                         } else {
-                            $(this).closest('p').show();
+                            $("#source_place_text_" + found[1]).html("{% trans "Отсюда берём место" %}");
+                        }
+                    }
+                });
+                $('input[name^=source_photo_]').each(function() {
+                    var found = $(this).val().match(/^source_photo_(\d+)$/);
+                    if (found) {
+                        if (found[1] == pk) {
+                            if (!$(this).attr("checked")) {
+                                $(this).attr("checked", "checked");
+                            }
+                            $("#source_photo_text_" + found[1]).html("{% trans "Здесь фото сохранится" %}");
+                        } else {
+                            $("#source_photo_text_" + found[1]).html("{% trans "Отсюда берём фото" %}");
                         }
                     }
                 });
@@ -52,15 +60,16 @@
         $("input[name=destination_]").each(function() {
             $(this).removeAttr("checked");
         });
-        $("input[name=source_photo_]").each(function() {
-            $(this).removeAttr("checked");
-        });
         $("input[name=source_responsible_]").each(function() {
             $(this).removeAttr("checked");
         });
         $("input[name=source_place_]").each(function() {
             $(this).removeAttr("checked");
         });
+        $("input[name^=source_photo_]").each(function() {
+            $(this).removeAttr("checked");
+        });
+        $("input[name=submit_merge_]").prop("disabled", true);
     });
 </script>
 
@@ -123,7 +132,7 @@
                 <b>{{ b.cemetery }}</b>
             </td>
             <td>
-                <p style="color:blue"><input type="radio" name="source_place_" value="source_place_{{ b.pk }}"/> <b>{% trans "Отсюда берём место" %}</b></p>
+                <p style="color:blue"><input type="radio" name="source_place_" value="source_place_{{ b.pk }}"/> <b><span id="source_place_text_{{ b.pk }}">{% trans "Отсюда берём место" %}</span></b></p>
                 {% trans "Уч." %} {{ b.area.name|default:"" }}<br/>
                 {% if b.row %}{% trans "ряд" %} {{ b.row }},{% endif %}
                 {% trans "место" %} {{ b.place_number }},
@@ -134,7 +143,7 @@
             </td>
             <td>
                 {% if b.get_responsible %}
-                    <p style="color:blue"><input type="radio" name="source_responsible_" value="source_responsible_{{ b.pk }}"/> <b>{% trans "Отсюда берём ответственного" %}</b></p>
+                    <p style="color:blue"><input type="radio" name="source_responsible_" value="source_responsible_{{ b.pk }}"/> <b><span id="source_responsible_text_{{ b.pk }}">{% trans "Отсюда берём ответственного" %}</span></b></p>
                     {{ b.get_responsible }}
                 {% endif %}
             </td>
@@ -178,7 +187,7 @@
                 {% endif %}
                 {% if b.get_place.placephoto_set.all %}
                     <br />
-                    <p style="color:blue"><input type="radio" name="source_photo_" value="source_photo_{{ b.pk }}"/> <b>{% trans "Отсюда берём фото" %}</b></p>
+                    <p style="color:blue"><input type="checkbox" name="source_photo_{{ b.pk }}" value="source_photo_{{ b.pk }}"/> <b><span id="source_photo_text_{{ b.pk }}">{% trans "Отсюда берём фото" %}</span></b></p>
                     <span class="badge" title="{% trans "Место имеет фото" %}"><i class="icon-camera icon-white"></i></span>
                 {% endif %}
             </td>
@@ -193,8 +202,9 @@
 
 {% if put_controls %}
     <br />
-    <input type="submit" class="btn" value="{% trans "Объединить" %}" name="submit_merge" disabled/>
-    <i>Извините, собственно перенос пока не сделан</i>
+    <input type="submit" class="btn btn-primary" value="{% trans "Объединить" %}" name="submit_merge_" disabled/>
+    <i>Извините, собственно перенос пока не сделан</i>&nbsp;
+    <input type="button" class="btn" value="{% trans "Сброс" %}" onclick="location.reload()"/>
     </form>
 {% endif %}
 
