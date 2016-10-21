@@ -1910,22 +1910,34 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
             if cemetery_pk not in \
                 [str(c.pk) for c in Cemetery.editable_ugh_cemeteries(self.request.user)]:
                 raise Http404
-            burials = Burial.objects.filter(
+            qs = Q(
                 status=Burial.STATUS_CLOSED,
                 annulated=False,
                 deadman__last_name=req['last_name'],
                 deadman__first_name=req['first_name'],
                 deadman__middle_name=req['middle_name'],
-                deadman__birth_date__gte=birth_date.d,
-                deadman__birth_date__lt=birth_date.d + datetime.timedelta(days=1),
-                deadman__birth_date_no_month=birth_date.no_month,
-                deadman__birth_date_no_day=birth_date.no_day,
-                deadman__death_date__gte=death_date.d,
-                deadman__death_date__lt=death_date.d + datetime.timedelta(days=1),
-                deadman__death_date_no_month=death_date.no_month,
-                deadman__death_date_no_day=death_date.no_day,
                 cemetery__pk=cemetery_pk,
-            ).order_by('-pk')
+            )
+            if birth_date is None:
+                qs &= Q(deadman__birth_date__isnull=True)
+            else:
+                qs &= Q(
+                    deadman__birth_date__gte=birth_date.d,
+                    deadman__birth_date__lt=birth_date.d + datetime.timedelta(days=1),
+                    deadman__birth_date_no_month=birth_date.no_month,
+                    deadman__birth_date_no_day=birth_date.no_day,
+                )
+            if birth_date is None:
+                qs &= Q(deadman__birth_date__isnull=True)
+            else:
+                qs &= Q(
+                    deadman__death_date__gte=death_date.d,
+                    deadman__death_date__lt=death_date.d + datetime.timedelta(days=1),
+                    deadman__death_date_no_month=death_date.no_month,
+                    deadman__death_date_no_day=death_date.no_day,
+                )
+
+            burials = Burial.objects.filter(qs).order_by('-pk')
         except (ValueError, KeyError, TypeError, ):
             raise Http404
 
