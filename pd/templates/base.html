@@ -161,7 +161,7 @@
                                                 <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
-                                            {% if user.profile.is_registrator and user.profile.org.inn == '9103075406' %}
+                                            {% if user.profile.is_registrator %}
                                                 <li><a href="{% url burials_doubles %}">{% trans "Дубли захоронений" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
