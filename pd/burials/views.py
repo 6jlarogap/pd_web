@@ -1946,6 +1946,8 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
         )
 
     def post(self, request, *args, **kwargs):
+        #for r in request.POST:
+            #print r, request.POST[r]
         return redirect(request.get_full_path())
 
 burials_double = BurialDoubleView.as_view()
