@@ -465,12 +465,12 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
                 gallery.append(request.build_absolute_uri(pph.bfile.url))
         return gallery
         
-    def first_photo(self, request):
+    def last_photo(self, request):
         """
-        Первое фото места, задает общий план
+        Последнее фото места, самое актуальное
         """
         try:
-            photo = PlacePhoto.objects.filter(place=self).order_by('date_of_creation')[0]
+            photo = PlacePhoto.objects.filter(place=self).order_by('-date_of_creation')[0]
             return photo.bfile and request.build_absolute_uri(photo.bfile.url) or ''
         except IndexError:
             return ''

@@ -210,7 +210,7 @@ class ApiClientSitePlacesSerializer(PlaceDeadmenMixin, ApiPlacesSerializer):
         fields = ('id', 'address', 'location', 'photo', 'deadmen', 'hasResponsible')
 
     def photo_func(self, place):
-        return place.first_photo(self.context['request'])
+        return place.last_photo(self.context['request'])
 
     def hasHesponsible_func(self, place):
         return bool(place.responsible and place.responsible.last_name)
