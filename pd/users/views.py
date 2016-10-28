@@ -3674,28 +3674,45 @@ class ApiVideoAggregatedVotesView(APIView):
         req_str = '''
             SELECT
                 "time" as "timestamp",
+                "like" as "type",
                 count(*) as "total"
             FROM
                 (
                     SELECT
                         "time",
+                        "like",
                         "user_id"
                     FROM "users_youtubevote"
-                    WHERE "youtubevideo_id"=%(youtubevideo_id)s AND "like"='%(like)s'
-                    GROUP BY "time", "user_id"
-                    ORDER BY "time"
+                    WHERE "youtubevideo_id"=%(youtubevideo_id)s
+                    GROUP BY "time", "like", "user_id"
                 )
             AS "foo"
-            GROUP BY "time";
+            GROUP BY "time", "like"
+            ORDER BY "timestamp";
         '''
         cursor = connection.cursor()
-        for like in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
-            cursor.execute(req_str % dict(
-                youtubevideo_id=youtubevideo.pk,
-                like=like,
-            ))
-            data[like] = dictfetchall(cursor)
+        cursor.execute(req_str % dict(
+            youtubevideo_id=youtubevideo.pk,
+        ))
+        data = {
+            YoutubeVote.LIKE_UP: [],
+            YoutubeVote.LIKE_DOWN: [],
+        }
+        for row in cursor.fetchall():
+            if row[1] == YoutubeVote.LIKE_UP:
+                data[YoutubeVote.LIKE_UP].append(
+                    dict(
+                        timestamp=row[0],
+                        total=row[2],
+                ))
+            elif row[1] == YoutubeVote.LIKE_DOWN:
+                data[YoutubeVote.LIKE_DOWN].append(
+                    dict(
+                        timestamp=row[0],
+                        total=row[2],
+                ))
 
+        #for like in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
             #data[like] = YoutubeVote.objects.\
                             #extra(select={'timestamp': 'time'}). \
                             #values('timestamp'). \
