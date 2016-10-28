@@ -3698,6 +3698,7 @@ class ApiVideoAggregatedVotesView(APIView):
             YoutubeVote.LIKE_UP: [],
             YoutubeVote.LIKE_DOWN: [],
         }
+        # data = dictfetchall(cursor)
         for row in cursor.fetchall():
             if row[1] == YoutubeVote.LIKE_UP:
                 data[YoutubeVote.LIKE_UP].append(
