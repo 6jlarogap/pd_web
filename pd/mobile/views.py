@@ -25,7 +25,7 @@ from burials.models import Burial
 from persons.models import DeadPerson
 from persons.models import BasePerson
 from users.models import PermitIfUgh
-from logs.models import write_log, Log, LogOperation, DeleteLog
+from logs.models import write_log, Log, LogOperation, DeleteLog, log_object
 from pd.models import UnclearDate
 from pd.utils import utc2local, get_image, utcisoformat
 
@@ -37,7 +37,7 @@ from django.db.models import Q
 from datetime import datetime
 from decimal import Decimal
 
-import os
+import os, copy
 from axmlparserpy import apk
 
 from StringIO import StringIO
@@ -600,16 +600,19 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             if 'dt_created' in place_defaults:
                 del place_defaults['dt_created']
             do_save = False
+            old_place = copy.copy(place)
             for f in place_defaults:
                 if place_defaults[f] != getattr(place, f):
                     setattr(place, f, place_defaults[f])
                     do_save = True
             if do_save:
                 place.save()
-                write_log(
-                    request,
-                    place,
-                    _(u"Место изменено через мобильное приложение при выгрузке места"),
+                log_object(
+                    request=self.request,
+                    reason=_(u"Место изменено через мобильное приложение при выгрузке места"),
+                    obj=place,
+                    old=old_place,
+                    new=place,
                 )
         else:
             return self.response_already_exists()
@@ -635,6 +638,7 @@ class ApiMobilePlace(PlaceUploadMixin, APIView):
             cemetery__ugh=request.user.profile.org)
         place_fields = self.get_place_parms(request, do_put=True)
         do_save = False
+        old_place = copy.copy(place)
         for f in place_fields:
             if place_fields[f] != getattr(place, f):
                 setattr(place, f, place_fields[f])
@@ -660,10 +664,12 @@ class ApiMobilePlace(PlaceUploadMixin, APIView):
                     b.row = place.row
                     b.place_number = place.place
                     b.save()
-                write_log(
-                    request,
-                    place,
-                    _(u"Место изменено через мобильное приложение"),
+                log_object(
+                    request=self.request,
+                    reason=_(u"Место изменено через мобильное приложение"),
+                    obj=place,
+                    old=old_place,
+                    new=place,
                 )
             except IntegrityError:
                 transaction.rollback()
