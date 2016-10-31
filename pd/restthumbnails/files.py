@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from django.utils.log import getLogger
 
 from restthumbnails import processors, exceptions
@@ -6,6 +8,7 @@ from restthumbnails.base import ThumbnailBase
 import os
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 
 logger = getLogger(__name__)
 
@@ -71,16 +74,47 @@ class ThumbnailFile(ThumbnailFileBase):
     def generate(self):
         if self._source_exists():
             if not self._exists():
-                # work only with allowed sizes
-                if self.size[0] not in settings.THUMBNAILS_ALLOWED_SIZE_RANGE or \
-                   self.size[1] not in settings.THUMBNAILS_ALLOWED_SIZE_RANGE:
-                    return False
+                # work only with allowed sizes.
+                min_ = settings.THUMBNAILS_ALLOWED_SIZE_RANGE['min']
+                max_ = settings.THUMBNAILS_ALLOWED_SIZE_RANGE['max']
+                if min_ <= self.size[0] <= max_ or \
+                   min_ <= self.size[1] <= max_:
 
-                im = processors.get_image(self.source_storage.open(self.source))
-                im = processors.scale_and_crop(im, self.size, self.method)
-                im = processors.colorspace(im)
-                im = processors.save_image(im)
-                self.storage.save(self.name, im)
-                return True
+                    im = processors.get_image(self.source_storage.open(self.source))
+                    im = processors.scale_and_crop(im, self.size, self.method)
+                    im = processors.colorspace(im)
+                    im = processors.save_image(im)
+                    self.storage.save(self.name, im)
+                    return True
             return False
         raise exceptions.SourceDoesNotExist(self.source)
+
+class ThumbnailContentFile(object):
+    """
+    Принимает файл, делает из него ContentFile в соответствии с заданным качеством
+
+    Файл: любой объект, имеющий метод read() /прочитать всё содержимое/,
+    например, request.FILES['filename']
+    """
+
+    def __init__(self, source, minsize=0, quality=50):
+        self.source = source
+        self.quality = quality
+        self.minsize = minsize
+
+    def generate(self):
+        """
+        Возвращает ContentFile или None, если это не графический файл
+        """
+        try:
+            image_or_original = processors.get_image_or_original(
+                self.source, minsize=self.minsize)
+        except IOError:
+            return None
+        if image_or_original['minimize_size']:
+            im = processors.colorspace(image_or_original['result'])
+            del image_or_original['result']
+            im = processors.save_image(im, format='JPEG', quality=self.quality)
+            return im
+        else:
+            return ContentFile(image_or_original['result'])

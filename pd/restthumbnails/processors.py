@@ -127,7 +127,6 @@ def _compare_entropy(start_slice, end_slice, slice, difference):
     else:
         return slice, 0
 
-
 def get_image(source, exif_orientation=True, **options):
     """
     Try to open the source file directly using PIL, ignoring any errors.
@@ -163,6 +162,35 @@ def get_image(source, exif_orientation=True, **options):
         except (AttributeError, KeyError, IndexError):
             pass
     return image
+
+
+def get_image_or_original(source, minsize=0):
+    """
+    Вернуть из файла source или его образ, или оригинал
+
+    Файл source - любой объект, имеющий метод read(), возвращающий буфер.
+    Получаем из файла image. Если его размер больше минимального,
+    после которого требуется обрезка, в словаре результата будет
+    этот image. Иначе вовращаем буфер с оригиналом source
+    """
+    buff = source.read()
+    source = StringIO(buff)
+    tags = exifread.process_file(source, details=False)
+    source.seek(0, 0)
+
+    image = Image.open(source)
+    # Fully load the image now to catch any problems with the image
+    # contents.
+    image.load()
+    if image.size[0] * image.size[1] >= minsize:
+        try:
+            image = _exif_orientation(image, tags['Image Orientation'].values[0])
+        except (AttributeError, KeyError, IndexError):
+            pass
+        result = dict(result=image, minimize_size=True)
+    else:
+        result = dict(result=buff, minimize_size=False)
+    return result
 
 
 def save_image(image, format='JPEG', **options):
