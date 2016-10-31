@@ -71,16 +71,17 @@ class ThumbnailFile(ThumbnailFileBase):
     def generate(self):
         if self._source_exists():
             if not self._exists():
-                # work only with allowed sizes
-                if self.size[0] not in settings.THUMBNAILS_ALLOWED_SIZE_RANGE or \
-                   self.size[1] not in settings.THUMBNAILS_ALLOWED_SIZE_RANGE:
-                    return False
+                # work only with allowed sizes.
+                min_ = settings.THUMBNAILS_ALLOWED_SIZE_RANGE['min']
+                max_ = settings.THUMBNAILS_ALLOWED_SIZE_RANGE['max']
+                if min_ <= self.size[0] <= max_ or \
+                   min_ <= self.size[1] <= max_:
 
-                im = processors.get_image(self.source_storage.open(self.source))
-                im = processors.scale_and_crop(im, self.size, self.method)
-                im = processors.colorspace(im)
-                im = processors.save_image(im)
-                self.storage.save(self.name, im)
-                return True
+                    im = processors.get_image(self.source_storage.open(self.source))
+                    im = processors.scale_and_crop(im, self.size, self.method)
+                    im = processors.colorspace(im)
+                    im = processors.save_image(im)
+                    self.storage.save(self.name, im)
+                    return True
             return False
         raise exceptions.SourceDoesNotExist(self.source)

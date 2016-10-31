@@ -288,7 +288,7 @@ THUMBNAILS_STORAGE_BASE_PATH = '/thumb/'
 THUMBNAILS_PROXY_BASE_URL = '/thumb/'
 #THUMBNAILS_STORAGE_BACKEND = 'testsuite.storages.TemporaryStorage'
 # возможные длины и высоты:
-THUMBNAILS_ALLOWED_SIZE_RANGE = range(20, 2001)
+THUMBNAILS_ALLOWED_SIZE_RANGE = dict(min=20, max=2000)
 
 # REST framework
 REST_FRAMEWORK = {
