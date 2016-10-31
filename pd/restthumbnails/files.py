@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from django.utils.log import getLogger
 
 from restthumbnails import processors, exceptions
@@ -6,6 +8,7 @@ from restthumbnails.base import ThumbnailBase
 import os
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 
 logger = getLogger(__name__)
 
@@ -85,3 +88,33 @@ class ThumbnailFile(ThumbnailFileBase):
                     return True
             return False
         raise exceptions.SourceDoesNotExist(self.source)
+
+class ThumbnailContentFile(object):
+    """
+    Принимает файл, делает из него ContentFile в соответствии с заданным качеством
+
+    Файл: любой объект, имеющий метод read() /прочитать всё содержимое/,
+    например, request.FILES['filename']
+    """
+
+    def __init__(self, source, minsize=0, quality=50):
+        self.source = source
+        self.quality = quality
+        self.minsize = minsize
+
+    def generate(self):
+        """
+        Возвращает ContentFile или None, если это не графический файл
+        """
+        try:
+            image_or_original = processors.get_image_or_original(
+                self.source, minsize=self.minsize)
+        except IOError:
+            return None
+        if image_or_original['minimize_size']:
+            im = processors.colorspace(image_or_original['result'])
+            del image_or_original['result']
+            im = processors.save_image(im, format='JPEG', quality=self.quality)
+            return im
+        else:
+            return ContentFile(image_or_original['result'])
