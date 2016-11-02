@@ -3668,16 +3668,11 @@ api_video_timestamps_votes = ApiVideoTimestampsVotes.as_view()
 class ApiVideoAggregatedVotesView(APIView):
 
     def get(self, request, yid):
-        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
-        data = dict()
-
-        # Надо не показывать несколько голосов от одного пользователя в секунду
-
         req_str = '''
             SELECT
                 "time" as "timestamp",
                 "like" as "type",
-                count(*) as "total"
+                Count(*) as "total"
             FROM
                 (
                     SELECT
@@ -3685,7 +3680,9 @@ class ApiVideoAggregatedVotesView(APIView):
                         "like",
                         "user_id"
                     FROM "users_youtubevote"
-                    WHERE "youtubevideo_id"=%(youtubevideo_id)s
+                    INNER JOIN "users_youtubevideo" ON 
+                        ("users_youtubevote"."youtubevideo_id" = "users_youtubevideo"."id")
+                    WHERE "users_youtubevideo"."yid" = '%(yid)s'
                     GROUP BY "time", "like", "user_id"
                 )
             AS "foo"
@@ -3693,14 +3690,14 @@ class ApiVideoAggregatedVotesView(APIView):
             ORDER BY "timestamp";
         '''
         cursor = connection.cursor()
-        cursor.execute(req_str % dict(
-            youtubevideo_id=youtubevideo.pk,
-        ))
+        cursor.execute(req_str % dict(yid=yid))
+        # -----------------------------------
+        # data = dictfetchall(cursor)
+        # -----------------------------------
         data = {
             YoutubeVote.LIKE_UP: [],
             YoutubeVote.LIKE_DOWN: [],
         }
-        # data = dictfetchall(cursor)
         for row in cursor.fetchall():
             if row[1] == YoutubeVote.LIKE_UP:
                 data[YoutubeVote.LIKE_UP].append(
@@ -3714,13 +3711,18 @@ class ApiVideoAggregatedVotesView(APIView):
                         timestamp=row[0],
                         total=row[2],
                 ))
+        # -----------------------------------
 
+        # Работало такое, но нельзя показывать несколько голосов
+        # от одного пользователя в секунду.
+        # data = dict()
         #for like in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
             #data[like] = YoutubeVote.objects.\
                             #extra(select={'timestamp': 'time'}). \
                             #values('timestamp'). \
                             #filter(like=like, youtubevideo=youtubevideo).order_by('time').\
                             #annotate(total=Count('time'))
+
         return Response(data, status=200)
 
 api_video_aggregated_votes = ApiVideoAggregatedVotesView.as_view()
