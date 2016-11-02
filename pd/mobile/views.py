@@ -57,6 +57,7 @@ from serializers import BaseSerializer, CoordinatesSerializer, CemeteryWithNeste
                         PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
                         PlaceSerializer, PlacePhotoSerializer, CemeteryPhotoSerializer, CemeterySchemaSerializer
 
+from restthumbnails.files import ThumbnailContentFile
 from persons.serializers import DeadPerson2Serializer
 from pd.models import CheckLifeDatesMixin
 
@@ -1007,7 +1008,28 @@ class ApiPlacePhotoUpload(APIView):
             place = get_object_or_404(Place, pk=placeId)
             if place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
                 raise PermissionDenied
-            photo_content = ContentFile(request.FILES['photo'].read())
+            # -------------------
+            # Если размер картинки size_х * size_y > minsize, то
+            #   cохраняем файл в тех же размерах (size_y, size_y),
+            #   с правкой ориентации, если необходимо
+            #   с качеством quality,
+            #   тем самым уменьшая размер файла по сравнению с поданным
+            # иначе возвращаем оригинал.
+            # В любом случае результатом будет ContentFile
+            #
+            photo_content = ThumbnailContentFile(
+                request.FILES['photo'],
+                quality=50,
+                minsize=1600*1200,
+            ).generate()
+            if not photo_content:
+                raise CustomException(
+                    detail=_(u"Загружаемый файл не является изображением"),
+                    status=400,
+                )
+            # -------------------
+            # photo_content = ContentFile(request.FILES['photo'].read())
+            # -------------------
             photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user, dt_created = dtCreated)
             photo.save()
             photo.bfile.save(request.FILES['photo'].name, photo_content)
