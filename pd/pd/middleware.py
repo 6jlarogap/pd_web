@@ -1,11 +1,12 @@
 # coding=utf-8
 
+import re
+from urllib import quote_plus, unquote_plus
+
 from django.http import HttpResponseRedirect, Http404
 from django.conf import settings
-import re
-from pd.views import get_front_end_url, is_url_accessible_anonymous
-from users.models import is_cabinet_user
 
+from pd.views import is_url_accessible_anonymous
 
 exempt_urls = [re.compile(re.escape(url.lstrip('/')), flags=re.I) \
                 for url in (
@@ -33,5 +34,8 @@ class LoginRequiredMiddleware:
         if any(m.match(path) for m in exempt_urls) or is_url_accessible_anonymous(request):
             return
         if not request.user.is_authenticated():
-            next = '' if not path or exempt_urls[0].match(path) else '?redirectUrl='+request.build_absolute_uri()
+            if not path or exempt_urls[0].match(path):
+                next = ''
+            else:
+                next = u"?redirectUrl=%s" % quote_plus(unquote_plus(request.build_absolute_uri()))
             return HttpResponseRedirect(settings.LOGIN_URL+next)
