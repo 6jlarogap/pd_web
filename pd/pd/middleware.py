@@ -1,7 +1,7 @@
 # coding=utf-8
 
 import re
-from urllib import quote_plus
+from urllib import quote_plus, unquote_plus
 
 from django.http import HttpResponseRedirect, Http404
 from django.conf import settings
@@ -37,5 +37,5 @@ class LoginRequiredMiddleware:
             if not path or exempt_urls[0].match(path):
                 next = ''
             else:
-                next = u"?redirectUrl=%s" % quote_plus(request.build_absolute_uri())
+                next = u"?redirectUrl=%s" % quote_plus(unquote_plus(request.build_absolute_uri()))
             return HttpResponseRedirect(settings.LOGIN_URL+next)

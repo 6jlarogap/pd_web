@@ -9,6 +9,7 @@ import os
 import csv
 import copy
 import re
+from urllib import quote_plus, unquote_plus
 from qsstats import QuerySetStats
 
 from django.conf import settings
@@ -1352,7 +1353,8 @@ class LoginView(View):
     def get(self, request, *args, **kwargs):
         if settings.REDIRECT_LOGIN_TO_FRONT_END:
             if request.GET.get("redirectUrl"):
-                next_url = "?redirectUrl=%s" % request.GET.get("redirectUrl")
+                next_url = "?redirectUrl=%s" % \
+                        quote_plus(unquote_plus(request.GET.get("redirectUrl")))
             else:
                 next_url = ''
             response = redirect('%ssignout%s' % (get_front_end_url(request), next_url))
