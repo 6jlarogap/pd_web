@@ -7,8 +7,6 @@ from django.http import HttpResponseRedirect, Http404
 from django.conf import settings
 
 from pd.views import is_url_accessible_anonymous
-from users.models import is_cabinet_user
-
 
 exempt_urls = [re.compile(re.escape(url.lstrip('/')), flags=re.I) \
                 for url in (
