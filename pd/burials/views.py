@@ -1,12 +1,13 @@
 # coding=utf-8
 
-import re, datetime
+import re, datetime, os
 
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.core.paginator import Paginator
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
 from django.db import IntegrityError, connection
 from django.db.models.query_utils import Q
 from django.db.models import Count, Avg
@@ -1992,6 +1993,10 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                 raise Http404
             p_dest = b_dest.place
 
+            # Cначала перенести место. Тогда перенесенное место становится
+            # p_dest
+            
+
             # Фотки
 
             b_photos = []
@@ -2027,7 +2032,40 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                 p = b.place
                 if p != p_dest:
                     for photo in p.placephoto_set.all():
-                        pass
+                        content = None
+                        if photo.bfile:
+                            try:
+                                fpath = os.path.join(settings.MEDIA_ROOT, photo.bfile.name)
+                                f = open(fpath, "rb")
+                                content = ContentFile(f.read())
+                                f.close()
+                            except IOError:
+                                pass
+                        new_photo = PlacePhoto.objects.create(
+                            place=p_dest,
+                            creator=request.user,
+                            comment=photo.comment,
+                            original_name=photo.original_name,
+                            lat=photo.lat,
+                            lng=photo.lng,
+                        )
+                        if content:
+                            name = photo.original_name
+                            if not name:
+                                name = os.path.basename(photo.bfile.name)
+                            new_photo.bfile.save(name, content)
+                        PlacePhoto.objects.filter(pk=new_photo.pk).update(
+                            dt_created=new_photo.dt_created,
+                        )
+                        url = None
+                        if new_photo.bfile:
+                            url = request.build_absolute_uri(new_photo.bfile.url)
+                        write_log(
+                            request,
+                            p_dest,
+                            _(u"Прикреплено фото из другого места "
+                              u"при переносе дублируемых захоронений\n%s") % url
+                        )
 
         transaction.rollback()
         return redirect(request.get_full_path())

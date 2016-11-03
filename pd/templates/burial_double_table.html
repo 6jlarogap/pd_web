@@ -71,6 +71,10 @@
         });
         $("input[name=submit_merge_]").prop("disabled", true);
     });
+    function submit_confirm() {
+        return confirm('Будут аннулированы не отмеченные "Переносим данные сюда" захоронения.\n' +
+                       'Продолжить?');
+    }
 </script>
 
 <h1>{% trans "Одни и те же захороненные" %} (?)</h1>
@@ -202,7 +206,7 @@
 
 {% if put_controls %}
     <br />
-    <input type="submit" class="btn btn-primary" value="{% trans "Объединить" %}" name="submit_merge_" disabled/>
+    <input type="submit" class="btn btn-primary" value="{% trans "Объединить" %}" name="submit_merge_" disabled onClick="return submit_confirm()"/>
     <i>Извините, собственно перенос пока не сделан</i>&nbsp;
     <input type="button" class="btn" value="{% trans "Сброс" %}" onclick="location.reload()"/>
     </form>
