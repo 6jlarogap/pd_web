@@ -542,6 +542,12 @@ class FilesMixin(object):
         self.delete_from_media()
         super(FilesMixin, self).delete()
 
+    def delete_only_rec(self):
+        """
+        Удалить только запись в б.д. Файл в media оставить!
+        """
+        super(FilesMixin, self).delete()
+
     def ext(self):
         """
         Получить расширение файла

@@ -3692,25 +3692,25 @@ class ApiVideoAggregatedVotesView(APIView):
         cursor = connection.cursor()
         cursor.execute(req_str % dict(yid=yid))
         # -----------------------------------
-        # data = dictfetchall(cursor)
+        data = dictfetchall(cursor)
         # -----------------------------------
-        data = {
-            YoutubeVote.LIKE_UP: [],
-            YoutubeVote.LIKE_DOWN: [],
-        }
-        for row in cursor.fetchall():
-            if row[1] == YoutubeVote.LIKE_UP:
-                data[YoutubeVote.LIKE_UP].append(
-                    dict(
-                        timestamp=row[0],
-                        total=row[2],
-                ))
-            elif row[1] == YoutubeVote.LIKE_DOWN:
-                data[YoutubeVote.LIKE_DOWN].append(
-                    dict(
-                        timestamp=row[0],
-                        total=row[2],
-                ))
+        #data = {
+            #YoutubeVote.LIKE_UP: [],
+            #YoutubeVote.LIKE_DOWN: [],
+        #}
+        #for row in cursor.fetchall():
+            #if row[1] == YoutubeVote.LIKE_UP:
+                #data[YoutubeVote.LIKE_UP].append(
+                    #dict(
+                        #timestamp=row[0],
+                        #total=row[2],
+                #))
+            #elif row[1] == YoutubeVote.LIKE_DOWN:
+                #data[YoutubeVote.LIKE_DOWN].append(
+                    #dict(
+                        #timestamp=row[0],
+                        #total=row[2],
+                #))
         # -----------------------------------
 
         # Работало такое, но нельзя показывать несколько голосов
