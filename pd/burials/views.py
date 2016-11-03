@@ -1988,16 +1988,68 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                     raise Http404
                 s_b_pk = str(b.pk)
                 if s_b_pk not in b_pks:
-                    b_pks[s_b_pk] = b
+                    b_pks[s_b_pk] = dict(b=b, p=b.place, r=b.place.responsible)
             if b_dest_pk not in b_pks:
                 raise Http404
             p_dest = b_dest.place
 
-            # Cначала перенести место. Тогда перенесенное место становится
-            # p_dest
-            
+            r_place = request.POST.get('source_place_')
+            p_source = None
+            b_source = None
+            if r_place:
+                m = re.search(r'^source_place_(\d+)$', r_place)
+                if m:
+                    s_b_pk = m.group(1)
+                    if s_b_pk not in b_pks:
+                        raise Http404
+                    p_source = b_pks[s_b_pk]['p']
+                    b_source = b_pks[s_b_pk]['b']
+            if not p_source:
+                p_source = p_dest
+            if p_source != p_dest:
+                b_dest.area = b_source.area
+                b_dest.row = b_source.row
+                b_dest.place_number = b_source.place_number
+                b_dest.grave_number = b_source.grave_number
+                b_dest.grave = b_source.grave
+                b_dest.place = b_source.place
+                b_dest.save()
+                write_log(
+                    request,
+                    b_dest,
+                    _(u"Изменено место при переносе дублируемых захоронений\n"
+                      u"'%(old_place)s' -->\n"
+                      u"'%(new_place)s'"
+                     ) % dict(
+                         old_place = p_dest.full_name(),
+                         new_place = p_source.full_name(),
+                ))
 
-            # Фотки
+            r_resp = request.POST.get('source_responsible_')
+            r_source = None
+            if r_resp:
+                m = re.search(r'^source_responsible_(\d+)$', r_resp)
+                if m:
+                    s_b_pk = m.group(1)
+                    if s_b_pk not in b_pks:
+                        raise Http404
+                    r_source = b_pks[s_b_pk]['r']
+            if r_source and r_source != p_dest.responsible:
+                old_responsible = p_dest.responsible
+                old_responsible_str = old_responsible and \
+                    old_responsible.full_human_name() or _(u"<отсутствовал>")
+                p_dest.responsible = r_source.deep_copy()
+                p_dest.save()
+                write_log(
+                    request,
+                    p_dest,
+                    _(u"Изменен ответственный при переносе дублируемых захоронений\n"
+                      u"'%(old_responsible)s' -->\n"
+                      u"'%(new_responsible)s'"
+                     ) % dict(
+                         old_responsible = old_responsible_str,
+                         new_responsible = p_dest.responsible and p_dest.responsible.full_human_name() or '',
+                ))
 
             b_photos = []
             for r in request.POST:
@@ -2006,19 +2058,21 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                     b_photo_pk = m.group(1)
                     if b_photo_pk not in b_pks:
                         raise Http404
-                    b_photo = b_pks[b_photo_pk]
-                    if b_photo not in b_photos:
-                        b_photos.append(b_photo)
-            # Сохраняем ли фотки в месте?
-            dest_photos = p_dest.placephoto_set.all()
-            if dest_photos:
+                    if b_photo_pk not in b_photos:
+                        b_photos.append(b_photo_pk)
+            # Надо ли удалять фотки в месте - destination?
+            # Только если:
+            #   - pd_dest == p_source
+            #   - в p_dest есть фотки
+            #   - среди мест в b_pks нет этого места
+            if p_dest == p_source and p_dest.placephoto_set.exists():
                 save_these_photos = False
-                for b in b_photos:
-                    if b.place == p_dest:
+                for b_pk in b_photos:
+                    if b_pks[b_pk]['p'] == p_dest:
                         save_these_photos = True
                         break
                 if not save_these_photos:
-                    for photo in dest_photos:
+                    for photo in p_dest.placephoto_set.all():
                         url = None
                         if photo.bfile:
                             url = request.build_absolute_uri(photo.bfile.url)
@@ -2028,8 +2082,8 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                             p_dest,
                             _(u"Удалено фото при переносе дублируемых захоронений\n%s") % url
                         )
-            for b in b_photos:
-                p = b.place
+            for b_pk in b_photos:
+                p = b_pks[b_pk]['p']
                 if p != p_dest:
                     for photo in p.placephoto_set.all():
                         content = None
@@ -2063,9 +2117,13 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                         write_log(
                             request,
                             p_dest,
-                            _(u"Прикреплено фото из другого места "
-                              u"при переносе дублируемых захоронений\n%s") % url
-                        )
+                            _(u"Прикреплено фото из другого места\n"
+                              u"(%(old_place)s)\n"
+                              u"при переносе дублируемых захоронений\n"
+                              u"%(url)s") % dict(
+                                  old_place=p.full_name(),
+                                  url=url,
+                        ))
 
         transaction.rollback()
         return redirect(request.get_full_path())
