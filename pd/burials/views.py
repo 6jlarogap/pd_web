@@ -1953,13 +1953,83 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
 
         return dict(
             burials=burials,
+            burials_count=burials_count,
             message=message,
             put_controls=put_controls,
         )
 
+    @transaction.commit_on_success
     def post(self, request, *args, **kwargs):
-        #for r in request.POST:
-            #print r, request.POST[r]
+
+        b_dest = b_dest_pk = None
+        r_dest = request.POST.get('destination_')
+        if r_dest:
+            m = re.search(r'^destination_(\d+)$', r_dest)
+            if m:
+                try:
+                    b_dest_pk = m.group(1)
+                    b_dest = Burial.objects.get(pk=b_dest_pk)
+                    if b_dest.ugh != request.user.profile.org:
+                        raise Http404
+                except Burial.DoesNotExist:
+                    raise Http404
+        if b_dest:
+            # Надо проверить не подсунули ли чего.
+            # Или пока выбирали, то что-то изменилось
+            context = self.get_context_data()
+            if context['burials_count'] < 2:
+                return redirect(request.get_full_path())
+            # Для дальнейшей проверки, чтоб тоже чего не подсунули,
+            # собираем pks этих дублей
+            b_pks = dict()
+            for b in context['burials']:
+                if not b.place:
+                    raise Http404
+                s_b_pk = str(b.pk)
+                if s_b_pk not in b_pks:
+                    b_pks[s_b_pk] = b
+            if b_dest_pk not in b_pks:
+                raise Http404
+            p_dest = b_dest.place
+
+            # Фотки
+
+            b_photos = []
+            for r in request.POST:
+                m= re.search(r'^source_photo_(\d+)$', r)
+                if m and request.POST[r] == r:
+                    b_photo_pk = m.group(1)
+                    if b_photo_pk not in b_pks:
+                        raise Http404
+                    b_photo = b_pks[b_photo_pk]
+                    if b_photo not in b_photos:
+                        b_photos.append(b_photo)
+            # Сохраняем ли фотки в месте?
+            dest_photos = p_dest.placephoto_set.all()
+            if dest_photos:
+                save_these_photos = False
+                for b in b_photos:
+                    if b.place == p_dest:
+                        save_these_photos = True
+                        break
+                if not save_these_photos:
+                    for photo in dest_photos:
+                        url = None
+                        if photo.bfile:
+                            url = request.build_absolute_uri(photo.bfile.url)
+                        photo.delete_only_rec()
+                        write_log(
+                            request,
+                            p_dest,
+                            _(u"Удалено фото при переносе дублируемых захоронений\n%s") % url
+                        )
+            for b in b_photos:
+                p = b.place
+                if p != p_dest:
+                    for photo in p.placephoto_set.all():
+                        pass
+
+        transaction.rollback()
         return redirect(request.get_full_path())
 
 burials_double = BurialDoubleView.as_view()
