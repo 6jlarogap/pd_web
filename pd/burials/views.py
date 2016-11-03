@@ -2034,21 +2034,22 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                     if s_b_pk not in b_pks:
                         raise Http404
                     r_source = b_pks[s_b_pk]['r']
-            if r_source and r_source != p_dest.responsible:
-                old_responsible = p_dest.responsible
+            if r_source and r_source != b_dest.place.responsible:
+                old_responsible = b_dest.place.responsible
                 old_responsible_str = old_responsible and \
                     old_responsible.full_human_name() or _(u"<отсутствовал>")
-                p_dest.responsible = r_source.deep_copy()
-                p_dest.save()
+                b_dest.place.responsible = r_source.deep_copy()
+                b_dest.place.save()
                 write_log(
                     request,
-                    p_dest,
+                    b_dest.place,
                     _(u"Изменен ответственный при переносе дублируемых захоронений\n"
                       u"'%(old_responsible)s' -->\n"
                       u"'%(new_responsible)s'"
                      ) % dict(
                          old_responsible = old_responsible_str,
-                         new_responsible = p_dest.responsible and p_dest.responsible.full_human_name() or '',
+                         new_responsible = b_dest.place.responsible and \
+                             b_dest.place.responsible.full_human_name() or '',
                 ))
 
             b_photos = []
@@ -2073,7 +2074,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                         break
                 if not save_these_photos:
                     for photo in p_dest.placephoto_set.all():
-                        url = None
+                        url = ''
                         if photo.bfile:
                             url = request.build_absolute_uri(photo.bfile.url)
                         photo.delete_only_rec()
@@ -2084,7 +2085,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                         )
             for b_pk in b_photos:
                 p = b_pks[b_pk]['p']
-                if p != p_dest:
+                if p != b_dest.place:
                     for photo in p.placephoto_set.all():
                         content = None
                         if photo.bfile:
@@ -2096,7 +2097,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                             except IOError:
                                 pass
                         new_photo = PlacePhoto.objects.create(
-                            place=p_dest,
+                            place=b_dest.place,
                             creator=request.user,
                             comment=photo.comment,
                             original_name=photo.original_name,
@@ -2111,12 +2112,12 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                         PlacePhoto.objects.filter(pk=new_photo.pk).update(
                             dt_created=new_photo.dt_created,
                         )
-                        url = None
+                        url = ''
                         if new_photo.bfile:
                             url = request.build_absolute_uri(new_photo.bfile.url)
                         write_log(
                             request,
-                            p_dest,
+                            b_dest.place,
                             _(u"Прикреплено фото из другого места\n"
                               u"(%(old_place)s)\n"
                               u"при переносе дублируемых захоронений\n"
@@ -2124,6 +2125,13 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                                   old_place=p.full_name(),
                                   url=url,
                         ))
+
+            for b_pk in b_pks:
+                if b_pk != b_dest_pk:
+                    b = b_pks[b_pk]['b']
+                    b.grave = None
+                    b.annulated = True
+                    b.save()
 
         transaction.rollback()
         return redirect(request.get_full_path())

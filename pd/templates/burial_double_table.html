@@ -80,7 +80,7 @@
 <h1>{% trans "Одни и те же захороненные" %} (?)</h1>
 <br />
 {% if message %}
-    <h4>{{ message }}</h4>
+    <h3 style="color:green">{{ message }}</h3>
     <br />
 {% endif %}
 {% if put_controls %}
@@ -136,7 +136,9 @@
                 <b>{{ b.cemetery }}</b>
             </td>
             <td>
-                <p style="color:blue"><input type="radio" name="source_place_" value="source_place_{{ b.pk }}"/> <b><span id="source_place_text_{{ b.pk }}">{% trans "Отсюда берём место" %}</span></b></p>
+                {% if put_controls %}
+                    <p style="color:blue"><input type="radio" name="source_place_" value="source_place_{{ b.pk }}"/> <b><span id="source_place_text_{{ b.pk }}">{% trans "Отсюда берём место" %}</span></b></p>
+                {% endif %}
                 {% trans "Уч." %} {{ b.area.name|default:"" }}<br/>
                 {% if b.row %}{% trans "ряд" %} {{ b.row }},{% endif %}
                 {% trans "место" %} {{ b.place_number }},
@@ -147,7 +149,9 @@
             </td>
             <td>
                 {% if b.get_responsible %}
-                    <p style="color:blue"><input type="radio" name="source_responsible_" value="source_responsible_{{ b.pk }}"/> <b><span id="source_responsible_text_{{ b.pk }}">{% trans "Отсюда берём ответственного" %}</span></b></p>
+                    {% if put_controls %}
+                        <p style="color:blue"><input type="radio" name="source_responsible_" value="source_responsible_{{ b.pk }}"/> <b><span id="source_responsible_text_{{ b.pk }}">{% trans "Отсюда берём ответственного" %}</span></b></p>
+                    {% endif %}
                     {{ b.get_responsible }}
                 {% endif %}
             </td>
@@ -191,7 +195,9 @@
                 {% endif %}
                 {% if b.get_place.placephoto_set.all %}
                     <br />
-                    <p style="color:blue"><input type="checkbox" name="source_photo_{{ b.pk }}" value="source_photo_{{ b.pk }}"/> <b><span id="source_photo_text_{{ b.pk }}">{% trans "Отсюда берём фото" %}</span></b></p>
+                    {% if put_controls %}
+                        <p style="color:blue"><input type="checkbox" name="source_photo_{{ b.pk }}" value="source_photo_{{ b.pk }}"/> <b><span id="source_photo_text_{{ b.pk }}">{% trans "Отсюда берём фото" %}</span></b></p>
+                    {% endif %}
                     <span class="badge" title="{% trans "Место имеет фото" %}"><i class="icon-camera icon-white"></i></span>
                 {% endif %}
             </td>
@@ -207,7 +213,7 @@
 {% if put_controls %}
     <br />
     <input type="submit" class="btn btn-primary" value="{% trans "Объединить" %}" name="submit_merge_" disabled onClick="return submit_confirm()"/>
-    <i>Извините, собственно перенос пока не сделан</i>&nbsp;
+    &nbsp;&nbsp;
     <input type="button" class="btn" value="{% trans "Сброс" %}" onclick="location.reload()"/>
     </form>
 {% endif %}
