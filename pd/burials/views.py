@@ -1948,8 +1948,8 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
         for b in burials:
             if not b.annulated:
                 burials_count += 1
-            if b.place and b.place.responsible:
-                n_responsibles += 1
+                if b.place and b.place.responsible:
+                    n_responsibles += 1
         one_responsible = n_responsibles == 1
         if burials_count < 1:
             message = _(u"Не найдены одни и те же захороненные по заданным параметрам поиска")
