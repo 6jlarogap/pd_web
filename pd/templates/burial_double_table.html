@@ -17,17 +17,32 @@
                 }
                 pk = found[1];
                 $('input[name=source_responsible_]').each(function() {
-                    var found = $(this).val().match(/^source_responsible_(\d+)$/);
-                    if (found) {
-                        if (found[1] == pk) {
-                            if (!$(this).attr("checked")) {
-                                $(this).prop("checked", true);
+                    {% if one_responsible %}
+
+                        var found = $(this).val().match(/^source_responsible_(\d+)$/);
+                        if (found) {
+                            if (found[1] == pk) {
+                                if (!$(this).attr("checked")) {
+                                    $(this).attr("checked", "checked");
+                                }
                             }
-                            $("#source_responsible_text_" + found[1]).html("{% trans "Здесь ответственный сохранится" %}");
-                        } else {
-                            $("#source_responsible_text_" + found[1]).html("{% trans "Отсюда берём ответственного" %}");
                         }
-                    }
+
+                    {% else %}
+
+                        var found = $(this).val().match(/^source_responsible_(\d+)$/);
+                        if (found) {
+                            if (found[1] == pk) {
+                                if (!$(this).attr("checked")) {
+                                    $(this).prop("checked", true);
+                                }
+                                $("#source_responsible_text_" + found[1]).html("{% trans "Здесь ответственный сохранится" %}");
+                            } else {
+                                $("#source_responsible_text_" + found[1]).html("{% trans "Отсюда берём ответственного" %}");
+                            }
+                        }
+
+                    {% endif %}
                 });
                 $('input[name=source_place_]').each(function() {
                     var found = $(this).val().match(/^source_place_(\d+)$/);
@@ -119,10 +134,8 @@
         </th>
         <th>
         </th>
-        {% if put_controls %}
-            <th>
-            </th>
-        {% endif %}
+        <th>
+        </th>
     </tr>
     {% for b in burials %}
         <tr>
@@ -136,7 +149,7 @@
                 <b>{{ b.cemetery }}</b>
             </td>
             <td>
-                {% if put_controls %}
+                {% if put_controls and not b.annulated %}
                     <p style="color:blue"><input type="radio" name="source_place_" value="source_place_{{ b.pk }}"/> <b><span id="source_place_text_{{ b.pk }}">{% trans "Отсюда берём место" %}</span></b></p>
                 {% endif %}
                 {% trans "Уч." %} {{ b.area.name|default:"" }}<br/>
@@ -149,8 +162,12 @@
             </td>
             <td>
                 {% if b.get_responsible %}
-                    {% if put_controls %}
-                        <p style="color:blue"><input type="radio" name="source_responsible_" value="source_responsible_{{ b.pk }}"/> <b><span id="source_responsible_text_{{ b.pk }}">{% trans "Отсюда берём ответственного" %}</span></b></p>
+                    {% if put_controls and not b.annulated %}
+                        {% if one_responsible %}
+                            <p style="color:blue"><input type="checkbox" name="source_responsible_" value="source_responsible_{{ b.pk }}"/> <b><span id="source_responsible_text_{{ b.pk }}">{% trans "Отсюда берём ответственного" %}</span></b></p>
+                        {% else %}
+                            <p style="color:blue"><input type="radio" name="source_responsible_" value="source_responsible_{{ b.pk }}"/> <b><span id="source_responsible_text_{{ b.pk }}">{% trans "Отсюда берём ответственного" %}</span></b></p>
+                        {% endif %}
                     {% endif %}
                     {{ b.get_responsible }}
                 {% endif %}
@@ -195,17 +212,19 @@
                 {% endif %}
                 {% if b.get_place.placephoto_set.all %}
                     <br />
-                    {% if put_controls %}
+                    {% if put_controls and not b.annulated %}
                         <p style="color:blue"><input type="checkbox" name="source_photo_{{ b.pk }}" value="source_photo_{{ b.pk }}"/> <b><span id="source_photo_text_{{ b.pk }}">{% trans "Отсюда берём фото" %}</span></b></p>
                     {% endif %}
                     <span class="badge" title="{% trans "Место имеет фото" %}"><i class="icon-camera icon-white"></i></span>
                 {% endif %}
             </td>
-            {% if put_controls %}
-                <td style="color:green">
-                    <input type="radio" name="destination_" value="destination_{{ b.pk }}"/> <b>{% trans "Переносим данные сюда" %}</b>
-                </td>
-            {% endif %}
+            <td style="color:green">
+                {% if b.annulated %}
+                        <b><span style="color:red">{% trans "АННУЛИРОВАНО" %}</span></b>
+                {% elif put_controls %}
+                        <input type="radio" name="destination_" value="destination_{{ b.pk }}"/> <b>{% trans "Переносим данные сюда" %}</b>
+                {% endif %}
+            </td>
         </tr>
     {% endfor %}
 </table>

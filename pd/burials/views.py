@@ -1913,7 +1913,6 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                 raise Http404
             qs = Q(
                 status=Burial.STATUS_CLOSED,
-                annulated=False,
                 deadman__last_name=req['last_name'],
                 deadman__first_name=req['first_name'],
                 deadman__middle_name=req['middle_name'],
@@ -1943,18 +1942,26 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
             raise Http404
 
         message = ''
-        burials_count = burials.count()
+        burials_count = 0
+        n_responsibles = 0
         put_controls = False
+        for b in burials:
+            if not b.annulated:
+                burials_count += 1
+            if b.place and b.place.responsible:
+                n_responsibles += 1
+        one_responsible = n_responsibles == 1
         if burials_count < 1:
             message = _(u"Не найдены одни и те же захороненные по заданным параметрам поиска")
         elif burials_count == 1:
-            message = _(u"Найдено только одно захоронение.")
+            message = _(u"Найдено только одно не-аннулированное захоронение.")
         else:
             put_controls = True
 
         return dict(
             burials=burials,
             burials_count=burials_count,
+            one_responsible=one_responsible,
             message=message,
             put_controls=put_controls,
         )
@@ -2017,7 +2024,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                 write_log(
                     request,
                     b_dest,
-                    _(u"Изменено место при переносе дублируемых захоронений\n"
+                    _(u"Изменено место при объединении дублируемых захоронений\n"
                       u"'%(old_place)s' -->\n"
                       u"'%(new_place)s'"
                      ) % dict(
@@ -2043,7 +2050,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                 write_log(
                     request,
                     b_dest.place,
-                    _(u"Изменен ответственный при переносе дублируемых захоронений\n"
+                    _(u"Изменен ответственный при объединении дублируемых захоронений\n"
                       u"'%(old_responsible)s' -->\n"
                       u"'%(new_responsible)s'"
                      ) % dict(
@@ -2081,7 +2088,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                         write_log(
                             request,
                             p_dest,
-                            _(u"Удалено фото при переносе дублируемых захоронений\n%s") % url
+                            _(u"Удалено фото при объединении дублируемых захоронений\n%s") % url
                         )
             for b_pk in b_photos:
                 p = b_pks[b_pk]['p']
@@ -2120,7 +2127,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                             b_dest.place,
                             _(u"Прикреплено фото из другого места\n"
                               u"(%(old_place)s)\n"
-                              u"при переносе дублируемых захоронений\n"
+                              u"при объединении дублируемых захоронений\n"
                               u"%(url)s") % dict(
                                   old_place=p.full_name(),
                                   url=url,
@@ -2132,8 +2139,10 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                     b.grave = None
                     b.annulated = True
                     b.save()
+                    write_log(request, b,
+                            _(u"Захоронение аннулировано при объединении дублируемых захоронений"))
 
-        transaction.rollback()
+        # transaction.rollback()
         return redirect(request.get_full_path())
 
 burials_double = BurialDoubleView.as_view()
