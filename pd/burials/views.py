@@ -2117,7 +2117,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                                 name = os.path.basename(photo.bfile.name)
                             new_photo.bfile.save(name, content)
                         PlacePhoto.objects.filter(pk=new_photo.pk).update(
-                            dt_created=new_photo.dt_created,
+                            dt_created=photo.dt_created,
                         )
                         url = ''
                         if new_photo.bfile:
@@ -2142,7 +2142,6 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                     write_log(request, b,
                             _(u"Захоронение аннулировано при объединении дублируемых захоронений"))
 
-        # transaction.rollback()
         return redirect(request.get_full_path())
 
 burials_double = BurialDoubleView.as_view()
