@@ -2068,28 +2068,28 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                         raise Http404
                     if b_photo_pk not in b_photos:
                         b_photos.append(b_photo_pk)
-            # Надо ли удалять фотки в месте - destination?
-            # Только если:
-            #   - pd_dest == p_source
-            #   - в p_dest есть фотки
-            #   - среди мест в b_pks нет этого места
-            if p_dest == p_source and p_dest.placephoto_set.exists():
-                save_these_photos = False
-                for b_pk in b_photos:
-                    if b_pks[b_pk]['p'] == p_dest:
-                        save_these_photos = True
-                        break
-                if not save_these_photos:
-                    for photo in p_dest.placephoto_set.all():
-                        url = ''
-                        if photo.bfile:
-                            url = request.build_absolute_uri(photo.bfile.url)
-                        photo.delete_only_rec()
-                        write_log(
-                            request,
-                            p_dest,
-                            _(u"Удалено фото при объединении дублируемых захоронений\n%s") % url
-                        )
+            ## Надо ли удалять фотки в месте - destination?
+            ## Только если:
+            ##   - pd_dest == p_source
+            ##   - в p_dest есть фотки
+            ##   - среди мест в b_pks нет этого места
+            #if p_dest == p_source and p_dest.placephoto_set.exists():
+                #save_these_photos = False
+                #for b_pk in b_photos:
+                    #if b_pks[b_pk]['p'] == p_dest:
+                        #save_these_photos = True
+                        #break
+                #if not save_these_photos:
+                    #for photo in p_dest.placephoto_set.all():
+                        #url = ''
+                        #if photo.bfile:
+                            #url = request.build_absolute_uri(photo.bfile.url)
+                        #photo.delete_only_rec()
+                        #write_log(
+                            #request,
+                            #p_dest,
+                            #_(u"Удалено фото при объединении дублируемых захоронений\n%s") % url
+                        #)
             for b_pk in b_photos:
                 p = b_pks[b_pk]['p']
                 if p != b_dest.place:

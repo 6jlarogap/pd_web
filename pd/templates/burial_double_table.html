@@ -36,9 +36,6 @@
                                 if (!$(this).attr("checked")) {
                                     $(this).prop("checked", true);
                                 }
-                                $("#source_responsible_text_" + found[1]).html("{% trans "Здесь ответственный сохранится" %}");
-                            } else {
-                                $("#source_responsible_text_" + found[1]).html("{% trans "Отсюда берём ответственного" %}");
                             }
                         }
 
@@ -51,9 +48,6 @@
                             if (!$(this).attr("checked")) {
                                 $(this).prop("checked", true);
                             }
-                            $("#source_place_text_" + found[1]).html("{% trans "Здесь место сохранится" %}");
-                        } else {
-                            $("#source_place_text_" + found[1]).html("{% trans "Отсюда берём место" %}");
                         }
                     }
                 });
@@ -64,9 +58,6 @@
                             if (!$(this).attr("checked")) {
                                 $(this).attr("checked", "checked");
                             }
-                            $("#source_photo_text_" + found[1]).html("{% trans "Здесь фото сохранится" %}");
-                        } else {
-                            $("#source_photo_text_" + found[1]).html("{% trans "Отсюда берём фото" %}");
                         }
                     }
                 });
