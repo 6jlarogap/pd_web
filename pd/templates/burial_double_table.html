@@ -17,17 +17,29 @@
                 }
                 pk = found[1];
                 $('input[name=source_responsible_]').each(function() {
-                    var found = $(this).val().match(/^source_responsible_(\d+)$/);
-                    if (found) {
-                        if (found[1] == pk) {
-                            if (!$(this).attr("checked")) {
-                                $(this).prop("checked", true);
+                    {% if one_responsible %}
+
+                        var found = $(this).val().match(/^source_responsible_(\d+)$/);
+                        if (found) {
+                            if (found[1] == pk) {
+                                if (!$(this).attr("checked")) {
+                                    $(this).attr("checked", "checked");
+                                }
                             }
-                            $("#source_responsible_text_" + found[1]).html("{% trans "Здесь ответственный сохранится" %}");
-                        } else {
-                            $("#source_responsible_text_" + found[1]).html("{% trans "Отсюда берём ответственного" %}");
                         }
-                    }
+
+                    {% else %}
+
+                        var found = $(this).val().match(/^source_responsible_(\d+)$/);
+                        if (found) {
+                            if (found[1] == pk) {
+                                if (!$(this).attr("checked")) {
+                                    $(this).prop("checked", true);
+                                }
+                            }
+                        }
+
+                    {% endif %}
                 });
                 $('input[name=source_place_]').each(function() {
                     var found = $(this).val().match(/^source_place_(\d+)$/);
@@ -36,9 +48,6 @@
                             if (!$(this).attr("checked")) {
                                 $(this).prop("checked", true);
                             }
-                            $("#source_place_text_" + found[1]).html("{% trans "Здесь место сохранится" %}");
-                        } else {
-                            $("#source_place_text_" + found[1]).html("{% trans "Отсюда берём место" %}");
                         }
                     }
                 });
@@ -49,9 +58,6 @@
                             if (!$(this).attr("checked")) {
                                 $(this).attr("checked", "checked");
                             }
-                            $("#source_photo_text_" + found[1]).html("{% trans "Здесь фото сохранится" %}");
-                        } else {
-                            $("#source_photo_text_" + found[1]).html("{% trans "Отсюда берём фото" %}");
                         }
                     }
                 });
@@ -71,12 +77,16 @@
         });
         $("input[name=submit_merge_]").prop("disabled", true);
     });
+    function submit_confirm() {
+        return confirm('Будут аннулированы не отмеченные "Переносим данные сюда" захоронения.\n' +
+                       'Продолжить?');
+    }
 </script>
 
 <h1>{% trans "Одни и те же захороненные" %} (?)</h1>
 <br />
 {% if message %}
-    <h4>{{ message }}</h4>
+    <h3 style="color:green">{{ message }}</h3>
     <br />
 {% endif %}
 {% if put_controls %}
@@ -115,10 +125,8 @@
         </th>
         <th>
         </th>
-        {% if put_controls %}
-            <th>
-            </th>
-        {% endif %}
+        <th>
+        </th>
     </tr>
     {% for b in burials %}
         <tr>
@@ -132,7 +140,9 @@
                 <b>{{ b.cemetery }}</b>
             </td>
             <td>
-                <p style="color:blue"><input type="radio" name="source_place_" value="source_place_{{ b.pk }}"/> <b><span id="source_place_text_{{ b.pk }}">{% trans "Отсюда берём место" %}</span></b></p>
+                {% if put_controls and not b.annulated %}
+                    <p style="color:blue"><input type="radio" name="source_place_" value="source_place_{{ b.pk }}"/> <b><span id="source_place_text_{{ b.pk }}">{% trans "Отсюда берём место" %}</span></b></p>
+                {% endif %}
                 {% trans "Уч." %} {{ b.area.name|default:"" }}<br/>
                 {% if b.row %}{% trans "ряд" %} {{ b.row }},{% endif %}
                 {% trans "место" %} {{ b.place_number }},
@@ -143,7 +153,13 @@
             </td>
             <td>
                 {% if b.get_responsible %}
-                    <p style="color:blue"><input type="radio" name="source_responsible_" value="source_responsible_{{ b.pk }}"/> <b><span id="source_responsible_text_{{ b.pk }}">{% trans "Отсюда берём ответственного" %}</span></b></p>
+                    {% if put_controls and not b.annulated %}
+                        {% if one_responsible %}
+                            <p style="color:blue"><input type="checkbox" name="source_responsible_" value="source_responsible_{{ b.pk }}"/> <b><span id="source_responsible_text_{{ b.pk }}">{% trans "Отсюда берём ответственного" %}</span></b></p>
+                        {% else %}
+                            <p style="color:blue"><input type="radio" name="source_responsible_" value="source_responsible_{{ b.pk }}"/> <b><span id="source_responsible_text_{{ b.pk }}">{% trans "Отсюда берём ответственного" %}</span></b></p>
+                        {% endif %}
+                    {% endif %}
                     {{ b.get_responsible }}
                 {% endif %}
             </td>
@@ -187,23 +203,27 @@
                 {% endif %}
                 {% if b.get_place.placephoto_set.all %}
                     <br />
-                    <p style="color:blue"><input type="checkbox" name="source_photo_{{ b.pk }}" value="source_photo_{{ b.pk }}"/> <b><span id="source_photo_text_{{ b.pk }}">{% trans "Отсюда берём фото" %}</span></b></p>
+                    {% if put_controls and not b.annulated %}
+                        <p style="color:blue"><input type="checkbox" name="source_photo_{{ b.pk }}" value="source_photo_{{ b.pk }}"/> <b><span id="source_photo_text_{{ b.pk }}">{% trans "Отсюда берём фото" %}</span></b></p>
+                    {% endif %}
                     <span class="badge" title="{% trans "Место имеет фото" %}"><i class="icon-camera icon-white"></i></span>
                 {% endif %}
             </td>
-            {% if put_controls %}
-                <td style="color:green">
-                    <input type="radio" name="destination_" value="destination_{{ b.pk }}"/> <b>{% trans "Переносим данные сюда" %}</b>
-                </td>
-            {% endif %}
+            <td style="color:green">
+                {% if b.annulated %}
+                        <b><span style="color:red">{% trans "АННУЛИРОВАНО" %}</span></b>
+                {% elif put_controls %}
+                        <input type="radio" name="destination_" value="destination_{{ b.pk }}"/> <b>{% trans "Переносим данные сюда" %}</b>
+                {% endif %}
+            </td>
         </tr>
     {% endfor %}
 </table>
 
 {% if put_controls %}
     <br />
-    <input type="submit" class="btn btn-primary" value="{% trans "Объединить" %}" name="submit_merge_" disabled/>
-    <i>Извините, собственно перенос пока не сделан</i>&nbsp;
+    <input type="submit" class="btn btn-primary" value="{% trans "Объединить" %}" name="submit_merge_" disabled onClick="return submit_confirm()"/>
+    &nbsp;&nbsp;
     <input type="button" class="btn" value="{% trans "Сброс" %}" onclick="location.reload()"/>
     </form>
 {% endif %}
