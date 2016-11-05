@@ -190,7 +190,13 @@
                   <h4 style="text-align: left">{{burial.deadman.first_name}}</h4>
                   <h4 style="text-align: left">{{burial.deadman.middle_name}}</h4>
 
-                  <div ng-show="burial.deadman.death_date">дата смерти {{burial.deadman.death_date}}</div>
+                  <div ng-show="burial.deadman.birth_date||burial.deadman.death_date">
+                    <span ng-show="burial.deadman.birth_date">{{burial.deadman.birth_date}}</span>
+                    <span ng-hide="burial.deadman.birth_date">...</span>
+                    &mdash;
+                    <span ng-show="burial.deadman.death_date">{{burial.deadman.death_date}}</span>
+                    <span ng-hide="burial.deadman.death_date">...</span>
+                  </div>
                   <div ng-show="burial.fact_date||burial.plan_date">дата захоронения {{burial.fact_date||burial.plan_date}}</div>
                   <div>{{burial.burial_container|list:BURIAL_CONTAINERS}}</div>
                 </div>
