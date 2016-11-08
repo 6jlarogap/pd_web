@@ -3848,7 +3848,23 @@ class ApiVideoDetailView(APIView):
     @transaction.commit_on_success
     def get(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
-        return Response(data={'a':1}, status=200)
+
+        if request.GET.get('refresh'):
+            y = Youtube(yid)
+            y_parms = y.get_parms()
+            do_save = False
+            if y_parms:
+                if y_parms['title'] and y_parms['title'] != youtubevideo.title:
+                    youtubevideo.title = y_parms['title']
+                    do_save = True
+                if y_parms['title_photo_url'] and \
+                   y_parms['title_photo_url'] != youtubevideo.title_photo_url:
+                    youtubevideo.title_photo_url = y_parms['title_photo_url']
+                    do_save = True
+            if do_save:
+                youtubevideo.save()
+
+        return Response(data=YoutubeVideoSerializer(youtubevideo).data, status=200)
 
     @transaction.commit_on_success
     def delete(self, request, yid):

@@ -14,21 +14,20 @@
                 url: '/api/videos/' + yid,
                 type: 'DELETE',
                 success: function(data) {
+                    location.reload(true);
                 }
             });
-            location.reload()
             return false;
         }
 
         function refresh_video_(yid) {
             $.ajax({
-                url: '/api/videos/' + yid,
+                url: '/api/videos/' + yid + '?refresh=1',
                 type: 'GET',
                 success: function(data) {
-                    console.log(data);
+                    location.reload(true);
                 }
             });
-            location.reload()
             return false;
         }
 
@@ -89,13 +88,13 @@
                     &nbsp;
                     <button
                         onclick='return refresh_video_("{{ v.yid }}")'
-                        title='{% trans "Обновить описание и титульное фото" %}'
+                        title='{% trans "Обновить заголовок и титульное фото видео" %}'
                     >
                         {% trans "Обновить" %}
                     </button>
                 </td>
                 <td style="text-align:center; vertical-align:middle;">
-                    {% if v.url %}
+                    {% if v.title_photo_url %}
                         {% autoescape off %}
                             <img src="{{ v.title_photo_url }}">
                         {% endautoescape %}
