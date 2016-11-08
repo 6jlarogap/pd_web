@@ -3840,3 +3840,11 @@ class VideoListView(SupervisorRequiredMixin, PaginateListView):
         return videos.order_by(*s)
 
 videos = VideoListView.as_view()
+
+class ApiVideoDetailView(APIView):
+
+    def delete(self, request, yid):
+        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
+        return Response(data=dict(success=True), status=200)
+
+api_video_detail = ApiVideoDetailView.as_view()
