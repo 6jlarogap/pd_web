@@ -104,6 +104,7 @@ urlpatterns = patterns('users.views',
     url(r'^api/videos/(?P<yid>\S+)/subtitles-votes/?$', 'api_video_subtitles_votes', name='api_video_subtitles_votes'),
     url(r'^api/videos/(?P<yid>\S+)/timestamps/(?P<second>\d+)/voters/?$',
             'api_video_timestamps_votes', name='api_video_timestamps_votes'),
+    url(r'^videos/?$', 'videos', name='videos'),
 
     url(r'^autocomplete/org/$', 'autocomplete_org', name='autocomplete_org'),
     url(r'^autocomplete/loru_in_burials/$', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),

@@ -788,3 +788,13 @@ class SupportForm(forms.Form):
 
 class TestCaptchaForm(forms.Form):
     captcha = OurReCaptchaField(label='')
+
+class VideoSearchForm(forms.Form):
+    PAGE_CHOICES = (
+        (5, 5),
+        (10, 10),
+        (25, 25),
+        (50, 50),
+    )
+
+    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
