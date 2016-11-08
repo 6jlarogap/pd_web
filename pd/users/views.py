@@ -3846,6 +3846,11 @@ class ApiVideoDetailView(APIView):
     permission_classes = (PermitIfSupervisor,)
 
     @transaction.commit_on_success
+    def get(self, request, yid):
+        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
+        return Response(data={'a':1}, status=200)
+
+    @transaction.commit_on_success
     def delete(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
         youtubevideo.delete()
