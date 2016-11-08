@@ -301,6 +301,10 @@ def user_dict(user):
             result = profile.user_dict()
     return result
 
+class PermitIfSupervisor(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return is_supervisor(request.user)
+
 class PermitIfTrade(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_trade_user(request.user)
@@ -359,6 +363,14 @@ class YoutubeVideo(BaseModel):
     url = models.URLField(_(u"URL"), max_length=255, default='')
     title = models.CharField(_(u"Заголовок"), max_length=255, default='')
     title_photo_url = models.URLField(_(u"Preview URL"), max_length=255, default='')
+
+    def delete(self, *args, **kwargs):
+        YoutubeCaptionVote.objects.filter(
+            youtubecaption__youtubevideo=self
+        ).delete()
+        for model in (YoutubeVote, YoutubeCaption):
+            model.objects.filter(youtubevideo=self).delete()
+        return super(YoutubeVideo, self).delete(*args, **kwargs)
 
 class YoutubeCaption(models.Model):
     """

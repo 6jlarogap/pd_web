@@ -53,8 +53,11 @@ class PaginateListView(ListView):
     """
     Общий класс для постраничного табличного просмотра
     
-    * В классе-потомке должны быть определены методы:
+    * В классе-потомке может быть определен метод:
         def get_form(self)
+      или установлен атрибут
+        get_form
+      Тогда get_form или get_form() уйдет в контекст как form
     
     * В классе-потомке могут быть переопределены переменные, см. ниже:
     """
@@ -95,7 +98,14 @@ class PaginateListView(ListView):
         if get_for_paginator and 'page' not in self.request.GET.items():
             get_for_paginator += u'&page=%s' % page
 
-        data.update(form=self.get_form(), GET_PARAMS=get_for_paginator, sort=sort, page=page)
+        if hasattr(self, 'get_form'):
+            if callable(self.get_form):
+                form = self.get_form()
+            else:
+                form = self.get_form
+        else:
+            form = None
+        data.update(form=form, GET_PARAMS=get_for_paginator, sort=sort, page=page)
         return data
 
 class RequestToFormMixin(BaseFormView):
