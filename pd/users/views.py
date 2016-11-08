@@ -62,7 +62,8 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, OrgGallery, OrgReview, Role, ThankUser, Thank, \
                          is_supervisor, get_default_currency, get_profile, \
-                         YoutubeVideo, YoutubeVote, YoutubeCaption, YoutubeCaptionVote
+                         YoutubeVideo, YoutubeVote, YoutubeCaption, YoutubeCaptionVote, \
+                         PermitIfSupervisor
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image, SeriesTable, \
                      utcstr2local, utcisoformat, dictfetchall
@@ -3842,9 +3843,12 @@ class VideoListView(SupervisorRequiredMixin, PaginateListView):
 videos = VideoListView.as_view()
 
 class ApiVideoDetailView(APIView):
+    permission_classes = (PermitIfSupervisor,)
 
+    @transaction.commit_on_success
     def delete(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
-        return Response(data=dict(success=True), status=200)
+        youtubevideo.delete()
+        return Response(data={}, status=200)
 
 api_video_detail = ApiVideoDetailView.as_view()

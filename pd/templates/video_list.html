@@ -5,13 +5,17 @@
 {% block content %}
     <script type="text/javascript">
         function delete_video_(yid) {
+            if (!confirm('Будут удалено видео из Народной Думы и все данные по голованию.\n' +
+                       'Продолжить?')) {
+                return false;
+            }
             $.ajax({
                 url: '/api/videos/' + yid,
                 type: 'DELETE',
                 success: function(data) {
-                console.log(data);
                 }
             });
+            location.reload()
             return false;
         }
     </script>
@@ -40,10 +44,10 @@
             <th>
                 {% if sort == 'title' %}
                     {% if sort == 'title' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                    <a href="?{{ GET_PARAMS }}&sort=-title">{% trans "Заголовок" %}</a>
+                    <a href="?{{ GET_PARAMS }}&sort=-title">{% trans "Видео" %}</a>
                 {% else %}
                     {% if sort == '-title' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                    <a href="?{{ GET_PARAMS }}&sort=title">{% trans "Заголовок" %}</a>
+                    <a href="?{{ GET_PARAMS }}&sort=title">{% trans "Видео" %}</a>
                 {% endif %}
             </th>
             <th>
@@ -64,19 +68,29 @@
         {% for v in videos %}
             <tr>
                 <td>
-                    {{ v.title }}
+                    {{ v.title }}<br /><br />
+                    <a href="https://narodnayaduma.ru/videos/{{ v.yid }}" target="_blank">
+                        {% trans "В Народной Думе" %}
+                    </a>
                 </td>
                 <td style="text-align:center; vertical-align:middle;">
                     {% if v.url %}
                         {% autoescape off %}
                             <img src="{{ v.title_photo_url }}">
                         {% endautoescape %}
+                    {% else %}
+                        <iframe
+                            src="http://www.youtube.com/embed/{{ v.yid }}"
+                            frameborder="0"
+                            width="320" height="200"
+                        >
+                        </iframe>
                     {% endif %}
                 </td>
-                <td>
+                <td style="text-align:center; vertical-align:middle;">
                     {{ v.dt_created|date:"d.m.y H:i"}}
                 </td>
-                <td>
+                <td style="text-align:center; vertical-align:middle;">
                 <button onclick='return delete_video_("{{ v.yid }}")'>{% trans "Удалить" %}</button>
                 </td>
             </tr>
