@@ -11,7 +11,8 @@
                 return false;
             }
             $.ajax({
-                url: '/api/videos/' + yid,
+                // + '/' обязательно!
+                url: '/api/videos/' + yid + '/',
                 type: 'DELETE',
                 success: function(data) {
                     location.reload(true);
@@ -22,7 +23,8 @@
 
         function refresh_video_(yid) {
             $.ajax({
-                url: '/api/videos/' + yid + '?refresh=1',
+                // + '/....' обязательно!
+                url: '/api/videos/' + yid + '/?refresh=1',
                 type: 'GET',
                 success: function(data) {
                     location.reload(true);
