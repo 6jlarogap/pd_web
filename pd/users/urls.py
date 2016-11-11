@@ -1,7 +1,6 @@
 # coding: utf-8
 
 from django.conf.urls import patterns, include, url
-from django.views.decorators.cache import cache_page
 from django.conf import settings
 
 from users.views import ApiVideoAggregatedVotesView
@@ -101,8 +100,7 @@ urlpatterns = patterns('users.views',
 
     url(r'^api/videos/?$', 'api_videos', name='api_videos'),
     url(r'^api/videos/(?P<yid>\S+)/votes/?$', 'api_video_votes', name='api_video_votes'),
-    url(r'^api/videos/(?P<yid>\S+)/aggregated-votes/?$',
-        cache_page(60)(ApiVideoAggregatedVotesView.as_view()),
+    url(r'^api/videos/(?P<yid>\S+)/aggregated-votes/?$', 'api_video_aggregated_votes',
         name='api_video_aggregated_votes'
     ),
     url(r'^api/videos/(?P<yid>\S+)/statistics/?$', 'api_video_statistics', name='api_video_statistics'),
