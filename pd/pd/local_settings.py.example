@@ -93,3 +93,15 @@ SMS_SERVICE = [
 # установить этот параметр в True
 #
 REDIRECT_LOGIN_TO_FRONT_END = False
+
+# Если стоит redis сервер, то можно задать django cache на него:
+#
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
