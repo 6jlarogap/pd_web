@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <script type="text/javascript">
+
+        function delete_video_(yid) {
+            if (!confirm('Будут удалено видео из Народной Думы и все данные по голованию.\n' +
+                       'Продолжить?')) {
+                return false;
+            }
+            $.ajax({
+                // + '/' обязательно!
+                url: '/api/videos/' + yid + '/',
+                type: 'DELETE',
+                success: function(data) {
+                    location.reload(true);
+                }
+            });
+            return false;
+        }
+
+        function refresh_video_(yid) {
+            $.ajax({
+                // + '/....' обязательно!
+                url: '/api/videos/' + yid + '/?refresh=1',
+                type: 'GET',
+                success: function(data) {
+                    location.reload(true);
+                }
+            });
+            return false;
+        }
+
+    </script>
+
+    <h1>{% trans "Видеозаписи" %}</h1>
+    <div class="row-fluid no-print">
+        <div class="span12">
+            <div class="row-fluid">
+                <form class="form-horizontal" method="get" action="">
+                    {{ form.as_p }}
+                    <p class="buttons">
+                        <input type="submit" value="{% trans "искать" %}" class="btn btn-primary" />
+                        {% if paginator.page_range|length > 1 %}
+                            {% include "paginator.html" %}
+                        {% endif %}
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <p>{% trans "Найдено:" %} {{ paginator.count|default:0 }}</p>
+
+    <table class="table table-bordered table-striped">
+        <tr>
+            <th>
+                {% if sort == 'title' %}
+                    {% if sort == 'title' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-title">{% trans "Видео" %}</a>
+                {% else %}
+                    {% if sort == '-title' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=title">{% trans "Видео" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {# картинка #}
+            </th>
+            <th>
+                {% if sort == 'dt' %}
+                    {% if sort == 'dt' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-dt">{% trans "Загружено" %}</a>
+                {% else %}
+                    {% if sort == '-dt' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=dt">{% trans "Загружено" %}</a>
+                {% endif %}
+            </th>
+            <th>
+            </th>
+        </tr>
+        {% for v in videos %}
+            <tr>
+                <td>
+                    {{ v.title }}<br /><br />
+                    <a href="https://narodnayaduma.ru/videos/{{ v.yid }}" target="_blank">
+                        {% trans "В Народной Думе" %}
+                    </a>
+                    &nbsp;
+                    <button
+                        onclick='return refresh_video_("{{ v.yid }}")'
+                        title='{% trans "Обновить заголовок и титульное фото видео" %}'
+                    >
+                        {% trans "Обновить" %}
+                    </button>
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
+                    {% if v.title_photo_url %}
+                        {% autoescape off %}
+                            <img src="{{ v.title_photo_url }}">
+                        {% endautoescape %}
+                    {% else %}
+                        <iframe
+                            src="http://www.youtube.com/embed/{{ v.yid }}"
+                            frameborder="0"
+                            width="320" height="200"
+                        >
+                        </iframe>
+                    {% endif %}
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
+                    {{ v.dt_created|date:"d.m.y H:i"}}
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
+                    <button onclick='return delete_video_("{{ v.yid }}")'>
+                        {% trans "Удалить" %}
+                    </button>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+
+{% endblock %}

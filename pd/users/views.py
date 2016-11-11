@@ -52,7 +52,8 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from logs.models import LogOperation, Log, write_log, LoginLog
 from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
-                        LoruOrdersStatsForm, ProfileDataForm, OmsOperStats
+                        LoruOrdersStatsForm, ProfileDataForm, OmsOperStats, \
+                        VideoSearchForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, is_loru_user, is_ugh_user, \
                          PermitIfTrade, PermitIfTradeOrSupervisor, PermitIfLoruOrUgh, \
@@ -61,7 +62,8 @@ from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerPro
                          RegisterProfileContract, RegisterProfileScan, FavoriteSupplier, \
                          UserPhoto, OrgGallery, OrgReview, Role, ThankUser, Thank, \
                          is_supervisor, get_default_currency, get_profile, \
-                         YoutubeVideo, YoutubeVote, YoutubeCaption, YoutubeCaptionVote
+                         YoutubeVideo, YoutubeVote, YoutubeCaption, YoutubeCaptionVote, \
+                         PermitIfSupervisor
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, phones_from_text, EmailMessage, get_image, SeriesTable, \
                      utcstr2local, utcisoformat, dictfetchall
@@ -3692,25 +3694,25 @@ class ApiVideoAggregatedVotesView(APIView):
         cursor = connection.cursor()
         cursor.execute(req_str % dict(yid=yid))
         # -----------------------------------
-        # data = dictfetchall(cursor)
+        data = dictfetchall(cursor)
         # -----------------------------------
-        data = {
-            YoutubeVote.LIKE_UP: [],
-            YoutubeVote.LIKE_DOWN: [],
-        }
-        for row in cursor.fetchall():
-            if row[1] == YoutubeVote.LIKE_UP:
-                data[YoutubeVote.LIKE_UP].append(
-                    dict(
-                        timestamp=row[0],
-                        total=row[2],
-                ))
-            elif row[1] == YoutubeVote.LIKE_DOWN:
-                data[YoutubeVote.LIKE_DOWN].append(
-                    dict(
-                        timestamp=row[0],
-                        total=row[2],
-                ))
+        #data = {
+            #YoutubeVote.LIKE_UP: [],
+            #YoutubeVote.LIKE_DOWN: [],
+        #}
+        #for row in cursor.fetchall():
+            #if row[1] == YoutubeVote.LIKE_UP:
+                #data[YoutubeVote.LIKE_UP].append(
+                    #dict(
+                        #timestamp=row[0],
+                        #total=row[2],
+                #))
+            #elif row[1] == YoutubeVote.LIKE_DOWN:
+                #data[YoutubeVote.LIKE_DOWN].append(
+                    #dict(
+                        #timestamp=row[0],
+                        #total=row[2],
+                #))
         # -----------------------------------
 
         # Работало такое, но нельзя показывать несколько голосов
@@ -3809,3 +3811,65 @@ class ApiVideoCaptionsVotesView(APIView):
         return Response(serializer.data, status=200)
 
 api_video_subtitles_votes = ApiVideoCaptionsVotesView.as_view()
+
+class VideoListView(SupervisorRequiredMixin, PaginateListView):
+    template_name = 'video_list.html'
+    context_object_name = 'videos'
+
+    def __init__(self, *args, **kwargs):
+        super(VideoListView, self).__init__(*args, **kwargs)
+        self.SORT_DEFAULT = '-dt'
+
+    def get_form(self):
+        return VideoSearchForm(data=self.request.GET or None)
+
+    def get_queryset(self):
+        videos = YoutubeVideo.objects.all()
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
+        SORT_FIELDS = {
+            'dt': 'dt_created',
+            '-dt': '-dt_created',
+            'title': 'title',
+            '-title': '-title',
+        }
+        try:
+            s = SORT_FIELDS[sort]
+        except KeyError:
+            s = SORT_FIELDS[self.SORT_DEFAULT]
+        if not isinstance(s, list):
+            s = [s]
+        return videos.order_by(*s)
+
+videos = VideoListView.as_view()
+
+class ApiVideoDetailView(APIView):
+    permission_classes = (PermitIfSupervisor,)
+
+    @transaction.commit_on_success
+    def get(self, request, yid):
+        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
+
+        if request.GET.get('refresh'):
+            y = Youtube(yid)
+            y_parms = y.get_parms()
+            do_save = False
+            if y_parms:
+                if y_parms['title'] and y_parms['title'] != youtubevideo.title:
+                    youtubevideo.title = y_parms['title']
+                    do_save = True
+                if y_parms['title_photo_url'] and \
+                   y_parms['title_photo_url'] != youtubevideo.title_photo_url:
+                    youtubevideo.title_photo_url = y_parms['title_photo_url']
+                    do_save = True
+            if do_save:
+                youtubevideo.save()
+
+        return Response(data=YoutubeVideoSerializer(youtubevideo).data, status=200)
+
+    @transaction.commit_on_success
+    def delete(self, request, yid):
+        youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
+        youtubevideo.delete()
+        return Response(data={}, status=200)
+
+api_video_detail = ApiVideoDetailView.as_view()
