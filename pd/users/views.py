@@ -37,6 +37,7 @@ from django.utils.formats import number_format
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
+from django.views.decorators.cache import cache_page
 
 from captcha.client import submit
 
@@ -3727,7 +3728,7 @@ class ApiVideoAggregatedVotesView(APIView):
 
         return Response(data, status=200)
 
-api_video_aggregated_votes = ApiVideoAggregatedVotesView.as_view()
+api_video_aggregated_votes = cache_page(60)(ApiVideoAggregatedVotesView.as_view())
 
 class ApiVideosView(ApiVideoMixin, APIView):
 
