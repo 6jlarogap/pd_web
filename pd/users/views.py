@@ -3874,3 +3874,28 @@ class ApiVideoDetailView(APIView):
         return Response(data={}, status=200)
 
 api_video_detail = ApiVideoDetailView.as_view()
+
+class ApiVideoStatisticsCurrentUserView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, yid):
+
+        # 'like' - зарезервированное sql слово, и наверное, поэтому не получается :
+        # ...
+        # .extra(select={'timestamp': 'time', 'type': 'like'}
+        # .values('timestamp', 'type')
+        # ...
+
+        columns = ['timestamp', 'type']
+        data = [ dict(zip(columns, row)) for row in \
+            YoutubeVote.objects.filter(
+                youtubevideo__yid=yid,
+                user=request.user,
+            ) \
+            .values_list('time', 'like') \
+            .distinct('time', 'like') \
+            .order_by('time')
+        ]
+        return Response(data=data, status=200)
+
+api_video_statistics_current_user = ApiVideoStatisticsCurrentUserView.as_view()
