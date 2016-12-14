@@ -4,6 +4,7 @@ import json
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.db.models.query_utils import Q
 
 from burials.models import Cemetery
  
@@ -28,48 +29,51 @@ def autocomplete_countries(request):
 def autocomplete_regions(request):
     query = request.GET['query']
     country = request.GET['country']
-    regions = Region.objects.filter(name__icontains=query)
+    q = Q(name__icontains=query)
     if country:
-        regions = regions.filter(country__name__iexact=country)
+        q &= Q(country__name__iexact=country)
+    regions = Region.objects.filter(q)[:20]
     return HttpResponse(json.dumps([{
         'value': r.name + '/' + r.country.name, 'real_value': r.name, 'country': r.country.name
-    } for r in regions[:20]]), mimetype='text/javascript')
+    } for r in regions]), mimetype='text/javascript')
 
 def autocomplete_cities(request):
     query = request.GET['query']
     country = request.GET['country']
     region = request.GET['region']
-    cities = City.objects.filter(name__icontains=query)
+    q = Q(name__icontains=query)
     if country:
-        cities = cities.filter(region__country__name__iexact=country)
+        q &= Q(region__country__name__iexact=country)
     if region:
-        cities = cities.filter(region__name__iexact=region)
+        q &= Q(region__name__iexact=region)
+    cities = City.objects.filter(q)[:20]
     return HttpResponse(json.dumps([{
         'value': c.name + '/' + c.region.name + '/' + c.region.country.name,
         'real_value': c.name,
         'region': c.region.name,
         'country': c.region.country.name
-    } for c in cities[:20]]), mimetype='text/javascript')
+    } for c in cities]), mimetype='text/javascript')
 
 def autocomplete_streets(request):
     query = request.GET['query']
     country = request.GET['country']
     region = request.GET['region']
     city = request.GET['city']
-    streets = Street.objects.filter(name__icontains=query)
+    q = Q(name__icontains=query)
     if country:
-        streets = streets.filter(city__region__country__name__iexact=country)
+        q &= Q(city__region__country__name__iexact=country)
     if region:
-        streets = streets.filter(city__region__name__iexact=region)
+        q &= Q(city__region__name__iexact=region)
     if city:
-        streets = streets.filter(city__name__iexact=city)
+        q &= Q(city__name__iexact=city)
+    streets = Street.objects.filter(q)[:20]
     return HttpResponse(json.dumps([{
         'value': '%s/%s/%s/%s' % (s.name, s.city.name, s.city.region.name, s.city.region.country.name),
         'street': s.name,
         'city': s.city.name,
         'region': s.city.region.name,
         'country': s.city.region.country.name
-    } for s in streets[:20]]), mimetype='text/javascript')
+    } for s in streets]), mimetype='text/javascript')
 
 # REST API
 
