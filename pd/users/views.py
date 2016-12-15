@@ -1357,7 +1357,7 @@ class LoginView(View):
         if settings.REDIRECT_LOGIN_TO_FRONT_END:
             if request.GET.get("redirectUrl"):
                 next_url = "?redirectUrl=%s" % \
-                        quote_plus(unquote_plus(request.GET.get("redirectUrl")))
+                        quote_plus(unquote_plus(request.GET.get("redirectUrl")).encode('utf8'))
             else:
                 next_url = ''
             response = redirect('%ssignout%s' % (get_front_end_url(request), next_url))
