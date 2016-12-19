@@ -37,6 +37,7 @@ from django.utils.formats import number_format
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
+from django.views.decorators.cache import cache_page
 
 from captcha.client import submit
 
@@ -1356,7 +1357,7 @@ class LoginView(View):
         if settings.REDIRECT_LOGIN_TO_FRONT_END:
             if request.GET.get("redirectUrl"):
                 next_url = "?redirectUrl=%s" % \
-                        quote_plus(unquote_plus(request.GET.get("redirectUrl")))
+                        quote_plus(unquote_plus(request.GET.get("redirectUrl")).encode('utf8'))
             else:
                 next_url = ''
             response = redirect('%ssignout%s' % (get_front_end_url(request), next_url))
@@ -3727,7 +3728,7 @@ class ApiVideoAggregatedVotesView(APIView):
 
         return Response(data, status=200)
 
-api_video_aggregated_votes = ApiVideoAggregatedVotesView.as_view()
+api_video_aggregated_votes = cache_page(60)(ApiVideoAggregatedVotesView.as_view())
 
 class ApiVideosView(ApiVideoMixin, APIView):
 
@@ -3873,3 +3874,28 @@ class ApiVideoDetailView(APIView):
         return Response(data={}, status=200)
 
 api_video_detail = ApiVideoDetailView.as_view()
+
+class ApiVideoStatisticsCurrentUserView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, yid):
+
+        # 'like' - зарезервированное sql слово, и наверное, поэтому не получается :
+        # ...
+        # .extra(select={'timestamp': 'time', 'type': 'like'}
+        # .values('timestamp', 'type')
+        # ...
+
+        columns = ['timestamp', 'type']
+        data = [ dict(zip(columns, row)) for row in \
+            YoutubeVote.objects.filter(
+                youtubevideo__yid=yid,
+                user=request.user,
+            ) \
+            .values_list('time', 'like') \
+            .distinct('time', 'like') \
+            .order_by('time')
+        ]
+        return Response(data=data, status=200)
+
+api_video_statistics_current_user = ApiVideoStatisticsCurrentUserView.as_view()
