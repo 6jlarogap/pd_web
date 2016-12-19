@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.db import IntegrityError, connection
 from django.db.models.query_utils import Q
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Min, Max
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import Http404
 from django.views.decorators.csrf import csrf_exempt
@@ -1658,6 +1658,37 @@ class ApiOmsCemeteriesAreasView(APIView):
         )
 
 api_oms_cemeteries_areas = ApiOmsCemeteriesAreasView.as_view()
+
+class ApiOmsPlacesBounds(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        ugh = request.user.profile.org
+        r = Place.objects.filter(
+            cemetery__ugh=ugh,
+            lat__isnull=False,
+            lng__isnull=False,
+        ).aggregate(
+            nw_lat=Max('lat'),
+            nw_lng=Min('lng'),
+            se_lat=Min('lat'),
+            se_lng=Max('lng'),
+        )
+        return Response(dict(
+            northEast=dict(latitude=r['nw_lat'], longitude=r['nw_lng']),
+            southWest=dict(latitude=r['se_lat'], longitude=r['se_lng']),
+        ))
+
+api_oms_places_bounds = ApiOmsPlacesBounds.as_view()
+
+class ApiOmsPlacesClusters(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        ugh = request.user.profile.org
+        return Response(dict())
+
+api_oms_places_clusters = ApiOmsPlacesClusters.as_view()
 
 class TradeCemeteriesMixin(object):
 
