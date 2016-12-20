@@ -1748,7 +1748,6 @@ class ApiOmsPlacesClusters(APIView):
                 nw_lng=nw_lng,
                 se_lng=se_lng,
             )
-            print req_str
             cursor = connection.cursor()
             cursor.execute(req_str)
 
@@ -1767,10 +1766,8 @@ class ApiOmsPlacesClusters(APIView):
                 )
                 for status in stata:
                     res['status'][status] = row_dict['cnt_%s' % status]
-                    
                 data.append(res)
 
-            print len(data)
         except ServiceException as excpt:
             data = dict(message=excpt.message)
             status_code = 400
