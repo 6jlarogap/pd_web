@@ -27,7 +27,7 @@ from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
 from pd.models import UnclearDate, validate_phone_as_number
-from pd.utils import utcisoformat, re_search, dictfetchall
+from pd.utils import utcisoformat, re_search, dictfetchall, zoom_to_geohash_length
 
 from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, \
                           AreaMergeForm, BurialfileCommentEditForm, BurialCommentEditFormSet, \
@@ -1685,8 +1685,96 @@ class ApiOmsPlacesClusters(APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request):
-        ugh = request.user.profile.org
-        return Response(dict())
+        ugh_id = request.user.profile.org.pk
+        status_code = 200
+        try:
+            bounds = request.GET.get('bounds', '').strip()
+            m = re.search(
+                r'^'
+                r'([+-]?\d+(?:\.?\d*))\s*\,\s*'
+                r'([+-]?\d+(?:\.?\d*))\s*\,\s*'
+                r'([+-]?\d+(?:\.?\d*))\s*\,\s*'
+                r'([+-]?\d+(?:\.?\d*))'
+                r'$',
+                bounds,
+            )
+            if not m:
+                raise ServiceException(u"Invalid or absent 'bounds' GET parm")
+            nw_lat = m.group(1)
+            nw_lng = m.group(2)
+            se_lat = m.group(3)
+            se_lng = m.group(4)
+
+            zoom = request.GET.get('zoom', '').strip()
+            m = re.search(r'^(\d+)$', zoom)
+            zoom = None
+            if m:
+                zoom = int(m.group(1))
+                if not (0 <= zoom <= 17):
+                   zoom = None 
+            if zoom is None:
+                raise ServiceException(u"Invalid or absent 'zoom' GET parm. Must be: 0 <= zoom <= 17")
+
+            geohash_prefix_len = zoom_to_geohash_length(zoom)
+            req_str = '''
+                SELECT
+                    AVG(lat)                AS avg_lat,
+                    AVG(lng)                AS avg_lng,
+                    COUNT(dt_free)          AS cnt_dt_free,
+                    COUNT(dt_wrong_fio)     AS cnt_dt_wrong_fio,
+                    COUNT(dt_military)      AS cnt_dt_military,
+                    COUNT(dt_size_violated) AS cnt_dt_size_violated,
+                    COUNT(dt_unowned)       AS cnt_dt_unowned,
+                    COUNT(dt_unindentified) AS cnt_dt_unindentified,
+                    SUBSTRING(geohash FROM 1 FOR %(geohash_prefix_len)s) AS geohash_prefix,
+                    COUNT(*) AS quantity
+                FROM
+                    burials_place
+                INNER JOIN 
+                    burials_cemetery ON (burials_place.cemetery_id = burials_cemetery.id)
+                WHERE
+                    burials_cemetery.ugh_id = %(ugh_id)s AND
+                    lat IS NOT NULL AND
+                    lng IS NOT NULL AND
+                    lat BETWEEN %(se_lat)s AND %(nw_lat)s AND 
+                    lng BETWEEN %(nw_lng)s AND %(se_lng)s
+                GROUP BY
+                    geohash_prefix;
+            ''' % dict(
+                geohash_prefix_len=geohash_prefix_len,
+                ugh_id=ugh_id,
+                se_lat=se_lat,
+                nw_lat=nw_lat,
+                nw_lng=nw_lng,
+                se_lng=se_lng,
+            )
+            print req_str
+            cursor = connection.cursor()
+            cursor.execute(req_str)
+
+            data = []
+            columns = [col[0] for col in cursor.description]
+            stata = ('dt_free', 'dt_wrong_fio', 'dt_military',
+                     'dt_size_violated', 'dt_unowned', 'dt_unindentified'
+            )
+            for row in cursor.fetchall():
+                row_dict = dict(zip(columns, row))
+                res = dict(
+                    latitude=row_dict['avg_lat'],
+                    longitude=row_dict['avg_lng'],
+                    quantity=row_dict['quantity'],
+                    status=dict(),
+                )
+                for status in stata:
+                    res['status'][status] = row_dict['cnt_%s' % status]
+                    
+                data.append(res)
+
+            print len(data)
+        except ServiceException as excpt:
+            data = dict(message=excpt.message)
+            status_code = 400
+        return Response(data, status=status_code)
 
 api_oms_places_clusters = ApiOmsPlacesClusters.as_view()
 
