@@ -1,7 +1,7 @@
 # coding=utf-8
 import datetime
 import re
-import Geohash
+import geohash
 
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
@@ -409,7 +409,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
             # нежели для остальных зх
             self.set_next_number(new_place_for_archive)
         if self.lat is not None and self.lng is not None:
-            self.geohash = Geohash.encode(
+            self.geohash = geohash.encode(
                 latitude=self.lat,
                 longitude=self.lng,
                 precision=Place._meta.get_field('geohash').max_length,
