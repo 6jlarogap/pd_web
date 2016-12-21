@@ -19,7 +19,8 @@ from logs.models import Log
 from burials.models import Cemetery, CemeteryCoordinates, Area, AreaCoordinates, \
                            Place, PlaceSize, PlacePhoto, Grave, \
                            Burial, BurialFiles, Reason, ExhumationRequest, \
-                           BurialComment, PlaceStatus, AreaPhoto, PlaceStatusFiles
+                           BurialComment, PlaceStatus, AreaPhoto, PlaceStatusFiles, \
+                           CemeteryPhoto
 from orders.models import Order, OrderItem, ServiceItem, OrgService, OrgServicePrice, \
                           OrderComment, ResultFile
 from persons.models import DeadPerson, AlivePerson, DeathCertificateScan
@@ -60,6 +61,7 @@ class Command(BaseCommand):
             DeathCertificateScan,
             Q(deathcertificate__person__burial__ugh=ugh_one)
         )
+        self.collect_media(CemeteryPhoto, Q(cemetery__ugh=ugh_one))
         self.collect_media(AreaPhoto, Q(area__cemetery__ugh=ugh_one))
         self.collect_media(PlacePhoto, Q(place__cemetery__ugh=ugh_one))
         self.collect_media(
@@ -168,7 +170,9 @@ class Command(BaseCommand):
             AreaPhoto.objects.filter(area__cemetery__ugh=ugh).delete()
             AreaCoordinates.objects.filter(area__cemetery__ugh=ugh).delete()
             Area.objects.filter(cemetery__ugh=ugh).delete()
+
             print 'removing cemeteries'
+            CemeteryPhoto.objects.filter(cemetery__ugh=ugh).delete()
             CemeteryCoordinates.objects.filter(cemetery__ugh=ugh).delete()
             Cemetery.objects.filter(ugh=ugh).delete()
             Reason.objects.filter(org=ugh).delete()
@@ -185,6 +189,8 @@ class Command(BaseCommand):
 
         print 'DeathCertificateScans total: %s' % DeathCertificateScan.objects.all().count()
         print 'PlacePhoto total: %s' % PlacePhoto.objects.all().count()
+        print 'AreaPhoto total: %s' % AreaPhoto.objects.all().count()
+        print 'CemeteryPhoto total: %s' % CemeteryPhoto.objects.all().count()
         print 'Burial Files total: %s' % BurialFiles.objects.all().count()
 
     def remove_org(self, org):
