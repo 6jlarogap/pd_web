@@ -497,6 +497,20 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
         return result
 
     @classmethod
+    def status_dict(cls):
+        """
+        Вернут статус: описание для всех статусов
+        """
+        result  = dict()
+        for f in Place.STATUS_LIST:
+            name = unicode(cls._meta.get_field(f).verbose_name or '')
+            m = re.search(r'^\s*([^\/]+?)\s*\/', name)
+            if m:
+                name = m.group(1)
+            result[f] = name
+        return result
+
+    @classmethod
     def log_login_phone_change(cls, request, old_login_phone):
         """
         Записать в журнал по всем местам и захоронениям изменение login_phone

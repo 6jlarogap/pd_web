@@ -1680,7 +1680,7 @@ class ApiOmsPlacesBounds(APIView):
 api_oms_places_bounds = ApiOmsPlacesBounds.as_view()
 
 class ApiOmsPlacesClusters(APIView):
-    renderer_classes = (JSONPRenderer, )
+    # renderer_classes = (JSONPRenderer, )
 
     def get(self, request, ugh_id):
         '''
@@ -1766,6 +1766,10 @@ class ApiOmsPlacesClusters(APIView):
                 SELECT
                     AVG(lat)                AS avg_lat,
                     AVG(lng)                AS avg_lng,
+                    MIN(lat)                AS min_lat,
+                    MIN(lng)                AS min_lng,
+                    MAX(lat)                AS max_lat,
+                    MAX(lng)                AS max_lng,
                     COUNT(dt_free)          AS cnt_dt_free,
                     COUNT(dt_wrong_fio)     AS cnt_dt_wrong_fio,
                     COUNT(dt_military)      AS cnt_dt_military,
@@ -1798,19 +1802,50 @@ class ApiOmsPlacesClusters(APIView):
             cursor.execute(req_str)
 
             columns = [col[0] for col in cursor.description]
-            stata = ('dt_free', 'dt_wrong_fio', 'dt_military',
-                     'dt_size_violated', 'dt_unowned', 'dt_unindentified'
-            )
+            stata = Place.status_dict()
+            id_ = 0
             for row in cursor.fetchall():
                 row_dict = dict(zip(columns, row))
-                res = dict(
-                    latitude=row_dict['avg_lat'],
-                    longitude=row_dict['avg_lng'],
-                    quantity=row_dict['quantity'],
-                    status=dict(),
-                )
-                for status in stata:
-                    res['status'][status] = row_dict['cnt_%s' % status]
+                res = dict()
+                res['id'] = id_
+                if row_dict['quantity'] == 1:
+                    res['type'] = 'Feature'
+                    res['geometry'] = dict(
+                        type='Point',
+                        coordinates=[row_dict['avg_lng'], row_dict['avg_lat'],],
+                    )
+                    res['properties'] = dict(
+                        balloonContent=u"",
+                        clusterCaption=_(u"Место"),
+                        hintContent=u""
+                    )
+                    for status in stata:
+                        if row_dict["cnt_%s" % status]:
+                            res['properties']['hintContent'] += u"%s, " % stata[status]
+                    if res['properties']['hintContent']:
+                        res['properties']['hintContent'] = _(u"Признак(и) места: %s") % \
+                            res['properties']['hintContent'][:-2]
+                else:
+                    res['type'] = 'Cluster'
+                    res['bbox'] = [
+                        [row_dict['min_lng'], row_dict['min_lat']],
+                        [row_dict['max_lng'], row_dict['max_lat']]
+                    ]
+                    res['number'] = row_dict['quantity']
+
+                    # Массив, описывающий <number> объекта в составе кластера.
+                    #  Необязательное поле.
+                    # res['features'] = [],
+
+                    res['geometry'] = {
+                        'type': 'Point',
+                        'coordinates': [row_dict['avg_lng'], row_dict['avg_lat'],],
+                    }
+                    res['properties'] = dict(
+                        iconContent=str(row_dict['quantity'])
+                    )
+
+                id_ += 1
                 data['features'].append(res)
 
         except ServiceException as excpt:
