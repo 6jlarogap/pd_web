@@ -1665,20 +1665,17 @@ class ApiOmsPlacesBounds(APIView):
 
     def get(self, request):
         ugh = request.user.profile.org
-        r = Place.objects.filter(
+        data = Place.objects.filter(
             cemetery__ugh=ugh,
             lat__isnull=False,
             lng__isnull=False,
         ).aggregate(
-            nw_lat=Max('lat'),
-            nw_lng=Min('lng'),
-            se_lat=Min('lat'),
-            se_lng=Max('lng'),
+            s=Min('lat'),
+            n=Max('lat'),
+            w=Min('lng'),
+            e=Max('lng'),
         )
-        return Response(dict(
-            northEast=dict(latitude=r['nw_lat'], longitude=r['nw_lng']),
-            southWest=dict(latitude=r['se_lat'], longitude=r['se_lng']),
-        ))
+        return Response(data=data)
 
 api_oms_places_bounds = ApiOmsPlacesBounds.as_view()
 
@@ -1686,9 +1683,66 @@ class ApiOmsPlacesClusters(APIView):
     renderer_classes = (JSONPRenderer, )
 
     def get(self, request, ugh_id):
+        '''
+        Вывод отдельных мест и кластеров мест для yandex maps remoteManager api
+
+        callback_get_parm({
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "id": 0,
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [55.831903, 37.411961]
+                    },
+                    "properties": {
+                        "balloonContent": "Содержимое балуна",
+                        "clusterCaption": "Метка 1",
+                        "hintContent": "Текст подсказки"
+                    }
+                },
+                {
+                    // Описание кластера.
+                    type: 'Cluster',
+                    // Идентификатор кластера формируется самостоятельно.
+                    id: 1,
+                    bbox: [[35, 46], [46, 57]],
+                    number: 34,
+                    // Массив, описывающий 34 объекта в составе кластера.
+                    // Необязательное поле.
+                    features: [...],            
+                    geometry: {                         
+                        type: 'Point',                         
+                        coordinates: [40.5, 51]                     
+                    },                     
+                    properties: {
+                        // Если поле iconContent не задано, то 
+                        // в иконке кластера будет отображаться значение, указанное в поле number.                 
+                        iconContent: 'Кластер 1'                     
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "id": 2,
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [55.763338, 37.565466]
+                    },
+                    "properties": {
+                        "balloonContent": "Содержимое балуна",
+                        "clusterCaption": "Метка 2",
+                        "hintContent": "Текст подсказки"
+                    }
+                }
+            ]
+        })
+        '''
+
         status_code = 200
+        data = { "type": "FeatureCollection", "features": [] }
         try:
-            bounds = request.GET.get('bounds', '').strip()
+            bounds = request.GET.get('bbox', '').strip()
             m = re.search(
                 r'^'
                 r'([+-]?\d+(?:\.?\d*))\s*\,\s*'
@@ -1700,20 +1754,12 @@ class ApiOmsPlacesClusters(APIView):
             )
             if not m:
                 raise ServiceException(u"Invalid or absent 'bounds' GET parm")
-            nw_lat = m.group(1)
-            nw_lng = m.group(2)
-            se_lat = m.group(3)
-            se_lng = m.group(4)
+            w_ = m.group(1)
+            s_ = m.group(2)
+            e_ = m.group(3)
+            n_ = m.group(4)
 
-            zoom = request.GET.get('zoom', '').strip()
-            m = re.search(r'^(\d+)$', zoom)
-            zoom = None
-            if m:
-                zoom = int(m.group(1))
-                if not (0 <= zoom <= 17):
-                   zoom = None 
-            if zoom is None:
-                raise ServiceException(u"Invalid or absent 'zoom' GET parm. Must be: 0 <= zoom <= 17")
+            zoom = 14
 
             geohash_prefix_len = zoom_to_geohash_length(zoom)
             req_str = '''
@@ -1736,22 +1782,21 @@ class ApiOmsPlacesClusters(APIView):
                     burials_cemetery.ugh_id = %(ugh_id)s AND
                     lat IS NOT NULL AND
                     lng IS NOT NULL AND
-                    lat BETWEEN %(se_lat)s AND %(nw_lat)s AND 
-                    lng BETWEEN %(nw_lng)s AND %(se_lng)s
+                    lat BETWEEN %(s_)s AND %(n_)s AND 
+                    lng BETWEEN %(e_)s AND %(w_)s
                 GROUP BY
                     geohash_prefix;
             ''' % dict(
                 geohash_prefix_len=geohash_prefix_len,
                 ugh_id=ugh_id,
-                se_lat=se_lat,
-                nw_lat=nw_lat,
-                nw_lng=nw_lng,
-                se_lng=se_lng,
+                n_=n_,
+                s_=s_,
+                e_=e_,
+                w_=w_,
             )
             cursor = connection.cursor()
             cursor.execute(req_str)
 
-            data = { "type": "FeatureCollection", "features": [] }
             columns = [col[0] for col in cursor.description]
             stata = ('dt_free', 'dt_wrong_fio', 'dt_military',
                      'dt_size_violated', 'dt_unowned', 'dt_unindentified'
@@ -1769,7 +1814,7 @@ class ApiOmsPlacesClusters(APIView):
                 data['features'].append(res)
 
         except ServiceException as excpt:
-            data = dict(message=excpt.message)
+            data.update(dict(message=excpt.message))
             status_code = 400
         return Response(data, status=status_code)
 
