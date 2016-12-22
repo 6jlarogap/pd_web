@@ -1783,7 +1783,7 @@ class ApiOmsPlacesClusters(APIView):
                     lat IS NOT NULL AND
                     lng IS NOT NULL AND
                     lat BETWEEN %(s_)s AND %(n_)s AND 
-                    lng BETWEEN %(e_)s AND %(w_)s
+                    lng BETWEEN %(w_)s AND %(e_)s
                 GROUP BY
                     geohash_prefix;
             ''' % dict(
