@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
-import Geohash
+import geohash
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
@@ -14,7 +14,7 @@ class Migration(DataMigration):
         Place = orm['burials.Place']
         precision = Place._meta.get_field('geohash').max_length
         for p in Place.objects.filter(lat__isnull=False, lng__isnull=False).iterator():
-            geohash = Geohash.encode(
+            geohash = geohash.encode(
                 latitude=p.lat,
                 longitude=p.lng,
                 precision=precision,
