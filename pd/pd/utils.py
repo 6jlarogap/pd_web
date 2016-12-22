@@ -306,28 +306,28 @@ class SeriesTable(Sequence):
                 result['values'].append(ser[key][1])
         return result
 
-def zoom_to_geohash_length(zoom):
+#def zoom_to_geohash_length(zoom):
 
-    # https://dou.ua/lenta/articles/geohash/
+    ## https://dou.ua/lenta/articles/geohash/
 
-    #public int getGeohashLength(Coordinates southWest, Coordinates northEast, int zoom) {
-        #double a = minGeohashLength / Math.exp(minZoom / (maxZoom - minZoom) * Math.log(maxGeohashLength / minGeohashLength));
-        #double b = Math.log(maxGeohashLength / minGeohashLength) / (maxZoom - minZoom);
-        #return (int) Math.max(minGeohashLength, Math.min(a * Math.exp(b * zoom), maxGeohashLength));
-    #}
+    ##public int getGeohashLength(Coordinates southWest, Coordinates northEast, int zoom) {
+        ##double a = minGeohashLength / Math.exp(minZoom / (maxZoom - minZoom) * Math.log(maxGeohashLength / minGeohashLength));
+        ##double b = Math.log(maxGeohashLength / minGeohashLength) / (maxZoom - minZoom);
+        ##return (int) Math.max(minGeohashLength, Math.min(a * Math.exp(b * zoom), maxGeohashLength));
+    ##}
 
 
-    MIN_GEOHASH_LENGTH = 1
-    MAX_GEOHASH_LENGTH = 12
-    MIN_ZOOM = 0;
-    MAX_ZOOM = 17;
+    #MIN_GEOHASH_LENGTH = 1
+    #MAX_GEOHASH_LENGTH = 12
+    #MIN_ZOOM = 0;
+    #MAX_ZOOM = 17;
 
-    zoom = min(zoom, MAX_ZOOM)
-    zoom = max(zoom, MIN_ZOOM)
+    #zoom = min(zoom, MAX_ZOOM)
+    #zoom = max(zoom, MIN_ZOOM)
 
-    a = MIN_GEOHASH_LENGTH / \
-        math.exp(MIN_ZOOM / (MAX_ZOOM - MIN_ZOOM) * math.log(MAX_GEOHASH_LENGTH / MIN_GEOHASH_LENGTH))
+    #a = MIN_GEOHASH_LENGTH / \
+        #math.exp(MIN_ZOOM / (MAX_ZOOM - MIN_ZOOM) * math.log(MAX_GEOHASH_LENGTH / MIN_GEOHASH_LENGTH))
 
-    b = math.log(MAX_GEOHASH_LENGTH / MIN_GEOHASH_LENGTH) / (MAX_ZOOM - MIN_ZOOM);
+    #b = math.log(MAX_GEOHASH_LENGTH / MIN_GEOHASH_LENGTH) / (MAX_ZOOM - MIN_ZOOM);
 
-    return int(max(MIN_GEOHASH_LENGTH, min(a * math.exp(b * zoom), MAX_GEOHASH_LENGTH)))
+    #return int(max(MIN_GEOHASH_LENGTH, min(a * math.exp(b * zoom), MAX_GEOHASH_LENGTH)))
