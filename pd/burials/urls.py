@@ -79,8 +79,8 @@ urlpatterns = patterns('burials.views',
         r'^api/oms/cemeteries/(?P<cemetery_pk>\d+)/areas/(?P<area_pk>\d+)/places/?$',
         'api_oms_areas_places', name='api_oms_areas_places'),
 
-    url(r'^api/oms/places/bounds?$', 'api_oms_places_bounds', name='api_oms_places_bounds'),
-    url(r'^api/oms/places/clusters?$', 'api_oms_places_clusters', name='api_oms_places_clusters'),
+    url(r'^api/oms/places/bounds/?$', 'api_oms_places_bounds', name='api_oms_places_bounds'),
+    url(r'^api/oms/(?P<ugh_id>\d+)/places/clusters/?$', 'api_oms_places_clusters', name='api_oms_places_clusters'),
 
     url(r'^api/clients/(?P<token>[0-9a-f]+)/cemeteries/?$', 'api_client_site_cemeteries', name='api_client_site_cemeteries'),
     url(r'^api/clients/(?P<token>[0-9a-f]+)/burials-places/?$', 'api_client_site_places', name='api_client_site_places'),

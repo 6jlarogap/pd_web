@@ -49,6 +49,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_jsonp.renderers import JSONPRenderer
 
 from django.db import transaction
 
@@ -1682,10 +1683,9 @@ class ApiOmsPlacesBounds(APIView):
 api_oms_places_bounds = ApiOmsPlacesBounds.as_view()
 
 class ApiOmsPlacesClusters(APIView):
-    permission_classes = (PermitIfUgh,)
+    renderer_classes = (JSONPRenderer, )
 
-    def get(self, request):
-        ugh_id = request.user.profile.org.pk
+    def get(self, request, ugh_id):
         status_code = 200
         try:
             bounds = request.GET.get('bounds', '').strip()
@@ -1751,7 +1751,7 @@ class ApiOmsPlacesClusters(APIView):
             cursor = connection.cursor()
             cursor.execute(req_str)
 
-            data = []
+            data = { "type": "FeatureCollection", "features": [] }
             columns = [col[0] for col in cursor.description]
             stata = ('dt_free', 'dt_wrong_fio', 'dt_military',
                      'dt_size_violated', 'dt_unowned', 'dt_unindentified'
@@ -1766,7 +1766,7 @@ class ApiOmsPlacesClusters(APIView):
                 )
                 for status in stata:
                     res['status'][status] = row_dict['cnt_%s' % status]
-                data.append(res)
+                data['features'].append(res)
 
         except ServiceException as excpt:
             data = dict(message=excpt.message)
