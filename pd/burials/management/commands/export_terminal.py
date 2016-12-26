@@ -28,14 +28,18 @@ CEMETERIES = (
     dict(
         export='vostochnoe',
         csv_kwargs=dict(delimiter=" ", quotechar='"', quoting=csv.QUOTE_ALL),
-        cemeteries=(u'Восточное', u'Уручье',),
+        cemeteries=(
+            u'Восточное',
+            u'Уручье',
+            u'Колумбарий кладбища Восточное',
+            ),
         put_cemetery = True,
    ),
     dict(
         export='voennoe',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Военное',),
-        put_cemetery = True,
+        # put_cemetery = True,
    ),
     dict(
         export='kolodischi',
