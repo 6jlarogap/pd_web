@@ -24,7 +24,7 @@ from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin, CustomUploadModelForm
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
-from persons.models import DeathCertificate, PersonID, IDDocumentType
+from persons.models import DeathCertificate, PersonID, IDDocumentType, OrderDeadPerson
 from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
 from logs.models import write_log
@@ -293,6 +293,9 @@ class ResponsibleForm(AlivePersonForm):
         if self.instance.pk:
             del self.fields['take_from']
             self.initial['login_phone_'] = self.instance.login_phone
+        # funeral order
+        elif self.instance.login_phone:
+            self.initial['login_phone_'] = self.instance.login_phone
         else:
             self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-4))
         self.fields.keyOrder.insert(-3, self.fields.keyOrder.pop(-1))
@@ -426,6 +429,27 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             except Order.DoesNotExist:
                 pass
 
+        self.funeral_order = self.funeral_deadman_address = self.funeral_applicant_address = None
+        funeral_order_pk = self.request.REQUEST.get('funeral_order')
+        if self.request.user.profile.is_ugh() and funeral_order_pk and not self.instance.pk:
+            try:
+                funeral_order = Order.objects.get(pk=funeral_order_pk)
+                self.funeral_order = funeral_order
+                if self.instance.deadman:
+                    try:
+                        orderdeadperson = OrderDeadPerson.objects.get(order=funeral_order)
+                        self.funeral_deadman_address = orderdeadperson and \
+                                                        orderdeadperson.address and \
+                                                        orderdeadperson.address.addr_str
+                    except OrderDeadPerson.DoesNotExist:
+                        pass
+                if self.instance.applicant:
+                    self.funeral_applicant_address = funeral_order.applicant and \
+                                                    funeral_order.applicant.address and \
+                                                    funeral_order.applicant.address.addr_str
+            except Order.DoesNotExist:
+                pass
+
         # Отсутствие выбора будет в выпадающем списке не "---", а ""
         self.fields['applicant_organization'].empty_label = ''
         
@@ -467,7 +491,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 else:
                     self.initial['opf'] = self.request.user.profile.org.opf_burial
             else:
-                self.initial['opf'] = self.request.user.profile.org.opf_burial
+                if self.funeral_order:
+                    self.initial['opf'] = Org.OPF_PERSON
+                else:
+                    self.initial['opf'] = self.request.user.profile.org.opf_burial
         else:
             self.initial['opf'] = Org.OPF_ORG
 
@@ -545,6 +572,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.deadman_form = DeadPersonForm(request=self.request, data=data, prefix='deadman', instance=deadman)
         deadman_addr = deadman and deadman.address
         self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
+        if self.funeral_deadman_address:
+            self.deadman_address_form.initial['fias_address'] = self.funeral_deadman_address
         self.bfiles_form = BurialFilesForm(data=data, prefix='bfiles', files=self.request.FILES)
         try:
             dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
@@ -561,7 +590,6 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.responsible_form.fields['login_phone_'].widget.attrs.update({'readonly':'True'})
         resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
-
         applicant = self.instance and self.instance.applicant
         applicant_form_initial = {}
         applicant_address_form_initial = {}
@@ -612,6 +640,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                                     instance=applicant_addr,
                                                     initial=applicant_address_form_initial,
                                                    )
+        if self.funeral_applicant_address:
+            self.responsible_address_form.initial['fias_address'] = self.funeral_applicant_address
+            self.applicant_address_form.initial['fias_address'] = self.funeral_applicant_address
+
         try:
             applicant_id = self.instance and self.instance.applicant and self.instance.applicant.personid
         except PersonID.DoesNotExist:
@@ -831,6 +863,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.order:
             self.order.burial = self.instance
             self.order.save()
+
+        if self.funeral_order:
+            self.funeral_order.burial = self.instance
+            self.funeral_order.save()
+            write_log(self.request, self.instance, _(u'Захоронение прикреплено к заказу %s') % self.funeral_order.pk)
+            write_log(self.request, self.funeral_order, _(u'Заказ: прикреплено захоронение %s') % self.instance.pk)
 
         if self.bfiles_form.is_valid() and self.request.FILES.get('bfiles-bfile'):
             saved_file = self.bfiles_form.save(burial=self.instance, user=self.request.user)

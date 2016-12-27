@@ -635,7 +635,7 @@ class OrderPlace(models.Model):
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), null=True)
     row = models.CharField(_(u"Ряд"), max_length=255, default='')
     place = models.CharField(_(u"Место"), max_length=255, default='')
-    size = models.CharField(_(u"Размер гроба/могилы"), max_length=255, default='')
+    size = models.CharField(_(u"Размер гроба"), max_length=255, default='')
 
 class PlaceStatus(BaseModel):
     PS_ACTUAL = 'actual'

@@ -1,0 +1,59 @@
+{% load i18n %}
+{% for o in orders %}
+    <tr>
+        {# у захоронения: account_number #}
+        <td></td>
+        {# у захоронения: источник #}
+        <td></td>
+        {# у захоронения: заявитель #}
+        <td>
+            {% if o.applicant %}
+                {{ o.applicant }}
+                {% for phone in o.applicant.phone_str_list %}
+                    <br />{{ phone }}
+                {% endfor %}
+                {% if o.applicant.address %}
+                    <br/><br/>{{ o.applicant.address.short }}
+                {% endif %}
+            {% endif %}
+        </td>
+        {# у захоронения: кладбище #}
+        <td>
+            <b>{{ o.cemetery }}</b>
+        </td>
+        {# у захоронения: место #}
+        <td>
+            {% if o.orderplace.area %}
+                {% trans "Участок" %}
+                {{ o.orderplace.area.name|default:"" }}
+                <br/>
+            {% endif %}
+            {% if o.orderplace.row %}
+                {% trans "ряд" %} {{ o.orderplace.row }},
+            {% endif %}
+            {% if o.orderplace.place %}
+                {% trans "место" %} {{ orderplace.place }}
+            {% endif %}
+            <br/>
+        </td>
+        {# у захоронения: усопший #}
+        <td>
+            {% if o.orderdeadperson %}
+                {{ o.orderdeadperson }}
+                {{ o.orderdeadperson.birth_date|default_if_none:"..."}}
+                &mdash;
+                {{ o.orderdeadperson.death_date|default_if_none:"..." }}
+            {% endif %}
+        </td>
+        {# у захоронения: дата #}
+        <td></td>
+        {# у захоронения: статус #}
+        <td></td>
+        {# у захоронения: комментарий #}
+        <td><b><span style="color:blue">{% trans "Заказ похорон" %}</span></b></td>
+        {# у захоронения: кнопки #}
+        <td class="no-print">
+        <a class="btn" href="{% url create_burial %}?funeral_order={{ o.pk }}" target="_blank">{% trans "регистрировать" %}</a>
+        </td>
+    </tr>
+{% endfor %}
