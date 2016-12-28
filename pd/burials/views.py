@@ -1,6 +1,8 @@
 # coding=utf-8
 
 import re, datetime, os
+from LatLon import LatLon, Latitude, Longitude
+import geohash
 
 from django.conf import settings
 from django.contrib import messages
@@ -10,7 +12,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.db import IntegrityError, connection
 from django.db.models.query_utils import Q
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Min, Max
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import Http404
 from django.views.decorators.csrf import csrf_exempt
@@ -49,6 +51,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_jsonp.renderers import JSONPRenderer
 
 from django.db import transaction
 
@@ -1658,6 +1661,251 @@ class ApiOmsCemeteriesAreasView(APIView):
         )
 
 api_oms_cemeteries_areas = ApiOmsCemeteriesAreasView.as_view()
+
+class ApiOmsPlacesBounds(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request):
+        ugh = request.user.profile.org
+        data = Place.objects.filter(
+            cemetery__ugh=ugh,
+            lat__isnull=False,
+            lng__isnull=False,
+        ).aggregate(
+            s=Min('lat'),
+            n=Max('lat'),
+            w=Min('lng'),
+            e=Max('lng'),
+        )
+        return Response(data=data)
+
+api_oms_places_bounds = ApiOmsPlacesBounds.as_view()
+
+class ApiOmsPlacesClusters(APIView):
+    renderer_classes = (JSONPRenderer, )
+
+    def get(self, request, ugh_id):
+        '''
+        Вывод отдельных мест и кластеров мест для yandex maps remoteManager api
+
+        callback_get_parm({
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "id": 0,
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [55.831903, 37.411961]
+                    },
+                    "properties": {
+                        "balloonContent": "Содержимое балуна",
+                        "clusterCaption": "Метка 1",
+                        "hintContent": "Текст подсказки"
+                    }
+                },
+                {
+                    // Описание кластера.
+                    type: 'Cluster',
+                    // Идентификатор кластера формируется самостоятельно.
+                    id: 1,
+                    bbox: [[35, 46], [46, 57]],
+                    number: 34,
+                    // Массив, описывающий 34 объекта в составе кластера.
+                    // Необязательное поле.
+                    features: [...],            
+                    geometry: {                         
+                        type: 'Point',                         
+                        coordinates: [40.5, 51]                     
+                    },                     
+                    properties: {
+                        // Если поле iconContent не задано, то 
+                        // в иконке кластера будет отображаться значение, указанное в поле number.                 
+                        iconContent: 'Кластер 1'                     
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "id": 2,
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [55.763338, 37.565466]
+                    },
+                    "properties": {
+                        "balloonContent": "Содержимое балуна",
+                        "clusterCaption": "Метка 2",
+                        "hintContent": "Текст подсказки"
+                    }
+                }
+            ]
+        })
+        '''
+
+        status_code = 200
+        data = { "type": "FeatureCollection", "features": [] }
+        try:
+            bounds = request.GET.get('bbox', '').strip()
+            m = re.search(
+                r'^'
+                r'([+-]?\d+(?:\.?\d*))\s*\,\s*'
+                r'([+-]?\d+(?:\.?\d*))\s*\,\s*'
+                r'([+-]?\d+(?:\.?\d*))\s*\,\s*'
+                r'([+-]?\d+(?:\.?\d*))'
+                r'$',
+                bounds,
+            )
+            if not m:
+                raise ServiceException(u"Invalid or absent 'bounds' GET parm")
+            w_ = m.group(1)
+            s_ = m.group(2)
+            e_ = m.group(3)
+            n_ = m.group(4)
+            
+            w_f = float(w_)
+            s_f = float(s_)
+            e_f = float(e_)
+            n_f = float(n_)
+
+            # bbox get параметр задает границы области, которая на yandex карте
+            # рисуется квадратом (тайлом) 256x256 пикселей. Там помещается
+            # по диаганали балунов и кружков кластера:
+            #
+            MARKS_PER_TILE = 20
+            #
+            # Находим погрешность для geohash (geohash_error).
+            # Это длина диаганали тайла, уменьшенная в MARKS_PER_TILE раз.
+            # Из этой погрешности ищем длину префикса geohash,
+            # при которой прямоугольник внутри geohash'a с таким префиксом
+            # чуть превышает погрешность для geohash.
+            # Начинаем поиск с длины geohash prefix, при которой погрешность
+            # меньше метра:
+            #
+            GEOHASH_PREFIX_LEN_START = 10
+
+            tile_diag_len = LatLon(Latitude(s_f), Longitude(w_f)).\
+                                distance(LatLon(Latitude(n_f), Longitude(e_f)))
+            geohash_error = tile_diag_len / float(MARKS_PER_TILE)
+            
+            # точка в центре тайла:
+            #
+            tile_center = dict(
+                lat=s_f + (n_f-s_f) / 2.,
+                lng=w_f + (e_f-w_f) / 2.,
+            )
+            geohash_prefix_len = GEOHASH_PREFIX_LEN_START
+            tile_center_geohash_start = geohash.encode(
+                latitude=tile_center['lat'],
+                longitude=tile_center['lng'],
+                precision=geohash_prefix_len,
+            )
+            diff_prev = 40000.
+            while geohash_prefix_len > 0:
+                tile_center_geohash = tile_center_geohash_start[:geohash_prefix_len]
+                center_box = geohash.bbox(tile_center_geohash)
+                center_diag_len = LatLon(Latitude(center_box['s']), Longitude(center_box['w'])).\
+                                distance(LatLon(Latitude(center_box['n']), Longitude(center_box['e'])))
+                diff = center_diag_len - geohash_error
+                if diff >= 0.:
+                    # Если при чуть большей длине префикса разница
+                    # была меньшей, то выбираем чуть больший префикс
+                    if diff_prev < diff:
+                        geohash_prefix_len += 1
+                    break
+                diff_prev = abs(diff)
+                geohash_prefix_len -= 1
+
+            req_str = '''
+                SELECT
+                    AVG(lat)                AS avg_lat,
+                    AVG(lng)                AS avg_lng,
+                    MIN(lat)                AS min_lat,
+                    MIN(lng)                AS min_lng,
+                    MAX(lat)                AS max_lat,
+                    MAX(lng)                AS max_lng,
+                    COUNT(dt_free)          AS cnt_dt_free,
+                    COUNT(dt_wrong_fio)     AS cnt_dt_wrong_fio,
+                    COUNT(dt_military)      AS cnt_dt_military,
+                    COUNT(dt_size_violated) AS cnt_dt_size_violated,
+                    COUNT(dt_unowned)       AS cnt_dt_unowned,
+                    COUNT(dt_unindentified) AS cnt_dt_unindentified,
+                    SUBSTRING(geohash FROM 1 FOR %(geohash_prefix_len)s) AS geohash_prefix,
+                    COUNT(*) AS quantity
+                FROM
+                    burials_place
+                INNER JOIN 
+                    burials_cemetery ON (burials_place.cemetery_id = burials_cemetery.id)
+                WHERE
+                    burials_cemetery.ugh_id = %(ugh_id)s AND
+                    lat IS NOT NULL AND
+                    lng IS NOT NULL AND
+                    lat BETWEEN %(s_)s AND %(n_)s AND 
+                    lng BETWEEN %(w_)s AND %(e_)s
+                GROUP BY
+                    geohash_prefix;
+            ''' % dict(
+                geohash_prefix_len=geohash_prefix_len,
+                ugh_id=ugh_id,
+                n_=n_,
+                s_=s_,
+                e_=e_,
+                w_=w_,
+            )
+            cursor = connection.cursor()
+            cursor.execute(req_str)
+
+            columns = [col[0] for col in cursor.description]
+            stata = Place.status_dict()
+            id_ = 0
+            for row in cursor.fetchall():
+                row_dict = dict(zip(columns, row))
+                res = dict()
+                res['id'] = id_
+                if row_dict['quantity'] == 1:
+                    res['type'] = 'Feature'
+                    res['geometry'] = dict(
+                        type='Point',
+                        coordinates=[row_dict['avg_lng'], row_dict['avg_lat'],],
+                    )
+                    res['properties'] = dict(
+                        balloonContent=u"",
+                        clusterCaption=_(u"Место"),
+                        hintContent=u""
+                    )
+                    for status in stata:
+                        if row_dict["cnt_%s" % status]:
+                            res['properties']['hintContent'] += u"%s, " % stata[status]
+                    if res['properties']['hintContent']:
+                        res['properties']['hintContent'] = _(u"Признак(и) места: %s") % \
+                            res['properties']['hintContent'][:-2]
+                else:
+                    res['type'] = 'Cluster'
+                    res['bbox'] = [
+                        [row_dict['min_lng'], row_dict['min_lat']],
+                        [row_dict['max_lng'], row_dict['max_lat']]
+                    ]
+                    res['number'] = row_dict['quantity']
+
+                    # Массив, описывающий <number> объекта в составе кластера.
+                    #  Необязательное поле.
+                    # res['features'] = [],
+
+                    res['geometry'] = {
+                        'type': 'Point',
+                        'coordinates': [row_dict['avg_lng'], row_dict['avg_lat'],],
+                    }
+                    res['properties'] = dict(
+                        iconContent=str(row_dict['quantity'])
+                    )
+
+                id_ += 1
+                data['features'].append(res)
+
+        except ServiceException as excpt:
+            data.update(dict(message=excpt.message))
+            status_code = 400
+        return Response(data, status=status_code)
+
+api_oms_places_clusters = ApiOmsPlacesClusters.as_view()
 
 class TradeCemeteriesMixin(object):
 

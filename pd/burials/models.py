@@ -1,6 +1,8 @@
 # coding=utf-8
 import datetime
 import re
+import geohash
+
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection, transaction
@@ -285,6 +287,8 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
     # места в обработку. Поэтому вместе с установкой пользователя будем делать и этот признак
     # !!! Если будет установлен user_processed, то is_inprocess будет True, даже при dt_processed not None !!!
     is_inprocess = models.BooleanField(_(u"Взято в обработку при вводе по фотографиям"), default=False, editable=False)
+    # https://en.wikipedia.org/wiki/Geohash :
+    geohash = models.CharField(_(u"Geohash"), max_length=12, null=True, editable=False, db_index=True)
 
     objects = PlaceManager()
 
@@ -404,6 +408,12 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
             # Новое место для архивного зх формируется по другим правилам,
             # нежели для остальных зх
             self.set_next_number(new_place_for_archive)
+        if self.lat is not None and self.lng is not None:
+            self.geohash = geohash.encode(
+                latitude=self.lat,
+                longitude=self.lng,
+                precision=Place._meta.get_field('geohash').max_length,
+            )
         return super(Place, self).save(*args, **kwargs)
 
     def create_graves(self, graves_count, grave_number):
@@ -484,6 +494,20 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
             value = getattr(self,f)
             if value:
                 result.append(f)
+        return result
+
+    @classmethod
+    def status_dict(cls):
+        """
+        Вернут статус: описание для всех статусов
+        """
+        result  = dict()
+        for f in Place.STATUS_LIST:
+            name = unicode(cls._meta.get_field(f).verbose_name or '')
+            m = re.search(r'^\s*([^\/]+?)\s*\/', name)
+            if m:
+                name = m.group(1)
+            result[f] = name
         return result
 
     @classmethod
