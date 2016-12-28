@@ -31,7 +31,6 @@ CEMETERIES = (
         cemeteries=(
             u'Восточное',
             u'Уручье',
-            u'Колумбарий кладбища Восточное',
             ),
         put_cemetery = True,
    ),
