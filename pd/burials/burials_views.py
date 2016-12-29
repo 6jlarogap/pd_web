@@ -971,6 +971,8 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                     last_name=orderdeadperson.last_name,
                     first_name=orderdeadperson.first_name,
                     middle_name=orderdeadperson.middle_name,
+                    birth_date=orderdeadperson.birth_date,
+                    death_date=orderdeadperson.death_date,
                 )
             except OrderDeadPerson.DoesNotExist:
                 deadman = None
@@ -994,6 +996,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 row=row,
                 place_number=place_number,
                 grave_number=1,
+                plan_date=order.dt_due,
             )
         data['request'] = self.request
         return data
