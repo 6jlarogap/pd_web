@@ -51,6 +51,7 @@ class BurialGetOrderMixin:
         if funeral_order_pk and self.request.user.profile.is_ugh():
             try:
                 order = Order.objects.filter(
+                    type=Order.TYPE_FUNERAL,
                     pk=funeral_order_pk,
                     loru__ugh_list__ugh=self.request.user.profile.org,
                     status=Order.STATUS_PAID,

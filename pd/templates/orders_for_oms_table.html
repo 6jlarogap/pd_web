@@ -54,6 +54,8 @@
         {# у захоронения: кнопки #}
         <td class="no-print">
         <a href="{% url create_burial %}?funeral_order={{ o.pk }}" target="_blank">{% trans "регистрировать" %}</a>
+        <br /><br />
+        <a href="{% url order_refuse_register o.pk %}" target="_blank">{% trans "отказаться от регистрации" %}</a>
         </td>
     </tr>
 {% endfor %}

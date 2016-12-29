@@ -35,7 +35,7 @@ from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Area, Cemetery, OrderPlace
 from burials.views import TradeCemeteriesMixin
 from users.models import CustomerProfile, Org, ProfileLORU, Store, OrgWebPay, \
-                         is_trade_user, is_supervisor, is_cabinet_user, \
+                         is_trade_user, is_supervisor, is_cabinet_user, is_ugh_user, \
                          PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet, \
                          get_profile
 from billing.models import Rate
@@ -2939,3 +2939,24 @@ class ApiLoruOrdersDetailView(
         )
 
 api_loru_orders_detail = ApiLoruOrdersDetailView.as_view()
+
+class OrderRefuseRegister(View):
+
+    def get(self, request, pk, *args, **kwargs):
+        if is_ugh_user(request.user):
+            try:
+                order = Order.objects.filter(
+                    pk=pk,
+                    type=Order.TYPE_FUNERAL,
+                    loru__ugh_list__ugh=self.request.user.profile.org,
+                    status=Order.STATUS_PAID,
+                    registered=Order.REGISTER_NO,
+                )[0]
+                order.registered = Order.REGISTER_REFUSED
+                order.save()
+            except IndexError:
+                pass
+        return redirect('dashboard')
+
+order_refuse_register = OrderRefuseRegister.as_view()
+
