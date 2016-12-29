@@ -53,7 +53,7 @@
         <td><b><span style="color:blue">{% trans "Заказ похорон" %}</span></b></td>
         {# у захоронения: кнопки #}
         <td class="no-print">
-        <a class="btn" href="{% url create_burial %}?funeral_order={{ o.pk }}" target="_blank">{% trans "регистрировать" %}</a>
+        <a href="{% url create_burial %}?funeral_order={{ o.pk }}" target="_blank">{% trans "регистрировать" %}</a>
         </td>
     </tr>
 {% endfor %}

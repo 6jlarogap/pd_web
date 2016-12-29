@@ -866,6 +866,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         if self.funeral_order:
             self.funeral_order.burial = self.instance
+            self.funeral_order.registered = Order.REGISTER_YES
             self.funeral_order.save()
             write_log(self.request, self.instance, _(u'Захоронение прикреплено к заказу %s') % self.funeral_order.pk)
             write_log(self.request, self.funeral_order, _(u'Заказ: прикреплено захоронение %s') % self.instance.pk)
