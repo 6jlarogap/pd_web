@@ -216,7 +216,6 @@ class Order(GetLogsMixin, BaseModel):
         (PAYMENT_WIRE, _(u'Безналичный')),
     )
 
-    # Оптовые заказы
     STATUS_POSTED = 'posted'
     STATUS_ACCEPTED = 'accepted'
     STATUS_ADVANCED = 'advanced'
@@ -229,6 +228,16 @@ class Order(GetLogsMixin, BaseModel):
         (STATUS_ADVANCED, _(u"Выплачен аванс")),
         (STATUS_PAID, _(u"Оплачен")),
         (STATUS_DONE, _(u"Выполнен")),
+    )
+
+    REGISTER_NO = 'no'
+    REGISTER_YES = 'yes'
+    REGISTER_REFUSED = 'refused'
+
+    REGISTER_TYPES = (
+        (REGISTER_NO, _(u"Не зарегистрирован")),
+        (REGISTER_YES, _(u"Зарегистрирован")),
+        (REGISTER_REFUSED, _(u"ОМС отказался от регистрирации")),
     )
 
     type = models.CharField(_(u"Тип Заказ"), max_length=255, choices=ORDER_TYPES, default=TYPE_BURIAL, editable=False)
@@ -272,6 +281,9 @@ class Order(GetLogsMixin, BaseModel):
     service_time = models.TimeField(_(u"Время отпевания"), null=True, editable=False)
     repast_place = models.CharField(_(u"Место отпевания"), max_length=255, editable=False, default='')
     repast_time = models.TimeField(_(u"Время отпевания"), null=True, editable=False)
+
+    registered = models.CharField(_(u"Зарегистрировано"), max_length=255,
+                                  choices=REGISTER_TYPES, default=REGISTER_NO, editable=False)
 
     class Meta:
         verbose_name = _(u"Заказ")
