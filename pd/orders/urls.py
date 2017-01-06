@@ -23,8 +23,6 @@ urlpatterns = patterns('orders.views',
     url(r'^order/(?P<pk>\d+)/annulate/$', 'order_annulate', {'referer': 'edit'}, name='order_annulate'),
     url(r'^order/(?P<pk>\d+)/annulate_from_list/$', 'order_annulate', {'referer': 'list'}, name='order_annulate_from_list'),
 
-    url(r'^order/(?P<pk>\d+)/refuse_register/$', 'order_refuse_register', name='order_refuse_register'),
-
     url(r'^api/order/(?P<what>paid|advanced)/(?P<pk>\d+)/status/?$', 'api_order_status', name='api_order_status'),
 
     url(r'^api/loru/product_places/?$', 'api_loru_product_places', name='api_loru_product_places'),

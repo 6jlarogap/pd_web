@@ -55,7 +55,6 @@ class BurialGetOrderMixin:
                     pk=funeral_order_pk,
                     loru__ugh_list__ugh=self.request.user.profile.org,
                     status=Order.STATUS_PAID,
-                    registered=Order.REGISTER_NO,
                 )[0]
             except IndexError:
                 pass
@@ -157,7 +156,6 @@ class DashboardView(TemplateView):
                 loru__ugh_list__ugh=self.request.user.profile.org,
                 status=Order.STATUS_PAID,
                 burial__isnull=True,
-                registered=Order.REGISTER_NO,
             ).order_by('-pk')
         return {
             'burials': burials,
