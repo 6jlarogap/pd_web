@@ -20,6 +20,7 @@ from django.db.models.query_utils import Q
 
 from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialComment, BurialFiles, Grave, PlaceSize
 from persons.models import AlivePerson
+from geo.models import Location
 from geo.forms import LocationForm
 from orders.models import Order
 from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, CommentForm, StrippedStringsMixin, CustomUploadModelForm
@@ -570,10 +571,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         deadman = self.instance and self.instance.deadman
         self.old_place = self.instance and self.instance.get_place()
         self.deadman_form = DeadPersonForm(request=self.request, data=data, prefix='deadman', instance=deadman)
-        deadman_addr = deadman and deadman.address
-        self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
         if self.funeral_deadman_address:
-            self.deadman_address_form.initial['fias_address'] = self.funeral_deadman_address
+            deadman_addr = Location(addr_str=self.funeral_deadman_address)
+        else:
+            deadman_addr = deadman and deadman.address
+        self.deadman_address_form = LocationForm(data=data, prefix='deadman-address', instance=deadman_addr)
         self.bfiles_form = BurialFilesForm(data=data, prefix='bfiles', files=self.request.FILES)
         try:
             dc = self.instance and self.instance.deadman and self.instance.deadman.deathcertificate
@@ -588,7 +590,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if 'login_phone_' in self.responsible_form.fields and \
            self.instance and (self.instance.is_closed() or self.instance.is_exhumated()):
             self.responsible_form.fields['login_phone_'].widget.attrs.update({'readonly':'True'})
-        resp_addr = responsible and responsible.address
+        if self.funeral_applicant_address:
+            resp_addr = Location(addr_str=self.funeral_applicant_address)
+        else:
+            resp_addr = responsible and responsible.address
         self.responsible_address_form = LocationForm(data=data, prefix='responsible-address', instance=resp_addr)
         applicant = self.instance and self.instance.applicant
         applicant_form_initial = {}
@@ -635,15 +640,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                               instance=applicant,
                                               initial=applicant_form_initial,
                                              )
-        applicant_addr = applicant and applicant.address
+        if self.funeral_applicant_address:
+            applicant_addr = Location(addr_str=self.funeral_applicant_address)
+        else:
+            applicant_addr = applicant and applicant.address
         self.applicant_address_form =  LocationForm(data=data, prefix='applicant-address',
                                                     instance=applicant_addr,
                                                     initial=applicant_address_form_initial,
                                                    )
-        if self.funeral_applicant_address:
-            self.responsible_address_form.initial['fias_address'] = self.funeral_applicant_address
-            self.applicant_address_form.initial['fias_address'] = self.funeral_applicant_address
-
         try:
             applicant_id = self.instance and self.instance.applicant and self.instance.applicant.personid
         except PersonID.DoesNotExist:
