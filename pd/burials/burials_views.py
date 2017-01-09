@@ -151,12 +151,19 @@ class DashboardView(TemplateView):
         # Оплаченные заказы похорон, у ОМС
         orders = []
         if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
-            orders = Order.objects.filter(
+            q_o = Q(
                 type=Order.TYPE_FUNERAL,
                 loru__ugh_list__ugh=self.request.user.profile.org,
                 status=Order.STATUS_PAID,
                 burial__isnull=True,
-            ).order_by('-pk')
+            )
+            days_to_stay = self.request.user.profile.org.plan_date_days_before
+            if not days_to_stay or days_to_stay <= 0:
+                days_to_stay = 3
+            date_to = datetime.date.today() - datetime.timedelta(days=days_to_stay)
+            q_o &=  Q(dt_due__isnull=True) & Q(dt__gte=date_to) | \
+                    Q(dt_due__isnull=False) & Q(dt_due__gte=date_to)
+            orders = Order.objects.filter(q_o).order_by('-dt').distinct()
         return {
             'burials': burials,
             'orders': orders,
