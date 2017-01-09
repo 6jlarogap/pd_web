@@ -20,8 +20,8 @@ from django.views.generic.list import ListView
 from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, \
                           BurialApproveCloseForm, AddDocTypeForm, AddGravesForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
-from burials.models import Reason, Burial, Burial1, Cemetery, Place, ExhumationRequest
-from persons.models import DeathCertificate
+from burials.models import Reason, Burial, Burial1, Cemetery, Place, ExhumationRequest, OrderPlace
+from persons.models import DeathCertificate, OrderDeadPerson, DeadPerson, AlivePerson
 from logs.models import write_log
 from orders.models import Order
 from users.models import Org, Profile, is_cabinet_user
@@ -42,6 +42,21 @@ class BurialGetOrderMixin:
             try:
                 order = Order.objects.get(pk=self.request.REQUEST.get('order'), loru=self.request.user.profile.org)
             except Order.DoesNotExist:
+                pass
+        return order
+
+    def get_funeral_order(self):
+        order = None
+        funeral_order_pk = self.request.REQUEST.get('funeral_order')
+        if funeral_order_pk and self.request.user.profile.is_ugh():
+            try:
+                order = Order.objects.filter(
+                    type=Order.TYPE_FUNERAL,
+                    pk=funeral_order_pk,
+                    loru__ugh_list__ugh=self.request.user.profile.org,
+                    status=Order.STATUS_PAID,
+                )[0]
+            except IndexError:
                 pass
         return order
 
@@ -133,8 +148,25 @@ class DashboardView(TemplateView):
         burials_count = burials_clean.count()
         burials = burials_clean.order_by(*s)
         burials.count = lambda: burials_count
+        # Оплаченные заказы похорон, у ОМС
+        orders = []
+        if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
+            q_o = Q(
+                type=Order.TYPE_FUNERAL,
+                loru__ugh_list__ugh=self.request.user.profile.org,
+                status=Order.STATUS_PAID,
+                burial__isnull=True,
+            )
+            days_to_stay = self.request.user.profile.org.plan_date_days_before
+            if not days_to_stay or days_to_stay <= 0:
+                days_to_stay = 3
+            date_to = datetime.date.today() - datetime.timedelta(days=days_to_stay)
+            q_o &=  Q(dt_due__isnull=True) & Q(dt__gte=date_to) | \
+                    Q(dt_due__isnull=False) & Q(dt_due__gte=date_to)
+            orders = Order.objects.filter(q_o).order_by('-dt').distinct()
         return {
             'burials': burials,
+            'orders': orders,
             'sort': sort,
             'editable_ugh_cemeteries': Cemetery.editable_ugh_cemeteries(self.request.user),
         }
@@ -932,6 +964,48 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                         if self.request.REQUEST.get('grave_number') \
                         else 1,
                 )
+        order = self.get_funeral_order()
+        if order and not data.get('instance'):
+            try:
+                orderplace = OrderPlace.objects.get(order=order)
+                row = orderplace.row
+                place_number = orderplace.place
+            except OrderPlace.DoesNotExist:
+                row = ''
+                place_number = ''
+            try:
+                orderdeadperson = OrderDeadPerson.objects.get(order=order)
+                deadman = DeadPerson(
+                    last_name=orderdeadperson.last_name,
+                    first_name=orderdeadperson.first_name,
+                    middle_name=orderdeadperson.middle_name,
+                    birth_date=orderdeadperson.birth_date,
+                    death_date=orderdeadperson.death_date,
+                )
+            except OrderDeadPerson.DoesNotExist:
+                deadman = None
+            applicant = responsible = None
+            if order.applicant:
+                applicant = AlivePerson(
+                    last_name=order.applicant.last_name,
+                    first_name=order.applicant.first_name,
+                    middle_name=order.applicant.middle_name,
+                )
+                responsible = AlivePerson(
+                    last_name=order.applicant.last_name,
+                    first_name=order.applicant.first_name,
+                    middle_name=order.applicant.middle_name,
+                    login_phone=order.applicant.phones,
+                )
+            data['instance'] = Burial(
+                deadman=deadman,
+                applicant=applicant,
+                responsible=responsible,
+                row=row,
+                place_number=place_number,
+                grave_number=1,
+                plan_date=order.dt_due,
+            )
         data['request'] = self.request
         return data
 
