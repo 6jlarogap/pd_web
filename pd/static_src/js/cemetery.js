@@ -1216,10 +1216,7 @@ $(function() {
     });
     $('.modal-body input[id$=fias_address]').css('width', '300px');
 
-    var funeral_order = window.location.search.search('funeral_order=');
-    if (!funeral_order || funeral_order == -1) {
-        $('input[id$=fias_address]').val('');
-    }
+    $('input[id$=fias_address]').val('');
 
     $('#paginator_select').live('change', function() {
         top.location.href = $(this).val();
