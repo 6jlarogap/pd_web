@@ -270,6 +270,12 @@
                 {% if request.user.profile.is_ugh %}
                     <span style="color:blue">{% trans "Пожалуйста, предупредите, что придет СМС" %}</span>
                 {% endif %}
+                <span style="display: none" id="login_phone_hint_all">
+                    <br />
+                    <span style="color:red;" id="login_phone_hint">
+                        {% trans "Неверный номер телефона в международном формате" %}
+                    </span>
+                </span>
             {% endif %}
             </p>
             {{ form.responsible_form.login_phone_ }}<span class="helptext">{{ form.responsible_form.login_phone_.help_text }}</span></p>

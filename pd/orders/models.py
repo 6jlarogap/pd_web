@@ -216,7 +216,6 @@ class Order(GetLogsMixin, BaseModel):
         (PAYMENT_WIRE, _(u'Безналичный')),
     )
 
-    # Оптовые заказы
     STATUS_POSTED = 'posted'
     STATUS_ACCEPTED = 'accepted'
     STATUS_ADVANCED = 'advanced'
