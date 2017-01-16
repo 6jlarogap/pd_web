@@ -416,7 +416,8 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if self.instance.plan_time:
             self.initial['plan_time'] = self.instance.plan_time.strftime('%H:%M')
 
-        if not self.instance.plan_date:
+        if not self.instance.plan_date and self.instance.status not in \
+                        (Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED,):
             date_diff = settings.BURIAL_PLAN_DATE_DAYS_FROM_TODAY > 0 and settings.BURIAL_PLAN_DATE_DAYS_FROM_TODAY or 0
             if date_diff and datetime.date.today().weekday() == 5 and request.user.profile.is_ugh():
                 date_diff += 1 # Saturday
@@ -961,10 +962,16 @@ class BurialCommitForm(BurialForm):
 
     def setup_required(self):
         for f in self.fields:
-            if f in ('cemetery', 'plan_date',):
+            if f == 'cemetery':
                 self.fields[f].required = True
-            if f == 'plan_time':
+            elif f =='plan_date':
                 self.fields[f].required = \
+                    self.instance.status not in \
+                        (Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED,)
+            elif f == 'plan_time':
+                self.fields[f].required = \
+                    (self.instance.status not in \
+                        (Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED,)) and \
                     self.request.user.profile.org.plan_time_required
         if self.request.user.profile.is_ugh():
             self.fields['area'].required = True
