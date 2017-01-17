@@ -331,3 +331,21 @@ class SeriesTable(Sequence):
     #b = math.log(MAX_GEOHASH_LENGTH / MIN_GEOHASH_LENGTH) / (MAX_ZOOM - MIN_ZOOM);
 
     #return int(max(MIN_GEOHASH_LENGTH, min(a * math.exp(b * zoom), MAX_GEOHASH_LENGTH)))
+
+def rus_to_lat(s):
+    """
+    В строке преобразовать русские буквы в одинаковые по начертанию латинские
+    """
+    if isinstance(s, basestring):
+        result = ''
+        tr_from = u'авекмнорстухАВЕКМНОРСТУХ'
+        tr_to   = u'abekmhopctyxABEKMHOPCTYX'
+        for c in s:
+            ind = tr_from.find(c)
+            if ind < 0:
+                result += c
+            else:
+                result += tr_to[ind]
+    else:
+        result = s
+    return result

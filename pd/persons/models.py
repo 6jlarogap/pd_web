@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 import datetime
 from geo.models import Location, LocationMixin
 from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files, \
-                      PhotoModel, validate_phone_as_number, validate_digits_pseudo_lats
+                      PhotoModel, validate_phone_as_number
 from pd.utils import utcisoformat, capitalize
 from users.models import Org, PhonesMixin
 
@@ -70,9 +70,7 @@ class BasePerson(PersonMixin, models.Model):
     first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
     middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
     birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
-    ident_number = models.CharField(_(u"Идентификационный номер"),
-                                    max_length=255, blank=True,
-                                    validators=[validate_digits_pseudo_lats, ])
+    ident_number = models.CharField(_(u"Идентификационный номер"),max_length=255, blank=True)
 
     address = models.ForeignKey(Location, editable=False, null=True)
 
