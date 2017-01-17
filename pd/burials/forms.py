@@ -233,7 +233,6 @@ class BurialSearchForm(forms.Form):
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
-    no_rec_account = forms.NullBooleanField(required=False, initial=None, label=_(u"Отв., сделана отметка в журнале"))
     source = forms.TypedChoiceField(required=False, label=_(u"Источник"))
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"))
     comment = forms.CharField(required=False, label=_(u"Комментарий"))
