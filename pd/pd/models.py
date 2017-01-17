@@ -624,6 +624,39 @@ def validate_phone_as_number(value):
     if isinstance(value, basestring) and value.startswith('0'):
         raise ValidationError(_(u'Неверный первый знак в телефоне'))
 
+def rus_to_lat(s):
+    """
+    В строке преобразовать русские буквы в одинаковые по начертанию латинские
+    """
+    if isinstance(s, basestring):
+        result = ''
+        tr_from = u'авекмнорстухАВЕКМНОРСТУХ'
+        tr_to   = u'abekmhopctyxABEKMHOPCTYX'
+        for c in s:
+            ind = tr_from.find(c)
+            if ind <= 0:
+                result += c
+            else:
+                result += tr_to[ind]
+    else:
+        result = s
+    return result
+
+def validate_digits_pseudo_lats(value):
+    """
+    Проверка идентификационного номера
+
+    Могут быть только цифры, латинские буквы и русские буквы,
+    одинаковые по начертанию с латинскими
+    """
+    if isinstance(value, basestring):
+        value = value.strip()
+        if value:
+            if not re.search(r'^[0-9a-z]+$', rus_to_lat(value), flags=re.I):
+                raise ValidationError(
+                    _(u'Допустимы лишь цифры и латинские буквы')
+                )
+
 class  GetLogsMixin(object):
     """
     Для функция get_logs(), применяемой во многих моделях
