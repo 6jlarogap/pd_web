@@ -952,18 +952,33 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
     def get_form_kwargs(self, *args, **kwargs):
         data = super(CreateBurial, self).get_form_kwargs(*args, **kwargs)
         if self.request.REQUEST.get('place_id'):
-            place = Place.objects.get(pk=self.request.REQUEST.get('place_id'))
-            if not data.get('instance'):
-                data['instance'] = Burial(
-                    cemetery=place.cemetery,
-                    area=place.area,
-                    row=place.row,
-                    place_number=place.place,
-                    responsible=place.responsible,
-                    grave_number= int(self.request.REQUEST.get('grave_number')) \
-                        if self.request.REQUEST.get('grave_number') \
-                        else 1,
-                )
+            try:
+                place = Place.objects.get(pk=self.request.REQUEST.get('place_id'))
+                grave_number_max = place.get_graves_count()
+                grave_number = 1
+                if self.request.REQUEST.get('grave_number'):
+                    try:
+                        grave_number = int(self.request.REQUEST['grave_number'])
+                    except ValueError:
+                        pass
+                elif self.request.REQUEST.get('burial_add'):
+                    grave_number = grave_number_max or 1
+                if self.request.REQUEST.get('burial_add'):
+                    burial_type = Burial.BURIAL_ADD
+                else:
+                    burial_type = Burial._meta.get_field('burial_type').default
+                if not data.get('instance'):
+                    data['instance'] = Burial(
+                        burial_type=burial_type,
+                        cemetery=place.cemetery,
+                        area=place.area,
+                        row=place.row,
+                        place_number=place.place,
+                        responsible=place.responsible,
+                        grave_number=grave_number,
+                    )
+            except Place.DoesNotExist:
+                pass
         order = self.get_funeral_order()
         if order and not data.get('instance'):
             try:
