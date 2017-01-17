@@ -2175,8 +2175,8 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                     deadman__birth_date_no_month=birth_date.no_month,
                     deadman__birth_date_no_day=birth_date.no_day,
                 )
-            if birth_date is None:
-                qs &= Q(deadman__birth_date__isnull=True)
+            if death_date is None:
+                qs &= Q(deadman__death_date__isnull=True)
             else:
                 qs &= Q(
                     deadman__death_date__gte=death_date.d,
