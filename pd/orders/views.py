@@ -2533,8 +2533,19 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
     def post(self, request):
         try:
             customer = request.DATA.get('customer')
+            login_phone = None
             applicant = None
             if customer:
+                if customer.get('createCabinet'):
+                    login_phone_str = customer.get('phoneNumber')
+                    if not login_phone_str:
+                        raise ServiceException(_(u"Создать кабинет: не указан телефон"))
+                    try:
+                        validate_phone_as_number(login_phone_str)
+                    except ValidationError as excpt:
+                        print excpt.messages[0]
+                        raise ServiceException(u"Создать кабинет. %s" % excpt.messages[0])
+                    login_phone = decimal.Decimal(login_phone_str)
                 if customer.get('address'):
                     address = Location.objects.create(addr_str=customer['address'])
                 else:
@@ -2545,6 +2556,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                     middle_name=customer.get('middleName', ''),
                     phones=customer.get('phoneNumber', ''),
                     address=address,
+                    login_phone=login_phone,
                 )
             dt_due = request.DATA.get('dueDate') or None
             if dt_due:
@@ -2654,16 +2666,41 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                     quantity=item.get('amount') or 0,
                     discount=item.get('discount') or 0,
                 )
+            debug_text = None
+            if login_phone:
+                text = None
+                try:
+                    customerprofile = CustomerProfile.objects.get(login_phone=login_phone)
+                    user = customerprofile.user
+                    debug_text = _(u"Заказ похорон с созданием кабинета. Пользователь %s (телефон %s) уже существует") % \
+                                (user.username, login_phone)
+                    write_log(request, order, debug_text)
+                except CustomerProfile.DoesNotExist:
+                    user, password = CustomerProfile.create_cabinet(applicant, request)
+                    text = _(u'%s login: %s parol: %s') % (
+                        get_front_end_url(request).rstrip('/'),
+                        login_phone,
+                        password,
+                    )
+                    email_error_text = _(u"Пользователь %s не смог получить пароль по СМС после создания заказа похорон") % \
+                                        login_phone
+                    debug_text = _(u"Создан кабинет. Пользователь %s, пароль %s") % \
+                                (user.username, password)
+                    if settings.DEBUG:
+                        sent, message = send_sms(
+                            phone_number=login_phone,
+                            text=text,
+                            email_error_text=email_error_text,
+                            user=request.user,
+                        )
         except ServiceException as excpt:
             transaction.rollback()
             return Response(data=dict(status='error', message=excpt.message), status=400)
         write_log(request, order, _(u'Заказ создан'))
-        return Response(
-            data=LoruOrderSerializer(order,
-                context=dict(request=request),
-                ).data,
-            status=200,
-        )
+        data = LoruOrderSerializer(order, context=dict(request=request)).data
+        if settings.DEBUG and debug_text:
+            data.update(dict(debugMessage=debug_text))
+        return Response(data=data, status=200)
 
 api_loru_orders = ApiLoruOrdersView.as_view()
 
