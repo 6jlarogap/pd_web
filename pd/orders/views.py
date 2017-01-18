@@ -2686,7 +2686,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                                         login_phone
                     debug_text = _(u"Создан кабинет. Пользователь %s, пароль %s") % \
                                 (user.username, password)
-                    if settings.DEBUG:
+                    if not settings.DEBUG:
                         sent, message = send_sms(
                             phone_number=login_phone,
                             text=text,
