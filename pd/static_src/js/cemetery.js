@@ -1243,7 +1243,7 @@ $(function() {
 
     $('input[name$=login_phone_').keyup(function() {
         var s = $(this).val();
-        if ( /^\s*$/.test(s) || /^\s*(\+[1-9]|[1-79])[0-9]{9,11}\s*$/.test(s) ) {
+        if ( /^\s*$/.test(s) || /^\s*\+?[1-79][0-9]{9,11}\s*$/.test(s) ) {
             $('#login_phone_hint_all').hide();
         } else {
             $('#login_phone_hint_all').show();
