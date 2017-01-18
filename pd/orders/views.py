@@ -2537,7 +2537,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
             applicant = None
             if customer:
                 if customer.get('createCabinet'):
-                    login_phone_str = customer.get('phoneNumber')
+                    login_phone_str = customer.get('phoneNumber', '').strip()
                     if not login_phone_str:
                         raise ServiceException(_(u"Создать кабинет: не указан телефон"))
                     try:
