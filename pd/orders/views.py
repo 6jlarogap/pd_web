@@ -2543,7 +2543,6 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                     try:
                         validate_phone_as_number(login_phone_str)
                     except ValidationError as excpt:
-                        print excpt.messages[0]
                         raise ServiceException(u"Создать кабинет. %s" % excpt.messages[0])
                     login_phone = decimal.Decimal(login_phone_str)
                 if customer.get('address'):
