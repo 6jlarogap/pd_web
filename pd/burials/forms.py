@@ -30,6 +30,7 @@ from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
 from logs.models import write_log
 from pd.models import SafeDeleteMixin
+from pd.utils import rus_to_lat
 from pd.forms import AppOrgFormMixin
 
 OPF_CHOICES = list(Org.OPF_CHOICES)[1:]
@@ -765,7 +766,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             deadman = self.deadman_form.save(commit=False)
             if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
                 self.deadman_form.cleaned_data.get("ident_number"):
-                deadman.ident_number = deadman.ident_number.upper()
+                deadman.ident_number = rus_to_lat(deadman.ident_number.strip().upper())
 
             if self.deadman_address_form.is_valid_data():
                 # Хотя бы одно поле из адреса заполнено
@@ -1330,8 +1331,10 @@ class BurialCommitForm(BurialForm):
                  #raise forms.ValidationError(msg)
 
             if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
-               self.deadman_form.cleaned_data.get("ident_number") and \
-               not re.search(r'^[A-Za-z0-9]{10,}$', self.deadman_form.cleaned_data["ident_number"]):
+                self.deadman_form.cleaned_data.get("ident_number"):
+                ident_number = rus_to_lat(self.deadman_form.cleaned_data["ident_number"].strip())
+                if ident_number and \
+                   not re.search(r'^[A-Za-z0-9]{10,}$', ident_number):
                     msg = _(u"Идентификационный номер усопшего: не менее 10 цифр и латинских символов")
                     raise forms.ValidationError(msg)
 

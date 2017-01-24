@@ -66,7 +66,7 @@
         <TD COLSPAN=5 STYLE="border-bottom: 1px solid">
             <B>Заказчик (ФИО)
             {% if order.applicant %}
-                {{ order.applicant.full_name_complete }}г.
+                {{ order.applicant.full_name_complete }}
             {% endif %}
             </B>
          </TD>
@@ -115,54 +115,46 @@
             {% endif %}
          </TD>
     </TR>
-    <TR>
-        <TD COLSPAN=5 STYLE="border-bottom: 1px solid">
-            <B>Кладбище
-            {% if order.cemetery %}
-                {{ order.cemetery }}&nbsp;
-            {% else %}
-            _________________________________
-            {% endif %}
-            </B>
-         </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=5>
-            Дата похорон
-            {% if order.burial and order.burial.plan_date %}
-                {{ order.burial.plan_date|date:"d.m.Y"|safe }}.&nbsp;
-            {% elif order.dt_due %}
-                {{ order.dt_due|date:"d.m.Y"|safe }}.&nbsp;
-            {% else %}
-                ____________
-            {% endif %}
-            Время подачи транспорта к моргу
-            {% if order.initial_time %}
-            {{ order.initial_time|time:"H:i" }}
-            {% else %}
-                ____________
-            {% endif %}
-         </TD>
-    </TR>
-    <TR>
-        <TD COLSPAN=5>
-            Время отпевания
-            {% if order.service_time %}
-            {{ order.service_time|time:"H:i" }}
-            {% else %}
-            _____________
-            {% endif %}
-            &nbsp;
-            Время захоронения
-            {% if order.burial and order.burial.plan_time %}
-                {{ order.burial.plan_time|time:"H:i" }}
-            {% elif order.burial_plan_time %}
-                {{ order.burial_plan_time|time:"H:i" }}
-            {% else %}
-            _____________
-            {% endif %}
-         </TD>
-    </TR>
+    {% if order.cemetery or order.dt_due %}
+        <TR>
+            <TD COLSPAN=5 STYLE="border-bottom: 1px solid">
+                <B>
+                    {% if order.cemetery %}
+                        Кладбище {{ order.cemetery }}.
+                    {% endif %}
+                    {% if order.dt_due %}
+                        Похороны {{ order.dt_due|date:"d.m.Y"|safe }}
+                        {% if order.burial and order.burial.plan_time %}
+                            {{ order.burial.plan_time|time:"H:i" }}
+                        {% elif order.burial_plan_time %}
+                            {{ order.burial_plan_time|time:"H:i" }}
+                        {% endif %}
+                    {% endif %}
+                </B>
+            </TD>
+        </TR>
+    {% endif %}
+    {% if order.initial_time %}
+        <TR>
+            <TD COLSPAN=5>
+                Время подачи транспорта к моргу
+                {{ order.initial_time|time:"H:i" }}
+            </TD>
+        </TR>
+    {% endif %}
+    {% if order.service_time or order.service_place %}
+        <TR>
+            <TD COLSPAN=5>
+                Отпевание:
+                {% if order.service_time %}
+                    {{ order.service_time|time:"H:i" }}.
+                {% endif %}
+                {% if order.service_place %}
+                    {{ order.service_place }}.
+                {% endif %}
+            </TD>
+        </TR>
+    {% endif %}
     <TR>
         {% if order.orderplace and order.orderplace.size %}
             <TD COLSPAN=5>
