@@ -2,7 +2,7 @@
 
 import re, datetime, os
 from LatLon import LatLon, Latitude, Longitude
-import geohash
+import geohash, uuid
 
 from django.conf import settings
 from django.contrib import messages
@@ -1816,7 +1816,6 @@ class ApiOmsPlacesClusters(APIView):
 
             req_str = '''
                 SELECT
-                    MIN(burials_place.id)   AS min_id,
                     AVG(lat)                AS avg_lat,
                     AVG(lng)                AS avg_lng,
                     MIN(lat)                AS min_lat,
@@ -1859,7 +1858,7 @@ class ApiOmsPlacesClusters(APIView):
             for row in cursor.fetchall():
                 row_dict = dict(zip(columns, row))
                 res = dict()
-                res['id'] = row_dict['min_id']
+                res['id'] = str(uuid.uuid1())
                 if row_dict['quantity'] == 1:
                     res['type'] = 'Feature'
                     res['geometry'] = dict(
