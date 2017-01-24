@@ -1816,6 +1816,7 @@ class ApiOmsPlacesClusters(APIView):
 
             req_str = '''
                 SELECT
+                    MIN(burials_place.id)   AS min_id,
                     AVG(lat)                AS avg_lat,
                     AVG(lng)                AS avg_lng,
                     MIN(lat)                AS min_lat,
@@ -1855,11 +1856,10 @@ class ApiOmsPlacesClusters(APIView):
 
             columns = [col[0] for col in cursor.description]
             stata = Place.status_dict()
-            id_ = 0
             for row in cursor.fetchall():
                 row_dict = dict(zip(columns, row))
                 res = dict()
-                res['id'] = id_
+                res['id'] = row_dict['min_id']
                 if row_dict['quantity'] == 1:
                     res['type'] = 'Feature'
                     res['geometry'] = dict(
@@ -1897,7 +1897,6 @@ class ApiOmsPlacesClusters(APIView):
                         iconContent=str(row_dict['quantity'])
                     )
 
-                id_ += 1
                 data['features'].append(res)
 
         except ServiceException as excpt:
