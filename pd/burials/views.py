@@ -2,7 +2,7 @@
 
 import re, datetime, os
 from LatLon import LatLon, Latitude, Longitude
-import geohash
+import geohash, uuid
 
 from django.conf import settings
 from django.contrib import messages
@@ -1855,11 +1855,10 @@ class ApiOmsPlacesClusters(APIView):
 
             columns = [col[0] for col in cursor.description]
             stata = Place.status_dict()
-            id_ = 0
             for row in cursor.fetchall():
                 row_dict = dict(zip(columns, row))
                 res = dict()
-                res['id'] = id_
+                res['id'] = str(uuid.uuid1())
                 if row_dict['quantity'] == 1:
                     res['type'] = 'Feature'
                     res['geometry'] = dict(
@@ -1897,7 +1896,6 @@ class ApiOmsPlacesClusters(APIView):
                         iconContent=str(row_dict['quantity'])
                     )
 
-                id_ += 1
                 data['features'].append(res)
 
         except ServiceException as excpt:
