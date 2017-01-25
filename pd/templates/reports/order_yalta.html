@@ -134,11 +134,20 @@
             </TD>
         </TR>
     {% endif %}
-    {% if order.initial_time %}
+    {% if order.initial_time or order.initial_place or order.get_catafalquedata.start_time or order.get_catafalquedata.start_place %}
         <TR>
             <TD COLSPAN=5>
-                Время подачи транспорта к моргу
-                {{ order.initial_time|time:"H:i" }}
+                Подача транспорта:
+                {% if order.initial_time %}
+                    {{ order.initial_time|time:"H:i" }}.
+                {% elif order.get_catafalquedata.start_time %}
+                    {{ order.get_catafalquedata.start_time|time:"H:i" }}.
+                {% endif %}
+                {% if order.get_catafalquedata.start_place %}
+                    {{ order.get_catafalquedata.start_place }}
+                {% else %}
+                    {{ order.initial_place }}
+                {% endif %}
             </TD>
         </TR>
     {% endif %}
