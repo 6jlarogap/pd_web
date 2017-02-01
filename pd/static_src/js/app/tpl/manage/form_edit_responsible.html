@@ -124,6 +124,19 @@
         <phones phones="editor.responsible_phones"></phones>
       </form>
     </tab>
+    <tab heading="Прочее">
+        <table>
+          <tr>
+            <td>
+                <label for="id_is_inbook">Сделана запись в журнале захоронений:</label>
+            </td>
+            <td>
+                &nbsp;&nbsp;<input id="id_is_inbook" type="checkbox" name="name_is_ibook"
+                        ng-model="editor.responsible.is_inbook"/>
+            </td>
+          </tr>
+        </table>
+    </tab>
   </tabset>
 </div>
 

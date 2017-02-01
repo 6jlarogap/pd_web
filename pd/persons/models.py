@@ -234,6 +234,8 @@ class AlivePerson(BasePerson, PhonesMixin):
                   validators = [validate_phone_as_number, ],
                   editable=False)
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
+    # Для ответственных, сделана ли запись в журнале 
+    is_inbook = models.BooleanField(_(u"Сделана отметка об ответственном в журнале захоронений (бумажном!)"), default=False, editable=False)
 
     def delete(self):
         self.phone_set.delete()

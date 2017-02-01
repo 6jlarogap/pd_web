@@ -7,9 +7,13 @@
 <br/>
 {{ burial.get_burial_type_display|default:"" }}<br />{{ burial.get_burial_container_display|default:"" }}
 {% if burial.get_responsible %}
-    <br/>{% trans "Отв." %}
+    <br/><span style="color:green">{% trans "Отв." %}</span>
     {% if user.profile.is_ugh %}
         {{ burial.get_responsible }}
+        {% if burial.get_responsible.is_inbook %}
+        <br />
+        <span style="color:green">{% trans "Отмечен(а) а журнале"  %}</span>
+        {% endif %}
     {% elif b.is_full and b.loru and b.loru == user.profile.org  %}
         {{ burial.get_responsible }}
     {% endif %}
