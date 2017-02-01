@@ -176,6 +176,11 @@
                     {% if b.get_responsible.login_phone %}
                         <br />{% trans "Мобильный телефон для входа в кабинет" %}: {{ b.get_responsible.login_phone }}
                     {% endif %}
+                    {% if user.profile.is_ugh %}
+                        {% if b.get_responsible.is_inbook %}
+                        <br /><span style="color:green">{% trans "Отмечен(а) а журнале"  %}</span>
+                        {% endif %}
+                    {% endif %}
                 {% else %}
                     {% trans "не указан" %}
                 {% endif %}

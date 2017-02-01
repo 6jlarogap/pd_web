@@ -284,6 +284,9 @@
         {{ form.responsible_form.phones.errors }}
         <p>{{ form.responsible_form.phones.label_tag }} {{ form.responsible_form.phones }}<span class="helptext">{{ form.responsible_form.phones.help_text }}</span></p>
 
+        {{ form.responsible_form.is_inbook_.errors }}
+        <p>{{ form.responsible_form.is_inbook_.label_tag }} {{ form.responsible_form.is_inbook_ }}<span class="helptext">{{ form.responsible_form.is_inbook_.help_text }}</span></p>
+
         {# hidden responsible_form fields #}
             {{ form.responsible_form.place }}
             {{ form.responsible_form.order }}

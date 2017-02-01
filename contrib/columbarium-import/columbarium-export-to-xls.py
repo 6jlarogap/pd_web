@@ -108,7 +108,39 @@ def main():
         ws.write(row, 2, capitalize(f_))
         ws.write(row, 3, capitalize(i_))
         ws.write(row, 4, capitalize(o_))
-                    
+
+        area_ = row_ = ''
+        place = u'-'
+        sector_ = unicode(sheet.cell(row, 5).value).strip()
+        m = re.search(ur'^[сcСC]?[\-\=\s]*(\d+)[\-\=\s]*[рpРP][\-\=\s]*(\d+)', sector_, flags=re.I)
+        if m:
+            # сектор ряд
+            area_ = int(m.group(1))
+            row_ = int(m.group(2))
+        else:
+            # сектор ниша
+            m = re.search(ur'^[сcСC]?[\-\=\s]*(\d+)[\-\=\s]*н[\-\=\s]*(\d+)', sector_, flags=re.I)
+            if m:
+                area_ = int(m.group(1))
+                place = int(m.group(2))
+            else:
+                # сектор ряд ниша
+                m = re.search(ur'^[сcСC]?[\-\=\s]*(\d+)[\-\=\s]*[рpРP][\-\=\s]*(\d+)[нН][\-\=\s]*(\d+)', sector_, flags=re.I)
+                if m:
+                    area_ = int(m.group(1))
+                    row_ = int(m.group(2))
+                    place = int(m.group(3))
+                else:
+                    # сектор
+                    m = m = re.search(ur'^[сcСC]?[\-\=\s]*(\d+)[^\d]*$', sector_, flags=re.I)
+                    if m:
+                        area_ = int(m.group(1))
+                    else:
+                        comment += u"ОШИБКА: не распознаны сектор/ряд: '%s'; " % sector_
+                        place = ''
+        ws.write(row, 5, area_)
+        ws.write(row, 6, row_)
+        ws.write(row, 7, place)
 
         ws.write(row, 9, comment)
     wb.save(out_xls)

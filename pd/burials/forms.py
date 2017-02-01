@@ -234,6 +234,7 @@ class BurialSearchForm(forms.Form):
     row = forms.CharField(required=False, label=_(u"Ряд"))
     place = forms.CharField(required=False, label=_(u"Место"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
+    is_inbook = forms.NullBooleanField(required=False, initial=None, label=_(u"Отметка об ответственном"))
     source = forms.TypedChoiceField(required=False, label=_(u"Источник"))
     status = forms.TypedChoiceField(required=False, label=_(u"Статус"))
     comment = forms.CharField(required=False, label=_(u"Комментарий"))
@@ -289,6 +290,9 @@ class ResponsibleForm(AlivePersonForm):
                                       help_text=AlivePerson._meta.get_field('login_phone').help_text,
                                       validators=AlivePerson._meta.get_field('login_phone').validators,
                                       required=False)
+    is_inbook_ = forms.BooleanField(label=AlivePerson._meta.get_field('is_inbook').verbose_name,
+                                      help_text=AlivePerson._meta.get_field('is_inbook').help_text,
+                                      required=False)
 
     def __init__(self, *args, **kwargs):
         super(ResponsibleForm, self).__init__(*args, **kwargs)
@@ -300,6 +304,8 @@ class ResponsibleForm(AlivePersonForm):
             self.initial['login_phone_'] = self.instance.login_phone
         else:
             self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-4))
+        if self.instance.pk:
+            self.initial['is_inbook_'] = self.instance.is_inbook
         self.fields.keyOrder.insert(-3, self.fields.keyOrder.pop(-1))
 
         self.initial.setdefault('take_from', self.WHERE_NEW)
@@ -315,6 +321,8 @@ class ResponsibleForm(AlivePersonForm):
     def save(self, *args, **kwargs):
         if 'login_phone_' in self.fields:
             self.instance.login_phone = self.cleaned_data['login_phone_']
+        if 'is_inbook_' in self.fields:
+            self.instance.is_inbook = self.cleaned_data['is_inbook_']
         if self.instance.pk:
             return super(ResponsibleForm, self).save(*args, **kwargs)
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
