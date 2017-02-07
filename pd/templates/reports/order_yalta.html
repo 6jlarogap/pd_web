@@ -118,6 +118,7 @@
     {% if order.initial_time or order.initial_place or order.get_catafalquedata.start_time or order.get_catafalquedata.start_place %}
         <TR>
             <TD COLSPAN=5>
+                <B>
                 Подача транспорта:
                 {% if order.initial_time %}
                     {{ order.initial_time|time:"H:i" }}.
@@ -129,12 +130,14 @@
                 {% else %}
                     {{ order.initial_place }}
                 {% endif %}
+                </B>
             </TD>
         </TR>
     {% endif %}
     {% if order.service_time or order.service_place %}
         <TR>
             <TD COLSPAN=5>
+                <B>
                 Отпевание:
                 {% if order.service_time %}
                     {{ order.service_time|time:"H:i" }}.
@@ -142,6 +145,7 @@
                 {% if order.service_place %}
                     {{ order.service_place }}.
                 {% endif %}
+                </B>
             </TD>
         </TR>
     {% endif %}
@@ -149,17 +153,17 @@
         <TR>
             <TD COLSPAN=5>
                 <B>
-                    {% if order.cemetery %}
-                        Кладбище {{ order.cemetery }}.
+                {% if order.cemetery %}
+                    Кладбище {{ order.cemetery }}.
+                {% endif %}
+                {% if order.dt_due %}
+                    Похороны {{ order.dt_due|date:"d.m.Y"|safe }}
+                    {% if order.burial and order.burial.plan_time %}
+                        {{ order.burial.plan_time|time:"H:i" }}
+                    {% elif order.burial_plan_time %}
+                        {{ order.burial_plan_time|time:"H:i" }}
                     {% endif %}
-                    {% if order.dt_due %}
-                        Похороны {{ order.dt_due|date:"d.m.Y"|safe }}
-                        {% if order.burial and order.burial.plan_time %}
-                            {{ order.burial.plan_time|time:"H:i" }}
-                        {% elif order.burial_plan_time %}
-                            {{ order.burial_plan_time|time:"H:i" }}
-                        {% endif %}
-                    {% endif %}
+                {% endif %}
                 </B>
             </TD>
         </TR>
