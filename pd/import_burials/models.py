@@ -219,7 +219,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     cemetery = Cemetery.objects.filter(name=cemetery, ugh=ugh)[0]
     # Defaults:
     area_availability = Area.AVAILABILITY_OPEN
-    area_purpose, _created = AreaPurpose.objects.get_or_create(name='общественный')
+    area_purpose, _created = AreaPurpose.objects.get_or_create(name=u'общественный')
     comment_child_burial = u"Захоронение детское"
     comment_child_burial_2 = u"Детское захоронение"
     re_comment_child_burial = re.escape(comment_child_burial)
