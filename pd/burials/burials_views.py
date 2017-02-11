@@ -745,6 +745,12 @@ class BurialsListView(PaginateListView):
                 burials = burials.filter(status=Burial.STATUS_EXHUMATED)
             else:
                 burials = burials.exclude(status=Burial.STATUS_EXHUMATED)
+
+            if form.cleaned_data.get('is_inbook') is not None:
+                is_inbook = form.cleaned_data['is_inbook']
+                q_inbook = Q(responsible__is_inbook=is_inbook) | Q(place__responsible__is_inbook=is_inbook)
+                burials = burials.filter(q_inbook)
+
         else:
             burials = burials.exclude(status=Burial.STATUS_EXHUMATED)
 

@@ -179,13 +179,14 @@ class Log(models.Model):
             result = self.msg
         return result
 
-def write_log(request, obj=None, msg='', reason=None, code=None, operation=None):
+def write_log(request, obj=None, msg='', reason=None, code=None, operation=None, user=None):
     if reason:
         if msg:
             msg = u'%s: %s' % (msg, reason)
         else:
             msg = reason
-    user = request and request.user.is_authenticated() and request.user or None
+    if not user:
+        user = request and request.user.is_authenticated() and request.user or None
     return Log.objects.create(
         user=user,
         ct=obj and ContentType.objects.get_for_model(obj) or None,
