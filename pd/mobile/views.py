@@ -1019,7 +1019,7 @@ class ApiPlacePhotoUpload(APIView):
             #
             photo_content = ThumbnailContentFile(
                 request.FILES['photo'],
-                quality=50,
+                quality=30,
                 minsize=1600*1200,
             ).generate()
             if not photo_content:
