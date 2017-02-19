@@ -14,12 +14,12 @@ class Migration(DataMigration):
         Place = orm['burials.Place']
         precision = Place._meta.get_field('geohash').max_length
         for p in Place.objects.filter(lat__isnull=False, lng__isnull=False).iterator():
-            geohash = geohash.encode(
+            geohash_ = geohash.encode(
                 latitude=p.lat,
                 longitude=p.lng,
                 precision=precision,
             )
-            Place.objects.filter(pk=p.pk).update(geohash=geohash)
+            Place.objects.filter(pk=p.pk).update(geohash=geohash_)
 
     def backwards(self, orm):
         "Write your backwards methods here."
