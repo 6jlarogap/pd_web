@@ -1564,7 +1564,7 @@ models.signals.post_save.connect(apply_exhumation, sender=ExhumationRequest)
 
 
 def calculate_free_burial_count(sender, instance, **kwargs):
-    if instance.place:
+    if hasattr(instance, 'place') and instance.place:
         instance.place.available_count = max(0, instance.place.get_graves_count() - instance.place.burial_count())
         instance.place.save()
 
