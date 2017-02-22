@@ -49,7 +49,7 @@ from restthumbnails import exceptions
 import re
 import math
 
-import exifread
+import piexif
 
 def _is_transparent(image):
     """
@@ -68,7 +68,7 @@ def _exif_orientation(im, orientation=None):
     Rotate and/or flip an image to respect the image's EXIF orientation data.
 
     Внесены изменения:
-    Ориентация исходного снимка определяется пакетом exifread, 
+    Ориентация исходного снимка определяется пакетом piexif, 
     """
     #try:
         #exif = im._getexif()
@@ -137,7 +137,7 @@ def get_image(source, exif_orientation=True, **options):
         before passing the data along the processing pipeline.
 
     Внесены изменения:
-    Ориентация исходного снимка определяется пакетом exifread
+    Ориентация исходного снимка определяется пакетом piexif
 
     """
     # Use a StringIO wrapper because if the source is an incomplete file like
@@ -146,21 +146,17 @@ def get_image(source, exif_orientation=True, **options):
     # File objects.
 
     source = StringIO(source.read())
-    if exif_orientation:
-        tags = exifread.process_file(source, details=False)
-        source.seek(0, 0)
-
     image = Image.open(source)
     # Fully load the image now to catch any problems with the image
     # contents.
     image.load()
 
-    if exif_orientation:
-        #image = _exif_orientation(image)
-        try:
-            image = _exif_orientation(image, tags['Image Orientation'].values[0])
-        except (AttributeError, KeyError, IndexError):
-            pass
+    exif_dict = piexif.load(image.info["exif"])
+    try:
+        orientation = exif_dict["0th"][piexif.ImageIFD.Orientation]
+    except KeyError:
+        orientation = None
+    image = _exif_orientation(image, orientation)
     return image
 
 
@@ -174,19 +170,19 @@ def get_image_or_original(source, minsize=0):
     этот image. Иначе вовращаем буфер с оригиналом source
     """
     buff = source.read()
-    source = StringIO(buff)
-    tags = exifread.process_file(source, details=False)
-    source.seek(0, 0)
 
+    source = StringIO(buff)
     image = Image.open(source)
     # Fully load the image now to catch any problems with the image
     # contents.
     image.load()
     if image.size[0] * image.size[1] >= minsize:
+        exif_dict = piexif.load(image.info["exif"])
         try:
-            image = _exif_orientation(image, tags['Image Orientation'].values[0])
-        except (AttributeError, KeyError, IndexError):
-            pass
+            orientation = exif_dict["0th"][piexif.ImageIFD.Orientation]
+        except KeyError:
+            orientation = None
+        image = _exif_orientation(image, orientation)
         result = dict(result=image, minimize_size=True)
     else:
         result = dict(result=buff, minimize_size=False)
