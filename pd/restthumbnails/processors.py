@@ -68,7 +68,7 @@ def _exif_orientation(im, orientation=None):
     Rotate and/or flip an image to respect the image's EXIF orientation data.
 
     Внесены изменения:
-    Ориентация исходного снимка определяется пакетом piexif, 
+    Ориентация исходного снимка определяется другим пакетом, нежели из PIL
     """
     #try:
         #exif = im._getexif()
@@ -151,42 +151,17 @@ def get_image(source, exif_orientation=True, **options):
     # contents.
     image.load()
 
-    exif_dict = piexif.load(image.info["exif"])
     try:
-        orientation = exif_dict["0th"][piexif.ImageIFD.Orientation]
-    except KeyError:
-        orientation = None
-    image = _exif_orientation(image, orientation)
-    return image
-
-
-def get_image_or_original(source, minsize=0):
-    """
-    Вернуть из файла source или его образ, или оригинал
-
-    Файл source - любой объект, имеющий метод read(), возвращающий буфер.
-    Получаем из файла image. Если его размер больше минимального,
-    после которого требуется обрезка, в словаре результата будет
-    этот image. Иначе вовращаем буфер с оригиналом source
-    """
-    buff = source.read()
-
-    source = StringIO(buff)
-    image = Image.open(source)
-    # Fully load the image now to catch any problems with the image
-    # contents.
-    image.load()
-    if image.size[0] * image.size[1] >= minsize:
         exif_dict = piexif.load(image.info["exif"])
+    except (KeyError, AttributeError,):
+        exif_dict = None
+    if exif_dict:
         try:
             orientation = exif_dict["0th"][piexif.ImageIFD.Orientation]
         except KeyError:
             orientation = None
         image = _exif_orientation(image, orientation)
-        result = dict(result=image, minimize_size=True)
-    else:
-        result = dict(result=buff, minimize_size=False)
-    return result
+    return image
 
 
 def save_image(image, format='JPEG', **options):
@@ -424,3 +399,45 @@ def filters(im, detail=False, sharpen=False, **kwargs):
     if sharpen:
         im = im.filter(ImageFilter.SHARPEN)
     return im
+
+        
+def get_minimized_contentfile(source, minsize=0, quality=50):
+    """
+    ContentFile фото с меньшим качеством, с сохранением exif
+    
+    -   source,  любой объект, имеющий метод .read(),
+        например request.FILES['filename']
+    -   minsize, минимальный размер фото 
+        (число пикселей), при котором делается
+        минимизация фото
+    -   quality. допустимое качество
+    """
+    try:
+        buff = source.read()
+        image = Image.open(StringIO(buff))
+        # Fully load the image now to catch any problems with the image
+        # contents.
+        image.load()
+    except IOError:
+        return None
+
+    if image.size[0] * image.size[1] >= minsize:
+        options = dict(quality=quality)
+        try:
+            exif_dict = piexif.load(image.info["exif"])
+            if "thumbnail" in exif_dict:
+                exif_dict["thumbnail"] = None
+            exif_bytes = piexif.dump(exif_dict)
+            options['exif'] = exif_bytes
+        except (KeyError, AttributeError,):
+            pass
+        image_new = colorspace(image)
+        del image
+        image_contentfile = save_image(
+            image=image_new,
+            format='JPEG',
+            **options
+        )
+        return image_contentfile
+    else:
+        return ContentFile(buff)

@@ -93,8 +93,12 @@ class ThumbnailContentFile(object):
     """
     Принимает файл, делает из него ContentFile в соответствии с заданным качеством
 
-    Файл: любой объект, имеющий метод read() /прочитать всё содержимое/,
-    например, request.FILES['filename']
+    -   source,  любой объект, имеющий метод .read(),
+        например request.FILES['filename']
+    -   minsize, минимальный размер фото 
+        (число пикселей), при котором делается
+        минимизация фото
+    -   quality. допустимое качество
     """
 
     def __init__(self, source, minsize=0, quality=50):
@@ -106,15 +110,8 @@ class ThumbnailContentFile(object):
         """
         Возвращает ContentFile или None, если это не графический файл
         """
-        try:
-            image_or_original = processors.get_image_or_original(
-                self.source, minsize=self.minsize)
-        except IOError:
-            return None
-        if image_or_original['minimize_size']:
-            im = processors.colorspace(image_or_original['result'])
-            del image_or_original['result']
-            im = processors.save_image(im, format='JPEG', quality=self.quality)
-            return im
-        else:
-            return ContentFile(image_or_original['result'])
+        return processors.get_minimized_contentfile(
+            source=self.source,
+            quality=self.quality,
+            minsize=self.minsize,
+        )
