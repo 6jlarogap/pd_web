@@ -432,7 +432,6 @@ def get_minimized_contentfile(source, minsize=0, quality=50):
         except (KeyError, AttributeError,):
             pass
         image_new = colorspace(image)
-        del image
         image_contentfile = save_image(
             image=image_new,
             format='JPEG',
