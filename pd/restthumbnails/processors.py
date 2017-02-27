@@ -435,7 +435,7 @@ def get_minimized_contentfile(source, minsize=0, quality=50):
                     pass
         except (KeyError, AttributeError,):
             pass
-        if 'exif' not in options:
+        if exif_dict and 'exif' not in options:
             options['exif'] = image.info["exif"]
         image_new = colorspace(image)
         image_contentfile = save_image(
