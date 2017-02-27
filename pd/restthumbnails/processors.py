@@ -426,21 +426,17 @@ def get_minimized_contentfile(source, minsize=0, quality=50):
         exif_dict = None
         try:
             exif_dict = piexif.load(image.info["exif"])
-            if "thumbnail" in exif_dict:
+            if "thumbnail" in exif_dict and exif_dict["thumbnail"]:
                 exif_dict["thumbnail"] = None
-            try:
-                exif_bytes = piexif.dump(exif_dict)
-                options['exif'] = exif_bytes
-            except:
-                pass
+                try:
+                    exif_bytes = piexif.dump(exif_dict)
+                    options['exif'] = exif_bytes
+                except:
+                    pass
         except (KeyError, AttributeError,):
             pass
         if exif_dict and 'exif' not in options:
-            try:
-                orientation = exif_dict["0th"][piexif.ImageIFD.Orientation]
-            except KeyError:
-                orientation = None
-            image = _exif_orientation(image, orientation)
+            options['exif'] = image.info["exif"]
         image_new = colorspace(image)
         image_contentfile = save_image(
             image=image_new,
