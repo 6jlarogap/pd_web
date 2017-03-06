@@ -2068,6 +2068,10 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
             "persons_deadperson"."death_date_no_day" as death_date_no_day,
             "persons_deadperson"."death_date" as death_date,
 
+            "burials_burial"."fact_date_no_month" as fact_date_no_month,
+            "burials_burial"."fact_date_no_day" as fact_date_no_day,
+            "burials_burial"."fact_date" as fact_date,
+
             "burials_cemetery"."name" as cemetery_name,
             "burials_cemetery"."id" as cemetery_pk
 
@@ -2093,6 +2097,9 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
                 death_date_no_month,
                 death_date_no_day,
                 death_date,
+                fact_date_no_month,
+                fact_date_no_day,
+                fact_date,
                 "burials_cemetery"."id"
 
             HAVING Count(*) > 1
@@ -2121,6 +2128,7 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
                     d['fio'] += u" %s" % d['middle_name']
             d['birthdate'] = self.date_str(d, 'birth')
             d['deathdate'] = self.date_str(d, 'death')
+            d['factdate'] = self.date_str(d, 'fact')
 
         return dict(doubles=doubles)
 
@@ -2153,6 +2161,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
         try:
             birth_date = self.unclear_date('birth')
             death_date = self.unclear_date('death')
+            fact_date = self.unclear_date('fact')
             cemetery_pk = req['cemetery_pk']
             if cemetery_pk not in \
                 [str(c.pk) for c in Cemetery.editable_ugh_cemeteries(self.request.user)]:
@@ -2181,6 +2190,15 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                     deadman__death_date__lt=death_date.d + datetime.timedelta(days=1),
                     deadman__death_date_no_month=death_date.no_month,
                     deadman__death_date_no_day=death_date.no_day,
+                )
+            if fact_date is None:
+                qs &= Q(fact_date__isnull=True)
+            else:
+                qs &= Q(
+                    fact_date__gte=fact_date.d,
+                    fact_date__lt=fact_date.d + datetime.timedelta(days=1),
+                    fact_date_no_month=fact_date.no_month,
+                    fact_date_no_day=fact_date.no_day,
                 )
 
             burials = Burial.objects.filter(qs).order_by('-pk')

@@ -31,6 +31,7 @@ for ph in PlacePhoto.objects.filter(
     image = None
 
     if not ph.bfile:
+        print u"Empty bfile: %s" % ph.pk
         continue
 
     try:
@@ -62,10 +63,23 @@ for ph in PlacePhoto.objects.filter(
         f.close()
         PlacePhoto.objects.filter(pk=ph.pk).update(dt_modified=datetime.datetime.now())
         count_modified += 1
+    else:
+        print u"Low resolution : %s x %s, %s" % (
+            image.size[0], image.size[1],
+            ph.bfile.path
+        )
     if image:
         image.close()
-    count += 1
     buff = image = None
     gc.collect()
+
+    # Будем частями, ибо 80000+ фоток,
+    # мало ли что: утечки памяти и т.п.
+    #
+    if count >= 10000:
+        break
+
+    if count % 250 == 0:
+        print "count all", count, ", count modified", count_modified
 
 print "\n", "count all", count, ", count modified", count_modified
