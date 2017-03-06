@@ -115,7 +115,7 @@
             {% trans "Усопший" %}
         </th>
         <th>
-            {% trans "Дата" %}
+            {% trans "Дата захоронения" %}
         </th>
         <th>
             {% trans "Статус" %}
@@ -171,7 +171,7 @@
                     {{ b.deadman.death_date|default_if_none:"..." }}
                 {% endif %}
             </td>
-            <td>{{ b.combined_date }}</td>
+            <td>{{ b.fact_date|default_if_none:"" }}</td>
             <td>
                 {{ b.status_str|default:"" }}
                 <br/>
