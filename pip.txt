@@ -24,7 +24,7 @@ cssmin
 django-recaptcha==0.0.6
 git+https://github.com/ottoyiu/django-cors-headers.git
 django-wkhtmltopdf==1.2.2
-ExifRead==1.4.2
+piexif==1.0.12
 django-autoslug==1.7.2
 LatLon==1.0.2
 python-magic==0.4.6
