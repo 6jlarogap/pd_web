@@ -10,7 +10,8 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
     $scope.localeText = {
         Uchastkov: gettext("Участков"),
         PoUchastku: gettext("По участку"),
-        PoPoradku: gettext("По порядку в пределах участка (-0001 -0002...)")
+        PoPoradku: gettext("По порядку в пределах участка (-0001 -0002...)"),
+        AddArea: gettext("Добавить участок")
     };
 
     var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';

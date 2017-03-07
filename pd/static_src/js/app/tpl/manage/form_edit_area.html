@@ -1,9 +1,9 @@
 <tabset>
-    <tab heading="Участок">
+    <tab heading="{{localeText.Area}}">
         <form name="areaEditForm" novalidate>
             <div class="modal-body">
                 <div class="row-fluid">
-                    <label>Название участка:</label>
+                    <label>{{localeText.AreaName}}:</label>
                     <input required	name="area_name" type="text" ng-model="area.name" maxlength="255"/>
                     <span class="error" ng-show="areaEditForm.area_name.$error.required">Не указано название участка</span>
                 </div>
