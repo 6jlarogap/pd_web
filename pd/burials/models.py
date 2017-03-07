@@ -190,7 +190,7 @@ class AreaPurpose(models.Model):
 
     class Meta:
         verbose_name = _(u"Назначение участков")
-        verbose_name_plural = _(u"Назначение участков")
+        verbose_name_plural = _(u"Назначения участков")
 
     def __unicode__(self):
         return self.name
@@ -527,7 +527,9 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
     def address_short(self):
         result = _(u'Кладбище %s') % self.cemetery.name
         if self.area:
-            result += _(u', участок %s') % self.area.name
+            result += u', '
+            result += u'%s' % _(u'участок')
+            result += u" %s" % self.area.name
         if self.row:
             result += _(u', ряд %s') % self.row
         result += _(u', место %(place)s') % dict(place=self.place or '')
