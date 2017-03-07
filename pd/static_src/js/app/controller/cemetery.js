@@ -7,6 +7,11 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
     $scope.cemetery_list = [];
     $scope.version_str = version_str;
     $scope.editor = {};
+    $scope.localeText = {
+        Uchastkov: gettext("Участков"),
+        PoUchastku: gettext("По участку"),
+        PoPoradku: gettext("По порядку в пределах участка (-0001 -0002...)")
+    };
 
     var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';
     var tplLinkOpen = '<a ng-class="col.colIndex()" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">{{row.getProperty(\'name\')}}</a>';
@@ -17,7 +22,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
         columnDefs: [
             {field: 'name', cellTemplate:tplLinkOpen, displayName:'Наименование'},
             {field: 'work_time', displayName: 'Часы работы'},
-            {field: 'area_cnt', displayName: 'Участков'},
+            {field: 'area_cnt', displayName: $scope.localeText.Uchastkov},
             {displayName:'Действие',cellTemplate:tplButtonEdit}
         ],
         showFilter: true

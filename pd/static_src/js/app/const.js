@@ -1,10 +1,12 @@
 ﻿var STATIC_APP_URL = '/static/js/app',
 	STATIC_TPL_URL = STATIC_APP_URL+'/tpl';
 
+    var PoUchastku = gettext("По участку"),
+        PoPoradku = gettext("По порядку в пределах участка (-0001 -0002...)");
 
     var PLACE_TYPES = {
         //cemetery: 'По кладбищу',
-        area: 'По участку',
+        area: PoUchastku,
         row: 'По ряду',
         cem_year: 'Кладбище + год',
         // cem_year: gettext('Кладбище + год'),
@@ -12,7 +14,7 @@
         manual: 'Вручную'
    },
     PLACE_ARCHIVE_TYPES = {
-        '-area': 'По порядку в пределах участка (-0001 -0002...)',
+        '-area': PoPoradku,
         burial_account_number: 'По рег. номеру захоронения',
         manual: 'Вручную'
    },
@@ -59,7 +61,6 @@
     };
 
 	// EOF Burial model
-
 
 
     
