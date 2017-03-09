@@ -1,8 +1,9 @@
+    {% load i18n %}
     {% if order.burial.place_number or order.burial.is_approved %}
     <TR>
         <TD STYLE="border-left: 1px solid #000000" COLSPAN=3 HEIGHT=20 ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000"></FONT></TD>
         <TD COLSPAN="2" STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
-            Участок: {% if order.burial.area.name %}{{ order.burial.area.name}}{% else %}(без названия){% endif %}</FONT>
+            {% trans "участок" %}: {% if order.burial.area.name %}{{ order.burial.area.name}}{% else %}(без названия){% endif %}</FONT>
         </TD>
         <TD STYLE="1px solid #000000" ALIGN=LEFT VALIGN=TOP><FONT COLOR="#000000" STYLE="font-size: 140%">
             Ряд: {{ order.burial.row|default_if_none:"" }}</FONT>

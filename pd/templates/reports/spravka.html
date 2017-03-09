@@ -1,4 +1,5 @@
 {% load pytils_dt %}
+{% load i18n %}
 
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html
@@ -996,7 +997,7 @@ ODF styles with no properties representable as CSS
        </td>
     </tr>
     <tr class="ro1">
-        <td style="text-align:left; " class="ce5 co1"><p>участок №</p></td>
+        <td style="text-align:left; " class="ce5 co1"><p>{% trans "участок" %} №</p></td>
         <td colspan="3" style="text-align:left; " class="ce19">{{ burial.place.area.name }}</td>
         <td style="text-align:left; " class="ce29"><p>ряд № </p></td>
         <td colspan="2" style="text-align:left; " class="ce31">{{ burial.place.row }}</td>

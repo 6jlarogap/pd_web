@@ -373,7 +373,7 @@ class ApiAreaUpload(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request) : 
-        return render_to_response('mobile_upload_area.html', {'message': _(u"Загрузите название участка:")})
+        return render_to_response('mobile_upload_area.html', {'message': _(u"Задайте название участка:")})
 
     @transaction.commit_on_success
     def post(self, request) : 
