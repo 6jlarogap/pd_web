@@ -17,8 +17,6 @@ RE_SIZE = re.compile(r'(\d+)?x(\d+)?$')
 
 
 def parse_size(size):
-
-
     """
     Parse a string in the format "[X]x[Y]" and return the dimensions as a tuple
     of integers. Raise InvalidSizeError if the string is not valid.
