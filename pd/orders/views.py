@@ -2628,7 +2628,7 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                         raise ServiceException(cemetery_msg)
                 area = None
                 if place.get('areaId'):
-                    area_msg = _(u"Нет такого участка кладбищ среди доступных")
+                    area_msg = _(u"Нет такого участка на доступных кладбищах")
                     try:
                         area = Area.objects.get(pk=place['areaId'])
                     except Area.DoesNotExist:
@@ -2916,7 +2916,7 @@ class ApiLoruOrdersDetailView(
                         if cemetery not in cemeteries:
                             raise ServiceException(cemetery_msg)
                     if place.get('areaId'):
-                        area_msg = _(u"Нет такого участка кладбищ среди доступных")
+                        area_msg = _(u"Нет такого участка на доступных кладбищах")
                         try:
                             area = Area.objects.get(pk=place['areaId'])
                         except Area.DoesNotExist:

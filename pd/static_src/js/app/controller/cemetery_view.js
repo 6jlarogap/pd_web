@@ -19,6 +19,13 @@ function CemeteryViewCtrl(
         isPhoneEdited: false,
         isEditorOpen: false
     };
+    $scope.localeText = {
+        Uchastkov: gettext("Участков"),
+        PoUchastku: gettext("По участку"),
+        PoPoradku: gettext("По порядку в пределах участка (-0001 -0002...)"),
+        AddArea: gettext("Добавить участок"),
+        Areas: gettext("Участки")
+    };
     $scope.area_max_places = 10;
     $scope.gridOptions = {
         data: 'area_list',

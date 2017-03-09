@@ -243,7 +243,7 @@ def autocrop(im, **kwargs):
     return im
 
 
-def scale_and_crop(im, size, crop=False, upscale=True, **kwargs):
+def scale_and_crop(im, size, crop=False, upscale=True, crop_background='white', **kwargs):
     """
     Handle scaling and cropping the source image.
 
@@ -288,11 +288,16 @@ def scale_and_crop(im, size, crop=False, upscale=True, **kwargs):
         заданной ширины или высоты, то получившаяся миниатюра впихивается в
         белое окно заданной ширины, высоты по центру.
 
+        Также может быть crop-WellKnowColor (WellKnowColor - это, например,
+        blue, ... из https://www.w3.org/TR/2002/WD-css3-color-20020418/#x11-color)
+        или crop-rgb<6-hex-digits>,
+        тогда получившаяся миниатюра впихивается в окно указанного цвета
+
     """
     source_x, source_y = [float(v) for v in im.size]
     target_x, target_y = [float(v) for v in size]
 
-    our_crop =  crop == 'crop' and size[0] and size[1]
+    our_crop =  crop.startswith('crop') and size[0] and size[1]
     if our_crop:
         scale = min(target_x / source_x, target_y / source_y)
     elif crop or not target_x or not target_y:
@@ -375,7 +380,7 @@ def scale_and_crop(im, size, crop=False, upscale=True, **kwargs):
         diff_x, diff_y = size[0] - im.size[0], size[1] - im.size[1]
         if diff_x or diff_y:
             offset = (max(0, diff_x / 2), max(0, diff_y / 2))
-            back = Image.new("RGB", size, "white")
+            back = Image.new("RGB", size, crop_background)
             back.paste(im, offset)
             # Результат будет размером в size
             im = back

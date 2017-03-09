@@ -15,7 +15,8 @@
   $scope.loading = false;
   $scope.edit_resp = false;
   $scope.localeText = {
-      responsible: gettext("Ответственный")
+      responsible: gettext("Ответственный"),
+      Area: gettext("Участок")
   };
   $scope.editor = {
     isAddressEdited: false,
