@@ -1,6 +1,6 @@
 {% load i18n %}
 
-{% if burial.area %}{% trans "Уч." %} {{ burial.area.name|default:"" }}<br/>{% endif %}
+{% if burial.area %}{% trans "Участок" %} {{ burial.area.name|default:"" }}<br/>{% endif %}
 {% if burial.row %}{% trans "ряд" %} {{ burial.row }},{% endif %}
 {% if burial.place_number %}{% trans "место" %} {{ burial.place_number }},{% endif %}
 {% if burial.grave_number %}{% trans "могила" %} {{ burial.grave_number }}{% endif %}

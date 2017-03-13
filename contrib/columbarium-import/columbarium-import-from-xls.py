@@ -12,7 +12,7 @@ COLUMBARIUM_NAME = u'Колумбарий, Крематорий'
 # Ид пользователя, который делает импорт.
 # Делаем отрицательным, чтоб сдуру не запустить
 #
-PROFILE_ID = 41
+PROFILE_ID = -41
 
 INPUT_XLS = '/home/suprune20/d/columbarium.xls'
 
@@ -59,11 +59,8 @@ def main():
 
         account_number = to_str(sheet.cell(row, START_COL + 0))
 
-        fact_date = sheet.cell(row, START_COL + 1).value
-        try:
-            fact_date = datetime.datetime.strptime(fact_date, '%d.%m.%Y')
-        except ValueError:
-            fact_date = None
+        fact_date = sheet.cell(row, START_COL + 1)
+        fact_date = to_date(fact_date, rb)
 
         last_name = to_str(sheet.cell(row, START_COL + 2))
         first_name = to_str(sheet.cell(row, START_COL + 3))
@@ -158,6 +155,14 @@ def to_str(cell):
         result = unicode(cell.value.strip())
     else:
         result = ""
+    return result
+
+def to_date(cell, book):
+    type_ = cell.ctype
+    if type_ == xlrd.XL_CELL_TEXT:
+        result = datetime.datetime.strptime(cell.value, '%d.%m.%Y')
+    else:
+        result = datetime.datetime(*xlrd.xldate_as_tuple(cell.value, book.datemode))
     return result
 
 
