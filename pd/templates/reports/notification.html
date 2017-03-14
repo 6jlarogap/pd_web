@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"
         "http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd">
+{% load i18n %}
 <html xmlns="http://www.w3.org/1999/xhtml">
 <!--This file was converted to xhtml by OpenOffice.org - see http://xml.openoffice.org/odf2xhtml for more info.-->
 <head profile="http://dublincore.org/documents/dcmi-terms/">
@@ -969,7 +970,7 @@ ODF styles with no properties representable as CSS
     <td style="text-align:left;width:1.6752in; " class="ce5"><p>на кладбище</p></td>
     <td colspan="4" style="text-align:left;width:0.6173in; " class="ce21a">{{ burial.cemetery }}</td>
     <td style="text-align:left;width:1.4484in; " class="ce23"><p></p></td>
-    <td colspan="3" style="text-align:left;width:1.0457in; " class="ce14">Участок № {{ burial.area.name|default:"(без номера)"}},<br />могила № {{ burial.place_number_guess|default:"(не указан)" }}</td>
+    <td colspan="3" style="text-align:left;width:1.0457in; " class="ce14">{% trans "участок" %} № {{ burial.area.name|default:"(без номера)"}},<br />могила № {{ burial.place_number_guess|default:"(не указан)" }}</td>
     <td style="text-align:left;width:0.7984in; " class="Default"> </td>
 </tr>
 <tr class="ro5">

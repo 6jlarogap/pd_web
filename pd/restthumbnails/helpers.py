@@ -1,7 +1,14 @@
+# coding=utf-8
+
 from django.conf import settings
 from django.utils.crypto import salted_hmac
 
 from restthumbnails import exceptions
+
+try:
+    from PIL import ImageColor
+except ImportError:
+    import ImageColor
 
 import re
 
@@ -30,10 +37,43 @@ def parse_size(size):
 
 def parse_method(method):
     # FIXME: available processors should be a setting
-    if method not in ['crop', 'smart', 'scale']:
+
+    # Добавка к методу crop:
+    # (1) просто crop:
+    #       * уместить thumbnail в size, ничего не потеряв в избражении
+    #         (если чтобы уместить в size, надо обрезать),
+    #       * ничего не добавив в size (как при scale, чтобы
+    #         вместить недостающее)
+    #       * при наличие свободного места в рамке размером size,
+    #         залить это место белым цветом
+    # (2) crop-rgb<6-hex-digits>:
+    #       Тоже самое, что (1), но с цветом #<6-hex-digits>
+    # (3) crop-WellKnowColor:
+    #       Тоже самое, что (1), но с цветом WellKnowColor
+    #       из ImageColor.colormap, которая соответствует
+    #       https://www.w3.org/TR/2002/WD-css3-color-20020418/#x11-color
+    #       "supported by popular browsers"
+    #
+    valid = True
+    crop_background = 'white'
+    if method == 'crop':
+        pass
+    else:
+        m = re.search(r'^crop\-rgb([0-9A-Fa-f]{6})$', method)
+        if m:
+            crop_background = '#%s' % m.group(1)
+        else:
+            m = re.search(r'^crop\-(\w+)$', method)
+            if m:
+                crop_background = m.group(1).lower()
+                if crop_background not in ImageColor.colormap:
+                    valid = False
+            elif method not in ['smart', 'scale']:
+                valid = False
+    if not valid:
         raise exceptions.InvalidMethodError(
             "'%s' is not a valid method string." % method)
-    return method
+    return method, crop_background
 
 
 def get_secret(source, size, method, extension):

@@ -22,6 +22,11 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	
 	$scope.area_photo = [];
 	$scope.currentImage = false;
+    $scope.localeText = {
+        Area: gettext("Участок"),
+        area: gettext("участок"),
+        AreaName: gettext("Название участка")
+    };
 
 
 	AreaPurpose.get(function(result) {
