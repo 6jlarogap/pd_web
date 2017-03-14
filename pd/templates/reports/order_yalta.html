@@ -41,16 +41,16 @@
     </COLGROUP>
     <TBODY>
     <TR>
-        <TD COLSPAN=5>
+        <TD COLSPAN=7>
             <B>{{ user.profile.org.full_name|default:"Полное название организации" }}</B>
          </TD>
     </TR>
-        <TD COLSPAN=5>
+        <TD COLSPAN=7>
             {{ user.profile.org.off_address|default_if_none:"Адрес организации" }}
         </TD>
     </TR>
     <TR>
-        <TD COLSPAN=5>
+        <TD COLSPAN=7>
             Тел: {{ user.profile.org.phones|default_if_none:"" }}
         </TD>
     </TR>
@@ -65,7 +65,7 @@
         </TD>
     </TR>
     <TR>
-        <TD COLSPAN=5>
+        <TD COLSPAN=7>
             <B><FONT SIZE=3>КВИТАНЦИЯ-ДОГОВОР</FONT></B>
             №
             <B><FONT SIZE=2>{{ order.number_verbose }}</FONT></B>
@@ -73,7 +73,7 @@
          </TD>
     </TR>
     <TR>
-        <TD COLSPAN=5 STYLE="border-bottom: 1px solid">
+        <TD COLSPAN=7 STYLE="border-bottom: 1px solid">
             <B>Заказчик (ФИО)
             {% if order.applicant %}
                 {{ order.applicant.full_name_complete }}
@@ -82,23 +82,21 @@
          </TD>
     </TR>
     <TR>
-        <TD COLSPAN=5 STYLE="border-bottom: 1px solid">
+        <TD COLSPAN=7 STYLE="border-bottom: 1px solid">
             Тел:
             {% if order.applicant and order.applicant.phones %}
                 {{ order.applicant.phones }}&nbsp;
             {% else %}
-            _____________
+            _____________________
             {% endif %}
             Адрес:
             {% if order.applicant and order.applicant.address %}
                 {{ order.applicant.address }}
-            {% else %}
-            _________________________________
             {% endif %}
          </TD>
     </TR>
     <TR>
-        <TD COLSPAN=5 STYLE="border-bottom: 1px solid">
+        <TD COLSPAN=7 STYLE="border-bottom: 1px solid">
             <B>Умерший (ФИО)
             {% if order.deadman %}
                 {{ order.deadman }}
@@ -109,7 +107,7 @@
          </TD>
     </TR>
     <TR>
-        <TD COLSPAN=5 STYLE="border-bottom: 1px solid">
+        <TD COLSPAN=7 STYLE="border-bottom: 1px solid">
             Дата рождения
             {% if order.deadman %}
                 {{ order.deadman.birth_date|default_if_none:"_____________" }}&nbsp;
@@ -157,32 +155,28 @@
             </TD>
         </TR>
     {% endif %}
-    {% if order.cemetery or order.dt_due %}
+    {% if order.cemetery or order.dt_due or order.orderplace and order.orderplace.size %}
         <TR>
-            <TD COLSPAN=5>
-                <B>
+            <TD COLSPAN=7>
+            {% if order.cemetery or order.dt_due or order.orderplace %}
                 {% if order.cemetery %}
-                    Кладбище {{ order.cemetery }}.
+                    <B>Кладбище:</B> {{ order.cemetery }}.
                 {% endif %}
                 {% if order.dt_due %}
-                    Похороны {{ order.dt_due|date:"d.m.Y"|safe }}
+                    <B>Похороны:</B> {{ order.dt_due|date:"d.m.Y"|safe }}
                     {% if order.burial and order.burial.plan_time %}
                         {{ order.burial.plan_time|time:"H:i" }}
                     {% elif order.burial_plan_time %}
                         {{ order.burial_plan_time|time:"H:i" }}
                     {% endif %}
                 {% endif %}
-                </B>
+            {% endif %}
+            {% if order.orderplace and order.orderplace.size %}
+                <B>Размер гроба:</B> {{ order.orderplace.size }}
+            {% endif %}
             </TD>
         </TR>
     {% endif %}
-    <TR>
-        {% if order.orderplace and order.orderplace.size %}
-            <TD COLSPAN=5>
-                Размер гроба: {{ order.orderplace.size }}
-            </TD>
-        {% endif %}
-    </TR>
     <TR>
         <TD STYLE="border-top: 1px solid; border-left: 1px solid; border-bottom: 1px solid;" ALIGN=CENTER>
             № п/п
