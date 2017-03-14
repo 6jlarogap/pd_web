@@ -33,11 +33,11 @@
     <COLGROUP>
         <COL style="width:10mm">
         <COL style="width:13mm">
-        <COL style="width:76mm">
+        <COL style="width:86mm">
         <COL style="width:11mm">
         <COL style="width:15mm">
-        <COL style="width:22mm">
-        <COL style="width:22mm">
+        <COL style="width:17mm">
+        <COL style="width:17mm">
     </COLGROUP>
     <TBODY>
     <TR>
@@ -125,11 +125,13 @@
             {% endif %}
          </TD>
     </TR>
-    {% if order.initial_time or order.initial_place or order.get_catafalquedata.start_time or order.get_catafalquedata.start_place %}
+    {% if order.initial_time or order.initial_place or order.get_catafalquedata.start_time or order.get_catafalquedata.start_place or order.service_time or order.service_place %}
         <TR>
-            <TD COLSPAN=5>
+            <TD COLSPAN=7>
+            {% if order.initial_time or order.initial_place or order.get_catafalquedata.start_time or order.get_catafalquedata.start_place %}
                 <B>
                 Подача транспорта:
+                </B>
                 {% if order.initial_time %}
                     {{ order.initial_time|time:"H:i" }}.
                 {% elif order.get_catafalquedata.start_time %}
@@ -140,22 +142,18 @@
                 {% else %}
                     {{ order.initial_place }}
                 {% endif %}
-                </B>
-            </TD>
-        </TR>
-    {% endif %}
-    {% if order.service_time or order.service_place %}
-        <TR>
-            <TD COLSPAN=5>
+            {% endif %}
+            {% if order.service_time or order.service_place %}
                 <B>
                 Отпевание:
+                </B>
                 {% if order.service_time %}
                     {{ order.service_time|time:"H:i" }}.
                 {% endif %}
                 {% if order.service_place %}
                     {{ order.service_place }}.
                 {% endif %}
-                </B>
+            {% endif %}
             </TD>
         </TR>
     {% endif %}
