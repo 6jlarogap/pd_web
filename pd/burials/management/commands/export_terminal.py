@@ -26,29 +26,40 @@ UGH_PK = 2
 
 CEMETERIES = (
     dict(
-        export='vostochnoe',
-        csv_kwargs=dict(delimiter=" ", quotechar='"', quoting=csv.QUOTE_ALL),
-        cemeteries=(
-            u'Восточное',
-            u'Уручье',
-            ),
-        put_cemetery = True,
-   ),
-    dict(
         export='voennoe',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Военное',),
         # put_cemetery = True,
+        full_name_separate_line = True,
+   ),
+    dict(
+        export='vostochnoe',
+        #csv_kwargs=dict(delimiter=" ", quotechar='"', quoting=csv.QUOTE_ALL),
+        #cemeteries=(
+            #u'Восточное',
+            #u'Уручье',
+            #),
+        #put_cemetery = True,
+
+        csv_kwargs=dict(delimiter="\t"),
+        cemeteries=(
+            u'Восточное',
+            u'Уручье',
+            ),
+        # put_cemetery = True,
+        full_name_separate_line = True,
    ),
     dict(
         export='kolodischi',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Колодищи',),
+        full_name_separate_line = False,
    ),
     dict(
         export='zapadnoe',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Западное',),
+        full_name_separate_line = False,
    ),
 )
 
@@ -109,8 +120,25 @@ class Command(BaseCommand):
                    not u'неизвестен' in last_name_lower and \
                    not u'безфамильн' in last_name_lower:
                     pk = str(deadman.pk)
+
                     last_name = deadman.last_name.upper().encode('cp1251')
-                    initials = deadman.get_initials().upper().encode('cp1251') or u"-"
+                    if cemetery_parms.get('full_name_separate_line'):
+                        initials = u""
+                        first_name = deadman.first_name and deadman.first_name.rstrip(u".")
+                        middle_name = deadman.middle_name and deadman.middle_name.rstrip(u".")
+                        if first_name:
+                            if len(first_name) == 1:
+                                initials = deadman.get_initials()
+                            else:
+                                initials = first_name
+                                if middle_name:
+                                    initials = u"%s %s" % (first_name, middle_name,)
+                        if len(initials) > 30:
+                            initials = u"%s..." % initials[:28]
+                    else:
+                        initials = deadman.get_initials()
+                    initials = initials.encode('cp1251') or u"-"
+
                     b_date = burial.fact_date
                     if b_date:
                         date = "%02d.%02d.%04d" %(b_date.day, b_date.month, b_date.year)
