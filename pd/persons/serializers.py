@@ -11,7 +11,7 @@ from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPe
                            DeathCertificate, DeathCertificateScan, \
                            CustomPersonPermission, MemoryGalleryPermission
 from users.models import get_profile
-from users.serializers import OrgShort6Serializer
+from users.serializers import OrgShort6Serializer, UserProfileMixin
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
 
@@ -287,7 +287,7 @@ class MemoryGallerySerializer(CreatedAtMixin, serializers.ModelSerializer):
         model = MemoryGallery
         fields = ('id', 'type', 'text', 'mediaContent', 'addedAt', 'eventDate', )
 
-class MemoryGallery2Serializer(MemoryGallerySerializer):
+class MemoryGallery2Serializer(MemoryGallerySerializer, UserProfileMixin):
     createdBy = serializers.SerializerMethodField('createdBy_func')
     permissions = Field(source='permission')
     selected = serializers.SerializerMethodField('selected_func')
@@ -308,6 +308,7 @@ class MemoryGallery2Serializer(MemoryGallerySerializer):
                lastname=profile.user_last_name,
                firstname=profile.user_first_name,
                middlename=profile.user_middle_name,
+               photo_url=self.userPhotoUrl_func(user),
            )
         else:
             return None
