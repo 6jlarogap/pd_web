@@ -53,7 +53,7 @@ CEMETERIES = (
         export='kolodischi',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Колодищи',),
-        full_name_separate_line = False,
+        full_name_separate_line = True,
    ),
     dict(
         export='zapadnoe',
