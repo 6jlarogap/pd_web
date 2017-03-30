@@ -7,7 +7,7 @@
 
 # Формирование .csv файлов для имеющихся терминалов на кладбищах
 
-import sys, csv, os
+import sys, csv, os, re
 import pytils
 
 from django import db
@@ -25,6 +25,12 @@ UGH_PK = 2
 # может формироваться экспорт для нескольких "подкладбищ"
 
 CEMETERIES = (
+    dict(
+        export='kolodischi',
+        csv_kwargs=dict(delimiter="\t"),
+        cemeteries=(u'Колодищи',),
+        full_name_separate_line = True,
+   ),
     dict(
         export='voennoe',
         csv_kwargs=dict(delimiter="\t"),
@@ -50,18 +56,14 @@ CEMETERIES = (
         full_name_separate_line = True,
    ),
     dict(
-        export='kolodischi',
-        csv_kwargs=dict(delimiter="\t"),
-        cemeteries=(u'Колодищи',),
-        full_name_separate_line = False,
-   ),
-    dict(
         export='zapadnoe',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Западное',),
         full_name_separate_line = False,
    ),
 )
+
+BAD_CHAR_RE = r'\\|\"|\''
 
 # --------- ----------------------------------------------
 
@@ -113,7 +115,8 @@ class Command(BaseCommand):
             )
             for burial in burials.iterator():
                 deadman = burial.deadman
-                last_name_lower = deadman.last_name and deadman.last_name.lower() or ''
+                last_name = re.sub(BAD_CHAR_RE, '', deadman.last_name)
+                last_name_lower = last_name and last_name.lower() or ''
                 place = burial.place
                 if last_name_lower and \
                    place and \
@@ -121,11 +124,13 @@ class Command(BaseCommand):
                    not u'безфамильн' in last_name_lower:
                     pk = str(deadman.pk)
 
-                    last_name = deadman.last_name.upper().encode('cp1251')
+                    last_name = last_name.upper().encode('cp1251')
                     if cemetery_parms.get('full_name_separate_line'):
                         initials = u""
                         first_name = deadman.first_name and deadman.first_name.rstrip(u".")
+                        first_name = re.sub(BAD_CHAR_RE, '', first_name)
                         middle_name = deadman.middle_name and deadman.middle_name.rstrip(u".")
+                        middle_name = re.sub(BAD_CHAR_RE, '', middle_name)
                         if first_name:
                             if len(first_name) == 1:
                                 initials = deadman.get_initials()
@@ -144,13 +149,27 @@ class Command(BaseCommand):
                         date = "%02d.%02d.%04d" %(b_date.day, b_date.month, b_date.year)
                     else:
                         date = u"-"
-                    area = place.area.name.encode('cp1251')
-                    row = place.row.encode('cp1251')
-                    seat = place.place.encode('cp1251')
+
+                    area = re.sub(BAD_CHAR_RE, '', place.area.name)
+                    if not area:
+                        area = u"-"
+                    area = area.encode('cp1251')
+
+                    row = re.sub(BAD_CHAR_RE, '', place.row)
+                    if not row:
+                        row = u"-"
+                    row= row.encode('cp1251')
+
+                    seat = re.sub(BAD_CHAR_RE, '', place.place)
+                    if not seat:
+                        seat = u"-"
+                    seat = seat.encode('cp1251')
+
                     columns = [pk, last_name, initials, date, area, row, seat]
                     if cemetery_parms.get('put_cemetery'):
                         cemetery = place.cemetery.name.encode('cp1251')
                         columns.append(cemetery)
+
                     writer.writerow(columns)
                     db.reset_queries()
             f.close()
