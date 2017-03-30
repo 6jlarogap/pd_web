@@ -313,9 +313,9 @@ class ResponsibleForm(AlivePersonForm):
     def clean(self):
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
             if not self.cleaned_data.get('place'):
-                raise forms.ValidationError(_(u'Нет Места'))
+                raise forms.ValidationError(_(u'Нет места'))
             if not self.cleaned_data.get('place').responsible:
-                raise forms.ValidationError(_(u'Нет Ответственного у Места'))
+                raise forms.ValidationError(_(u'Нет Ответственного у места'))
         return self.cleaned_data
 
     def save(self, *args, **kwargs):
