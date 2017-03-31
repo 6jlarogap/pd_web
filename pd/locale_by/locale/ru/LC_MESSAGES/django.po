@@ -70,7 +70,7 @@ msgid   "Участок с таким названием уже существу
 msgstr  "Сектор с таким названием уже существует"
 
 msgid   "Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место %(place)s"
-msgstr  "Кл. %(cemetery)s, сект. %(area)s, ряд %(row)s, участок %(place)s"
+msgstr  "Кл. %(cemetery)s, сектор %(area)s, ряд %(row)s, участок %(place)s"
 
 msgid   "%(result)s, участок: %(area)s"
 msgstr  "%(result)s, сектор: %(area)s"
@@ -103,7 +103,7 @@ msgid   "Нет такого участка на доступных кладби
 msgstr  "Нет такого сектора на доступных кладбищах"
 
 msgid   "Уч."
-msgstr  "Сект."
+msgstr  "Сектор"
 
 msgid   "Участков"
 msgstr  "Секторов"
