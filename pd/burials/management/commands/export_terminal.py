@@ -35,31 +35,24 @@ CEMETERIES = (
         export='voennoe',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Военное',),
-        # put_cemetery = True,
         full_name_separate_line = True,
    ),
     dict(
         export='vostochnoe',
         #csv_kwargs=dict(delimiter=" ", quotechar='"', quoting=csv.QUOTE_ALL),
-        #cemeteries=(
-            #u'Восточное',
-            #u'Уручье',
-            #),
         #put_cemetery = True,
-
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(
             u'Восточное',
             u'Уручье',
             ),
-        # put_cemetery = True,
         full_name_separate_line = True,
    ),
     dict(
         export='zapadnoe',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Западное',),
-        full_name_separate_line = False,
+        full_name_separate_line = True,
    ),
 )
 
