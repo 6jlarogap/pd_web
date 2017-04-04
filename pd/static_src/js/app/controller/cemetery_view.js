@@ -24,7 +24,10 @@ function CemeteryViewCtrl(
         PoUchastku: gettext("По участку"),
         PoPoradku: gettext("По порядку в пределах участка (-0001 -0002...)"),
         AddArea: gettext("Добавить участок"),
-        Areas: gettext("Участки")
+        Areas: gettext("Участки"),
+        PlacesAlgoTitle: gettext("Расстановка номеров мест новых ручных и электронных захоронений"),
+        PlacesArchiveAlgoTitle: gettext("Расстановка номеров существующих, но неучтенных мест"),
+        GravesInPlace: gettext("Кол-во могил в месте")
     };
     $scope.area_max_places = 10;
     $scope.gridOptions = {
@@ -34,7 +37,7 @@ function CemeteryViewCtrl(
             {field: 'name', displayName: 'Наименование'},
             {cellTemplate:tplAvailability, displayName: 'Открытость'},
             {cellTemplate:tplPurpose, displayName: 'Назначение'},
-            {field: 'places_count', displayName: 'Кол-во могил в месте'},
+            {field: 'places_count', displayName: $scope.localeText.GravesInPlace},
             {displayName:'Действие',cellTemplate:tplButtonEdit}
         ],
         showFilter: true

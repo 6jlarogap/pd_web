@@ -41,7 +41,7 @@
   </tr>
 </table>
 <br />
-<p><label for="id_places_algo">Расстановка номеров мест новых ручных и электронных захоронений:</label>
+<p><label for="id_places_algo">{{localeText.PlacesAlgoTitle}}:</label>
   <select ng-model="editor.cemetery.places_algo" id="id_places_algo">
     <option value="area">{{localeText.PoUchastku}}</option>
     <option value="row">По ряду</option>
@@ -50,7 +50,7 @@
     <option value="manual">Вручную</option>
   </select>
 </p>
-<p><label for="id_places_algo_archive">Расстановка номеров существующих, но неучтенных мест:</label>
+<p><label for="id_places_algo_archive">{{localeText.PlacesArchiveAlgoTitle}}:</label>
   <select ng-model="editor.cemetery.places_algo_archive" id="id_places_algo_archive">
     <option value="-area">{{localeText.PoPoradku}}</option>
     <option value="burial_account_number">По рег. номеру захоронения</option>
