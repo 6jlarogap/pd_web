@@ -54,51 +54,13 @@
             Тел: {{ user.profile.org.phones|default_if_none:"" }}
         </TD>
     </TR>
-    <TR>
-        <TD>
-            <br />
-        </TD>
-    </TR>
-    <TR>
-        <TD>
-            <br />
-        </TD>
-    </TR>
-    <TR>
-        <TD>
-            <br />
-        </TD>
-    </TR>
-    <TR>
-        <TD>
-            <br />
-        </TD>
-    </TR>
-    <TR>
-        <TD>
-            <br />
-        </TD>
-    </TR>
-    <TR>
-        <TD>
-            <br />
-        </TD>
-    </TR>
-    <TR>
-        <TD>
-            <br />
-        </TD>
-    </TR>
-    <TR>
-        <TD>
-            <br />
-        </TD>
-    </TR>
-    <TR>
-        <TD>
-            <br />
-        </TD>
-    </TR>
+    {% for i in "123456789" %}
+        <TR>
+            <TD>
+                <br />
+            </TD>
+        </TR>
+    {% endfor %}
     <TR>
         <TD COLSPAN=7>
             <B><FONT SIZE=3>КВИТАНЦИЯ-ДОГОВОР</FONT></B>
