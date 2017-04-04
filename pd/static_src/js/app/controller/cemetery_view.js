@@ -27,7 +27,9 @@ function CemeteryViewCtrl(
         Areas: gettext("Участки"),
         PlacesAlgoTitle: gettext("Расстановка номеров мест новых ручных и электронных захоронений"),
         PlacesArchiveAlgoTitle: gettext("Расстановка номеров существующих, но неучтенных мест"),
-        GravesInPlace: gettext("Кол-во могил в месте")
+        GravesInPlace: gettext("Кол-во могил в месте"),
+        AreaName: gettext("Название участка"),
+        AreaNoName: gettext("Не указано название участка")
     };
     $scope.area_max_places = 10;
     $scope.gridOptions = {
