@@ -29,7 +29,8 @@ function CemeteryViewCtrl(
         PlacesArchiveAlgoTitle: gettext("Расстановка номеров существующих, но неучтенных мест"),
         GravesInPlace: gettext("Кол-во могил в месте"),
         AreaName: gettext("Название участка"),
-        AreaNoName: gettext("Не указано название участка")
+        AreaNoName: gettext("Не указано название участка"),
+        NoEdit1: gettext('Редактировать запрещено так как "расстановка номеров существующих, но не учтенных мест" установлена "по рег. номеру захоронения"')
     };
     $scope.area_max_places = 10;
     $scope.gridOptions = {

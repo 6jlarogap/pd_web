@@ -30,6 +30,8 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
         AddPlace: gettext("Добавить место"),
         Places: gettext("Места"),
         Place: gettext("Место"),
+        NoPlaceName: gettext("Не указано название места"),
+        NoAreaName: gettext("Не указано название участка")
     };
 
 

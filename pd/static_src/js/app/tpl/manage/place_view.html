@@ -14,7 +14,7 @@
              ng-click="openEditForm('isPlaceEditorOpen')">
             <span class="icon-edit"></span>
           </a>
-          <span ng-show="is_editable" >Место:</span>
+          <span ng-show="is_editable" >{{localeText.Place}}:</span>
         </th>
         <th>
           <span class="badge"
@@ -68,7 +68,7 @@
         <td>{{ item.row }}</td>
       </tr>
       <tr>
-        <th>Место:</th>
+        <th>{{localeText.Place}}:</th>
         <td>{{ item.place }}</td>
       </tr>
       <tr>
@@ -91,7 +91,7 @@
         <td>{{ caretaker_show }}</td>
       </tr>
       <tr>
-        <th><a href="/places/{{item.id}}/certificate" target="_blank">Паспорт места</a></th>
+        <th><a href="/places/{{item.id}}/certificate" target="_blank">{{localeText.PlaceCertificate}}</a></th>
         <td></td>
       </tr>
 
@@ -288,7 +288,7 @@
 <!-- POPUP Place edit form -->
 <div modal="isPlaceEditorOpen" close="closeEditForm('isPlaceEditorOpen')">
   <div class="modal-header">
-    <h3>Редактировать место "{{editor.item.place}}"</h3>
+    <h3>{{localeText.EditPlace}} "{{editor.item.place}}"</h3>
   </div>
   <div ng-include src="'/static/js/app/tpl/manage/form_edit_place.html'+version_str"></div>
 </div>
