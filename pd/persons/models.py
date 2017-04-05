@@ -387,7 +387,7 @@ class Phone(BaseModel):
 class CustomPlace(LocationMixin, BaseModel):
     name = models.CharField(_(u"Название"), max_length=255, blank=True)
     address = models.ForeignKey(Location, verbose_name=_(u"Адрес"), null=True)
-    user = models.ForeignKey('auth.User', verbose_name=_(u"Владелец или указавший место"))
+    user = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный за место или указавший место"))
     place = models.ForeignKey('burials.Place', verbose_name=_(u"Место"), null=True)
     # Основное фото места. Оно не грузится от клиента, а копируется из PlacePhoto
     # или из результатов выполнения заказа, как только появляется новое фото места или

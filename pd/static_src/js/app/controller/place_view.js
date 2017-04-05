@@ -15,8 +15,15 @@
   $scope.loading = false;
   $scope.edit_resp = false;
   $scope.localeText = {
-      responsible: gettext("Ответственный"),
-      Area: gettext("Участок")
+    responsible: gettext("Ответственный"),
+    Area: gettext("Участок"),
+    Place: gettext("Место"),
+    PlaceCertificate: gettext("Паспорт места"),
+    EditPlace: gettext("Редактировать место"),
+    NoPlaceName: gettext("Не указано название места"),
+    IncorrectWidth: gettext("Неверное число для ширины места"),
+    IncorrectLength: gettext("Неверное число для длины места"),
+    PlaceFree: gettext("Место свободно")
   };
   $scope.editor = {
     isAddressEdited: false,

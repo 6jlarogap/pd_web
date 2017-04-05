@@ -185,7 +185,7 @@
         </div>
 </div>
 
-<h2>{% trans "Место" %} {{ form.instance.get_place|default:"" }}</h2>
+<h2>{% trans "Место" %}: {{ form.instance.get_place|default:"" }}</h2>
 <!-- <div id="cont_place" style="{% if form.instance.pk %}display: none{% endif %}"> -->
 <div id="cont_place">
     {{ form.cemetery.errors }}

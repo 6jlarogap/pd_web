@@ -25,7 +25,13 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
     $scope.localeText = {
         Area: gettext("Участок"),
         area: gettext("участок"),
-        AreaName: gettext("Название участка")
+        AreaName: gettext("Название участка"),
+        GravesInPlace: gettext("Кол-во могил в месте"),
+        AddPlace: gettext("Добавить место"),
+        Places: gettext("Места"),
+        Place: gettext("Место"),
+        NoPlaceName: gettext("Не указано название места"),
+        NoAreaName: gettext("Не указано название участка")
     };
 
 
@@ -127,7 +133,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
         showGroupPanel: true,
         columnDefs: [
         	{field: 'row', displayName: 'Ряд'},
-        	{field: 'place', displayName: 'Место'},
+        	{field: 'place', displayName: $scope.localeText.Place},
         	{displayName:'Ответственный', field:'responsible_txt'}, 
             {displayName:'Действие',cellTemplate:tplButtonEdit}
         ]

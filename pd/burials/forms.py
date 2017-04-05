@@ -313,9 +313,9 @@ class ResponsibleForm(AlivePersonForm):
     def clean(self):
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
             if not self.cleaned_data.get('place'):
-                raise forms.ValidationError(_(u'Нет Места'))
+                raise forms.ValidationError(_(u'Нет места'))
             if not self.cleaned_data.get('place').responsible:
-                raise forms.ValidationError(_(u'Нет Ответственного у Места'))
+                raise forms.ValidationError(_(u'Нет Ответственного у места'))
         return self.cleaned_data
 
     def save(self, *args, **kwargs):
@@ -1202,11 +1202,8 @@ class BurialCommitForm(BurialForm):
             # Такого не может быть, ибо проверяется в свойствах организации-угх,
             # чтобы не оказалось: номер зх оставить пустым, а есть кладбища
             # с расстановкой мест по номеру зх. Но fool-proof не помешает...
-            if is_ugh:
+            if is_ugh or self.request.REQUEST.get('ready'):
                 msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
-                raise forms.ValidationError(msg)
-            elif self.request.REQUEST.get('ready'):
-                msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой, в свойствах ОМС")
                 raise forms.ValidationError(msg)
         elif (row.strip() or place_number.strip()) and not area:
             msg = _(u"Указан ряд и/или место, но не указан участок")
@@ -1244,7 +1241,7 @@ class BurialCommitForm(BurialForm):
                         aggregate(m=Max('places_count'))['m'] or 1
                 if desired_graves_count > max_grave_number_this_ugh:
                     msg = _(u"Запрошенное число могил (%(desired_graves_count)s) в новом месте "
-                            u"превышает максимум (%(max_grave_number)s) по кладбищам этого ОМС" % dict(
+                            u"превышает максимум (%(max_grave_number)s) по кладбищам этой организации" % dict(
                                 desired_graves_count=desired_graves_count,
                                 max_grave_number=max_grave_number_this_ugh
                            ))

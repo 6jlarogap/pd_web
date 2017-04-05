@@ -5,7 +5,7 @@
                 <div class="row-fluid">
                     <label>{{localeText.AreaName}}:</label>
                     <input required	name="area_name" type="text" ng-model="area.name" maxlength="255"/>
-                    <span class="error" ng-show="areaEditForm.area_name.$error.required">Не указано название участка</span>
+                    <span class="error" ng-show="areaEditForm.area_name.$error.required">{{localeText.NoAreaName}}</span>
                 </div>
                 <div class="row-fluid">
                     <label>Открытость:</label>
@@ -21,7 +21,7 @@
                     </select>
                 </div>
                 <div class="row-fluid">
-                    <label>Кол-во могил в месте:</label>
+                    <label>{{localeText.GravesInPlace}}:</label>
                     <input type="number" name="places_count" min="1" max="{{area_max_places}}" required ng-model="area.places_count" />
                     <span class="error" ng-show="areaEditForm.places_count.$error.required">Не указано количество могил</span>
                     <span class="error" ng-show="areaEditForm.places_count.$error.min">Число должно быть больше 0</span> 

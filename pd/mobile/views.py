@@ -989,7 +989,7 @@ placephoto_list = ApiPlacePhotoList.as_view()
 class ApiPlacePhotoUpload(APIView):
     permission_classes = (PermitIfUgh,)
     def get(self, request) :
-        return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту:")})
+        return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту")})
 
     def post(self, request) :
         placeId = request.POST['place']
@@ -1070,7 +1070,7 @@ placephoto_upload = ApiPlacePhotoUpload.as_view()
 class ApiPlacePhotoDelete(APIView):
     permission_classes = (PermitIfUgh,)
     def get(self, request) :
-        return render_to_response('mobile_remove_placephoto.html', {'message': _(u"Удалить фотографию к месту:")})
+        return render_to_response('mobile_remove_placephoto.html', {'message': _(u"Удалить фотографию места")})
 
     def post(self, request) :
         placePhotoId = request.POST['placePhotoId']
