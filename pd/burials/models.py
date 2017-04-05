@@ -260,7 +260,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
     row = models.CharField(_(u"Ряд"), max_length=255, blank=True, default='')
     oldplace = models.CharField(_(u"Старое место"), max_length=255, blank=True, null=True)
     place = models.CharField(_(u"Место"), max_length=255, blank=True, default='')
-    available_count = models.PositiveSmallIntegerField(_(u"Число свободных мест"), default=0)
+    available_count = models.PositiveSmallIntegerField(_(u"Число свободных могил"), default=0)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
     place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2,
@@ -294,7 +294,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
 
     class Meta:
         verbose_name = _(u"Место")
-        verbose_name_plural = _(u"Место")
+        verbose_name_plural = _(u"Места")
         unique_together = ('cemetery', 'area', 'row', 'place',)
         ordering = ['row', 'place']
 
@@ -677,7 +677,7 @@ class Grave(GeoPointModel, BaseModelManualDtCreated):
         ordering = ['grave_number']
 
     def __unicode__(self):
-        return _(u'Могила. место: %(place)s номер:%(grave_number)d') % dict(
+        return _(u'Могила. место: %(place)s номер:%(grave_number)s') % dict(
             place=self.place, grave_number=self.grave_number
         )
 
@@ -1298,7 +1298,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             try:
                 customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
                 user = customerprofile.user
-                text = _(u'Место %s прикреплено. pohoronnoedelo.ru') % place.pk
+                text = _(u'Место %s прикреплено.') % place.pk
                 email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                     (customerprofile.user.username, place.responsible.login_phone, place.pk,))
             except CustomerProfile.DoesNotExist:

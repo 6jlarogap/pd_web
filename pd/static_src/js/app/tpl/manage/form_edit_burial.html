@@ -36,9 +36,9 @@
 
             <dt>Кладбище:</dt>
             <dd>{{ cemetery.name }}</dd>
-            <dt>Участок:</dt>
+            <dt>{{localeText.Area}}:</dt>
             <dd>{{ area.name }}</dd>
-            <dt>Место:</dt>
+            <dt>{{localeText.Place}}:</dt>
             <dd>{{ selectedBurial.place_number }}</dd>
             <dt>Могила:</dt>
             <dd>
@@ -49,7 +49,7 @@
                 <span class="error" ng-show="burialEditForm.graveNumber.$error.required">Не выбран номер могилы</span>
             </dd>
 
-            <!--                <dt>Правило создания номера места:</dt>
+            <!--                <dt>Правило создания номера .....:</dt>
                             <dd>По рег. номеру захоронения</dd>
                             <dt>Ответственный:</dt>
                             <dd>
