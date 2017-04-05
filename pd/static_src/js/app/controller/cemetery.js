@@ -11,7 +11,9 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
         Uchastkov: gettext("Участков"),
         PoUchastku: gettext("По участку"),
         PoPoradku: gettext("По порядку в пределах участка (-0001 -0002...)"),
-        AddArea: gettext("Добавить участок")
+        AddArea: gettext("Добавить участок"),
+        PlacesAlgoTitle: gettext("Расстановка номеров мест новых ручных и электронных захоронений"),
+        PlacesArchiveAlgoTitle: gettext("Расстановка номеров существующих, но неучтенных мест")
     };
 
     var tplButtonEdit = '<a class="btn btn-small" ng-href="/manage/cemetery/{{row.getProperty(\'id\')}}">Открыть</a>';

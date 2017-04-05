@@ -530,7 +530,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 try:
                     customerprofile = CustomerProfile.objects.get(login_phone=object.responsible.login_phone)
                     user = customerprofile.user
-                    text=_(u'Место %s прикреплено. pohoronnoedelo.ru') % object.pk
+                    text=_(u'Место %s прикреплено.') % object.pk
                     email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                         (customerprofile.user.username, object.responsible.login_phone, object.pk,))
                 except CustomerProfile.DoesNotExist:

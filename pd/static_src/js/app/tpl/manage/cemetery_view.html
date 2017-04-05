@@ -10,8 +10,8 @@
       <dt>Время для захоронения</dt>
       <dd>{{cemetery.time_slots}}</dd>
     </dl>
-   <p><b>Расстановка номеров мест новых ручных и электронных захоронений:</b> {{cemetery.places_algo| list: PLACE_TYPES}}</p>
-   <p><b>Расстановка номеров существующих, но неучтенных мест:</b> {{ cemetery.places_algo_archive| list: PLACE_ARCHIVE_TYPES }}</p>
+   <p><b>{{localeText.PlacesAlgoTitle}}:</b> {{cemetery.places_algo| list: PLACE_TYPES}}</p>
+   <p><b>{{localeText.PlacesArchiveAlgoTitle}}:</b> {{ cemetery.places_algo_archive| list: PLACE_ARCHIVE_TYPES }}</p>
    <p ng-show="cemetery.archive_burial_fact_date_required">Дата архивного захоронения обязательна</p>
 
     <p ng-show="cemetery.archive_burial_account_number_required">Номер архивного захоронения обязателен</p>
@@ -127,7 +127,7 @@
 
 <div modal="addModalOpened" close="closeAddModal()" options="addOpts">
   <div class="modal-header">
-    <h3>Добавить участок</h3>
+    <h3>{{localeText.AddArea}}</h3>
   </div>
   <form name="areaEditForm">
     <div class="modal-body">
