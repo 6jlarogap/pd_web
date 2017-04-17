@@ -204,7 +204,6 @@ def main():
             print d['last_name'], d['first_name'], d['middle_name'], u': уч. %s, ряд %s, м. %s' % \
                 (d['area'], d['row'], d['place_number'])
             print "   В регистре на кладбищах:", cc_str
-            print "    ", cc_str
             r = find_name(d['last_name'], c_names, d['area'], d['row'], d['place_number'])
             if r:
                 rr = ", ".join(r)
