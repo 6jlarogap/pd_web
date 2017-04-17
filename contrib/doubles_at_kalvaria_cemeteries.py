@@ -20,12 +20,115 @@
 #
 PROFILE_PK = 37
 
+# В этом каталоге лежат шахматки кальварийских кладбищ, там будем искать
+# эти дубли
+#
+DIR_SHAHMATKI = '/home/suprune20/d/musor/calvar-shah'
+
+import os, xlrd
+
 from django.db import transaction, connection
 
 from burials.models import Burial, Cemetery, Area, Place
 from users.models import Profile
 
 from pd.utils import dictfetchall
+
+#   shahms['Кальварийское']
+#       {
+#           "1": {
+#                   "rows":     {"1": 3, "2": 4, ...}           # название, строка xls
+#                   "places":   {"1": 3, "2": 4, ...}           # название, колонка xls
+#               }
+#       }
+#   shahms['Дворище']
+#   ...
+
+def xls_to_str(cell):
+    type_ = cell.ctype
+    if type_ == xlrd.XL_CELL_NUMBER:
+        if int(cell.value) == cell.value:
+            result = str(int(cell.value))
+        else:
+            result = str(cell.value)
+    elif type_ == xlrd.XL_CELL_TEXT:
+        result = unicode(cell.value.strip())
+    else:
+        result = ""
+    return result
+
+
+shahms = dict()
+for f in os.listdir(DIR_SHAHMATKI):
+    xls = os.path.join(DIR_SHAHMATKI, f)
+    if os.path.isfile(os.path.join(DIR_SHAHMATKI, f)) and f.endswith('.xls'):
+        f = f.rstrip('.xls')
+        cemetery = unicode(f, "utf-8")
+        shahms[cemetery] = dict()
+        try:
+            rb = xlrd.open_workbook(xls)
+        except:
+            print "Failed to open %s" % xls
+        for area in rb.sheet_names():
+            shahms[cemetery][area] = dict(rows=dict(), places=dict())
+            sheet = rb.sheet_by_name(area)
+            for col in range(1, 1000):
+                try:
+                    place = xls_to_str(sheet.cell(1, col))
+                    if place:
+                        shahms[cemetery][area]['places'][place] = col
+                except IndexError:
+                    break
+            for xls_row in range(2, sheet.nrows):
+                row = xls_to_str(sheet.cell(xls_row, 0))
+                if row:
+                    shahms[cemetery][area]['rows'][row] = xls_row
+
+#for cemetery in shahms:
+    #print "\n", cemetery
+    #areas = shahms[cemetery].keys()
+    #areas.sort()
+    #for area in areas:
+        #print area, ":"
+        #print 'places'
+        #places = shahms[cemetery][area]['places'].keys()
+        #places.sort()
+        #for place in places:
+            #print place, " : ", shahms[cemetery][area]['places'][place]
+        #print 'rows'
+        #rows = shahms[cemetery][area]['rows'].keys()
+        #rows.sort()
+        #for row in rows:
+            #print row, " : ", shahms[cemetery][area]['rows'][row]
+
+
+def find_name(last_name, cemeteries, area, row, place):
+    
+    result = []
+    for cemetery in cemeteries:
+        try:
+            xls_row = shahms[cemetery][area]['rows'][row]
+            xls_col = shahms[cemetery][area]['places'][place]
+            xls_cemetery = os.path.join(DIR_SHAHMATKI,u"%s.xls" % cemetery)
+            rb = xlrd.open_workbook(xls_cemetery)
+            sheet = rb.sheet_by_name(area)
+            xls_fio = xls_to_str(sheet.cell(xls_row, xls_col)).lower()
+            last_name = last_name.lower()
+            if last_name in xls_fio:
+                result.append(cemetery)
+        except KeyError:
+            pass
+
+    return result
+
+#for c in find_name(
+    #u'Кожура',
+    #[u'Дворище', u'Кальварийское', u'Козыревское', u'Масюковщина', u'Петровщина', u'Сухаревское'],
+    #"1", "25", "23"
+#):
+    #print c
+
+#exit()
 
 def main():
     cemeteries = Cemetery.editable_ugh_cemeteries(Profile.objects.get(pk=PROFILE_PK).user)
@@ -49,6 +152,8 @@ def main():
 
             WHERE
                 last_name > '' AND
+                first_name > '' AND
+                middle_name > '' AND
                 "burials_burial"."annulated" = False AND
                 "burials_burial"."status" = 'closed' AND
                 "burials_cemetery"."id" IN (%(cemetery_pk_in_str)s) AND
@@ -87,16 +192,24 @@ def main():
         )
         cc = []
         cc_str = u''
+        c_names = []
         for b in burials.order_by('cemetery__name'):
             c = b.cemetery
             if c.pk not in cc:
+                c_names.append(c.name)
                 cc_str += (u"%s, " % c.name)
                 cc.append(c.pk)
         cc_str = cc_str[:len(cc_str)-2]
         if len(cc) > 1:
             print d['last_name'], d['first_name'], d['middle_name'], u': уч. %s, ряд %s, м. %s' % \
                 (d['area'], d['row'], d['place_number'])
-            print "   ", cc_str
-            print ''
+            print "   В регистре на кладбищах:", cc_str
+            print "    ", cc_str
+            r = find_name(d['last_name'], c_names, d['area'], d['row'], d['place_number'])
+            if r:
+                rr = ", ".join(r)
+                print "      НАЙДЕН в шахматках: ", rr
+                if len(r) > 1:
+                    print "      ВНИМАНИЕ: на нескольких кладбищах из шахматок"
 
 main()
