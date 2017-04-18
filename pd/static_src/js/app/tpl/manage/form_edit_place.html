@@ -1,5 +1,5 @@
 <tabset>
-    <tab heading="Место">
+    <tab heading="{{localeText.Place}}">
         <form novalidate name="placeEditForm" class="form-horizontal">
         <div class="modal-body">
 
@@ -22,7 +22,7 @@
                 <!-- input name="placeArea" id="id_place_set-area" type="text" ng-model="area.name" required maxlength="255"
                     typeahead="a.name for a in area_list | filter:$viewValue | limitTo:8"
                     typeahead-min-length="0" typeahead-editable="false" typeahead-on-select="onAreaChanged($item, $model)"/>
-                <span class="error" ng-show="placeEditForm.placeArea.$error.required">Не указан участок</span-->
+                <span class="error" ng-show="placeEditForm.placeArea.$error.required">Не указан уч...асток</span-->
             </dd>
             </dl>
 
@@ -34,11 +34,11 @@
             </div>
 
             <div class="control-group" ng-class="{error: placeEditForm.placeName.$dirty && placeEditForm.placeName.$invalid}">
-            <label class="control-label" for="placeName">Место</label>
+            <label class="control-label" for="placeName">{{localeText.Place}}</label>
             <div class="controls">
                 <input name="placeName" id="placeName" type="text" required ng-model="editor.item.place"
                     maxlength="255"/>
-                <span class="help-block" ng-show="placeEditForm.placeName.$error.required">Не указано название места</span>
+                <span class="help-block" ng-show="placeEditForm.placeName.$error.required">{{localeText.NoPlaceName}}</span>
                 <span class="help-block" ng-show="placeEditForm.places_count.$error.min">Число должно быть больше 0</span>
                 <span class="help-block"
                     ng-show="placeEditForm.places_count.$error.max">Число должно быть меньше, либо равным 7</span>
@@ -50,7 +50,7 @@
             <div class="controls">
                 <input name="placeLen" id="placeLen" type="text" ng-pattern="/^\d?\d?(\.\d?\d?)?$/"
                     ng-model="editor.item.place_length"/>
-                <span class="help-block " ng-show="placeEditForm.placeLen.$error.pattern">Неверное число для длины места</span>
+                <span class="help-block " ng-show="placeEditForm.placeLen.$error.pattern">{{localeText.IncorrectLength}}</span>
             </div>
             </div>
 
@@ -59,12 +59,12 @@
             <div class="controls">
                 <input name="placeW" id="placeW" type="text" ng-pattern="/^\d?\d?(\.\d?\d?)?$/"
                     ng-model="editor.item.place_width"/>
-                <span class="help-block " ng-show="placeEditForm.placeW.$error.pattern">Неверное число для ширины места</span>
+                <span class="help-block " ng-show="placeEditForm.placeW.$error.pattern">{{localeText.IncorrectWidth}}</span>
             </div>
             </div>
 
             <div class="control-group">
-            <label class="control-label" for="placeFree">Место свободно</label>
+            <label class="control-label" for="placeFree">{{localeText.PlaceFree}}</label>
             <div class="controls">
                 <input pd-dt-checkbox type="checkbox" id="placeFree" name="placeFree"
                     ng-model="editor.item.dt_free" />

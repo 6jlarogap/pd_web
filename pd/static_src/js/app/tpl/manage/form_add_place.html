@@ -7,11 +7,11 @@
     </dd>
 
     <dt>
-        <label for="id_place_set-name">Место:</label>
+        <label for="id_place_set-name">{{localeText.Place}}:</label>
     </dt>
     <dd>
         <input name="placeName" id="id_place_set-name" type="text" required ng-model="place.place" maxlength="255" />
-        <span class="error" ng-show="placeEditForm.placeName.$error.required">Не указано название места</span>
+        <span class="error" ng-show="placeEditForm.placeName.$error.required">{{localeText.NoPlaceName}}</span>
     </dd>
     <dt>
         <label for="id_places_count">Количество могил:</label>

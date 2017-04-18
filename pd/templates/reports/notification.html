@@ -1017,11 +1017,11 @@ ODF styles with no properties representable as CSS
 <tr class="ro7">
     <td colspan="8" style="text-align:left;width:0.01in;" class="ce8">
     {% if burial.place.responsible.user %}
-        Для входа в личный кабинет ответственного за место захоронения в информационной системе <b><u>pohoronnoedelo.ru</u></b>
+        Для входа в личный кабинет ответственного за {% trans "место" %} захоронения в информационной системе <b><u>pohoronnoedelo.ru</u></b>
         введите в качестве логина: {{ burial.place.responsible.user.username }}.
         Пароль вы получили или сможете получить по смс.
     {% else %}
-        Для получения доступа к личному кабинету ответственного за место захоронения
+        Для получения доступа к личному кабинету ответственного за {% trans "место" %} захоронения
         в информационной системе <b><u>pohoronnoedelo.ru</u></b> обратитесь в администрацию кладбища.
     {% endif %}
     </td>

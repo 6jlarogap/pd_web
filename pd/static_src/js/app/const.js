@@ -81,7 +81,7 @@
     
     TRANSLATIONS = {
       '__ALL__':'',
-      'places_count':'Количество могил в месте',
+      'places_count': gettext("Количество могил в месте"),
       'Grave':'Могила',
       'Country':'Страна'
     };
