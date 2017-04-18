@@ -150,7 +150,9 @@ req_str = '''
 
         "burials_area"."name" as area,
         "burials_burial"."row" as row,
-        "burials_burial"."place_number" as place_number
+        "burials_burial"."place_number" as place_number,
+
+        "burials_burial"."fact_date" as fact_date
 
         FROM "persons_deadperson"
 
@@ -166,7 +168,8 @@ req_str = '''
             "burials_burial"."annulated" = False AND
             "burials_burial"."status" = 'closed' AND
             "burials_cemetery"."id" IN (%(cemetery_pk_in_str)s) AND
-            "burials_burial"."source_type" = 'transferred'
+            "burials_burial"."source_type" = 'transferred' AND
+            fact_date IS NOT NULL
 
         GROUP BY
             last_name,
@@ -174,7 +177,8 @@ req_str = '''
             middle_name,
             area,
             row,
-            place_number
+            place_number,
+            fact_date
 
         HAVING Count(*) > 1
 
@@ -211,8 +215,8 @@ for d in  dictfetchall(cursor):
     cc_str = cc_str[:len(cc_str)-2]
     if len(cc) > 1:
         count_doubles += 1
-        print d['last_name'], d['first_name'], d['middle_name'], u': уч. %s, ряд %s, м. %s' % \
-            (d['area'], d['row'], d['place_number'])
+        print d['last_name'], d['first_name'], d['middle_name'], u': уч. %s, ряд %s, м. %s, дата: %s' % \
+            (d['area'], d['row'], d['place_number'], d['fact_date'])
         print "   В регистре на кладбищах:", cc_str
         r = find_name(d['last_name'], c_names, d['area'], d['row'], d['place_number'])
         for r_ in r:
