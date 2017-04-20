@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <script type="text/javascript">
+
+        function delete_thank_(pk) {
+            if (!confirm('Благодарность пользователя будет удалена.\n' +
+                       'Продолжить?')) {
+                return false;
+            }
+            $.ajax({
+                url: '/api/thank/' + pk ,
+                type: 'DELETE',
+                success: function(data) {
+                    location.reload(true);
+                }
+            });
+            return false;
+        }
+
+    </script>
+
+    <h1>{% trans "Благодарности" %}</h1>
+    <br />
+    <div class="row-fluid no-print">
+        <div class="span12">
+            <div class="row-fluid">
+                <form class="form-horizontal" method="get" action="">
+                    {{ form.as_p }}
+                    <p class="buttons">
+                        <input type="submit" value="{% trans "искать" %}" class="btn btn-primary" />
+                        {% if paginator.page_range|length > 1 %}
+                            {% include "paginator.html" %}
+                        {% endif %}
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <h2>{% trans "Кто выражает благодарность:" %}</h2>
+    <p>{% trans "Найдено:" %} {{ paginator.count|default:0 }}</p>
+
+    <table class="table table-bordered table-striped">
+        <tr>
+            <th>
+                {% if sort == 'fio' %}
+                    {% if sort == 'fio' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-fio">{% trans "ФИО" %}</a>
+                {% else %}
+                    {% if sort == '-fio' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=fio">{% trans "ФИО" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% trans "Соц. сети" %}
+            </th>
+            <th>
+                {% trans "Фото" %}
+            </th>
+            <th style="text-align:center; vertical-align:middle;">
+                {% if sort == 'dt_created' %}
+                    {% if sort == 'dt_created' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-dt_created">{% trans "Впервые поблагодарил" %}</a>
+                {% else %}
+                    {% if sort == '-dt_created' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=dt_created">{% trans "Впервые поблагодарил" %}</a>
+                {% endif %}
+            </th>
+            <th style="text-align:center; vertical-align:middle;">
+                {% if sort == 'dt_modified' %}
+                    {% if sort == 'dt_modified' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-dt_modified">{% trans "Последняя благодарность" %}</a>
+                {% else %}
+                    {% if sort == '-dt_modified' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=dt_modified">{% trans "Последняя благодарность" %}</a>
+                {% endif %}
+            </th>
+            <th>
+            </th>
+        </tr>
+        {% for t in thanks %}
+            <tr>
+                <td style="vertical-align:middle;">
+                    {{ t.user.customerprofile.full_name }}
+                </td>
+                <td style="vertical-align:middle;">
+                    {% for s in t.oauths %}
+                        {{ s }}<br />
+                    {% endfor %}
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
+                    {% if t.photo %}
+                        {% autoescape off %}
+                            <img src="{{ t.photo }}" height=200>
+                        {% endautoescape %}
+                    {% endif %}
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
+                    {{ t.dt_created|date:"d.m.y H:i"}}
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
+                    {{ t.dt_modified|date:"d.m.y H:i"}}
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
+                    <a href="javascript:void(0)" onclick='return delete_thank_({{ t.pk }})'>{% trans "Удалить благодарность" %}</a>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+
+{% endblock %}

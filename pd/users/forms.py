@@ -24,6 +24,8 @@ from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
                          Role, UserPhoto, Store, \
                          get_mail_footer, is_cabinet_user, is_trade_user
 
+from persons.models import CustomPerson
+
 User._meta.get_field_by_name('email')[0]._unique = True
 User._meta.get_field_by_name('email')[0].null=True
 
@@ -798,3 +800,23 @@ class VideoSearchForm(forms.Form):
     )
 
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+
+class ThanksForm(forms.Form):
+    PAGE_CHOICES = (
+        (5, 5),
+        (10, 10),
+        (25, 25),
+        (50, 50),
+    )
+
+    thanked = forms.ChoiceField(label=_(u"Кому выражают благодарность"), required=True)
+    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=50, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(ThanksForm, self).__init__(*args, **kwargs)
+        choices = [(0, '---------------')]
+        for p in CustomPerson.objects.filter(token__gte='').order_by(
+            'last_name', 'first_name', 'middle_name'
+            ):
+            choices.append((p.pk, u"%s" % p))
+        self.fields['thanked'].choices = choices
