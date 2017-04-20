@@ -577,6 +577,28 @@ class Oauth(BaseModel):
                     setattr(oauth, key, user_details[key])
             if oauth_save:
                 oauth.save()
+            try:
+                cp_save = False
+                cp = CustomerProfile.objects.get(user=oauth.user)
+                if user_details.get('last_name') and cp.user_last_name != user_details['last_name']:
+                    cp_save = True
+                    cp.user_last_name = user_details['last_name']
+                if user_details.get('first_name') and cp.user_first_name != user_details['first_name']:
+                    cp_save = True
+                    cp.user_first_name = user_details['first_name']
+                if cp_save:
+                    cp.save()
+            except CustomerProfile.DoesNotExist:
+                pass
+            email = user_details.get('email')
+            user = oauth.user
+            if email and (user.email != email) and \
+               not User.objects.filter(email=email).exclude(pk=user.pk).exists():
+                try:
+                    user.email = email
+                    user.save()
+                except IntegrityError:
+                    raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
 
         user = oauth = error_code = None
         message = {}
@@ -841,6 +863,7 @@ class Oauth(BaseModel):
                 # Проверка, есть ли такой пользователь
                 try:
                     oauth = cls.objects.filter(provider=provider, uid=uid)[0]
+                    refresh_oauth_data(oauth, user_details)
                     user = oauth.user
                 except IndexError:
                     error_code = u"oauth_provider_not_attached"
