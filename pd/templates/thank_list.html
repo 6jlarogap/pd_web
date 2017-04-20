@@ -92,9 +92,9 @@
                     {% endfor %}
                 </td>
                 <td style="text-align:center; vertical-align:middle;">
-                    {% if t.oauth_photo %}
+                    {% if t.photo %}
                         {% autoescape off %}
-                            <img src="{{ t.oauth_photo }}" width=200 height=200>
+                            <img src="{{ t.photo }}" height=200>
                         {% endautoescape %}
                     {% endif %}
                 </td>

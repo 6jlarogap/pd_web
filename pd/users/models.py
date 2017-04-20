@@ -896,15 +896,25 @@ class Thank(BaseModel):
     class Meta:
         unique_together = ('user', 'customperson')
 
-    def oauth_photo(self):
+    def photo(self):
         """
-        Последнее фото из соц. сетей
+        Последнее фото из фото профиля или из соц. сетей
         """
+        user = self.user
         try:
-            return Oauth.objects.filter(user=self.user, photo__gte=''
-                                        ).order_by('-dt_modified')[0].photo
+            userphoto = UserPhoto.objects.get(user=user)
+            if userphoto.bfile:
+                return userphoto.bfile.url
+        except UserPhoto.DoesNotExist:
+            pass
+        try:
+            oauth = Oauth.objects.filter(
+                        user=user,
+                        photo__gt='',
+                    ).order_by('-dt_modified')[0]
+            return oauth.photo or None
         except IndexError:
-            return ''
+            return None
 
     def oauths(self):
         """
