@@ -896,6 +896,22 @@ class Thank(BaseModel):
     class Meta:
         unique_together = ('user', 'customperson')
 
+    def oauth_photo(self):
+        """
+        Последнее фото из соц. сетей
+        """
+        try:
+            return Oauth.objects.filter(user=self.user, photo__gte=''
+                                        ).order_by('-dt_modified')[0].photo
+        except IndexError:
+            return ''
+
+    def oauths(self):
+        """
+        Соцсети, к которым подключен
+        """
+        return [o.provider for o in Oauth.objects.filter(user=self.user)]
+
 class OrgAbility(models.Model):
     ABILITY_TRADE = 'trade'
     ABILITY_PERSONAL_DATA = 'personal-data'

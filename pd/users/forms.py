@@ -810,7 +810,7 @@ class ThanksForm(forms.Form):
     )
 
     thanked = forms.ChoiceField(label=_(u"Кому выражают благодарность"), required=True)
-    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=50, required=False)
 
     def __init__(self, *args, **kwargs):
         super(ThanksForm, self).__init__(*args, **kwargs)

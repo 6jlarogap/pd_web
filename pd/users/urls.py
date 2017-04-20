@@ -95,6 +95,7 @@ urlpatterns = patterns('users.views',
 
     url(r'^api/thank/users_count/?$', 'api_thank_users_count', name='api_thank_users_count'),
     url(r'^api/thank/users/?$', 'api_thank_users', name='api_thank_users'),
+    url(r'^api/thank/(?P<pk>\d+)/?$', 'api_thank_detail', name='api_thank_deatail'),
 
     url(r'^api/videos/?$', 'api_videos', name='api_videos'),
     url(r'^api/videos/(?P<yid>\S+)/votes/?$', 'api_video_votes', name='api_video_votes'),

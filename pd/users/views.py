@@ -3844,53 +3844,6 @@ class VideoListView(SupervisorRequiredMixin, PaginateListView):
 
 videos = VideoListView.as_view()
 
-class ThanksListView(SupervisorRequiredMixin, PaginateListView):
-    template_name = 'thank_list.html'
-    context_object_name = 'thanks'
-
-    def __init__(self, *args, **kwargs):
-        super(ThanksListView, self).__init__(*args, **kwargs)
-        self.SORT_DEFAULT = 'dt_created'
-
-    def get_form(self):
-        return ThanksForm(data=self.request.GET or None)
-
-    def get_queryset(self):
-        thanked = self.request.GET.get('thanked')
-        if thanked:
-            thanks = Thank.objects.filter(
-                user__customerprofile__isnull=False,
-                customperson__pk=thanked,
-            )
-        else:
-            thanks = Thank.objects.none()
-        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
-        SORT_FIELDS = {
-            'dt_created': 'dt_created',
-            '-dt_created': '-dt_created',
-            'dt_modified': 'dt_modified',
-            '-dt_modified': '-dt_modified',
-            'fio': [
-                'user__customerprofile__user_last_name',
-                'user__customerprofile__user_first_name',
-                'user__customerprofile__user_middle_name',
-                ],
-            '-fio': [
-                '-user__customerprofile__user_last_name',
-                '-user__customerprofile__user_first_name',
-                '-user__customerprofile__user_middle_name',
-                ],
-        }
-        try:
-            s = SORT_FIELDS[sort] 
-        except KeyError:
-            s = SORT_FIELDS[self.SORT_DEFAULT]
-        if not isinstance(s, list):
-            s = [s]
-        return thanks.order_by(*s)
-
-thanks = ThanksListView.as_view()
-
 class ApiVideoDetailView(APIView):
     permission_classes = (PermitIfSupervisor,)
 
@@ -3947,3 +3900,62 @@ class ApiVideoStatisticsCurrentUserView(APIView):
         return Response(data=data, status=200)
 
 api_video_statistics_current_user = ApiVideoStatisticsCurrentUserView.as_view()
+
+class ThanksListView(SupervisorRequiredMixin, PaginateListView):
+    template_name = 'thank_list.html'
+    context_object_name = 'thanks'
+
+    def __init__(self, *args, **kwargs):
+        super(ThanksListView, self).__init__(*args, **kwargs)
+        self.SORT_DEFAULT = 'dt_created'
+
+    def get_form(self):
+        return ThanksForm(data=self.request.GET or None)
+
+    def get_queryset(self):
+        thanked = self.request.GET.get('thanked')
+        if thanked:
+            thanks = Thank.objects.filter(
+                user__customerprofile__isnull=False,
+                customperson__pk=thanked,
+            )
+        else:
+            thanks = Thank.objects.none()
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
+        SORT_FIELDS = {
+            'dt_created': 'dt_created',
+            '-dt_created': '-dt_created',
+            'dt_modified': 'dt_modified',
+            '-dt_modified': '-dt_modified',
+            'fio': [
+                'user__customerprofile__user_last_name',
+                'user__customerprofile__user_first_name',
+                'user__customerprofile__user_middle_name',
+                ],
+            '-fio': [
+                '-user__customerprofile__user_last_name',
+                '-user__customerprofile__user_first_name',
+                '-user__customerprofile__user_middle_name',
+                ],
+        }
+        try:
+            s = SORT_FIELDS[sort] 
+        except KeyError:
+            s = SORT_FIELDS[self.SORT_DEFAULT]
+        if not isinstance(s, list):
+            s = [s]
+        return thanks.order_by(*s)
+
+thanks = ThanksListView.as_view()
+
+class ApiThankDetailView(APIView):
+    permission_classes = (PermitIfSupervisor,)
+
+    @transaction.commit_on_success
+    def delete(self, request, pk):
+        thank = get_object_or_404(Thank, pk=pk)
+        thank.delete()
+        return Response(data={}, status=200)
+
+api_thank_detail = ApiThankDetailView.as_view()
+

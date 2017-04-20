@@ -10,14 +10,13 @@
                        'Продолжить?')) {
                 return false;
             }
-//             $.ajax({
-//                 // + '/' обязательно!
-//                 url: '/api/videos/' + yid + '/',
-//                 type: 'DELETE',
-//                 success: function(data) {
-//                     location.reload(true);
-//                 }
-//             });
+            $.ajax({
+                url: '/api/thank/' + pk ,
+                type: 'DELETE',
+                success: function(data) {
+                    location.reload(true);
+                }
+            });
             return false;
         }
 
@@ -56,9 +55,6 @@
                 {% endif %}
             </th>
             <th>
-                {% trans "Email" %}
-            </th>
-            <th>
                 {% trans "Соц. сети" %}
             </th>
             <th>
@@ -87,21 +83,18 @@
         </tr>
         {% for t in thanks %}
             <tr>
-                <td>
+                <td style="vertical-align:middle;">
                     {{ t.user.customerprofile.full_name }}
                 </td>
-                <td>
-                    {{ t.user.email|default_if_none:"" }}
-                </td>
-                <td>
+                <td style="vertical-align:middle;">
                     {% for s in t.oauths %}
                         {{ s }}<br />
                     {% endfor %}
                 </td>
                 <td style="text-align:center; vertical-align:middle;">
-                    {% if t.photo %}
+                    {% if t.oauth_photo %}
                         {% autoescape off %}
-                            <img src="{{ t.photo }}">
+                            <img src="{{ t.oauth_photo }}" width=200 height=200>
                         {% endautoescape %}
                     {% endif %}
                 </td>
