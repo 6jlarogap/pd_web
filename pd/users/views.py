@@ -498,10 +498,11 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
                     errorCode=u'user_not_active'
                 ))
 
-            user.backend = 'django.contrib.auth.backends.ModelBackend'
-            login(request, user)
-            write_log(request, user, _(u'Вход в систему'))
-            LoginLog.write(request)
+            if not request.user.is_authenticated():
+                user.backend = 'django.contrib.auth.backends.ModelBackend'
+                login(request, user)
+                write_log(request, user, _(u'Вход в систему'))
+                LoginLog.write(request)
 
             # Успешная авторизация, благодарим, если пришел thankToken!
             thanked = self.get_thanked(request, must_thank=False)
