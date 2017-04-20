@@ -814,7 +814,7 @@ class ThanksForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(ThanksForm, self).__init__(*args, **kwargs)
-        choices = []
+        choices = [(0, '---------------')]
         for p in CustomPerson.objects.filter(token__gte='').order_by(
             'last_name', 'first_name', 'middle_name'
             ):

@@ -5,31 +5,19 @@
 {% block content %}
     <script type="text/javascript">
 
-        function delete_video_(yid) {
-            if (!confirm('Будут удалено видео из Народной Думы и все данные по голованию.\n' +
+        function delete_thank_(pk) {
+            if (!confirm('Благодарность пользователя будет удалена.\n' +
                        'Продолжить?')) {
                 return false;
             }
-            $.ajax({
-                // + '/' обязательно!
-                url: '/api/videos/' + yid + '/',
-                type: 'DELETE',
-                success: function(data) {
-                    location.reload(true);
-                }
-            });
-            return false;
-        }
-
-        function refresh_video_(yid) {
-            $.ajax({
-                // + '/....' обязательно!
-                url: '/api/videos/' + yid + '/?refresh=1',
-                type: 'GET',
-                success: function(data) {
-                    location.reload(true);
-                }
-            });
+//             $.ajax({
+//                 // + '/' обязательно!
+//                 url: '/api/videos/' + yid + '/',
+//                 type: 'DELETE',
+//                 success: function(data) {
+//                     location.reload(true);
+//                 }
+//             });
             return false;
         }
 
@@ -68,15 +56,30 @@
                 {% endif %}
             </th>
             <th>
-                {% trans "Фото" %}
+                {% trans "Email" %}
             </th>
             <th>
-                {% if sort == 'dt' %}
-                    {% if sort == 'dt' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                    <a href="?{{ GET_PARAMS }}&sort=-dt">{% trans "Последняя благодарность" %}</a>
+                {% trans "Соц. сети" %}
+            </th>
+            <th>
+                {% trans "Фото" %}
+            </th>
+            <th style="text-align:center; vertical-align:middle;">
+                {% if sort == 'dt_created' %}
+                    {% if sort == 'dt_created' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-dt_created">{% trans "Впервые поблагодарил" %}</a>
                 {% else %}
-                    {% if sort == '-dt' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                    <a href="?{{ GET_PARAMS }}&sort=dt">{% trans "Последняя благодарность" %}</a>
+                    {% if sort == '-dt_created' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=dt_created">{% trans "Впервые поблагодарил" %}</a>
+                {% endif %}
+            </th>
+            <th style="text-align:center; vertical-align:middle;">
+                {% if sort == 'dt_modified' %}
+                    {% if sort == 'dt_modified' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-dt_modified">{% trans "Последняя благодарность" %}</a>
+                {% else %}
+                    {% if sort == '-dt_modified' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=dt_modified">{% trans "Последняя благодарность" %}</a>
                 {% endif %}
             </th>
             <th>
@@ -85,7 +88,15 @@
         {% for t in thanks %}
             <tr>
                 <td>
-                    {{ t.fio }}
+                    {{ t.user.customerprofile.full_name }}
+                </td>
+                <td>
+                    {{ t.user.email|default_if_none:"" }}
+                </td>
+                <td>
+                    {% for s in t.oauths %}
+                        {{ s }}<br />
+                    {% endfor %}
                 </td>
                 <td style="text-align:center; vertical-align:middle;">
                     {% if t.photo %}
@@ -95,12 +106,13 @@
                     {% endif %}
                 </td>
                 <td style="text-align:center; vertical-align:middle;">
+                    {{ t.dt_created|date:"d.m.y H:i"}}
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
                     {{ t.dt_modified|date:"d.m.y H:i"}}
                 </td>
                 <td style="text-align:center; vertical-align:middle;">
-                    <button onclick='return delete_video_("{{ t.yid }}")'>
-                        {% trans "Удалить" %}
-                    </button>
+                    <a href="javascript:void(0)" onclick='return delete_thank_({{ t.pk }})'>{% trans "Удалить благодарность" %}</a>
                 </td>
             </tr>
         {% endfor %}

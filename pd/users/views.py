@@ -3850,7 +3850,7 @@ class ThanksListView(SupervisorRequiredMixin, PaginateListView):
 
     def __init__(self, *args, **kwargs):
         super(ThanksListView, self).__init__(*args, **kwargs)
-        self.SORT_DEFAULT = '-dt'
+        self.SORT_DEFAULT = 'dt_created'
 
     def get_form(self):
         return ThanksForm(data=self.request.GET or None)
@@ -3866,8 +3866,10 @@ class ThanksListView(SupervisorRequiredMixin, PaginateListView):
             thanks = Thank.objects.none()
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
         SORT_FIELDS = {
-            'dt': 'dt_modified',
-            '-dt': '-dt_modified',
+            'dt_created': 'dt_created',
+            '-dt_created': '-dt_created',
+            'dt_modified': 'dt_modified',
+            '-dt_modified': '-dt_modified',
             'fio': [
                 'user__customerprofile__user_last_name',
                 'user__customerprofile__user_first_name',
