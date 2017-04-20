@@ -920,7 +920,7 @@ class Thank(BaseModel):
         """
         Соцсети, к которым подключен
         """
-        return [o.provider for o in Oauth.objects.filter(user=self.user)]
+        return [dict(provider=o.provider, uid=o.uid) for o in Oauth.objects.filter(user=self.user)]
 
 class OrgAbility(models.Model):
     ABILITY_TRADE = 'trade'
