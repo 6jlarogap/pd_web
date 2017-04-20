@@ -110,6 +110,8 @@ urlpatterns = patterns('users.views',
     # Здесь обязательно '/' в конце шаблона, ибо '/' подпадает под \S+
     url(r'^api/videos/(?P<yid>\S+)/$', 'api_video_detail', name='api_video_detail'),
 
+    url(r'^thanks/?$', 'thanks', name='thanks'),
+
     url(r'^autocomplete/org/$', 'autocomplete_org', name='autocomplete_org'),
     url(r'^autocomplete/loru_in_burials/$', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),
 )

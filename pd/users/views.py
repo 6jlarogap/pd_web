@@ -54,7 +54,7 @@ from logs.models import LogOperation, Log, write_log, LoginLog
 from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
                         LoruOrdersStatsForm, ProfileDataForm, OmsOperStats, \
-                        VideoSearchForm
+                        VideoSearchForm, ThanksForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, is_loru_user, is_ugh_user, \
                          PermitIfTrade, PermitIfTradeOrSupervisor, PermitIfLoruOrUgh, \
@@ -3843,6 +3843,51 @@ class VideoListView(SupervisorRequiredMixin, PaginateListView):
         return videos.order_by(*s)
 
 videos = VideoListView.as_view()
+
+class ThanksListView(SupervisorRequiredMixin, PaginateListView):
+    template_name = 'thank_list.html'
+    context_object_name = 'thanks'
+
+    def __init__(self, *args, **kwargs):
+        super(ThanksListView, self).__init__(*args, **kwargs)
+        self.SORT_DEFAULT = '-dt'
+
+    def get_form(self):
+        return ThanksForm(data=self.request.GET or None)
+
+    def get_queryset(self):
+        thanked = self.request.GET.get('thanked')
+        if thanked:
+            thanks = Thank.objects.filter(
+                user__customerprofile__isnull=False,
+                customperson__pk=thanked,
+            )
+        else:
+            thanks = Thank.objects.none()
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
+        SORT_FIELDS = {
+            'dt': 'dt_modified',
+            '-dt': '-dt_modified',
+            'fio': [
+                'user__customerprofile__user_last_name',
+                'user__customerprofile__user_first_name',
+                'user__customerprofile__user_middle_name',
+                ],
+            '-fio': [
+                '-user__customerprofile__user_last_name',
+                '-user__customerprofile__user_first_name',
+                '-user__customerprofile__user_middle_name',
+                ],
+        }
+        try:
+            s = SORT_FIELDS[sort] 
+        except KeyError:
+            s = SORT_FIELDS[self.SORT_DEFAULT]
+        if not isinstance(s, list):
+            s = [s]
+        return thanks.order_by(*s)
+
+thanks = ThanksListView.as_view()
 
 class ApiVideoDetailView(APIView):
     permission_classes = (PermitIfSupervisor,)
