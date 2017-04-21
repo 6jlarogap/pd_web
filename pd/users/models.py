@@ -842,11 +842,9 @@ class Oauth(BaseModel):
                         uid=uid,
                     )
                     refresh_oauth_data(oauth, user_details)
-                    transaction.commit()
                     if oauth.user != user:
-                        # TODO Здесь попытка merge обоих пользователей
-                        error_code = err_intergrity_error
-                        raise ServiceException(msg_intergrity_error)
+                        oauth.user = user
+                        oauth.save()
                 except cls.DoesNotExist:
                     try:
                         cls.objects.create(
@@ -895,6 +893,32 @@ class Thank(BaseModel):
 
     class Meta:
         unique_together = ('user', 'customperson')
+
+    def photo(self):
+        """
+        Последнее фото из фото профиля поблагодарившего или из соц. сетей
+        """
+        user = self.user
+        try:
+            userphoto = UserPhoto.objects.get(user=user)
+            if userphoto.bfile:
+                return userphoto.bfile.url
+        except UserPhoto.DoesNotExist:
+            pass
+        try:
+            oauth = Oauth.objects.filter(
+                        user=user,
+                        photo__gt='',
+                    ).order_by('-dt_modified')[0]
+            return oauth.photo or None
+        except IndexError:
+            return None
+
+    def oauths(self):
+        """
+        Соцсети, к которым подключен
+        """
+        return [dict(provider=o.provider, uid=o.uid) for o in Oauth.objects.filter(user=self.user)]
 
 class OrgAbility(models.Model):
     ABILITY_TRADE = 'trade'
