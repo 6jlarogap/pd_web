@@ -842,11 +842,9 @@ class Oauth(BaseModel):
                         uid=uid,
                     )
                     refresh_oauth_data(oauth, user_details)
-                    transaction.commit()
                     if oauth.user != user:
-                        # TODO Здесь попытка merge обоих пользователей
-                        error_code = err_intergrity_error
-                        raise ServiceException(msg_intergrity_error)
+                        oauth.user = user
+                        oauth.save()
                 except cls.DoesNotExist:
                     try:
                         cls.objects.create(
