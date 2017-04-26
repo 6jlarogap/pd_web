@@ -28,8 +28,10 @@ DIR_SHAHMATKI = '/home/suprune20/d/musor/calvar-shah'
 import os, xlrd
 
 from django.db import transaction, connection
+from django.contrib.contenttypes.models import ContentType
 
-from burials.models import Burial, Cemetery, Area, Place
+from burials.models import Burial, Cemetery, Area, Place, Grave
+from logs.models import Log
 from users.models import Profile
 
 from pd.utils import dictfetchall
@@ -86,6 +88,7 @@ counter = dict()
 count_one = 0
 count_several = 0
 count_doubles = 0
+count_deleted_burials = count_deleted_places = count_deleted_areas = 0
 
 for f in os.listdir(DIR_SHAHMATKI):
     xls = os.path.join(DIR_SHAHMATKI, f)
@@ -142,6 +145,9 @@ for f in os.listdir(DIR_SHAHMATKI):
 
 profile = Profile.objects.get(pk=PROFILE_PK)
 ugh = profile.org
+
+ct_place = ContentType.objects.get(app_label="burials", model="place")
+ct_burial = ContentType.objects.get(app_label="burials", model="burial")
 
 cemeteries = Cemetery.editable_ugh_cemeteries(profile.user)
 cemetery_pk_in_str = ", ".join([str(c.pk) for c in cemeteries])
@@ -209,7 +215,9 @@ for d in  dictfetchall(cursor):
     cc = []
     cc_str = u''
     c_names = []
+    b_pks = []
     for b in burials.order_by('cemetery__name'):
+        b_pks.append(b.pk)
         c = b.cemetery
         if c.pk not in cc:
             c_names.append(c.name)
@@ -226,18 +234,34 @@ for d in  dictfetchall(cursor):
             counter[r_] += 1
         if r:
             rr = ", ".join(r)
-            print "      НАЙДЕН в шахматках: ", rr
+            print "      НАЙДЕНО в шахматках: ", rr
             if len(r) > 1:
                 print "      ВНИМАНИЕ: на нескольких кладбищах из шахматок"
                 count_several += 1
             else:
                 count_one += 1
                 print u"      удаляем \"лишние\" захоронения"
-                for b in burials.order_by('cemetery__name'):
+                for b_pk in b_pks:
+                    b = Burial.objects.get(pk=b_pk)
                     if b.cemetery.name == r[0]:
                         continue
                     print u"       - кладбище %s" % b.cemetery.name
-
+                    place = b.place
+                    area = place.area
+                    Log.objects.filter(ct=ct_burial, obj_id=b.pk).delete()
+                    b.delete()
+                    count_deleted_burials += 1
+                    if not place.burial_set.all().exists() and not place.placephoto_set.all().exists():
+                        print u"         * место осталось пустым, удаляем"
+                        for g in Grave.objects.filter(place=place):
+                            g.delete()
+                        Log.objects.filter(ct=ct_place, obj_id=place.pk).delete()
+                        place.delete()
+                        count_deleted_places += 1
+                        if not area.place_set.all().exists():
+                            print u"         * сектор остался пустым, удаляем"
+                            area.delete()
+                            count_deleted_areas += 1
 
 print u"\nИТОГО \"двойников\": %s" % count_doubles
 print u"\nПопаданий по кладбищам:"
@@ -245,5 +269,10 @@ for c in counter:
     if counter[c]:
         print u"    %s: %s" % (c, counter[c],)
 print "\n"
-print u"Попаданий в одно кладбище: %s" % count_one
-print u"Попаданий в несколько кладбищ: %s" % count_several
+print u"Попаданий в одно кладбище (эти захоронения удаляем): %s" % count_one
+print u"Попаданий в несколько кладбищ (эти не удаляем): %s" % count_several
+
+print "\n"
+print u"Удалено захоронений: %s" % count_deleted_burials
+print u"Удалено пустых мест: %s" % count_deleted_places
+print u"Удалено пустых участков: %s" % count_deleted_areas
