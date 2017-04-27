@@ -249,6 +249,14 @@ for d in  dictfetchall(cursor):
                     place = b.place
                     area = place.area
                     Log.objects.filter(ct=ct_burial, obj_id=b.pk).delete()
+                    applicant = b.applicant
+                    deadman = b.deadman
+                    b.deadman = None
+                    b.applicant = None
+                    b.save()
+                    if applicant:
+                        applicant.delete()
+                    deadman.delete()
                     b.delete()
                     count_deleted_burials += 1
                     if not place.burial_set.all().exists() and not place.placephoto_set.all().exists():
