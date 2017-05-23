@@ -205,6 +205,8 @@ class Profile(CommonProfile):
 
     store = models.ForeignKey('users.Store', verbose_name=_(u"Подразделение"), blank=True, null=True)
 
+    phones_publish = models.BooleanField(_(u"Публиковать телефоны?"), default=False, blank=True)
+
     lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
 
