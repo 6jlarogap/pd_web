@@ -103,6 +103,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             'email',
             'title',
             'phones',
+            'phones_publish',
             'is_agent',
             'out_of_staff',
             'password1', 'password2',
@@ -117,6 +118,8 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         self.fields['phones'].widget = forms.TextInput()
         if not request.user.profile.org.is_loru():
             del self.fields['is_agent']
+        if not host_country_code(request) == 'ru':
+            del self.fields['phones_publish']
 
         if request.user.profile.org.is_ugh() and \
            not request.user.profile.is_admin() and \

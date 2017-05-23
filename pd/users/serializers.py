@@ -402,7 +402,7 @@ class ProfileFioLoginSerializer(serializers.ModelSerializer):
             return u"(%s)" % profile.user.username
 
 class ProfileClientSiteSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
-    phones = serializers.SerializerMethodField('phones_func')
+    phones = serializers.SerializerMethodField('phones_published_func')
     fullName = Field(source='full_name')
     role = Field(source='title')
     photoUrl = serializers.SerializerMethodField('userPhotoUrl_func')
@@ -420,6 +420,11 @@ class ProfileClientSiteSerializer(PhonesFromTextMixin, serializers.ModelSerializ
         except UserPhoto.DoesNotExist:
             return None
 
+    def phones_published_func(self, profile):
+        if profile.phones_publish:
+            return self.phones_func(profile)
+        else:
+            return []
 
 class OrgReviewSerializer(CreatedAtMixin, serializers.ModelSerializer):
     isPositive = Field(source='is_positive')
