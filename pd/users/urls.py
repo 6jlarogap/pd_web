@@ -113,6 +113,8 @@ urlpatterns = patterns('users.views',
 
     url(r'^thanks/?$', 'thanks', name='thanks'),
 
+    url(r'^api/vk/bot/(?P<group>\w+)/handler?$', 'api_vk_bot_handler', name='api_vk_bot_handler'),
+
     url(r'^autocomplete/org/$', 'autocomplete_org', name='autocomplete_org'),
     url(r'^autocomplete/loru_in_burials/$', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),
 )

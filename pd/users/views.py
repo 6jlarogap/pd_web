@@ -9,7 +9,8 @@ import os
 import csv
 import copy
 import re
-from urllib import quote_plus, unquote_plus
+from urllib import quote_plus, unquote_plus, urlencode
+import urllib2
 from qsstats import QuerySetStats
 
 from django.conf import settings
@@ -3959,3 +3960,109 @@ class ApiThankDetailView(APIView):
 
 api_thank_detail = ApiThankDetailView.as_view()
 
+class ApiVkBotHandlerView(APIView):
+    """
+    Vkontakte CallBackApi
+
+    См. https://habrahabr.ru/post/329150/
+    """
+
+    # TODO Убрать DEBUG code
+
+    def get_user_info(self, data):
+        msg_invalid_id = "No or invalid user_id"
+        user_name = u''
+        try:
+            user_id = data['object']['user_id']
+            if not user_id:
+                raise ServiceException(msg_invalid_id)
+        except KeyError:
+            raise ServiceException(msg_invalid_id)
+        try:
+            r = urllib2.urlopen(
+                "https://api.vk.com/method/users.get?user_ids=%s&v=5.0" % user_id
+            )
+            raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+            user_data = json.loads(raw_data)
+            user_name = user_data['response'][0]['first_name']
+        except (urllib2.HTTPError, urllib2.URLError,
+                KeyError, ValueError, IndexError,):
+            pass
+        return user_id, user_name
+
+    def send_message(self, dict_greet):
+        parms = urlencode(dict_greet)
+        try:
+            r = urllib2.urlopen(
+                'https://api.vk.com/method/messages.send?%s' % parms
+            )
+        except (urllib2.HTTPError, urllib2.URLError,):
+            raise ServiceException(msg_failed_send)
+
+    def post(self, request, group):
+        content_type = 'text/plain'
+        message = 'ok'
+        msg_failed_send = "Failed to send message to the user"
+        data=request.DATA
+        print "DEBUG: ..."
+        print data
+        try:
+            if not hasattr(settings, 'VK_BOT') or \
+                not settings.VK_BOT.get(group):
+                raise ServiceException(
+                    "No vk groups or no group '%s' defined." % group,
+                )
+            bot_settings = settings.VK_BOT[group]
+            data_secret = data.get('secret', '')
+            data_type = data.get('type', '')
+            secretKey = bot_settings.get('secretKey', '')
+
+            # проверяем secretKey
+            if data_secret != secretKey and data_type != 'confirmation':
+                raise ServiceException(
+                    "No 'secret' or invalid 'secret' in inbound data when type is not confirmation",
+                )
+
+            if data_type == 'confirmation':
+                message = bot_settings['confirmationToken']
+
+            elif data_type == 'message_new':
+                user_id, user_name = self.get_user_info(data)
+                msg_to_user = u"Ваше сообщение зарегистрировано!<br>" \
+                              u"Мы постараемся ответить в ближайшее время."
+                if user_name:
+                    msg_to_user = u"%s! %s" % (user_name, msg_to_user,)
+                msg_to_user = msg_to_user.encode('utf-8')
+                dict_greet = dict(
+                    message=msg_to_user,
+                    user_id=user_id,
+                    access_token=bot_settings['token'],
+                    v='5.0'
+                )
+                self.send_message(dict_greet)
+
+            elif data_type == 'group_join':
+                user_id, user_name = self.get_user_info(data)
+                if user_name:
+                    user_in_msg = u", %s" % user_in_msg
+                else:
+                    user_in_msg = u''
+                msg_to_user = u"Добро пожаловать в наше сообщество%s!<br>" % user_in_msg
+                msg_to_user += u"Если у Вас возникнут вопросы, " \
+                               u"то вы всегда можете обратиться к администраторам сообщества.<br>"
+                msg_to_user = msg_to_user.encode('utf-8')
+                dict_greet = dict(
+                    message=msg_to_user,
+                    user_id=user_id,
+                    access_token=bot_settings['token'],
+                    v='5.0'
+                )
+                self.send_message(dict_greet)
+
+            status_code = 200
+        except ServiceException as excpt:
+            status_code = 400
+            message = excpt.message
+        return HttpResponse(message, content_type=content_type, status=status_code)
+
+api_vk_bot_handler = ApiVkBotHandlerView.as_view()

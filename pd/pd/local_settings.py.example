@@ -105,3 +105,13 @@ CACHES = {
         }
     }
 }
+
+# Для CallBackApi Vkontakte
+
+VK_BOT = dict(
+    group1 = dict(
+        confirmationToken='004eec27',
+        token=u'Ваш ключ',
+        secretKey='testSecureKey',
+    ),
+)
