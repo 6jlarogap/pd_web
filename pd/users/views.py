@@ -4001,7 +4001,7 @@ class ApiVkBotHandlerView(APIView):
 
     def post(self, request, group):
         content_type = 'text/plain'
-        message = ''
+        message = 'ok'
         msg_failed_send = "Failed to send message to the user"
         data=request.DATA
         print "DEBUG: ..."
@@ -4040,7 +4040,6 @@ class ApiVkBotHandlerView(APIView):
                     v='5.0'
                 )
                 self.send_message(dict_greet)
-                message = 'ok';
 
             elif data_type == 'group_join':
                 user_id, user_name = self.get_user_info(data)
@@ -4059,12 +4058,6 @@ class ApiVkBotHandlerView(APIView):
                     v='5.0'
                 )
                 self.send_message(dict_greet)
-                message = 'ok';
-            else:
-                # По другим типам пока ничего не делаем, но не пугаем Контакт
-                # разными ошибками
-                #
-                message = 'ok'
 
             status_code = 200
         except ServiceException as excpt:
