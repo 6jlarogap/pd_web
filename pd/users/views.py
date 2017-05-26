@@ -4066,13 +4066,12 @@ class ApiVkBotHandlerView(APIView):
 
             elif data_type == 'group_join':
                 user_id, user_name = self.get_user_info(data)
-                if user_name:
-                    user_in_msg = u", %s" % user_name
+                if bot_settings.get('msg_join'):
+                    msg_to_user = bot_settings['msg_join']
                 else:
-                    user_in_msg = u''
-                msg_to_user = u"Добро пожаловать в наше сообщество%s!<br>" % user_in_msg
-                msg_to_user += u"Если у Вас возникнут вопросы, " \
-                               u"то вы всегда можете обратиться к администраторам сообщества.<br>"
+                    msg_to_user = u"Добро пожаловать в наше сообщество!"
+                if user_name:
+                    msg_to_user = u"%s! %s" % (user_name, msg_to_user,)
                 msg_to_user = msg_to_user.encode('utf-8')
                 dict_greet = dict(
                     message=msg_to_user,
