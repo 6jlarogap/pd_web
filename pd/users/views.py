@@ -9,7 +9,8 @@ import os
 import csv
 import copy
 import re
-from urllib import quote_plus, unquote_plus
+from urllib import quote_plus, unquote_plus, urlencode
+import urllib2
 from qsstats import QuerySetStats
 
 from django.conf import settings
@@ -3959,3 +3960,150 @@ class ApiThankDetailView(APIView):
 
 api_thank_detail = ApiThankDetailView.as_view()
 
+class ApiVkBotHandlerView(APIView):
+    """
+    Vkontakte CallBackApi
+
+    См. https://habrahabr.ru/post/329150/
+    """
+
+    # TODO Убрать DEBUG code
+
+    def get_user_info(self, data):
+        msg_invalid_id = "No or invalid user_id"
+        user_name = u''
+        try:
+            user_id = data['object']['user_id']
+            if not user_id:
+                raise ServiceException(msg_invalid_id)
+        except KeyError:
+            raise ServiceException(msg_invalid_id)
+        try:
+            r = urllib2.urlopen(
+                "https://api.vk.com/method/users.get?user_ids=%s&v=5.0" % user_id
+            )
+            raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+            user_data = json.loads(raw_data)
+            user_name = user_data['response'][0]['first_name']
+        except (urllib2.HTTPError, urllib2.URLError,
+                KeyError, ValueError, IndexError,):
+            pass
+        return user_id, user_name
+
+    def send_message(self, dict_greet):
+        parms = urlencode(dict_greet)
+        try:
+            r = urllib2.urlopen(
+                'https://api.vk.com/method/messages.send?%s' % parms
+            )
+        except (urllib2.HTTPError, urllib2.URLError,):
+            raise ServiceException(msg_failed_send)
+
+    def write_log(self, data, user_id, bot_settings):
+        if bot_settings.get('log_file'):
+            string = u"%s %s https://vk.com/id%s" % (
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                data['type'],
+                user_id,
+            )
+            if data['type'] == 'message_new':
+                try:
+                    string += u" %s" % data['object']['body']
+                except KeyError:
+                    pass
+            string += "\n"
+            string = string.encode('utf-8')
+            try:
+                f = open(bot_settings['log_file'], 'a+')
+                f.write(string)
+                f.close()
+            except IOError:
+                pass
+
+    def post(self, request, group):
+        content_type = 'text/plain'
+        message = 'ok'
+        msg_failed_send = "Failed to send message to the user"
+        data=request.DATA
+        if settings.DEBUG:
+            print "DEBUG: ..."
+            print data
+        try:
+            if not hasattr(settings, 'VK_BOT') or \
+                not settings.VK_BOT.get(group):
+                raise ServiceException(
+                    "No vk groups or no group '%s' defined." % group,
+                )
+            bot_settings = settings.VK_BOT[group]
+            data_secret = data.get('secret', '')
+            data_type = data.get('type', '')
+            secretKey = bot_settings.get('secretKey', '')
+
+            # проверяем secretKey
+            if data_secret != secretKey and data_type != 'confirmation':
+                raise ServiceException(
+                    "No 'secret' or invalid 'secret' in inbound data when type is not confirmation",
+                )
+
+            if data_type == 'confirmation':
+                message = bot_settings['confirmationToken']
+
+            elif data_type == 'message_new':
+                user_id, user_name = self.get_user_info(data)
+                msg_to_user = u"Ваше сообщение зарегистрировано!<br>" \
+                              u"Мы постараемся ответить в ближайшее время."
+                if user_name:
+                    msg_to_user = u"%s! %s" % (user_name, msg_to_user,)
+                msg_to_user = msg_to_user.encode('utf-8')
+                dict_greet = dict(
+                    message=msg_to_user,
+                    user_id=user_id,
+                    access_token=bot_settings['token'],
+                    v='5.0'
+                )
+                self.send_message(dict_greet)
+                self.write_log(data, user_id, bot_settings)
+
+            elif data_type == 'group_join':
+                user_id, user_name = self.get_user_info(data)
+                if bot_settings.get('msg_join'):
+                    msg_to_user = bot_settings['msg_join']
+                else:
+                    msg_to_user = u"Добро пожаловать в наше сообщество!"
+                if user_name:
+                    msg_to_user = u"%s! %s" % (user_name, msg_to_user,)
+                msg_to_user = msg_to_user.encode('utf-8')
+                dict_greet = dict(
+                    message=msg_to_user,
+                    user_id=user_id,
+                    access_token=bot_settings['token'],
+                    v='5.0'
+                )
+                self.send_message(dict_greet)
+                self.write_log(data, user_id, bot_settings)
+
+            elif data_type == 'group_leave':
+                user_id, user_name = self.get_user_info(data)
+                if bot_settings.get('msg_leave'):
+                    msg_to_user = bot_settings['msg_leave']
+                else:
+                    msg_to_user = u"Нам жаль прощаться с Вами. До новой встречи!"
+                if user_name:
+                    msg_to_user = u"%s! %s" % (user_name, msg_to_user,)
+                msg_to_user = msg_to_user.encode('utf-8')
+                dict_greet = dict(
+                    message=msg_to_user,
+                    user_id=user_id,
+                    access_token=bot_settings['token'],
+                    v='5.0'
+                )
+                self.send_message(dict_greet)
+                self.write_log(data, user_id, bot_settings)
+
+            status_code = 200
+        except ServiceException as excpt:
+            status_code = 400
+            message = excpt.message
+        return HttpResponse(message, content_type=content_type, status=status_code)
+
+api_vk_bot_handler = ApiVkBotHandlerView.as_view()

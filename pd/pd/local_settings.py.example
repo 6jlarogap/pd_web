@@ -105,3 +105,21 @@ CACHES = {
         }
     }
 }
+
+# Для CallBackApi Vkontakte
+
+VK_BOT = dict(
+    group1 = dict(
+        confirmationToken='004eec27',
+        token=u'Ваш ключ',
+        secretKey='testSecureKey',
+        log_file='/home/user/vk/testgroup.log',
+
+        # Перед msg_join, msg_leave подставляется
+        # "<first_name пользователя>! ", если таковое имеется
+        # ! Разделитель строк - не "\n", а "<br>"
+
+        msg_join=u"Добро пожаловать в Однополчане, Друг!",
+        msg_leave=u"Доброго пути, до встречи! Однополчане.",
+    ),
+)
