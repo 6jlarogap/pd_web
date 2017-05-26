@@ -114,5 +114,12 @@ VK_BOT = dict(
         token=u'Ваш ключ',
         secretKey='testSecureKey',
         log_file='/home/user/vk/testgroup.log',
+
+        # Перед msg_join, msg_leave подставляется
+        # "<first_name пользователя>! ", если таковое имеется
+        # ! Разделитель строк - не "\n", а "<br>"
+
+        msg_join=u"Добро пожаловать в Однополчане, Друг!",
+        msg_leave=u"Доброго пути, до встречи! Однополчане.",
     ),
 )
