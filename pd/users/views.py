@@ -4082,6 +4082,24 @@ class ApiVkBotHandlerView(APIView):
                 self.send_message(dict_greet)
                 self.write_log(data, user_id, bot_settings)
 
+            elif data_type == 'group_leave':
+                user_id, user_name = self.get_user_info(data)
+                if bot_settings.get('msg_leave'):
+                    msg_to_user = bot_settings['msg_leave']
+                else:
+                    msg_to_user = u"Нам жаль прощаться с Вами. До новой встречи!"
+                if user_name:
+                    msg_to_user = u"%s! %s" % (user_name, msg_to_user,)
+                msg_to_user = msg_to_user.encode('utf-8')
+                dict_greet = dict(
+                    message=msg_to_user,
+                    user_id=user_id,
+                    access_token=bot_settings['token'],
+                    v='5.0'
+                )
+                self.send_message(dict_greet)
+                self.write_log(data, user_id, bot_settings)
+
             status_code = 200
         except ServiceException as excpt:
             status_code = 400
