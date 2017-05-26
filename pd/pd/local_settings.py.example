@@ -113,5 +113,6 @@ VK_BOT = dict(
         confirmationToken='004eec27',
         token=u'Ваш ключ',
         secretKey='testSecureKey',
+        log_file='/home/user/vk/testgroup.log',
     ),
 )

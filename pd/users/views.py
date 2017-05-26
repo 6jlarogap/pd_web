@@ -3999,13 +3999,35 @@ class ApiVkBotHandlerView(APIView):
         except (urllib2.HTTPError, urllib2.URLError,):
             raise ServiceException(msg_failed_send)
 
+    def write_log(self, data, user_id, bot_settings):
+        if bot_settings.get('log_file'):
+            string = u"%s %s https://vk.com/id%s" % (
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                data['type'],
+                user_id,
+            )
+            if data['type'] == 'message_new':
+                try:
+                    string += u" %s" % data['object']['body']
+                except KeyError:
+                    pass
+            string += "\n"
+            string = string.encode('utf-8')
+            try:
+                f = open(bot_settings['log_file'], 'a+')
+                f.write(string)
+                f.close()
+            except IOError:
+                pass
+
     def post(self, request, group):
         content_type = 'text/plain'
         message = 'ok'
         msg_failed_send = "Failed to send message to the user"
         data=request.DATA
-        print "DEBUG: ..."
-        print data
+        if settings.DEBUG:
+            print "DEBUG: ..."
+            print data
         try:
             if not hasattr(settings, 'VK_BOT') or \
                 not settings.VK_BOT.get(group):
@@ -4040,11 +4062,12 @@ class ApiVkBotHandlerView(APIView):
                     v='5.0'
                 )
                 self.send_message(dict_greet)
+                self.write_log(data, user_id, bot_settings)
 
             elif data_type == 'group_join':
                 user_id, user_name = self.get_user_info(data)
                 if user_name:
-                    user_in_msg = u", %s" % user_in_msg
+                    user_in_msg = u", %s" % user_name
                 else:
                     user_in_msg = u''
                 msg_to_user = u"Добро пожаловать в наше сообщество%s!<br>" % user_in_msg
@@ -4058,6 +4081,7 @@ class ApiVkBotHandlerView(APIView):
                     v='5.0'
                 )
                 self.send_message(dict_greet)
+                self.write_log(data, user_id, bot_settings)
 
             status_code = 200
         except ServiceException as excpt:
