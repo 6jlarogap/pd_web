@@ -1592,6 +1592,13 @@ models.signals.post_delete.connect(log_delete, sender=PlacePhoto)
 models.signals.post_delete.connect(log_delete, sender=Area)
 models.signals.post_delete.connect(log_delete, sender=Burial)
 
+def update_burial_dt_modified(sender, instance, *args, **kwargs):
+    if hasattr(instance, 'burial') and instance.burial and instance.burial.pk:
+        Burial.objects.filter(pk=instance.burial.pk).update(dt_modified=datetime.datetime.now())
+
+models.signals.post_delete.connect(update_burial_dt_modified, sender=BurialComment)
+models.signals.post_save.connect(update_burial_dt_modified, sender=BurialComment)
+
 class Burial1(BaseModel):
     """
     Database View of Burial model, created or updated by ./manage.py create_burial_views yes
