@@ -18,7 +18,7 @@ urlpatterns = patterns('users.views',
     url(r'^api/settings/?$', 'api_settings', name='api_settings'),
 
     url(r'^api/settings/oauth_providers/?$', 'api_settings_oauth_providers', name='api_settings_oauth_providers'),
-    url(r'^api/settings/oauth_providers/(?P<provider>[A-Za-z0-9]+)$', 'api_settings_oauth_providers_delete',
+    url(r'^api/settings/oauth_providers/(?P<provider>[A-Za-z0-9]+)/?$', 'api_settings_oauth_providers_delete',
          name='api_settings_oauth_providers_delete'),
 
     url(r'^api/loru/places/?$', 'api_loru_places', name='api_loru_places'),
@@ -85,8 +85,8 @@ urlpatterns = patterns('users.views',
 
     url(r'^api/clients/(?P<token>[0-9a-f]+)/departments/?$', 'api_client_site_departments', name='api_client_site_departments'),
 
-    url(r'^api/cabinet/getcode?$', 'api_cabinet_getcode', name='api_cabinet_getcode'),
-    url(r'^api/cabinet/tokens?$', 'api_cabinet_tokens', name='api_cabinet_tokens'),
+    url(r'^api/cabinet/getcode/?$', 'api_cabinet_getcode', name='api_cabinet_getcode'),
+    url(r'^api/cabinet/tokens/?$', 'api_cabinet_tokens', name='api_cabinet_tokens'),
     url(r'^api/cabinet/users/(?P<pk>\d+)/?$', 'api_cabinet_users', name='api_cabinet_users'),
 
     url(r'^api/cabinet/users/(?P<pk>\d+)/oauth-providers/?$', 'api_cabinet_oauth', name='api_cabinet_oauth'),
@@ -112,6 +112,8 @@ urlpatterns = patterns('users.views',
     url(r'^api/videos/(?P<yid>\S+)/$', 'api_video_detail', name='api_video_detail'),
 
     url(r'^thanks/?$', 'thanks', name='thanks'),
+
+    url(r'^api/vk/bot/(?P<group>\w+)/handler/?$', 'api_vk_bot_handler', name='api_vk_bot_handler'),
 
     url(r'^autocomplete/org/$', 'autocomplete_org', name='autocomplete_org'),
     url(r'^autocomplete/loru_in_burials/$', 'autocomplete_loru_in_burials', name='autocomplete_loru_in_burials'),
