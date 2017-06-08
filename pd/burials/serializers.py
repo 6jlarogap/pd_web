@@ -101,7 +101,7 @@ class PlaceTitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Place
-        fields = ('id', 'title')
+        fields = ('id', 'title', 'row')
 
 class AreaPurposeSerializer(serializers.ModelSerializer):
     class Meta:
