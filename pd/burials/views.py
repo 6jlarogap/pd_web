@@ -1635,11 +1635,19 @@ class ApiOmsCemeteriesView(APIView):
     permission_classes = (PermitIfUgh,)
 
     def get(self, request):
+        """
+        Получить список кладбищ, доступных для правки пользователю, или все кладбища
+        организации
+
+        Если есть get параметр all (...?all=1), то отдать все кладбища
+        """
+        if request.GET.get('all'):
+            cemeteries = Cemetery.objects.filter(ugh=request.user.profile.org)
+        else:
+            cemeteries = Cemetery.editable_ugh_cemeteries(user=request.user)
         return Response(
             status=200,
-            data=[ CemeteryTitleSerializer(cemetery).data \
-                   for cemetery in Cemetery.editable_ugh_cemeteries(user=request.user)
-            ]
+            data=[CemeteryTitleSerializer(cemetery).data for cemetery in cemeteries]
         )
 
 api_oms_cemeteries = ApiOmsCemeteriesView.as_view()
