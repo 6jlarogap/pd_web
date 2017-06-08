@@ -79,6 +79,9 @@ urlpatterns = patterns('burials.views',
         r'^api/oms/cemeteries/(?P<cemetery_pk>\d+)/areas/(?P<area_pk>\d+)/places/?$',
         'api_oms_areas_places', name='api_oms_areas_places'),
 
+    url(r'^api/oms/area/(?P<pk>\d+)/msaccess/sync/?$', 'api_oms_area_msaccess_sync',
+        name='api_oms_area_msaccess_sync'),
+
     url(r'^api/oms/places/bounds/?$', 'api_oms_places_bounds', name='api_oms_places_bounds'),
     url(r'^api/oms/(?P<ugh_id>\d+)/places/clusters/?$', 'api_oms_places_clusters', name='api_oms_places_clusters'),
 
