@@ -1673,15 +1673,15 @@ class ApiOmsAreaMsAccessSync(APIView):
             ).iterator():
             burial_comments = u""
             for comment in BurialComment.objects.filter(burial=b).order_by('dt_created'):
-                burial_comments += comment.dt_created.strftime("%Y-%m-%d") + "\n"
-                burial_comments += comment.comment + "\n"
+                burial_comments += comment.dt_created.strftime("%Y-%m-%d") + "\r\n"
+                burial_comments += comment.comment + "\r\n"
             data.append(dict(
                 cemetery=b.cemetery.name,
                 area=b.area.name,
                 row=b.row,
                 place=b.place_number,
-                grave_number=b.grave_number,
-                deadman = b.deadman and b.deadman.full_human_name() or '',
+                grave_number=int(b.grave_number),
+                deadman=b.deadman and b.deadman.full_human_name() or '',
                 fact_date=b.fact_date and b.fact_date.str_safe() or '',
                 deadman_dob=b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or '',
                 deadman_dod=b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or '',
@@ -1689,14 +1689,14 @@ class ApiOmsAreaMsAccessSync(APIView):
                 burial_container=b.get_burial_container_display() or '',
                 burial_type=b.get_burial_type_display() or '',
                 applicant=b.applicant and b.applicant.full_human_name() or '',
-                applicant_phones = b.applicant and b.applicant.phones or '',
-                allicant_address = b.applicant and b.applicant.address and b.applicant.address.short() or '',
-                deadman_address = b.deadman and b.deadman.address and b.deadman.address.short() or '',
-                burial_id=b.pk,
+                applicant_phones=b.applicant and b.applicant.phones or '',
+                applicant_address=b.applicant and b.applicant.address and b.applicant.address.short() or '',
+                deadman_address=b.deadman and b.deadman.address and b.deadman.address.short() or '',
+                burial_id=int(b.pk),
                 dt_modified=int(b.dt_modified.strftime("%s")),
-                cemetery_id=b.cemetery.pk,
-                area_id=b.area.pk,
-                place_id=b.place.pk,
+                cemetery_id=int(b.cemetery.pk),
+                area_id=int(b.area.pk),
+                place_id=int(b.place.pk),
             ))
         return Response(status=200, data=data)
 
