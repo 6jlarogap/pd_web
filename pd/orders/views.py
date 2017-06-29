@@ -1453,6 +1453,14 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
     def get(self, request):
         qs = Q(loru=request.user.profile.org)
         qs &= self.product_category_qs()
+        is_archived = request.GET.get('filter[is_archived]')
+        if is_archived:
+            try:
+                is_archived = bool(int(is_archived))
+            except ValueError:
+                is_archived = None
+        if is_archived is not None:
+            qs &= Q(is_archived=is_archived)
 
         data = [ ProductEditSerializer(p, context=dict(request=request)).data \
                 for p in Product.objects.filter(qs)
