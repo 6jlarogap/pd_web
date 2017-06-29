@@ -90,6 +90,8 @@ urlpatterns = patterns('burials.views',
     url(
         r'^api/clients/(?P<ugh_token>[0-9a-f]+)/burials-places/(?P<place_pk>\d+)/photos/?$',
         'api_client_site_placephotos', name='api_client_site_placephotos'),
+    url(r'^api/clients/(?P<token>[0-9a-f]+)/burials-places/(?P<pk>\d+)/?$',
+        'api_client_site_places_id', name='api_client_site_places_id'),
 
     url(r'^burials/doubles/$', 'burials_doubles', name='burials_doubles'),
     url(r'^burials/double/$', 'burials_double', name='burials_double'),
