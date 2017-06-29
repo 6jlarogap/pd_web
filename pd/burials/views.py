@@ -2098,6 +2098,24 @@ class ApiClientSitePlacesView(ApiClientSiteMixin, APIView):
 
 api_client_site_places = ApiClientSitePlacesView.as_view()
 
+class ApiClientSitePlacesIdView(ApiClientSiteMixin, APIView):
+
+    def get(self, request, token, pk):
+        ugh = self.get_org(token)
+        place = get_object_or_404(
+            Place,
+            pk=pk,
+            cemetery__ugh=ugh
+        )
+        return Response(
+            status=200,
+            data=ApiClientSitePlacesSerializer(
+                place,
+                context=dict(request=request)).data
+            )
+
+api_client_site_places_id = ApiClientSitePlacesIdView.as_view()
+
 class ApiClientSitePlacePhotosView(ApiClientSiteMixin, APIView):
 
     def get(self, request, ugh_token, place_pk):
