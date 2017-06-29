@@ -167,37 +167,8 @@ def main():
                 area['name'],
                 area['name'],
             )).commit()
-            log_("    Check for renamed places/rows at the area")
-            try:
-                rc, data = request_json(
-                    path='/api/oms/cemeteries/%s/areas/%s/places' % (
-                        cemetery_dict['id'],
-                        area['id'],
-                    ),
-                    method = 'GET',
-                    token=token,
-                )
-            except (TypeError, KeyError,):
-                scram(code=1, message="ERROR: Failed to get places!")
-            for place in data:
-                cursor.execute(r"""
-                    UPDATE
-                        burials
-                    SET
-                        place = ?, row = ?
-                    WHERE
-                        place_id = ? AND
-                        (place <> ? OR (place IS NULL AND ? <> '') OR row <> ? OR (row IS NULL AND ? <> ''))
-                """, (
-                    place['title'],
-                    place['row'],
-                    place['id'],
-                    place['title'],
-                    place['title'],
-                    place['row'],
-                    place['row'],
-                )).commit()
-            log_("     %s places checked" % len(data))
+# -- here to put sync-1.include --------------------
+# --------------------------------------------------
 
         cemetery_dict['areas'] = areas
         cemeteries_offline.append(cemetery_dict)
@@ -237,6 +208,7 @@ def main():
                 log_("   Sync'ing local db by online data since %s" % (
                     datetime.datetime.fromtimestamp(dt_modified)
                 ))
+                dt_modified += 1
             else:
                 log_("   No data for the area in local db. Fetching all data for it")
             rc, data = request_json(
@@ -248,8 +220,144 @@ def main():
                 token=token,
             )
             for b in data:
-                for k in b:
-                    log_(k, ":", b[k])
+                #for k in b:
+                    #log_(k, ":", b[k])
+                cursor.execute(r"""
+                    SELECT
+                        burial_id
+                    FROM
+                        burials
+                    WHERE
+                        burial_id = ?
+                """, (
+                    b['burial_id'],
+                ))
+                if cursor.rowcount and cursor.rowcount > 0:
+                    cursor.execute(r"""
+                        UPDATE
+                            burials
+                        SET
+                            cemetery = ?,
+                            area = ?,
+                            row = ?,
+                            place = ?,
+                            grave_number = ?,
+                            deadman = ?,
+                            fact_date = ?,
+                            deadman_dob = ?,
+                            deadman_dod = ?,
+                            burial_comments = ?,
+                            burial_container = ?,
+                            burial_type = ?,
+                            applicant = ?,
+                            applicant_phones = ?,
+                            applicant_address = ?,
+                            deadman_address=?,
+                            dt_modified = ?,
+                            cemetery_id = ?,
+                            area_id = ?,
+                            place_id = ?
+                        WHERE
+                            burial_id = ?
+                    """, (
+                        b['cemetery'],
+                        b['area'],
+                        b['row'],
+                        b['place'],
+                        b['grave_number'],
+                        b['deadman'],
+                        b['fact_date'],
+                        b['deadman_dob'],
+                        b['deadman_dod'],
+                        b['burial_comments'],
+                        b['burial_container'],
+                        b['burial_type'],
+                        b['applicant'],
+                        b['applicant_phones'],
+                        b['applicant_address'],
+                        b['deadman_address'],
+                        b['dt_modified'],
+                        b['cemetery_id'],
+                        b['area_id'],
+                        b['place_id'],
+                        b['burial_id'],
+                    )).commit()
+                    log_("UPDATEd burial_id: %s " % b['burial_id'])
+                else:
+                    cursor.execute(r"""
+                        INSERT INTO
+                            burials
+                        (
+                            cemetery,
+                            area,
+                            row,
+                            place,
+                            grave_number,
+                            deadman,
+                            fact_date,
+                            deadman_dob,
+                            deadman_dod,
+                            burial_comments,
+                            burial_container,
+                            burial_type,
+                            applicant,
+                            applicant_phones,
+                            applicant_address,
+                            deadman_address,
+                            dt_modified,
+                            cemetery_id,
+                            area_id,
+                            place_id,
+                            burial_id
+                        )
+                        VALUES
+                        (
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?
+                        )
+                    """, (
+                        b['cemetery'],
+                        b['area'],
+                        b['row'],
+                        b['place'],
+                        b['grave_number'],
+                        b['deadman'],
+                        b['fact_date'],
+                        b['deadman_dob'],
+                        b['deadman_dod'],
+                        b['burial_comments'],
+                        b['burial_container'],
+                        b['burial_type'],
+                        b['applicant'],
+                        b['applicant_phones'],
+                        b['applicant_address'],
+                        b['deadman_address'],
+                        b['dt_modified'],
+                        b['cemetery_id'],
+                        b['area_id'],
+                        b['place_id'],
+                        b['burial_id'],
+                    )).commit()
+                    log_("INSERTed burial_id: %s " % b['burial_id'])
 
     log_(" OK")
 
