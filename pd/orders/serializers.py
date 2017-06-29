@@ -150,6 +150,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
     measurementUnit = Field(source='measure')
     isDefault = Field(source='default')
     stockable = Field(source='stockable')
+    isArchived = Field(source='is_archived')
     retailPrice = Field(source='price')
     currency = serializers.Field(source='loru.currency.code')
     tradePrice = Field(source='price_wholesale')
@@ -163,7 +164,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             'id', 'name', 'description', 'sku',
             'typeId', 'typeName',
             'categoryId', 'categoryName',
-            'measurementUnit', 'isDefault', 'stockable',
+            'measurementUnit', 'isDefault', 'stockable', 'isArchived',
             'retailPrice', 'tradePrice', 'currency',
             'isShownInRetailCatalog', 'isShownInTradeCatalog',
             'imageUrl',
@@ -209,6 +210,13 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
                 stockable = instance.stockable
             else:
                 stockable = True
+
+        is_archived = str_to_bool_or_None(data.get('isArchived'))
+        if is_archived is None:
+            if instance:
+                is_archived = instance.is_archived
+            else:
+                is_archived = False
         fields_got = dict(
             loru=self.context['request'].user.profile.org if not instance else None,
             name=data.get('name'),
@@ -223,6 +231,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             sku=data.get('sku'),
             is_public_catalog=is_public_catalog,
             is_wholesale=is_wholesale,
+            is_archived=is_archived,
             photo=image if image else None,
         )
         fields = dict()
