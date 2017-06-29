@@ -37,7 +37,7 @@ from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, 
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
 from burials.burials_views import *
-from logs.models import write_log, log_object, prepare_m2m_log, compare_obj, LogOperation
+from logs.models import write_log, log_object, prepare_m2m_log, compare_obj, LogOperation, DeleteLog
 from django.contrib.auth.models import User
 from users.models import Profile, Org, CustomerProfile, PermitIfUgh, PermitIfTrade, Role, \
                          is_loru_user, is_ugh_user
@@ -1671,10 +1671,22 @@ class ApiOmsAreaMsAccessSync(APIView):
         for b in Burial.objects.filter(q).select_related(
                 'cemetery', 'area', 'deadman', 'applicant', 'applicant__address',
             ).iterator():
+
             burial_comments = u""
             for comment in BurialComment.objects.filter(burial=b).order_by('dt_created'):
                 burial_comments += comment.dt_created.strftime("%Y-%m-%d") + "\r\n"
                 burial_comments += comment.comment + "\r\n"
+
+            applicant = b.applicant and b.applicant.full_human_name() or ''
+            applicant_phones = b.applicant and b.applicant.phones or ''
+            if applicant or applicant_phones:
+                applicant = u"%s\r\n%s" % (applicant, applicant_phones,)
+
+            burial_type = b.get_burial_type_display() or ''
+            burial_container = b.get_burial_container_display() or ''
+            if burial_type or burial_container:
+                burial_type = u"%s\r\n%s" % (burial_type, burial_container)
+
             data.append(dict(
                 cemetery=b.cemetery.name,
                 area=b.area.name,
@@ -1686,10 +1698,8 @@ class ApiOmsAreaMsAccessSync(APIView):
                 deadman_dob=b.deadman and b.deadman.birth_date and b.deadman.birth_date.str_safe() or '',
                 deadman_dod=b.deadman and b.deadman.death_date and b.deadman.death_date.str_safe() or '',
                 burial_comments=burial_comments,
-                burial_container=b.get_burial_container_display() or '',
-                burial_type=b.get_burial_type_display() or '',
-                applicant=b.applicant and b.applicant.full_human_name() or '',
-                applicant_phones=b.applicant and b.applicant.phones or '',
+                burial_type=burial_type,
+                applicant=applicant,
                 applicant_address=b.applicant and b.applicant.address and b.applicant.address.short() or '',
                 deadman_address=b.deadman and b.deadman.address and b.deadman.address.short() or '',
                 burial_id=int(b.pk),
@@ -1698,6 +1708,20 @@ class ApiOmsAreaMsAccessSync(APIView):
                 area_id=int(b.area.pk),
                 place_id=int(b.place.pk),
             ))
+        if dt_modified:
+            q = Q(
+                annulated=True,
+                status=Burial.STATUS_CLOSED,
+                area=area,
+                dt_modified__gte=dt_modified
+            )
+            for b in Burial.objects.filter(q):
+                data.append({
+                    'pk': int(b.pk),
+                    '_deleted': True,
+
+                })
+            data += DeleteLog.get_deleted(dt_modified, Burial, [area.cemetery.pk])
         return Response(status=200, data=data)
 
 api_oms_area_msaccess_sync = ApiOmsAreaMsAccessSync.as_view()

@@ -32,8 +32,8 @@ LAST_LOG = 'sync_last.log'
 # Имя пользователя и пароль на сервере. Завели служебного пользователя
 # service-minsk, править его наверняка не надо.
 #
-#USERNAME = 'service-minsk'
-#PASSWORD = 'SECRET'
+USERNAME = 'service-minsk'
+PASSWORD = 'SECRET'
 
 MS_ACCESS_DBFILE = 'burials.mdb'
 
