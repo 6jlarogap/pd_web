@@ -33,9 +33,7 @@ LAST_LOG = 'sync_last.log'
 # service-minsk, править его наверняка не надо.
 #
 #USERNAME = 'service-minsk'
-#PASSWORD = '82o0knPv'
-USERNAME = 'push'
-PASSWORD = '12345'
+#PASSWORD = 'SECRET'
 
 MS_ACCESS_DBFILE = 'burials.mdb'
 
