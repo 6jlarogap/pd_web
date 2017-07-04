@@ -2075,7 +2075,7 @@ class ApiClientSitePlacesView(ApiClientSiteMixin, APIView):
             except ValueError:
                 pass
             else:
-                q = Q(cemetery__ugh=ugh)
+                q = Q(cemetery__ugh=ugh, burial__annulated=False)
                 fio = [re_search(f) for f in query.split()]
                 if len(fio) > 2:
                     q &= Q(burial__deadman__middle_name__iregex=fio[2])
