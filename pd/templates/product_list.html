@@ -11,6 +11,7 @@
             <th>{% trans "Категория" %}</th>
             <th>{% trans "Ед. изм." %}</th>
             <th>{% trans "По умолчанию" %}</th>
+            <th>{% trans "Архивный" %}</th>
             <th>{% trans "Цена розничная" %}</th>
             <th>{% trans "Цена оптовая" %}</th>
             <th></th>
@@ -24,6 +25,7 @@
                 <td>{{ c.productcategory }}</td>
                 <td>{{ c.measure }}</td>
                 <td>{{ c.default|yesno }}</td>
+                <td>{{ c.is_archived|yesno }}</td>
                 <td>{{ c.price }}</td>
                 <td>{{ c.price_wholesale }}</td>
                 <td>
