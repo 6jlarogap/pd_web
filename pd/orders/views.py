@@ -943,7 +943,7 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     paginate_by = None
 
     def get_queryset(self):
-        qs = Q()
+        qs = Q(is_archived=False)
 
         store_ids = self.request.GET.getlist('filter[supplierStore]')
         while store_ids.count(u''):
@@ -1122,7 +1122,7 @@ class UghPublishedProductsViewSet(viewsets.ViewSet):
     def list(self, request):
         data=[]
         catalog_org_pk = Org.get_catalog_org_pk()
-        for p in Product.objects.filter(loru=request.user.profile.org).order_by('pk'):
+        for p in Product.objects.filter(loru=request.user.profile.org, is_archived=False).order_by('pk'):
             data_p = {
                 'id': p.pk,
                 'name': p.name,
