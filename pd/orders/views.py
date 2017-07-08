@@ -434,7 +434,7 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
             self.object.burial = self.burial
         self.object.save()
 
-        for p in Product.objects.filter(loru=self.request.user.profile.org, default=True):
+        for p in Product.objects.filter(loru=self.request.user.profile.org, default=True, is_archived=False):
             OrderItem.objects.create(order=self.object, product=p)
 
         write_log(self.request, self.object, _(u'Заказ сохранен'))
