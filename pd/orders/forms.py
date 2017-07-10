@@ -226,6 +226,7 @@ class OrderItemForm(forms.ModelForm):
         
     def __init__(self, *args, **kwargs):
         super(OrderItemForm, self).__init__(*args, **kwargs)
+        self.instance_ = kwargs.get('instance')
         self.fields['cost'].required = False
 
     #def clean(self):
@@ -241,12 +242,25 @@ class OrderItemForm(forms.ModelForm):
         return self.cleaned_data
 
 class BaseOrderItemFormset(BaseInlineFormSet):
+
     def __init__(self, request, *args, **kwargs):
         super(BaseOrderItemFormset, self).__init__(*args, **kwargs)
+        q_loru = Q(loru=request.user.profile.org)
+        q_actual = Q(is_archived=False)
         for f in self.forms:
-            f.fields['product'].queryset = Product.objects.filter(loru=request.user.profile.org)
+            if request.method == 'GET':
+                if hasattr(f, 'instance_') and f.instance_ and f.instance_.pk and f.instance_.product.is_archived:
+                    # Если попался архивный товар в заказе, показать его
+                    q = Q(pk=f.instance_.product.pk) | q_loru & q_actual
+                else:
+                    q = q_loru & q_actual
+            else:
+                # в POST не передается instance. Чтоб можно было сохранить
+                # архивный продукт в заказе:
+                q = q_loru
+            f.fields['product'].queryset = Product.objects.filter(q)
             f.formset = self
-            
+
     #def get_same_product(self, form):
         #p = form.cleaned_data['product']
 
