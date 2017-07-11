@@ -197,9 +197,9 @@ def main():
                 FROM
                     burials
                 WHERE
-                    area = ?
+                    area = ? and cemetery = ?
             """, (
-                area['name'],
+                area['name'], cemetery['name'],
             ))
             if cursor.rowcount:
                 sql_result = cursor.fetchone()

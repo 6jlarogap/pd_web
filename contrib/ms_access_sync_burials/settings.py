@@ -16,7 +16,15 @@ ODBC_DRIVER = 'Microsoft Access Driver (*.mdb, *.accdb)'
 # Кладбища, по которым собирается локальная копия
 #
 CEMETERIES = (
-    'Западное',
+  'Брилевское',
+  'Дворище',
+  'Кальварийское',
+  'Козыревское',
+  'Крупцы',
+  'Масюковщина',
+  'Петровщина',
+  'Сухаревское',
+  'Черниговское',
 )
 
 # -----------------------------------------------------------------------------------
@@ -37,9 +45,9 @@ PASSWORD = 'SECRET'
 
 MS_ACCESS_DBFILE = 'burials.mdb'
 
-ONLINE_URL = 'http://sev12.bsuir.by:8000'
-# ONLINE_URL = 'https://register.ritual-minsk.by'
+# ONLINE_URL = 'http://sev12.bsuir.by:8000'
+ONLINE_URL = 'https://register.ritual-minsk.by'
 
 # Internet connection timeout
 #
-ONLINE_TIMEOUT = 20
+ONLINE_TIMEOUT = 60
