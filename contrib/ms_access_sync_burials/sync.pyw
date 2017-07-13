@@ -167,8 +167,37 @@ def main():
                 area['name'],
                 area['name'],
             )).commit()
-# -- here to put sync-1.include --------------------
-# --------------------------------------------------
+            log_("    Check for renamed places/rows at the area")
+            try:
+                rc, data = request_json(
+                    path='/api/oms/cemeteries/%s/areas/%s/places' % (
+                        cemetery_dict['id'],
+                        area['id'],
+                    ),
+                    method = 'GET',
+                    token=token,
+                )
+            except (TypeError, KeyError,):
+                scram(code=1, message="ERROR: Failed to get places!")
+            for place in data:
+                cursor.execute(r"""
+                    UPDATE
+                        burials
+                    SET
+                        place = ?, row = ?
+                    WHERE
+                        place_id = ? AND
+                        (place <> ? OR (place IS NULL AND ? <> '') OR row <> ? OR (row IS NULL AND ? <> ''))
+                """, (
+                    place['title'],
+                    place['row'],
+                    place['id'],
+                    place['title'],
+                    place['title'],
+                    place['row'],
+                    place['row'],
+                )).commit()
+            log_("     %s places checked" % len(data))
 
         cemetery_dict['areas'] = areas
         cemeteries_offline.append(cemetery_dict)
@@ -223,15 +252,29 @@ def main():
                 #for k in b:
                     #log_(k, ":", b[k])
                 if b.get('_deleted') and b.get('pk'):
+                    # В журнале удаленных собираются burial_id's
+                    # по кладбищу. И эти данные поступают на каждый участок,
+                    # а удаленные захоронения могут быть с другого участка
                     cursor.execute(r"""
-                        DELETE FROM
+                        SELECT
+                            burial_id
+                        FROM
                             burials
                         WHERE
                             burial_id = ?
                     """, (
                         b['pk'],
-                    )).commit()
-                    log_("DELETEd burial_id: %s (if it exists)" % b['pk'])
+                    ))
+                    if cursor.fetchone():
+                        cursor.execute(r"""
+                            DELETE FROM
+                                burials
+                            WHERE
+                                burial_id = ?
+                        """, (
+                            b['pk'],
+                        )).commit()
+                        log_("DELETEd burial_id: %s" % b['pk'])
                 else:
                     cursor.execute(r"""
                         SELECT
