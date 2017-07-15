@@ -1670,7 +1670,7 @@ class ApiOmsAreaMsAccessSync(APIView):
             # Get deleted and annulated to data
         for b in Burial.objects.filter(q).select_related(
                 'cemetery', 'area', 'deadman', 'applicant', 'applicant__address',
-            ).iterator():
+            ).order_by('dt_modified').iterator():
 
             burial_comments = u""
             for comment in BurialComment.objects.filter(burial=b).order_by('dt_created'):

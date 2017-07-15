@@ -50,4 +50,4 @@ ONLINE_URL = 'https://register.ritual-minsk.by'
 
 # Internet connection timeout
 #
-ONLINE_TIMEOUT = 60
+ONLINE_TIMEOUT = 300
