@@ -20,29 +20,44 @@
 #       settings.py. Для того, чтобы всякий раз на разных
 #       "кластерах" кладбищ не вводить для каждого "кластера"
 #       имя и пароль, завели служебного пользователя с паролем
+#   *   В offline базе находим время последней модификации
+#       по всей локально базе. Т.е. есть ли что-то изменилось
+#       в локальной базе.
 #   *   Идем в online source, получаем список всех кладбищ
 #       организации (ид и названия).
 #       По каждому кладбищу из settings.CEMETERIES
 #       -   Проверяем, чтобы указанные в settings.CEMETERIES
 #           входили в состав принятых из online source.
-#       -   Вдруг переименовали кладбище в online source,
+#       -   Если в локальной базе что-то было до синхронизации.
+#           Вдруг переименовали кладбище в online source,
 #           переименовали его и здесь, в settings.py, а в
-#           локальной б.д записи по этому кладбищу осталисть без
+#           локальной б.д записи по этому кладбищу остались без
 #           изменений. Производим переименование.
-#       -   Получаем список участков кладбища. Проверяем по
-#           локальной базе на то, что на сервере какие-то участки
-#           переименовали.
+#       -   Получаем список участков кладбища.
+#       -   Если в локальной базе что-то было до синхронизации.
+#           Проверяем по локальной базе на то, что на сервере
+#           какие-то участки переименовали.
+#       TODO
+#           Проверять только те участки, которые были,
+#           возможно, переименованы: не все участки,
+#           а только те, которые изменялись после
+#           последней синхронизации по участку
 #   *   Удаляем из ms access db все записи, которые не относятся
 #       к кладбищам из settings.CEMETERIES
 #       NB: можно было бы в settings.py не хранить список кладбищ,
 #       но пользователь может уйти с этого списка кладбищ
 #       на другой список, в результате алгоритм загрузил бы
 #       данные по другому списку кладбищ
-#   *   По каждому участку из считанных в online source:
+#   *   По каждому участку из считанных в online source кладбищ:
 #       -   Находим время последней синхронизации в локальной
 #           б.д.
-#   *   по каждому из кладбищ выполняем запрос, получая данные
-#       по захоронениям, которые
+#       -   Если это время ненулевое, т.е. ранее была синхронизация,
+#           пусть даже и незаконченная, по участку, считываем из
+#           online список мест участка, измененных после того
+#           времени. Если какое-то из мест (ряд/название)
+#           было переименовано в online, здесь же в
+#           offline оно тоже будет переименовано
+#       -   получаем данные по захоронениям, которые
 #       - a) удалены со времени последней синхронизации.
 #            Такие данные выдаются с сервера, если время последней
 #            синхронизации (utc timestamp, секунд, прошедших с
@@ -87,6 +102,24 @@ def main():
         scram(1, "ERROR: Failed to log in to online source")
     log_(" OK")
 
+    log_('Offline source: get max_dt_modified of all the records')
+    max_dt_modified = 0
+    cursor.execute(r"""
+        SELECT
+            Max(dt_modified) as dt_sync
+        FROM
+            burials
+    """, ())
+    if cursor.rowcount:
+        sql_result = cursor.fetchone()
+        max_dt_modified = sql_result['dt_sync'] or 0
+    if max_dt_modified:
+        log_(" : %s" % (
+            datetime.datetime.fromtimestamp(max_dt_modified)
+        ))
+    else:
+        log_(" : no records in offline source; this is the first sync")
+
     log_('Online source: get all cemeteries')
     rc, data = request_json(
         path='/api/oms/cemeteries?all=1',
@@ -114,24 +147,26 @@ def main():
             'areas': None
         }
         log_(" %s" % cemetery_name)
-        log_("  Rename records of cemetery_id==%s to name='%s' if necessary" % (
-            cemetery_dict['id'],
-            cemetery_name,
-        ))
-        cursor.execute(r"""
-            UPDATE
-                burials
-            SET
-                cemetery = ?
-            WHERE
-                cemetery_id = ? AND
-                (cemetery <> ? OR (cemetery IS NULL AND ? <> ''))
-        """, (
-            cemetery_name,
-            cemetery_dict['id'],
-            cemetery_name,
-            cemetery_name,
-        )).commit()
+        if max_dt_modified:
+            log_("  Rename records of cemetery_id==%s to name='%s' if necessary" % (
+                cemetery_dict['id'],
+                cemetery_name,
+            ))
+            cursor.execute(r"""
+                UPDATE
+                    burials
+                SET
+                    cemetery = ?
+                WHERE
+                    cemetery_id = ? AND
+                    (cemetery <> ? OR (cemetery IS NULL AND ? <> ''))
+            """, (
+                cemetery_name,
+                cemetery_dict['id'],
+                cemetery_name,
+                cemetery_name,
+            )).commit()
+
         log_("  Get all areas")
         rc, data = request_json(
             path='/api/oms/cemeteries/%s/areas' % cemetery_dict['id'],
@@ -148,40 +183,41 @@ def main():
                 })
             except (TypeError, KeyError,):
                 scram(code=1, message="ERROR: Failed to get areas!")
-        for area in areas:
-            log_("   Rename records of area_id==%s to name='%s' if necessary" % (
-                area['id'],
-                area['name'],
-            ))
-            cursor.execute(r"""
-                UPDATE
-                    burials
-                SET
-                    area = ?
-                WHERE
-                    area_id = ? AND
-                    (area <> ? OR (area IS NULL and ? <> ''))
-            """, (
-                area['name'],
-                area['id'],
-                area['name'],
-                area['name'],
-            )).commit()
-# -- here to put sync-1.include --------------------
-# --------------------------------------------------
+
+        if max_dt_modified:
+            for area in areas:
+                log_("   Rename records of area_id==%s to name='%s' if necessary" % (
+                    area['id'],
+                    area['name'],
+                ))
+                cursor.execute(r"""
+                    UPDATE
+                        burials
+                    SET
+                        area = ?
+                    WHERE
+                        area_id = ? AND
+                        (area <> ? OR (area IS NULL and ? <> ''))
+                """, (
+                    area['name'],
+                    area['id'],
+                    area['name'],
+                    area['name'],
+                )).commit()
 
         cemetery_dict['areas'] = areas
         cemeteries_offline.append(cemetery_dict)
 
-    cemeteries_offline_str = ", ".join([c for c in settings.CEMETERIES])
-    log_('Local DB: Remove other cemeteries than:')
-    log_("", cemeteries_offline_str)
-    cemeteries_offline_sql_str = ", ".join(["?" for c in settings.CEMETERIES])
-    sql_str = "DELETE FROM [burials] WHERE cemetery NOT IN (%s)" % (
-       cemeteries_offline_sql_str
-    )
-    cursor.execute(sql_str, settings.CEMETERIES).commit()
-    log_(" OK. %s record(s) removed" % cursor.rowcount)
+    if max_dt_modified:
+        cemeteries_offline_str = ", ".join([c for c in settings.CEMETERIES])
+        log_('Local DB: Remove other cemeteries than:')
+        log_("", cemeteries_offline_str)
+        cemeteries_offline_sql_str = ", ".join(["?" for c in settings.CEMETERIES])
+        sql_str = "DELETE FROM [burials] WHERE cemetery NOT IN (%s)" % (
+            cemeteries_offline_sql_str
+        )
+        cursor.execute(sql_str, settings.CEMETERIES).commit()
+        log_(" OK. %s record(s) removed" % cursor.rowcount)
 
     log_('Local DB: Look for last dt_modified per burials in every area')
     log_('Online source: get deleted and new/modified burials')
@@ -197,9 +233,9 @@ def main():
                 FROM
                     burials
                 WHERE
-                    area = ?
+                    area = ? and cemetery = ?
             """, (
-                area['name'],
+                area['name'], cemetery['name'],
             ))
             if cursor.rowcount:
                 sql_result = cursor.fetchone()
@@ -209,8 +245,45 @@ def main():
                     datetime.datetime.fromtimestamp(dt_modified)
                 ))
                 dt_modified += 1
+
+                log_("     Check for renamed places/rows at the area after %s" % (
+                    datetime.datetime.fromtimestamp(dt_modified)
+                ))
+                try:
+                    rc, data = request_json(
+                        path='/api/oms/cemeteries/%s/areas/%s/places?dt_modified=%s' % (
+                            cemetery['id'],
+                            area['id'],
+                            dt_modified,
+                        ),
+                        method = 'GET',
+                        token=token,
+                    )
+                except (TypeError, KeyError,):
+                    scram(code=1, message="ERROR: Failed to get places!")
+                for place in data:
+                    cursor.execute(r"""
+                        UPDATE
+                            burials
+                        SET
+                            place = ?, row = ?
+                        WHERE
+                            place_id = ? AND
+                            (place <> ? OR (place IS NULL AND ? <> '') OR row <> ? OR (row IS NULL AND ? <> ''))
+                    """, (
+                        place['title'],
+                        place['row'],
+                        place['id'],
+                        place['title'],
+                        place['title'],
+                        place['row'],
+                        place['row'],
+                    )).commit()
+                log_("      %s places checked" % len(data))
+
             else:
                 log_("   No data for the area in local db. Fetching all data for it")
+
             rc, data = request_json(
                 path='/api/oms/area/%s/msaccess/sync?dt_modified=%s' % (
                     area['id'],
@@ -223,15 +296,29 @@ def main():
                 #for k in b:
                     #log_(k, ":", b[k])
                 if b.get('_deleted') and b.get('pk'):
+                    # В журнале удаленных собираются burial_id's
+                    # по кладбищу. И эти данные поступают на каждый участок,
+                    # а удаленные захоронения могут быть с другого участка
                     cursor.execute(r"""
-                        DELETE FROM
+                        SELECT
+                            burial_id
+                        FROM
                             burials
                         WHERE
                             burial_id = ?
                     """, (
                         b['pk'],
-                    )).commit()
-                    log_("DELETEd burial_id: %s (if it exists)" % b['pk'])
+                    ))
+                    if cursor.fetchone():
+                        cursor.execute(r"""
+                            DELETE FROM
+                                burials
+                            WHERE
+                                burial_id = ?
+                        """, (
+                            b['pk'],
+                        )).commit()
+                        log_("DELETEd burial_id: %s" % b['pk'])
                 else:
                     cursor.execute(r"""
                         SELECT

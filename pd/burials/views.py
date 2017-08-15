@@ -1670,7 +1670,7 @@ class ApiOmsAreaMsAccessSync(APIView):
             # Get deleted and annulated to data
         for b in Burial.objects.filter(q).select_related(
                 'cemetery', 'area', 'deadman', 'applicant', 'applicant__address',
-            ).iterator():
+            ).order_by('dt_modified').iterator():
 
             burial_comments = u""
             for comment in BurialComment.objects.filter(burial=b).order_by('dt_created'):
@@ -2039,10 +2039,18 @@ class ApiOmsAreasPlacesView(APIView):
             pk=area_pk,
             cemetery__ugh=request.user.profile.org
         )
+        q = Q(area=area)
+        try:
+            dt_modified = int(request.GET.get('dt_modified') or 0)
+        except ValueError:
+            dt_modified = 0
+        if dt_modified > 0:
+            dt_modified = datetime.datetime.fromtimestamp(dt_modified)
+            q &= Q(dt_modified__gte=dt_modified)
         return Response(
             status=200,
             data=[ PlaceTitleSerializer(place).data \
-                   for place in Place.objects.filter(area=area)
+                   for place in Place.objects.filter(q)
             ])
 
 api_oms_areas_places = ApiOmsAreasPlacesView.as_view()
