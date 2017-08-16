@@ -185,25 +185,51 @@ def main():
                 scram(code=1, message="ERROR: Failed to get areas!")
 
         if max_dt_modified:
-            for area in areas:
-                log_("   Rename records of area_id==%s to name='%s' if necessary" % (
-                    area['id'],
-                    area['name'],
-                ))
-                cursor.execute(r"""
-                    UPDATE
-                        burials
-                    SET
-                        area = ?
-                    WHERE
-                        area_id = ? AND
-                        (area <> ? OR (area IS NULL and ? <> ''))
-                """, (
-                    area['name'],
-                    area['id'],
-                    area['name'],
-                    area['name'],
-                )).commit()
+
+            log_("  Get max_dt_modified of burials in the cemetery")
+            dt_modified = 0
+            cursor.execute(r"""
+                SELECT
+                    Max(dt_modified) as dt_sync
+                FROM
+                    burials
+                WHERE
+                    cemetery_id = ?
+            """, (
+                cemetery_dict['id'],
+            ))
+            if cursor.rowcount:
+                sql_result = cursor.fetchone()
+                dt_modified = sql_result['dt_sync'] or 0
+            if dt_modified:
+                log_("  Get areas modified after %s" % datetime.datetime.fromtimestamp(dt_modified))
+                rc, data = request_json(
+                    path='/api/oms/cemeteries/%s/areas?dt_modified=%s' % (
+                        cemetery_dict['id'],
+                        dt_modified,
+                    ),
+                    method = 'GET',
+                    token=token,
+                )
+                for area in data:
+                    log_("   Rename records of area_id==%s to name='%s' if necessary" % (
+                        area['id'],
+                        area['title'],
+                    ))
+                    cursor.execute(r"""
+                        UPDATE
+                            burials
+                        SET
+                            area = ?
+                        WHERE
+                            area_id = ? AND
+                            (area <> ? OR (area IS NULL and ? <> ''))
+                    """, (
+                        area['title'],
+                        area['id'],
+                        area['title'],
+                        area['title'],
+                    )).commit()
 
         cemetery_dict['areas'] = areas
         cemeteries_offline.append(cemetery_dict)
@@ -233,9 +259,9 @@ def main():
                 FROM
                     burials
                 WHERE
-                    area = ? and cemetery = ?
+                    area_id = ? and cemetery_id = ?
             """, (
-                area['name'], cemetery['name'],
+                area['id'], cemetery['id'],
             ))
             if cursor.rowcount:
                 sql_result = cursor.fetchone()

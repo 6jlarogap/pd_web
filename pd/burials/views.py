@@ -1735,10 +1735,18 @@ class ApiOmsCemeteriesAreasView(APIView):
             pk=pk,
             ugh=request.user.profile.org
         )
+        q = Q(cemetery=cemetery)
+        try:
+            dt_modified = int(request.GET.get('dt_modified') or 0)
+        except ValueError:
+            dt_modified = 0
+        if dt_modified > 0:
+            dt_modified = datetime.datetime.fromtimestamp(dt_modified)
+            q &= Q(dt_modified__gte=dt_modified)
         return Response(
             status=200,
             data=[ AreaTitleSerializer(area).data \
-                   for area in Area.objects.filter(cemetery=cemetery)
+                   for area in Area.objects.filter(q)
             ]
         )
 
