@@ -37,11 +37,6 @@
 #       -   Если в локальной базе что-то было до синхронизации.
 #           Проверяем по локальной базе на то, что на сервере
 #           какие-то участки переименовали.
-#       TODO
-#           Проверять только те участки, которые были,
-#           возможно, переименованы: не все участки,
-#           а только те, которые изменялись после
-#           последней синхронизации по участку
 #   *   Удаляем из ms access db все записи, которые не относятся
 #       к кладбищам из settings.CEMETERIES
 #       NB: можно было бы в settings.py не хранить список кладбищ,
@@ -137,10 +132,12 @@ def main():
         scram(code=1, message="ERROR: Failed to get cemeteries!")
 
     log_("Local DB: Check data against online source")
-    cemeteries_offline = list()
     for cemetery_name in settings.CEMETERIES:
         if cemetery_name not in cemeteries_online_dict:
             scram(1, "ERROR: cemetery %s from settings.py not in online cemeteries" % cemetery_name)
+
+    cemeteries_offline = list()
+    for cemetery_name in settings.CEMETERIES:
         cemetery_dict = {
             'name': cemetery_name,
             'id': cemeteries_online_dict[cemetery_name],
@@ -173,6 +170,7 @@ def main():
             method = 'GET',
             token=token,
         )
+        log_("   : %s areas at the cemetery" % len(data))
 
         areas = list()
         for area in data:
@@ -186,7 +184,7 @@ def main():
 
         if max_dt_modified:
 
-            log_("  Get max_dt_modified of burials in the cemetery")
+            log_("  Get max_dt_modified of burials at the cemetery")
             dt_modified = 0
             cursor.execute(r"""
                 SELECT
@@ -201,8 +199,15 @@ def main():
             if cursor.rowcount:
                 sql_result = cursor.fetchone()
                 dt_modified = sql_result['dt_sync'] or 0
-            if dt_modified:
-                log_("  Get areas modified after %s" % datetime.datetime.fromtimestamp(dt_modified))
+            if not dt_modified:
+                log_("   No burials yet at offline for the cemetery")
+            else:
+                log_("   : %s" % (
+                    datetime.datetime.fromtimestamp(dt_modified),
+                ))
+                log_("  Get areas modified after %s" % (
+                    datetime.datetime.fromtimestamp(dt_modified),
+                ))
                 rc, data = request_json(
                     path='/api/oms/cemeteries/%s/areas?dt_modified=%s' % (
                         cemetery_dict['id'],
@@ -211,8 +216,10 @@ def main():
                     method = 'GET',
                     token=token,
                 )
+                if not data:
+                    log_("   No such areas at the cemetery")
                 for area in data:
-                    log_("   Rename records of area_id==%s to name='%s' if necessary" % (
+                    log_("  Rename records of area_id==%s to name='%s' if necessary" % (
                         area['id'],
                         area['title'],
                     ))
@@ -231,6 +238,31 @@ def main():
                         area['title'],
                     )).commit()
 
+                # Это удаленные из базы
+                log_("  Remove burials deleted, annulated, exhumated after %s" % (
+                    datetime.datetime.fromtimestamp(dt_modified),
+                ))
+                rc, data = request_json(
+                    path='/api/oms/cemeteries/%s/deleted_burials?dt_modified=%s' % (
+                        cemetery_dict['id'],
+                        dt_modified,
+                    ),
+                    method = 'GET',
+                    token=token,
+                )
+                if not data:
+                    log_("   No such burials at the cemetery")
+                for b in data:
+                    cursor.execute(r"""
+                        DELETE FROM
+                            burials
+                        WHERE
+                            burial_id = ?
+                    """, (
+                        b['pk'],
+                    )).commit()
+                    log_("   DELETEd burial_id: %s" % b['pk'])
+
         cemetery_dict['areas'] = areas
         cemeteries_offline.append(cemetery_dict)
 
@@ -246,7 +278,7 @@ def main():
         log_(" OK. %s record(s) removed" % cursor.rowcount)
 
     log_('Local DB: Look for last dt_modified per burials in every area')
-    log_('Online source: get deleted and new/modified burials')
+    log_('Online source: get new/modified burials')
     log_('Local DB: Update with those burials')
     for cemetery in cemeteries_offline:
         log_(' Cemetery: %s' % cemetery['name'])
@@ -305,7 +337,7 @@ def main():
                         place['row'],
                         place['row'],
                     )).commit()
-                log_("      %s places checked" % len(data))
+                log_("      %s place(s) checked" % len(data))
 
             else:
                 log_("   No data for the area in local db. Fetching all data for it")
@@ -319,159 +351,132 @@ def main():
                 token=token,
             )
             for b in data:
-                #for k in b:
-                    #log_(k, ":", b[k])
-                if b.get('_deleted') and b.get('pk'):
-                    # В журнале удаленных собираются burial_id's
-                    # по кладбищу. И эти данные поступают на каждый участок,
-                    # а удаленные захоронения могут быть с другого участка
+                cursor.execute(r"""
+                    SELECT
+                        burial_id
+                    FROM
+                        burials
+                    WHERE
+                        burial_id = ?
+                """, (
+                    b['burial_id'],
+                ))
+                if cursor.fetchone():
                     cursor.execute(r"""
-                        SELECT
-                            burial_id
-                        FROM
+                        UPDATE
                             burials
+                        SET
+                            cemetery = ?,
+                            area = ?,
+                            row = ?,
+                            place = ?,
+                            grave_number = ?,
+                            deadman = ?,
+                            fact_date = ?,
+                            deadman_dob = ?,
+                            deadman_dod = ?,
+                            burial_comments = ?,
+                            burial_type = ?,
+                            applicant = ?,
+                            applicant_address = ?,
+                            deadman_address=?,
+                            dt_modified = ?,
+                            cemetery_id = ?,
+                            area_id = ?,
+                            place_id = ?
                         WHERE
                             burial_id = ?
                     """, (
-                        b['pk'],
-                    ))
-                    if cursor.fetchone():
-                        cursor.execute(r"""
-                            DELETE FROM
-                                burials
-                            WHERE
-                                burial_id = ?
-                        """, (
-                            b['pk'],
-                        )).commit()
-                        log_("DELETEd burial_id: %s" % b['pk'])
+                        b['cemetery'],
+                        b['area'],
+                        b['row'],
+                        b['place'],
+                        b['grave_number'],
+                        b['deadman'],
+                        b['fact_date'],
+                        b['deadman_dob'],
+                        b['deadman_dod'],
+                        b['burial_comments'],
+                        b['burial_type'],
+                        b['applicant'],
+                        b['applicant_address'],
+                        b['deadman_address'],
+                        b['dt_modified'],
+                        b['cemetery_id'],
+                        b['area_id'],
+                        b['place_id'],
+                        b['burial_id'],
+                    )).commit()
+                    log_("    UPDATEd burial_id: %s " % b['burial_id'])
                 else:
                     cursor.execute(r"""
-                        SELECT
-                            burial_id
-                        FROM
+                        INSERT INTO
                             burials
-                        WHERE
-                            burial_id = ?
+                        (
+                            cemetery,
+                            area,
+                            row,
+                            place,
+                            grave_number,
+                            deadman,
+                            fact_date,
+                            deadman_dob,
+                            deadman_dod,
+                            burial_comments,
+                            burial_type,
+                            applicant,
+                            applicant_address,
+                            deadman_address,
+                            dt_modified,
+                            cemetery_id,
+                            area_id,
+                            place_id,
+                            burial_id
+                        )
+                        VALUES
+                        (
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?
+                        )
                     """, (
+                        b['cemetery'],
+                        b['area'],
+                        b['row'],
+                        b['place'],
+                        b['grave_number'],
+                        b['deadman'],
+                        b['fact_date'],
+                        b['deadman_dob'],
+                        b['deadman_dod'],
+                        b['burial_comments'],
+                        b['burial_type'],
+                        b['applicant'],
+                        b['applicant_address'],
+                        b['deadman_address'],
+                        b['dt_modified'],
+                        b['cemetery_id'],
+                        b['area_id'],
+                        b['place_id'],
                         b['burial_id'],
-                    ))
-                    if cursor.fetchone():
-                        cursor.execute(r"""
-                            UPDATE
-                                burials
-                            SET
-                                cemetery = ?,
-                                area = ?,
-                                row = ?,
-                                place = ?,
-                                grave_number = ?,
-                                deadman = ?,
-                                fact_date = ?,
-                                deadman_dob = ?,
-                                deadman_dod = ?,
-                                burial_comments = ?,
-                                burial_type = ?,
-                                applicant = ?,
-                                applicant_address = ?,
-                                deadman_address=?,
-                                dt_modified = ?,
-                                cemetery_id = ?,
-                                area_id = ?,
-                                place_id = ?
-                            WHERE
-                                burial_id = ?
-                        """, (
-                            b['cemetery'],
-                            b['area'],
-                            b['row'],
-                            b['place'],
-                            b['grave_number'],
-                            b['deadman'],
-                            b['fact_date'],
-                            b['deadman_dob'],
-                            b['deadman_dod'],
-                            b['burial_comments'],
-                            b['burial_type'],
-                            b['applicant'],
-                            b['applicant_address'],
-                            b['deadman_address'],
-                            b['dt_modified'],
-                            b['cemetery_id'],
-                            b['area_id'],
-                            b['place_id'],
-                            b['burial_id'],
-                        )).commit()
-                        log_("UPDATEd burial_id: %s " % b['burial_id'])
-                    else:
-                        cursor.execute(r"""
-                            INSERT INTO
-                                burials
-                            (
-                                cemetery,
-                                area,
-                                row,
-                                place,
-                                grave_number,
-                                deadman,
-                                fact_date,
-                                deadman_dob,
-                                deadman_dod,
-                                burial_comments,
-                                burial_type,
-                                applicant,
-                                applicant_address,
-                                deadman_address,
-                                dt_modified,
-                                cemetery_id,
-                                area_id,
-                                place_id,
-                                burial_id
-                            )
-                            VALUES
-                            (
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?,
-                                ?
-                            )
-                        """, (
-                            b['cemetery'],
-                            b['area'],
-                            b['row'],
-                            b['place'],
-                            b['grave_number'],
-                            b['deadman'],
-                            b['fact_date'],
-                            b['deadman_dob'],
-                            b['deadman_dod'],
-                            b['burial_comments'],
-                            b['burial_type'],
-                            b['applicant'],
-                            b['applicant_address'],
-                            b['deadman_address'],
-                            b['dt_modified'],
-                            b['cemetery_id'],
-                            b['area_id'],
-                            b['place_id'],
-                            b['burial_id'],
-                        )).commit()
-                        log_("INSERTed burial_id: %s " % b['burial_id'])
+                    )).commit()
+                    log_("    INSERTed burial_id: %s " % b['burial_id'])
 
     log_(" OK")
 
