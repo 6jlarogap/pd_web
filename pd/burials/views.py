@@ -1661,16 +1661,19 @@ class ApiOmsAreaMsAccessSync(APIView):
             cemetery__ugh=request.user.profile.org,
             pk=pk
         )
-        dt_modified = int(request.GET.get('dt_modified') or 0)
+        try:
+            dt_modified = int(request.GET.get('dt_modified') or 0)
+        except ValueError:
+            dt_modified = 0
         q = Q(annulated=False, status=Burial.STATUS_CLOSED, area=area)
         data = []
-        if dt_modified:
+        if dt_modified > 0:
             dt_modified = datetime.datetime.fromtimestamp(dt_modified)
             q &= Q(dt_modified__gte=dt_modified)
             # Get deleted and annulated to data
         for b in Burial.objects.filter(q).select_related(
                 'cemetery', 'area', 'deadman', 'applicant', 'applicant__address',
-            ).iterator():
+            ).order_by('dt_modified').iterator():
 
             burial_comments = u""
             for comment in BurialComment.objects.filter(burial=b).order_by('dt_created'):
@@ -1708,23 +1711,49 @@ class ApiOmsAreaMsAccessSync(APIView):
                 area_id=int(b.area.pk),
                 place_id=int(b.place.pk),
             ))
-        if dt_modified:
-            q = Q(
-                annulated=True,
-                status=Burial.STATUS_CLOSED,
-                area=area,
-                dt_modified__gte=dt_modified
-            )
-            for b in Burial.objects.filter(q):
-                data.append({
-                    'pk': int(b.pk),
-                    '_deleted': True,
-
-                })
-            data += DeleteLog.get_deleted(dt_modified, Burial, [area.cemetery.pk])
         return Response(status=200, data=data)
 
 api_oms_area_msaccess_sync = ApiOmsAreaMsAccessSync.as_view()
+
+class ApiOmsCemeteriesDeletedBurials(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def get(self, request, pk):
+        data = list()
+        cemetery = get_object_or_404(
+            Cemetery,
+            ugh=request.user.profile.org,
+            pk=pk
+        )
+        try:
+            dt_modified = int(request.GET.get('dt_modified') or 0)
+        except ValueError:
+            dt_modified = 0
+        if dt_modified > 0:
+            dt_modified = datetime.datetime.fromtimestamp(dt_modified)
+            data += DeleteLog.get_deleted(dt_modified, Burial, [cemetery.pk])
+            q1 = Q(
+                annulated=True,
+                status=Burial.STATUS_CLOSED,
+                cemetery=cemetery,
+                dt_modified__gte=dt_modified
+            )
+            q2 = Q(
+                annulated=False,
+                status=Burial.STATUS_EXHUMATED,
+                cemetery=cemetery,
+                dt_modified__gte=dt_modified
+            )
+            for q in [q1, q2]:
+                for b in Burial.objects.filter(q):
+                    data.append({
+                        'pk': int(b.pk),
+                        '_deleted': True,
+
+                    })
+        return Response(status=200, data=data)
+
+api_oms_cemeteries_deleted_burials = ApiOmsCemeteriesDeletedBurials.as_view()
 
 class ApiOmsCemeteriesAreasView(APIView):
     permission_classes = (PermitIfUgh,)
@@ -1735,10 +1764,18 @@ class ApiOmsCemeteriesAreasView(APIView):
             pk=pk,
             ugh=request.user.profile.org
         )
+        q = Q(cemetery=cemetery)
+        try:
+            dt_modified = int(request.GET.get('dt_modified') or 0)
+        except ValueError:
+            dt_modified = 0
+        if dt_modified > 0:
+            dt_modified = datetime.datetime.fromtimestamp(dt_modified)
+            q &= Q(dt_modified__gte=dt_modified)
         return Response(
             status=200,
             data=[ AreaTitleSerializer(area).data \
-                   for area in Area.objects.filter(cemetery=cemetery)
+                   for area in Area.objects.filter(q)
             ]
         )
 
@@ -2039,10 +2076,18 @@ class ApiOmsAreasPlacesView(APIView):
             pk=area_pk,
             cemetery__ugh=request.user.profile.org
         )
+        q = Q(area=area)
+        try:
+            dt_modified = int(request.GET.get('dt_modified') or 0)
+        except ValueError:
+            dt_modified = 0
+        if dt_modified > 0:
+            dt_modified = datetime.datetime.fromtimestamp(dt_modified)
+            q &= Q(dt_modified__gte=dt_modified)
         return Response(
             status=200,
             data=[ PlaceTitleSerializer(place).data \
-                   for place in Place.objects.filter(area=area)
+                   for place in Place.objects.filter(q)
             ])
 
 api_oms_areas_places = ApiOmsAreasPlacesView.as_view()

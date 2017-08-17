@@ -2542,6 +2542,8 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
 
     @transaction.commit_on_success
     def post(self, request):
+        msg_invalid_dt_due = _(u"Неверная дата похорон")
+        msg_invalid_dt = _(u"Неверная дата создания заказа")
         try:
             customer = request.DATA.get('customer')
             login_phone = None
@@ -2573,7 +2575,11 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 try:
                     dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
                 except ValueError:
-                    raise ServiceException(_(u"Неверная дата похорон"))
+                    raise ServiceException(msg_invalid_dt_due)
+                try:
+                    dt_due.strftime("%d.%m.%Y")
+                except ValueError:
+                    raise ServiceException(msg_invalid_dt_due)
             dt = request.DATA.get('createdDate') or None
             mapping = dict(
                 burialPlanTime='burial_plan_time',
@@ -2602,7 +2608,11 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 try:
                     dt = datetime.datetime.strptime(dt, "%d.%m.%Y").date()
                 except ValueError:
-                    raise ServiceException(_(u"Неверная дата создания заказа"))
+                    raise ServiceException(msg_invalid_dt)
+                try:
+                    dt.strftime("%d.%m.%Y")
+                except ValueError:
+                    raise ServiceException(msg_invalid_dt)
             order = Order.objects.create(
                 loru=request.user.profile.org,
                 applicant=applicant,
@@ -2752,6 +2762,8 @@ class ApiLoruOrdersDetailView(
     @transaction.commit_on_success
     def put(self, request, pk):
         order = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
+        msg_invalid_dt_due = _(u"Неверная дата похорон")
+        msg_invalid_dt = _(u"Неверная дата создания заказа")
         try:
             order_save = False
             if 'dueDate' in request.DATA:
@@ -2760,7 +2772,11 @@ class ApiLoruOrdersDetailView(
                     try:
                         dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
                     except ValueError:
-                        raise ServiceException(_(u"Неверная дата похорон"))
+                        raise ServiceException(msg_invalid_dt_due)
+                    try:
+                        dt_due.strftime("%d.%m.%Y")
+                    except ValueError:
+                        raise ServiceException(msg_invalid_dt_due)
                 if order.dt_due != dt_due:
                     order.dt_due = dt_due
                     order_save = True
@@ -2769,7 +2785,11 @@ class ApiLoruOrdersDetailView(
                 try:
                     dt = datetime.datetime.strptime(dt, "%d.%m.%Y").date()
                 except ValueError:
-                    raise ServiceException(_(u"Неверная дата создания заказа"))
+                    raise ServiceException(msg_invalid_dt)
+                try:
+                    dt.strftime("%d.%m.%Y")
+                except ValueError:
+                    raise ServiceException(msg_invalid_dt)
                 if order.dt != dt:
                     order.dt = dt
                     order_save = True
