@@ -74,7 +74,8 @@ def main():
     global f_log, cursor, connection
 
     if hasattr(settings, 'LAST_LOG'):
-        f_log = open(os.path.abspath(settings.LAST_LOG), 'w')
+        # last parm == 1 means line buffered output :
+        f_log = open(os.path.abspath(settings.LAST_LOG), 'w', 1)
 
     databaseFile  = os.path.abspath(settings.MS_ACCESS_DBFILE)
     connection_string = "Driver={%s};Dbq=%s" % (
