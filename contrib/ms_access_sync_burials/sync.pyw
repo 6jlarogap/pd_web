@@ -504,6 +504,10 @@ def log_(*args, **kwargs):
 
     global f_log
     s = " ".join([str(s) for s in args])
+    s = "%s %s" % (
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        s,
+    )
     if f_log:
         f_log.write("%s\n" % s)
     else:
