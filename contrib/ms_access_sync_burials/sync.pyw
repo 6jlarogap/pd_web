@@ -300,10 +300,10 @@ def main():
                 sql_result = cursor.fetchone()
                 dt_modified = sql_result['dt_sync'] or 0
             if dt_modified:
+                dt_modified += 1
                 log_("   Sync'ing local db by online data since %s" % (
                     datetime.datetime.fromtimestamp(dt_modified)
                 ))
-                dt_modified += 1
 
                 log_("     Check for renamed places/rows at the area after %s" % (
                     datetime.datetime.fromtimestamp(dt_modified)
