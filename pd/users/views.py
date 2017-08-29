@@ -3846,13 +3846,14 @@ class VideoListView(SupervisorRequiredMixin, PaginateListView):
 videos = VideoListView.as_view()
 
 class ApiVideoDetailView(APIView):
-    permission_classes = (PermitIfSupervisor,)
 
     @transaction.commit_on_success
     def get(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
 
         if request.GET.get('refresh'):
+            if not is_supervisor(request.user):
+                raise PermissionDenied
             y = Youtube(yid)
             y_parms = y.get_parms()
             do_save = False
@@ -3871,6 +3872,8 @@ class ApiVideoDetailView(APIView):
 
     @transaction.commit_on_success
     def delete(self, request, yid):
+        if not is_supervisor(request.user):
+            raise PermissionDenied
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
         youtubevideo.delete()
         return Response(data={}, status=200)
