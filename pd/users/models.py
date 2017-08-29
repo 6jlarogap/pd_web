@@ -895,18 +895,6 @@ class Oauth(BaseModel):
             pass
         return result
 
-    def full_name(self):
-        iof = "%s %s %s" % (
-            self.first_name,
-            self.middle_name,
-            self.last_name,
-        )
-        result = u""
-        for s in iof.split():
-            result += " %s" % s
-        result = result.strip()
-        return result
-
 class ThankUser(models.Model):
     """
     Пользователь- кандидат на выражение благодарности
@@ -956,7 +944,6 @@ class Thank(BaseModel):
             provider=o.provider,
             uid=o.uid,
             profile_url=o.profile_url(),
-            full_name=o.full_name(),
             ) for o in Oauth.objects.filter(user=self.user)
         ]
 

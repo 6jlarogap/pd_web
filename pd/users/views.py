@@ -87,7 +87,7 @@ from users.serializers import StoreSerializer, Store2Serializer, \
                               UserSettings2Serializer, OauthSerializer, \
                               YoutubeVoteSerializer, YoutubeVideoSerializer, \
                               YoutubeCaptionSerializer, YoutubeCaptionVoteSerializer, \
-                              UserFullNameSerializer
+                              SocialUserSerializer
 
 from sms_service.utils import send_sms
 
@@ -3664,7 +3664,7 @@ class ApiVideoTimestampsVotes(ApiVideoMixin, APIView):
         like = request.GET.get('type')
         if like:
             q &= Q(like=like)
-        return Response(data=[ UserFullNameSerializer(vote.user).data \
+        return Response(data=[ SocialUserSerializer(vote.user).data \
             for vote in YoutubeVote.objects.filter(q).distinct('user')
         ])
 
