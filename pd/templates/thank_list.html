@@ -88,14 +88,8 @@
                 </td>
                 <td style="vertical-align:middle;">
                     {% for s in t.oauths %}
-                        {% if s.provider == "vk" %}
-                            <a href="https://vk.com/id{{s.uid}}" target="_blank">{{ s.provider }}</a>
-                        {% elif s.provider == "odnoklassniki" %}
-                            <a href="https://ok.ru/profile/{{s.uid}}" target="_blank">{{ s.provider }}</a>
-                        {% elif s.provider == "facebook" %}
-                            <a href="https://www.facebook.com/{{s.uid}}" target="_blank">{{ s.provider }}</a>
-                        {% elif s.provider == "google" %}
-                            <a href="https://plus.google.com/u/0/{{s.uid}}" target="_blank">{{ s.provider }}</a>
+                        {% if s.profile_url %}
+                            <a href="{{ s.profile_url }}" target="_blank">{{ s.provider }}</a>
                         {% else %}
                             {{ s.provider }} ({{ s.uid }})
                         {% endif %}
