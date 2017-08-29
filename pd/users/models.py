@@ -413,6 +413,7 @@ class Oauth(BaseModel):
     PROVIDER_GOOGLE = 'google'
     PROVIDER_VKONTAKTE = 'vk'
     PROVIDER_ODNOKLASSNIKI = 'odnoklassniki'
+
     OAUTH_PROVIDERS = (
         (PROVIDER_YANDEX, _(u"Яндекс")),
         (PROVIDER_FACEBOOK, _(u"Facebook")),
@@ -420,6 +421,14 @@ class Oauth(BaseModel):
         (PROVIDER_VKONTAKTE, _(u"ВКонтакте")),
         (PROVIDER_ODNOKLASSNIKI, _(u"Одноклассники")),
     )
+
+    PROVIDER_PROFILE_URL = {
+        PROVIDER_YANDEX: u"",
+        PROVIDER_FACEBOOK: u"https://www.facebook.com/%s",
+        PROVIDER_GOOGLE: u"https://plus.google.com/u/0/%s",
+        PROVIDER_VKONTAKTE: u"https://vk.com/id%s",
+        PROVIDER_ODNOKLASSNIKI: u"https://ok.ru/profile/%s",
+    }
 
     # Куда идти для получения данных от провайдера и имена возвращаемых полей,
     # например, кото-то из провайдеров возвращает фамилию в last_name,
@@ -875,6 +884,17 @@ class Oauth(BaseModel):
                 message['errorCode'] = error_code
         return user, oauth, message
 
+    def profile_url(self):
+        """
+        Ссылка на профиль пользователя
+        """
+        result = u""
+        try:
+            result = Oauth.PROVIDER_PROFILE_URL[self.provider] % self.uid
+        except (KeyError, TypeError,):
+            pass
+        return result
+
 class ThankUser(models.Model):
     """
     Пользователь- кандидат на выражение благодарности
@@ -920,7 +940,12 @@ class Thank(BaseModel):
         """
         Соцсети, к которым подключен
         """
-        return [dict(provider=o.provider, uid=o.uid) for o in Oauth.objects.filter(user=self.user)]
+        return [dict(
+            provider=o.provider,
+            uid=o.uid,
+            profile_url=o.profile_url(),
+            ) for o in Oauth.objects.filter(user=self.user)
+        ]
 
 class OrgAbility(models.Model):
     ABILITY_TRADE = 'trade'

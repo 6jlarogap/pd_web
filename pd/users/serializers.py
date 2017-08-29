@@ -367,12 +367,21 @@ class UserFioSerializer(UserProfileMixin, serializers.ModelSerializer):
         model = User
         fields = ('id', 'firstName', 'lastName', 'middleName')
 
-class UserFullNameSerializer(UserProfileMixin, serializers.ModelSerializer):
+class SocialUserSerializer(UserProfileMixin, serializers.ModelSerializer):
     fullName = serializers.SerializerMethodField('fullName_func')
+    socialProfiles = serializers.SerializerMethodField('socialProfiles_func')
 
     class Meta:
         model = User
-        fields = ('fullName',)
+        fields = ('fullName', 'socialProfiles',)
+
+    def socialProfiles_func(self, user):
+        result = list()
+        for o in Oauth.objects.filter(user=user):
+            profile_url = o.profile_url()
+            if profile_url:
+                result.append(profile_url)
+        return result
 
 class UserFioLoginSerializer(UserProfileMixin, serializers.ModelSerializer):
     fio = serializers.SerializerMethodField('fio_func')
