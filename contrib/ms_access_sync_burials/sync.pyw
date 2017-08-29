@@ -74,7 +74,8 @@ def main():
     global f_log, cursor, connection
 
     if hasattr(settings, 'LAST_LOG'):
-        f_log = open(os.path.abspath(settings.LAST_LOG), 'w')
+        # last parm == 1 means line buffered output :
+        f_log = open(os.path.abspath(settings.LAST_LOG), 'w', 1)
 
     databaseFile  = os.path.abspath(settings.MS_ACCESS_DBFILE)
     connection_string = "Driver={%s};Dbq=%s" % (
@@ -299,10 +300,10 @@ def main():
                 sql_result = cursor.fetchone()
                 dt_modified = sql_result['dt_sync'] or 0
             if dt_modified:
+                dt_modified += 1
                 log_("   Sync'ing local db by online data since %s" % (
                     datetime.datetime.fromtimestamp(dt_modified)
                 ))
-                dt_modified += 1
 
                 log_("     Check for renamed places/rows at the area after %s" % (
                     datetime.datetime.fromtimestamp(dt_modified)
@@ -504,6 +505,10 @@ def log_(*args, **kwargs):
 
     global f_log
     s = " ".join([str(s) for s in args])
+    s = "%s %s" % (
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        s,
+    )
     if f_log:
         f_log.write("%s\n" % s)
     else:
