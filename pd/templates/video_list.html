@@ -33,6 +33,34 @@
             return false;
         }
 
+        function hide_video_(yid) {
+            if (!confirm('Видео будет убрано из списка в Народной Думы.\n' +
+                       'Продолжить?')) {
+                return false;
+            }
+            $.ajax({
+                // + '/....' обязательно!
+                url: '/api/videos/' + yid + '/?hide=1',
+                type: 'GET',
+                success: function(data) {
+                    location.reload(true);
+                }
+            });
+            return false;
+        }
+
+        function show_video_(yid) {
+            $.ajax({
+                // + '/....' обязательно!
+                url: '/api/videos/' + yid + '/?show=1',
+                type: 'GET',
+                success: function(data) {
+                    location.reload(true);
+                }
+            });
+            return false;
+        }
+
     </script>
 
     <h1>{% trans "Видеозаписи" %}</h1>
@@ -94,6 +122,10 @@
                     >
                         {% trans "Обновить" %}
                     </button>
+                    {% if v.is_hidden %}
+                        <br /><br />
+                        <span style="color:red"><b><big>СКРЫТО В СПИСКЕ</big></b></span>
+                    {% endif %}
                 </td>
                 <td style="text-align:center; vertical-align:middle;">
                     {% if v.title_photo_url %}
@@ -116,6 +148,16 @@
                     <button onclick='return delete_video_("{{ v.yid }}")'>
                         {% trans "Удалить" %}
                     </button>
+                    <br /><br />
+                    {% if v.is_hidden %}
+                        <button onclick='return show_video_("{{ v.yid }}")'>
+                            {% trans "Раскрыть" %}
+                        </button>
+                    {% else %}
+                        <button onclick='return hide_video_("{{ v.yid }}")'>
+                            {% trans "Скрыть" %}
+                        </button>
+                    {% endif %}
                 </td>
             </tr>
         {% endfor %}

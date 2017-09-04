@@ -3735,7 +3735,7 @@ api_video_aggregated_votes = cache_page(60)(ApiVideoAggregatedVotesView.as_view(
 class ApiVideosView(ApiVideoMixin, APIView):
 
     def get(self, request):
-        qs = YoutubeVideo.objects.all().order_by('-dt_created')
+        qs = YoutubeVideo.objects.filter(is_hidden=False).order_by('-dt_created')
         data = YoutubeVideoSerializer(qs, many=True).data
         return Response(data, status=200)
 
@@ -3851,9 +3851,12 @@ class ApiVideoDetailView(APIView):
     def get(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
 
-        if request.GET.get('refresh'):
-            if not is_supervisor(request.user):
+        get_parms_supervisor = ('refresh', 'hide', 'show',)
+        for p in get_parms_supervisor:
+            if request.GET.get(p) and not is_supervisor(request.user):
                 raise PermissionDenied
+
+        if request.GET.get('refresh'):
             y = Youtube(yid)
             y_parms = y.get_parms()
             do_save = False
@@ -3867,6 +3870,14 @@ class ApiVideoDetailView(APIView):
                     do_save = True
             if do_save:
                 youtubevideo.save()
+
+        elif request.GET.get('hide'):
+            youtubevideo.is_hidden = True
+            youtubevideo.save()
+
+        elif request.GET.get('show'):
+            youtubevideo.is_hidden = False
+            youtubevideo.save()
 
         return Response(data=YoutubeVideoSerializer(youtubevideo).data, status=200)
 
