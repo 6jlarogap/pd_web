@@ -365,6 +365,7 @@ class YoutubeVideo(BaseModel):
     url = models.URLField(_(u"URL"), max_length=255, default='')
     title = models.CharField(_(u"Заголовок"), max_length=255, default='')
     title_photo_url = models.URLField(_(u"Preview URL"), max_length=255, default='')
+    is_hidden = models.BooleanField(_(u"Скрыто в списке видео"), default=False)
 
     def delete(self, *args, **kwargs):
         YoutubeCaptionVote.objects.filter(
