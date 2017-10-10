@@ -138,6 +138,13 @@ def main():
                     else:
                         comment += u"ОШИБКА: не распознаны сектор/ряд: '%s'; " % sector_
                         place = ''
+        if not place or place == u'-':
+            # Посмотрим колонку "Место"
+            mesto = unicode(sheet.cell(row, 6).value).strip()
+            m = re.search(ur'^(\d+[a-zA-zа-яА-я]*\d*)', mesto)
+            if m:
+                place = m.group(1)
+
         ws.write(row, 5, area_)
         ws.write(row, 6, row_)
         ws.write(row, 7, place)
