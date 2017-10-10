@@ -2365,7 +2365,7 @@ class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
             supplier_name = form.cleaned_data.get('supplier')
             if supplier_name:
                 q_order &= Q(loru__name__icontains=supplier_name)
-                q_opt_order &= Q(supplier__name__icontains=supplier_name)
+                q_opt_order &= Q(loru__name__icontains=supplier_name)
 
             pks = {}
             currencies = set()
