@@ -36,7 +36,11 @@
 
         {% block buttons %}
             <p class="clear">
-                <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>
+                {% if not b.pk or b.is_draft %}
+                    <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить черновик" %}"/>
+                {% else %}
+                    <input type="submit" class="btn btn-primary btn-commit-burial" value="{% trans "cохранить" %}"/>
+                {% endif %}
                 {% if not b.annulated %}
                     {% if user.profile.is_ugh %}
                         {% if b.is_draft or not b.pk %}
@@ -48,7 +52,7 @@
                             <input type="submit" class="btn btn-commit-burial" name="disapprove" value="{% trans "cохранить и отменить согласование" %}"/>
                         {% endif %}
                         {% if not b.is_full and not b.is_closed %}
-                            <input type="submit" class="btn btn-commit-burial" name="complete" value="{% trans "cохранить и закрыть" %}"/>
+                            <input type="submit" class="btn btn-success" name="complete" value="{% trans "cохранить и закрыть" %}"/>
                         {% endif %}
                         {% if b.can_ugh_annulate %}
                             <input type="submit" class="btn btn-commit-burial" name="annulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}"/>
@@ -56,10 +60,10 @@
                     {% endif %}
                     {% if user.profile.is_loru %}
                         {% if not b.pk %}
-                            <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
+                            <input type="submit" class="btn btn-success" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
                         <!-- захоронение is_edit: черновик, отклонено, отозвано -->
                         {% elif b.is_edit and not b.annulated %}
-                            <input type="submit" class="btn btn-commit-burial" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
+                            <input type="submit" class="btn btn-success" name="ready" value="{% trans "cохранить и отправить на согласование" %}"/>
                              {% if order and not order.annulated %}
                                 <input type="submit" class="btn btn-danger" name="unbind" value="{% trans "сохранить и открепить от заказа" %}"/>
                             {% endif %}
