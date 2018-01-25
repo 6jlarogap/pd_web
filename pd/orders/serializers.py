@@ -41,6 +41,7 @@ class ProductCategory2Serializer(serializers.ModelSerializer):
             for product in Product.objects.filter(
                     productcategory=category,
                     loru=self.context['request'].user.profile.org,
+                    is_archived=False,
                 )
         ]
 
