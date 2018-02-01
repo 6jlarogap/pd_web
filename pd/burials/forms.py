@@ -718,12 +718,13 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
     def get_prefix(self, form):
         prefix = u''
+        m_deadman = _(u"Усопший")
         if form is self.deadman_form:
-            prefix = _(u"Усопший ")
+            prefix = m_deadman + u" "
         if form is self.deadman_address_form:
-            prefix = _(u"Усопший, адрес ")
+            prefix = m_deadman + u", " + unicode(_(u"адрес")) + u" "
         if form is self.dc_form:
-            prefix = _(u"Усопший, СоС, ")
+            prefix = m_deadman + u", " + unicode(_(u"СоС")) + u" "
         if form in [self.responsible_form, self.responsible_address_form]:
             prefix = _(u"Ответственный ")
         if form in [self.applicant_form, self.applicant_address_form, self.applicant_id_form]:
