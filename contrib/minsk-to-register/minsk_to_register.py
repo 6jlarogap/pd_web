@@ -53,8 +53,8 @@ def make_xlss(org, date_from, date_to, dir_out):
         print_xls(
             q,
             dir_out,
-            file_id='file4.xls',
-            file_noid='file8.xls',
+            file_id='horizontal_columbariums_with_id.xls',
+            file_noid='horizontal_columbariums_without_id.xls',
             put_grave=False
         )
 
@@ -67,8 +67,8 @@ def make_xlss(org, date_from, date_to, dir_out):
     print_xls(
         q,
         dir_out,
-        file_id='file3.xls',
-        file_noid='file7.xls',
+        file_id='vertical_columbariums_with_id.xls',
+        file_noid='vertical_columbariums_without_id.xls',
         put_grave=False
     )
 
@@ -80,8 +80,8 @@ def make_xlss(org, date_from, date_to, dir_out):
     print_xls(
         q,
         dir_out,
-        file_id='file1.xls',
-        file_noid='file5.xls',
+        file_id='cemeteries_with_id.xls',
+        file_noid='cemeteries_without_id.xls',
         put_grave=True
     )
 
