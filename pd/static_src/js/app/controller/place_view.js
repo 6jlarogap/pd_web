@@ -23,7 +23,8 @@
     NoPlaceName: gettext("Не указано название места"),
     IncorrectWidth: gettext("Неверное число для ширины места"),
     IncorrectLength: gettext("Неверное число для длины места"),
-    PlaceFree: gettext("Место свободно")
+    PlaceFree: gettext("Место свободно"),
+    mDeadman: gettext("Усопший")
   };
   $scope.editor = {
     isAddressEdited: false,
