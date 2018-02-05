@@ -1121,7 +1121,7 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     }
     {
         "status: "error",
-        "message": "Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища."
+        "message": "Ваш номер телефона не указан в списке для входа."
         # or       "Введена не верная captcha"
     }
     """
@@ -1145,7 +1145,7 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
                 try:
                     customerprofile = CustomerProfile.objects.get(login_phone=login_phone)
                 except CustomerProfile.DoesNotExist:
-                    message = _(u'Вы не зарегистрированы в системе. Обратитесь в администрацию кладбища')
+                    message = _(u'Вы не зарегистрированы в системе')
                 else:
                     password = CustomerProfile.generate_password()
                     user = customerprofile.user
