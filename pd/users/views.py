@@ -1102,7 +1102,7 @@ class ApiAuthUser(APIView):
 
 api_auth_user = ApiAuthUser.as_view()
 
-class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
+class AuthGetPasswordBySMSView(CheckRecaptcha2Mixin, APIView):
     """
     Замена существующему пользователю-кабинетчику пароля, отправка пароля по СМС
     
@@ -1133,7 +1133,7 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
         recaptcha_data = request.DATA.get('recaptchaData')
         if not recaptcha_data:
             message = _(u'Не данных по captcha')
-        elif not self.check_recaptcha(self.request, recaptcha_data['challenge'], recaptcha_data['response']):
+        elif not self.check_recaptcha(self.request, recaptcha_data):
             message = _(u'Введена неверная captcha')
         else:
             try:
