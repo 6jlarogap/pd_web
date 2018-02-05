@@ -48,6 +48,7 @@ urlpatterns = patterns('users.views',
     url(r'^api/education/?$', 'api_education', name='api_education'),
 
     url(r'^testcaptcha/$', 'testcaptcha', name='testcaptcha'),
+    url(r'^testcaptcha2/$', 'testcaptcha2', name='testcaptcha2'),
 
     url(r'^register/$', 'register', name='register'),
     url(r'^register/(?P<key>[A-Za-z0-9]+)/activation/$', 'register_activation',

@@ -112,7 +112,9 @@ INSTALLED_APPS = [
     'pytils',
     'debug_toolbar',
     'raven.contrib.django',
+
     'captcha',
+    'nocaptcha_recaptcha',
 
     'geo',
     'burials',
@@ -459,6 +461,11 @@ MOBILEKEEPER_MEDIA_PATH = "support/download/mobilekeeper.apk"
 
 # Покажем статистику операций как козырь, когда придет время
 SHOW_OPER_STATS = True
+
+# Для замены в local_settings.py
+#
+NORECAPTCHA_SITE_KEY = '1234567890'
+NORECAPTCHA_SECRET_KEY = '1234567890'
 
 try:
     from local_settings import *
