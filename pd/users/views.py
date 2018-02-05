@@ -615,7 +615,7 @@ class ApiAuthSignupView(CheckRecaptcha2Mixin, ApiAuthSigninView):
                 except ValidationError:
                     raise ServiceException(_(u'Неверный формат адреса электронной почты'))
             oauth = request.DATA.get('oauth')
-            recaptcha_data = request.DATA.get('recaptchaData')
+            recaptcha_data = request.DATA.get('captchaData')
             if oauth:
                 user, oauth_rec, message = Oauth.check_token(
                     oauth,
@@ -1109,7 +1109,7 @@ class AuthGetPasswordBySMSView(CheckRecaptcha2Mixin, APIView):
     Input example:
     {
         "phoneNumber": "375291234567",
-        "recaptchaData": "03AHJ_VuvQ5p0AdejIw4W6"
+        "captchaData": "03AHJ_VuvQ5p0AdejIw4W6"
     }
     Output examples:
     {
@@ -1127,7 +1127,7 @@ class AuthGetPasswordBySMSView(CheckRecaptcha2Mixin, APIView):
         status_code = 400
         message = ''
         login_phone = request.DATA['phoneNumber']
-        recaptcha_data = request.DATA.get('recaptchaData')
+        recaptcha_data = request.DATA.get('captchaData')
         if not recaptcha_data or isinstance(recaptcha_data, basestring):
             message = _(u'Не данных по captcha')
         elif not self.check_recaptcha(self.request, recaptcha_data):
@@ -1177,9 +1177,9 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         "subject": "Тема",
         "text": "Текст вопроса",
         "email": "email@email.ru",
-        "recaptchaData": "03AHJ_VuvQ5p0AdejIw4W6"
+        "captchaData": "03AHJ_VuvQ5p0AdejIw4W6"
     }
-    recaptchaData передается, если пользователь незарегистрирован
+    captchaData передается, если пользователь незарегистрирован
     
     Status codes:
         200 - если все нормально
@@ -1191,7 +1191,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
     """
     def post(self, request):
         status_code = 400
-        recaptcha_data = request.DATA.get('recaptchaData')
+        recaptcha_data = request.DATA.get('captchaData')
         try:
             if not request.user.is_authenticated():
                 if not recaptcha_data or not isinstance(recaptcha_data, basestring):
@@ -2972,7 +2972,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
     @transaction.commit_on_success
     def post(self, request):
         try:
-            recaptcha_data = request.DATA.get('recaptchaData')
+            recaptcha_data = request.DATA.get('captchaData')
             if not recaptcha_data:
                 raise ServiceException(_(u'Нет captcha'))
             elif not self.check_recaptcha(self.request, recaptcha_data):
