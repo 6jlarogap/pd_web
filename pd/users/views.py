@@ -40,8 +40,6 @@ from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
 from django.views.decorators.cache import cache_page
 
-from captcha.client import submit
-
 from wkhtmltopdf.views import PDFTemplateResponse
 
 from rest_framework import viewsets
@@ -53,7 +51,8 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 
 from logs.models import LogOperation, Log, write_log, LoginLog
 from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, \
-                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, TestCaptchaForm, \
+                        OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, \
+                        TestCaptchaForm, TestCaptcha2Form, \
                         LoruOrdersStatsForm, ProfileDataForm, OmsOperStats, \
                         VideoSearchForm, ThanksForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
@@ -124,7 +123,8 @@ class UghOrLoruRequiredMixin:
         return redirect('/')
 
 class CheckRecaptchaMixin(object):
-    
+
+    from captcha.client import submit
     def check_recaptcha(self, request, challenge, response):
         forwarded_ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
         if forwarded_ip:
@@ -141,6 +141,21 @@ class CheckRecaptchaMixin(object):
                 use_ssl=use_ssl
         ).is_valid
     
+class CheckRecaptcha2Mixin(object):
+
+    from nocaptcha_recaptcha.client import submit
+    def check_recaptcha(self, request, g_nocaptcha_response_value):
+        forwarded_ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        if forwarded_ip:
+            remote_ip = forwarded_ip
+        else:
+            remote_ip = request.META.get('REMOTE_ADDR', '')
+        secret_key = settings.RECAPTCHA_PRIVATE_KEY
+        return submit(
+                g_nocaptcha_response_value=smart_unicode(g_nocaptcha_response_value),
+                secret_key=secret_key,
+                remoteip=remote_ip,
+        ).is_valid
 
 class SessionDataMixin(object):
 
@@ -1106,7 +1121,7 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
     }
     {
         "status: "error",
-        "message": "Ваш номер телефона не указан в списке для входа. Обратитесь в администрацию кладбища."
+        "message": "Ваш номер телефона не указан в списке для входа."
         # or       "Введена не верная captcha"
     }
     """
@@ -1130,7 +1145,7 @@ class AuthGetPasswordBySMSView(CheckRecaptchaMixin, APIView):
                 try:
                     customerprofile = CustomerProfile.objects.get(login_phone=login_phone)
                 except CustomerProfile.DoesNotExist:
-                    message = _(u'Вы не зарегистрированы в системе. Обратитесь в администрацию кладбища')
+                    message = _(u'Вы не зарегистрированы в системе')
                 else:
                     password = CustomerProfile.generate_password()
                     user = customerprofile.user
@@ -2703,6 +2718,18 @@ class TestCaptchaView(FormView):
         return reverse('testcaptcha')
 
 testcaptcha = TestCaptchaView.as_view()
+
+class TestCaptcha2View(FormView):
+    """
+    Форма тестирования captcha 2
+    """
+    form_class = TestCaptcha2Form
+    template_name = 'testcaptcha.html'
+
+    def get_success_url(self):
+        return reverse('testcaptcha2')
+
+testcaptcha2 = TestCaptcha2View.as_view()
 
 class ApiEducation(APIView):
     """

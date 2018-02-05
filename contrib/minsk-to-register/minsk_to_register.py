@@ -36,7 +36,11 @@ horz_columbariums = (
 
 def make_xlss(org, date_from, date_to, dir_out):
     
-    q_dates = Q()
+    q_dates = Q(
+        annulated=False,
+        status= Burial.STATUS_CLOSED,
+        ugh=org,
+    )
     if date_from:
         q_dates &= Q(fact_date__gte=date_from)
     if date_to:
@@ -44,26 +48,22 @@ def make_xlss(org, date_from, date_to, dir_out):
 
     # Горизонтальные колумбарии
     #
+    areas_hc = list()
     for horz_columbarium in horz_columbariums:
-        area = Area.objects.get(cemetery__ugh=org, **horz_columbarium)
-        q = q_dates & Q(
-                area=area,
-                status=Burial.STATUS_CLOSED
-            )
-        print_xls(
-            q,
-            dir_out,
-            file_id='horizontal_columbariums_with_id.xls',
-            file_noid='horizontal_columbariums_without_id.xls',
-            put_grave=False
-        )
+        areas_hc.append(Area.objects.get(cemetery__ugh=org, **horz_columbarium))
+    q = q_dates & Q(area__in=areas_hc)
+    print_xls(
+        q,
+        dir_out,
+        file_id='horizontal_columbariums_with_id.xls',
+        file_noid='horizontal_columbariums_without_id.xls',
+        put_grave=False
+    )
 
     # Вертикальные колумбарии
     #
-    q = q_dates & Q(
-        ugh=org,
-        cemetery__name__icontains=u'колумбарий'
-    )
+    q = q_dates & \
+        Q(cemetery__name__icontains=u'колумбарий')
     print_xls(
         q,
         dir_out,
@@ -72,11 +72,11 @@ def make_xlss(org, date_from, date_to, dir_out):
         put_grave=False
     )
 
-    # Вертикальные колумбарии
+    # Кладбища
     #
-    q = q_dates & Q(
-        ugh=org,
-    ) & ~Q(cemetery__name__icontains=u'колумбарий')
+    q = q_dates & \
+        ~Q(cemetery__name__icontains=u'колумбарий') & \
+        ~Q(area__in=areas_hc)
     print_xls(
         q,
         dir_out,
