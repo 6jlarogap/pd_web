@@ -1129,7 +1129,7 @@ class AuthGetPasswordBySMSView(CheckRecaptcha2Mixin, APIView):
         login_phone = request.DATA['phoneNumber']
         recaptcha_data = request.DATA.get('captchaData')
         if not recaptcha_data or isinstance(recaptcha_data, basestring):
-            message = _(u'Не данных по captcha')
+            message = _(u'Нет данных по captcha')
         elif not self.check_recaptcha(self.request, recaptcha_data):
             message = _(u'Введена неверная captcha')
         else:
@@ -1195,7 +1195,7 @@ class ApiFeedBack(CheckRecaptchaMixin, APIView):
         try:
             if not request.user.is_authenticated():
                 if not recaptcha_data or not isinstance(recaptcha_data, basestring):
-                    raise ServiceException(_(u'Не данных по captcha'))
+                    raise ServiceException(_(u'Нет данных по captcha'))
                 if not self.check_recaptcha(self.request, recaptcha_data):
                     raise ServiceException(_(u'Ошибка проверки captcha'))
 
