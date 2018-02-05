@@ -15,6 +15,8 @@ from django.db.models.fields.files import FieldFile
 from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin, \
                      CustomUploadModelForm, CustomClearableFileInput
+from nocaptcha_recaptcha.fields import NoReCaptchaField
+
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, EmailMessage
 from burials.models import Cemetery, PlaceSize, Reason, Burial
@@ -603,7 +605,7 @@ class RegisterForm(forms.ModelForm):
                   'captcha',
                  )
 
-    captcha = OurReCaptchaField(label='')
+    captcha = NoReCaptchaField(label='')
     password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
     password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
 
@@ -793,6 +795,9 @@ class SupportForm(forms.Form):
 
 class TestCaptchaForm(forms.Form):
     captcha = OurReCaptchaField(label='')
+
+class TestCaptcha2Form(forms.Form):
+    captcha = NoReCaptchaField(label='')
 
 class VideoSearchForm(forms.Form):
     PAGE_CHOICES = (
