@@ -124,7 +124,6 @@ class UghOrLoruRequiredMixin:
 
 class CheckRecaptchaMixin(object):
 
-    from captcha.client import submit
     def check_recaptcha(self, request, challenge, response):
         forwarded_ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
         if forwarded_ip:
@@ -133,6 +132,7 @@ class CheckRecaptchaMixin(object):
             remote_ip = request.META.get('REMOTE_ADDR', '')
         use_ssl = getattr(settings, 'RECAPTCHA_USE_SSL', False)
         private_key = settings.RECAPTCHA_PRIVATE_KEY
+        from captcha.client import submit
         return submit(
                 smart_unicode(challenge),
                 smart_unicode(response),
@@ -140,10 +140,9 @@ class CheckRecaptchaMixin(object):
                 remoteip=remote_ip,
                 use_ssl=use_ssl
         ).is_valid
-    
+
 class CheckRecaptcha2Mixin(object):
 
-    from nocaptcha_recaptcha.client import submit
     def check_recaptcha(self, request, g_nocaptcha_response_value):
         forwarded_ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
         if forwarded_ip:
@@ -151,6 +150,7 @@ class CheckRecaptcha2Mixin(object):
         else:
             remote_ip = request.META.get('REMOTE_ADDR', '')
         secret_key = settings.RECAPTCHA_PRIVATE_KEY
+        from nocaptcha_recaptcha.client import submit
         return submit(
                 g_nocaptcha_response_value=smart_unicode(g_nocaptcha_response_value),
                 secret_key=secret_key,
@@ -1126,7 +1126,7 @@ class AuthGetPasswordBySMSView(CheckRecaptcha2Mixin, APIView):
         status = 'error'
         status_code = 400
         message = ''
-        login_phone = request.DATA['phoneNumber']
+        login_phone = request.DATA.get('phoneNumber')
         recaptcha_data = request.DATA.get('captchaData')
         if not recaptcha_data or not isinstance(recaptcha_data, basestring):
             message = _(u'Нет данных по captcha')
@@ -1168,7 +1168,7 @@ class AuthGetPasswordBySMSView(CheckRecaptcha2Mixin, APIView):
 
 auth_get_password_by_sms = AuthGetPasswordBySMSView.as_view()
 
-class ApiFeedBack(CheckRecaptchaMixin, APIView):
+class ApiFeedBack(CheckRecaptcha2Mixin, APIView):
     """
     Вопрос в поддержку от front-end api. Отправка письма.
     
