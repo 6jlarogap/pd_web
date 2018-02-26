@@ -40,6 +40,12 @@ app.factory('Place', function ($resource, $routeParams) {
       params: {
       }
     },
+    deletePhoto: {
+      method: 'DELETE',
+      params: {
+        action: 'deletephoto'
+      }
+    },
     save: {
       method: 'POST',
       params: {

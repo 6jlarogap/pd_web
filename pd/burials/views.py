@@ -14,7 +14,7 @@ from django.db import IntegrityError, connection
 from django.db.models.query_utils import Q
 from django.db.models import Count, Avg, Min, Max
 from django.shortcuts import redirect, render, get_object_or_404
-from django.http import Http404
+from django.http import Http404, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
@@ -756,6 +756,18 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
         address = request.GET.get('address')
         phones = request.GET.get('phones')
         responcible = request.GET.get('responcible')
+        return Response(status=200)
+
+
+    @action(methods=['DELETE',])
+    def deletephoto(self, request, pk=None):
+        photo_id = request.GET.get('photo_id')
+        placePhoto = get_object_or_404(PlacePhoto, place=pk, pk=photo_id)
+        if placePhoto.place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
+            raise HttpResponseForbidden
+        msg = _(u"Удалено фото места:\n%s") % request.build_absolute_uri(placePhoto.bfile.url)
+        placePhoto.delete()
+        write_log(request, placePhoto.place, msg)
         return Response(status=200)
 
         
