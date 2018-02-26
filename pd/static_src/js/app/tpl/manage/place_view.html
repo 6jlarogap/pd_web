@@ -332,7 +332,11 @@
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     <a href="{{ currentImage.photo }}" target="_blank">Оригинал</a>
                     &nbsp;&nbsp;
-                    <button style="color:red" ng-click="deleteImage(currentImage)">Удалить</button>
+                    <button
+                        style="color:red"
+                        ng-click="deleteImage(currentImage)"
+                        ng-show="is_editable"
+                        >Удалить</button>
                 </span>
                 <img ng-hide="currentImage" alt="Нет фотографии"
                     src="/static/no-image.png" width="265px" height="265px"/>
