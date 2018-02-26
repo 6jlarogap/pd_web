@@ -331,6 +331,8 @@
                     {{currentImage.createdAt | date:'dd.MM.yyyy HH:mm'}}
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     <a href="{{ currentImage.photo }}" target="_blank">Оригинал</a>
+                    &nbsp;&nbsp;
+                    <button style="color:red" ng-click="deleteImage(currentImage)">Удалить</button>
                 </span>
                 <img ng-hide="currentImage" alt="Нет фотографии"
                     src="/static/no-image.png" width="265px" height="265px"/>
@@ -348,7 +350,7 @@
     </div>
 
     <div class="modal-footer">
-        <button class="btn cancel" ng-click="closeEditForm('isPlaceGalleryOpen')">Отменить</button>
+        <button class="btn cancel" ng-click="closeEditForm('isPlaceGalleryOpen')">Выйти</button>
     </div>
 </div>
 
