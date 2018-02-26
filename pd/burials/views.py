@@ -765,7 +765,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
         placePhoto = get_object_or_404(PlacePhoto, place=pk, pk=photo_id)
         if placePhoto.place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
             raise HttpResponseForbidden
-        msg = _(u"Удалено фото места:\n%s" % request.build_absolute_uri(placePhoto.bfile.url))
+        msg = _(u"Удалено фото места:\n%s") % request.build_absolute_uri(placePhoto.bfile.url)
         placePhoto.delete()
         write_log(request, placePhoto.place, msg)
         return Response(status=200)
