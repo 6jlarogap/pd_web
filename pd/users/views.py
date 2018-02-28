@@ -149,7 +149,7 @@ class CheckRecaptcha2Mixin(object):
             remote_ip = forwarded_ip
         else:
             remote_ip = request.META.get('REMOTE_ADDR', '')
-        secret_key = settings.RECAPTCHA_PRIVATE_KEY
+        secret_key = settings.NORECAPTCHA_SECRET_KEY
         from nocaptcha_recaptcha.client import submit
         return submit(
                 g_nocaptcha_response_value=smart_unicode(g_nocaptcha_response_value),
