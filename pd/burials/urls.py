@@ -95,6 +95,8 @@ urlpatterns = patterns('burials.views',
     url(r'^api/clients/(?P<token>[0-9a-f]+)/burials-places/(?P<pk>\d+)/?$',
         'api_client_site_places_id', name='api_client_site_places_id'),
 
+    url(r'^api/place/(?P<pk>\d+)/photo-upload/?$', 'api_place_photo_upload', name='api_place_photo_upload'),
+
     url(r'^burials/doubles/$', 'burials_doubles', name='burials_doubles'),
     url(r'^burials/double/$', 'burials_double', name='burials_double'),
 )

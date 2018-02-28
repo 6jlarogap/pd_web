@@ -1809,7 +1809,7 @@ class OmsOperStatsView(UGHRequiredMixin, ReportDatesMixin, PaginateListView):
             dict(
                 name='inventoried_photos',
                 qs=Q(operation=LogOperation.PHOTO_TO_PLACE_MOBILE),
-                caption=_(u"Фото мест с мобильного приложения"),
+                caption=_(u"Фото мест"),
             ),
             dict(
                 name='place_certificates',
