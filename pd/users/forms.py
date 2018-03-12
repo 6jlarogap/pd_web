@@ -13,7 +13,7 @@ from django.db.models.query_utils import Q
 from django.db.models.fields.files import FieldFile
 
 from geo.forms import LocationForm
-from pd.forms import ChildrenJSONMixin, LoggingFormMixin, OurReCaptchaField, StrippedStringsMixin, \
+from pd.forms import ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin, \
                      CustomUploadModelForm, CustomClearableFileInput
 from nocaptcha_recaptcha.fields import NoReCaptchaField
 
@@ -686,7 +686,7 @@ class SupportForm(forms.Form):
         help_text=_(u'В международном формате: +код-страны-код-города-номер-телефона'),
         required=False,
     )
-    captcha = OurReCaptchaField(label='', required=True)
+    captcha = NoReCaptchaField(label='', required=True)
 
     def __init__(self, request, *args, **kwargs):
         super(SupportForm, self).__init__(*args, **kwargs)
@@ -792,9 +792,6 @@ class SupportForm(forms.Form):
         #
         email_from = _(u"Вопрос в поддержку <%s>") % settings.DEFAULT_FROM_EMAIL
         EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
-
-class TestCaptchaForm(forms.Form):
-    captcha = OurReCaptchaField(label='')
 
 class TestCaptcha2Form(forms.Form):
     captcha = NoReCaptchaField(label='')
