@@ -52,7 +52,7 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from logs.models import LogOperation, Log, write_log, LoginLog
 from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, \
-                        TestCaptchaForm, TestCaptcha2Form, \
+                        TestCaptcha2Form, \
                         LoruOrdersStatsForm, ProfileDataForm, OmsOperStats, \
                         VideoSearchForm, ThanksForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
@@ -121,25 +121,6 @@ class UghOrLoruRequiredMixin:
         if is_ugh_user(request.user) or is_loru_user(request.user):
             return View.dispatch(self, request, *args, **kwargs)
         return redirect('/')
-
-class CheckRecaptchaMixin(object):
-
-    def check_recaptcha(self, request, challenge, response):
-        forwarded_ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
-        if forwarded_ip:
-            remote_ip = forwarded_ip
-        else:
-            remote_ip = request.META.get('REMOTE_ADDR', '')
-        use_ssl = getattr(settings, 'RECAPTCHA_USE_SSL', False)
-        private_key = settings.RECAPTCHA_PRIVATE_KEY
-        from captcha.client import submit
-        return submit(
-                smart_unicode(challenge),
-                smart_unicode(response),
-                private_key=private_key,
-                remoteip=remote_ip,
-                use_ssl=use_ssl
-        ).is_valid
 
 class CheckRecaptcha2Mixin(object):
 
@@ -2695,23 +2676,6 @@ class SupportThanks(TemplateView):
                                         'html_message': html_message})
 
 support_thanks = SupportThanks.as_view()
-
-class TestCaptchaView(FormView):
-    """
-    Форма тестирования captcha
-    
-    Без этой простой страницы трудно, если не невозможно
-    увидеть и challenge-код капчи и правильный ответ пользователя.
-    Правильный ответ -- в графике! И еще: повтор правильных
-    challenge и ответа приведет к неверному срабатыванию капчи.
-    """
-    form_class = TestCaptchaForm
-    template_name = 'testcaptcha.html'
-
-    def get_success_url(self):
-        return reverse('testcaptcha')
-
-testcaptcha = TestCaptchaView.as_view()
 
 class TestCaptcha2View(FormView):
     """

@@ -21,7 +21,6 @@ djangorestframework-jsonp==1.0.2
 django_assets
 rjsmin
 cssmin
-django-recaptcha==0.0.6
 git+https://github.com/ottoyiu/django-cors-headers.git
 django-wkhtmltopdf==1.2.2
 piexif==1.0.12
