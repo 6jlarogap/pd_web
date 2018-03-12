@@ -18,8 +18,6 @@ from django.utils.translation import ugettext as _
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
-from captcha.fields import ReCaptchaField
-
 from burials.models import Burial, Area, PlaceSize
 from logs.models import write_log
 from pd.models import UnclearDate
@@ -89,6 +87,8 @@ class LoggingFormMixin:
         if obj and obj.pk:
             if isinstance(obj, Burial):
                 obj = Burial.objects.get(pk=obj.pk)
+            elif isinstance(obj, Profile):
+                obj = Profile.objects.get(pk=obj.pk)
             else:
                 obj = None
             forms = self.forms if hasattr(self, 'forms') else []
@@ -117,6 +117,8 @@ class LoggingFormMixin:
                         if not old_value:
                             old_value = u"[]"
                         else:
+                            if obj:
+                                old_value = form.initial.get(f)
                             old_value = u", ".join([unicode(form.fields[f]._queryset.model.objects.get(pk=u)) for u in old_value])
                             old_value = u"[" + old_value + u"]"
                         if not new_value:
@@ -350,12 +352,6 @@ class UnclearDateField(forms.DateField):
         elif isinstance(value, UnclearDate) and not value.no_day and value.no_month:
             raise forms.ValidationError(_(u'Нет месяца в дате'))
         return value
-
-class OurReCaptchaField(ReCaptchaField):
-    
-    def __init__(self, *args, **kwargs):
-        super(OurReCaptchaField, self).__init__(*args, **kwargs)
-        self.error_messages['captcha_invalid'] = _(u'Неверно. Попробуйте еще раз.')
 
 class BaseModelForm(forms.ModelForm):
     """

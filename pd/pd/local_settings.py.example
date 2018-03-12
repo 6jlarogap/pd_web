@@ -42,9 +42,8 @@ MEDIA_ROOT = '/home/LINUX_USERNAME/projects/MEDIA/pd_web/'
 
 # Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
 
-RECAPTCHA_PUBLIC_KEY = 'a-string-of-hex-and-digits'
-RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
-RECAPTCHA_USE_SSL = False
+NORECAPTCHA_SITE_KEY = 'public-norecaptcha-key'
+NORECAPTCHA_SECRET_KEY = 'secret-norecaptcha-key'
 
 # Для отправки кода активации и прочей почты.
 #
