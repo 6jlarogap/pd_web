@@ -113,7 +113,6 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'raven.contrib.django',
 
-    'captcha',
     'nocaptcha_recaptcha',
 
     'geo',
@@ -230,9 +229,8 @@ SESSION_SAVE_EVERY_REQUEST = True
 # Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
 # подлежат замене в local_settings.py:
 #
-RECAPTCHA_PUBLIC_KEY = 'a-string-of-hex-and-digits'
-RECAPTCHA_PRIVATE_KEY = 'another-string-of-hex-and-digits'
-RECAPTCHA_USE_SSL = False
+NORECAPTCHA_SITE_KEY = 'public-norecaptcha-key'
+NORECAPTCHA_SECRET_KEY = 'secret-norecaptcha-key'
 
 # Для отправки кода активации и прочей почты,
 #
@@ -461,11 +459,6 @@ MOBILEKEEPER_MEDIA_PATH = "support/download/mobilekeeper.apk"
 
 # Покажем статистику операций как козырь, когда придет время
 SHOW_OPER_STATS = True
-
-# Для замены в local_settings.py
-#
-NORECAPTCHA_SITE_KEY = '1234567890'
-NORECAPTCHA_SECRET_KEY = '1234567890'
 
 try:
     from local_settings import *
