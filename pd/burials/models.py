@@ -459,6 +459,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
             if pph.bfile:
                 gallery.append(
                     {
+                        'id': pph.pk,
                         'photo': request.build_absolute_uri(pph.bfile.url),
                         'createdAt': utcisoformat(pph.dt_created),
                     }

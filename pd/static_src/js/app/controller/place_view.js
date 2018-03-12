@@ -23,7 +23,8 @@
     NoPlaceName: gettext("Не указано название места"),
     IncorrectWidth: gettext("Неверное число для ширины места"),
     IncorrectLength: gettext("Неверное число для длины места"),
-    PlaceFree: gettext("Место свободно")
+    PlaceFree: gettext("Место свободно"),
+    mDeadman: gettext("Усопший")
   };
   $scope.editor = {
     isAddressEdited: false,
@@ -348,6 +349,40 @@
   $scope.setCurrentImage = function (image) {
     $scope.currentImage = image;
   };
+
+    $scope.deleteImage = function (image) {
+        if (confirm("Фото будет удалено. Вы уверены?")) {
+            var item_params = {
+                placeID: $routeParams.place_id,
+                photo_id: image.id,
+            };
+
+            Place.deletePhoto(item_params, function (result) {
+                var to_delete = undefined;
+                for (i = 0; i < $scope.placeGallery.length; i++) {
+                    if ($scope.placeGallery[i].id == image.id) {
+                        to_delete = i;
+                        break;
+                    }
+                }
+                if (typeof to_delete !== 'undefined') {
+                    $scope.placeGallery.splice(to_delete, 1);
+                    var lenGallery = $scope.placeGallery.length;
+                    if (lenGallery == 0) {
+                        $scope.currentImage = false;
+                        $scope.placeGalleryFirstPhoto = false;
+                    } else {
+                        $scope.placeGalleryFirstPhoto = $scope.placeGallery[0];;
+                        var iCurrent = to_delete;
+                        if (iCurrent > lenGallery - 1) {
+                            iCurrent = lenGallery - 1;
+                        }
+                        $scope.currentImage = $scope.placeGallery[iCurrent];
+                    }
+                }
+            });
+        }
+    };
 
   $scope.closeEditForm = function (form) {
     $scope[form] = false;

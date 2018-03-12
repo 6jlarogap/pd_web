@@ -149,7 +149,7 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
                                                     *args, **kwargs)
         if commit and self.scan_form.is_valid():
             burial = dc.get_burial()
-            log_prefix = u"Усопший, СоС, "
+            log_prefix = _(u"Усопший") + u", " + unicode(_(u"СоС")) + u" "
             if self.scan_form.instance.pk:
                 if scan_clear and not scan_uploaded:
                     self.scan_form.instance.delete()
