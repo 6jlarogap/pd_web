@@ -89,6 +89,8 @@ class LoggingFormMixin:
         if obj and obj.pk:
             if isinstance(obj, Burial):
                 obj = Burial.objects.get(pk=obj.pk)
+            elif isinstance(obj, Profile):
+                obj = Profile.objects.get(pk=obj.pk)
             else:
                 obj = None
             forms = self.forms if hasattr(self, 'forms') else []
