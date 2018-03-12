@@ -89,6 +89,8 @@ class LoggingFormMixin:
         if obj and obj.pk:
             if isinstance(obj, Burial):
                 obj = Burial.objects.get(pk=obj.pk)
+            elif isinstance(obj, Profile):
+                obj = Profile.objects.get(pk=obj.pk)
             else:
                 obj = None
             forms = self.forms if hasattr(self, 'forms') else []
@@ -117,6 +119,8 @@ class LoggingFormMixin:
                         if not old_value:
                             old_value = u"[]"
                         else:
+                            if obj:
+                                old_value = form.initial.get(f)
                             old_value = u", ".join([unicode(form.fields[f]._queryset.model.objects.get(pk=u)) for u in old_value])
                             old_value = u"[" + old_value + u"]"
                         if not new_value:
