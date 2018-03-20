@@ -1904,13 +1904,29 @@ class BaseBurialCommentEditFormSet(BaseInlineFormSet):
         for f in self.forms:
             f.formset = self
             f.fields['comment'].required = False
-            f.own_ = True
+            f.owner_ = False
+            f.can_edit_ = False
+            f.owner_retired_ = False
             f.own_cemetery = self.own_cemetery
             if not self.own_cemetery:
                 f.fields['comment'].widget.attrs.update({'readonly':'True'})
             if f.instance.pk:
-                if  f.instance.creator != request.user:
-                    f.own_ = False
+                owner = f.instance.owner()
+                if owner == request.user:
+                    f.owner_ = True
+                    f.can_edit_ = self.own_cemetery
+                elif self.instance.cemetery and self.own_cemetery:
+                    #
+                    # Создал комментарий не этот пользователь
+                    # Если:
+                    # - захоронение имеет кладбище
+                    # - текущий пользователь имеет доступ к этому кладбищу
+                    # - создал комментарий уволенный или перешедший на другое кладбище сотрудник
+                    # то текущий пользователь может править/удалять комментарий
+                    #
+                    f.owner_retired_ = self.instance.cemetery not in Cemetery.editable_ugh_cemeteries(user=owner)
+                    f.can_edit_ = f.owner_retired_
+                if not f.can_edit_:
                     f.fields['comment'].widget.attrs.update({'readonly':'True'})
             f.fields['comment'].widget.attrs.update({'rows':'4'})
 
