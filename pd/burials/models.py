@@ -164,7 +164,7 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
         Используется в таблице захоронений
         """
         result = cls.objects.none()
-        if is_ugh_user(user) and user.profile.is_registrator():
+        if user.is_active and is_ugh_user(user) and user.profile.is_registrator():
             return user.profile.cemeteries.all()
         return result
 
@@ -1466,10 +1466,19 @@ class BurialComment(BaseModel):
 
     burial = models.ForeignKey(Burial, verbose_name=_(u"Захоронение"), )
     creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), )
+    # если не указан изменивший, то это создатель
+    modifier = models.ForeignKey('auth.User', verbose_name=_(u"Последний изменивший"),
+                                 related_name='modified_by', null=True)
     comment = models.TextField(_(u"Комментарий"), )
 
     class Meta:
         ordering = ['-dt_created']
+
+    def owner(self):
+        """
+        Владелец, тот, кто модифицировал или тот кто создал
+        """
+        return self.modifier if self.modifier else self.creator
 
 class BurialFiles(Files):
     """

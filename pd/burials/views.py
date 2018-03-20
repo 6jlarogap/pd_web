@@ -1301,6 +1301,8 @@ class BurialEditComments(UGHRequiredMixin, View):
                         write_log(request, burial, _(u"Комментарий от %s удален") % str_dt_modified)
                         f.instance.delete()
                     elif 'comment' in f.changed_data:
+                        if f.instance.owner() != request.user:
+                            f.instance.modifier = request.user
                         write_log(
                             request,
                             burial,
@@ -1315,6 +1317,7 @@ class BurialEditComments(UGHRequiredMixin, View):
                             burial=burial,
                             comment=f_data,
                             creator=request.user,
+                            modifier=request.user,
                         )
 
             return redirect(reverse('burials_comments_edit', args=[self.kwargs['pk']]))
