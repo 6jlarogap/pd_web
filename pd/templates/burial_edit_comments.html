@@ -49,9 +49,8 @@
             <tr>
               <th style="text-align: center"></th>
               <th></th>
-              <th>{% trans "Дата создания" %}</th>
               <th>{% trans "Создатель" %}</th>
-              <th>{% trans "Дата изменения" %}</th>
+              <th>{% trans "Дата создания" %}</th>
               <th>{% trans 'Последний изменивший ("владелец")' %}</th>
               <th>{% trans "Дата последнего изменения" %}</th>
             </tr>
@@ -74,7 +73,6 @@
                                 {% trans "Новый комментарий" %}
                             {% endif %}
                         </td>
-                        <td>{{ f.instance.dt_created|default_if_none:"" }}</td>
                         <td>
                             {% if f.instance.pk %}
                                 {% if f.instance.creator.profile.user_last_name %}
