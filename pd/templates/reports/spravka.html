@@ -1029,13 +1029,15 @@ ODF styles with no properties representable as CSS
         <td colspan="3" style="text-align:left; border-bottom-width: 0; " class="ce27"><p>(подпись)</p></td>
         <td colspan="3" style="text-align:left; border-bottom-width: 0; " class="ce34"><p>(расшифровка подписи)</p>
     </tr>
-    <tr>
-        <td colspan="9" class="ce6" style="border-bottom-width: 0; border-top-width: 0; text-align: left; font-size: 8pt;">
-        <br/>
-            Для получения доступа к личному кабинету ответственного за {% trans "место" %} захоронения<br />
-            в информационной системе <b><u>pohoronnoedelo.ru</u></b> обратитесь в администрацию кладбища
-        <br/><br/></td>
-    </tr>
+    {% if global_context_CREATE_CABINET_ALLOW %}
+        <tr>
+            <td colspan="9" class="ce6" style="border-bottom-width: 0; border-top-width: 0; text-align: left; font-size: 8pt;">
+            <br/>
+                Для получения доступа к личному кабинету ответственного за {% trans "место" %} захоронения<br />
+                в информационной системе <b><u>pohoronnoedelo.ru</u></b> обратитесь в администрацию кладбища
+            <br/><br/></td>
+        </tr>
+    {% endif %}
     <tr class="ro5">
         <td style="text-align:left; " class="ce10"> </td>
         <td style="text-align:left; " class="ce10"> </td>
