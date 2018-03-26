@@ -671,8 +671,8 @@ class BurialsListView(PaginateListView):
         if not isinstance(s, list):
             s = [s]
 
+        burials = burials.order_by(*s).distinct()
         burials_count = burials.count()
-        burials = burials.order_by(*s)
         burials.count = lambda: burials_count
         return burials
 
