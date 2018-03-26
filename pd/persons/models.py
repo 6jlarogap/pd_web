@@ -72,7 +72,7 @@ class BasePerson(PersonMixin, models.Model):
     birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
     ident_number = models.CharField(_(u"Идентификационный номер"),max_length=255, blank=True)
 
-    address = models.ForeignKey(Location, editable=False, null=True)
+    address = models.ForeignKey(Location, editable=False, null=True, on_delete=models.PROTECT)
 
     def age(self):
         start = self.birth_date

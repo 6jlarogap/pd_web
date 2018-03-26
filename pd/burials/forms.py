@@ -796,10 +796,20 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.instance.agent = None
             self.instance.dover = None
             if self.applicant_form.is_valid():
+                old_address = self.applicant_address_form.instance
                 applicant = self.applicant_form.save(commit=False)
-                if self.applicant_address_form.is_valid_data():
+                if old_address and old_address.pk:
+                    applicant_address_valid = self.applicant_address_form.is_valid()
+                else:
+                    applicant_address_valid = self.applicant_address_form.is_valid_data()
+                if applicant_address_valid:
                     applicant.address = self.applicant_address_form.save()
                 applicant.save()
+                if not applicant.address and old_address and old_address.pk:
+                    try:
+                        old_address.delete()
+                    except ProtectedError:
+                        pass
                 self.instance.applicant = applicant
                 if self.applicant_id_form.is_valid():
                     self.instance.flag_no_applicant_doc_required = \
@@ -821,7 +831,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.instance.responsible = self.instance.applicant.deep_copy()
             self.instance.applicant.login_phone = applicant_login_phone
         elif self.responsible_form.is_valid():
-            responsible_address_valid = self.responsible_address_form.is_valid_data()
+            old_address = self.responsible_address_form.instance
+            if old_address and old_address.pk:
+                responsible_address_valid = self.responsible_address_form.is_valid()
+            else:
+                responsible_address_valid = self.responsible_address_form.is_valid_data()
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
                self.responsible_form.cleaned_data.get('first_name').strip() or \
                self.responsible_form.cleaned_data.get('middle_name').strip() or \
@@ -832,6 +846,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 if responsible_address_valid:
                     responsible.address = self.responsible_address_form.save()
                 responsible.save()
+                if not responsible.address and old_address and old_address.pk:
+                    try:
+                        old_address.delete()
+                    except ProtectedError:
+                        pass
                 self.instance.responsible = responsible
             else:
                 remove_responsible = True
