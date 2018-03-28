@@ -911,6 +911,15 @@ $(function() {
         })
     });
 
+    $('input[id^=id_spravka_]').css('width', '500px')
+
+    $('#make_spravka').find('.btn-primary').click(function() {
+        var data = $('#make_spravka form').serialize();
+        var href = $(this).attr('href');
+        $(this).attr('href', href + '?' + data)
+        $('#make_spravka').modal('hide');
+    });
+
     $('#add_org').find('.btn-primary').click(function() {
         var data = $('#add_org form').serialize();
         //TODO validation on client!
