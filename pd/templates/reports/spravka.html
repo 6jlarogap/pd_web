@@ -970,11 +970,11 @@ ODF styles with no properties representable as CSS
     </tr>
     <tr class="ro1">
         <td style="text-align:left; " class="ce5"><p>Дана</p></td>
-        <td colspan="8" style="text-align:left; " class="ce15"></td>
+        <td colspan="8" style="text-align:left; " class="ce15">{{ spravka_applicant }}</td>
     </tr>
     <tr class="ro1">
         <td colspan="3" style="text-align:left; " class="ce5"><p>Проживащему(ей) по адресу:</p></td>
-        <td colspan="6" style="text-align:left; " class="ce25"> 
+        <td colspan="6" style="text-align:left; " class="ce25">{{ spravka_applicant_address }}</td>
     </tr>
     <tr class="ro1">
         <td colspan="9" style="text-align:left; " class="ce6"></td>
@@ -1017,17 +1017,24 @@ ODF styles with no properties representable as CSS
         <td colspan="9" class="ce6" style="border-bottom-width: 0;"><br/></td>
     </tr>
     <tr class="ro1">
-        <td colspan="2" style="text-align:left; border-top-width: 0; " class="ce8"><p>Справка выдана </p></td>
-        <td colspan="3" style="text-align:right; border-top-width: 0;" class="ce24">__________________________</td>
-        <td style="text-align:right; border-top-width: 0; " colspan="4" class="ce33"><p>
-            ({{ user.profile|default:"__________________________" }})</p>
+        <td colspan="3" style="text-align:left; border-top-width: 0; " class="ce8"><p>
+        {% if spravka_issuer_title %}
+            &nbsp;&nbsp;&nbsp;{{ spravka_issuer_title }}
+        {% else %}
+            Справка выдана 
+        {% endif %}
+        </p>
+        </td>
+        <td colspan="2" style="text-align:right; border-top-width: 0;" class="ce24">__________________________</td>
+        <td colspan="2" style="text-align:right; border-top-width: 0;" class="ce24"></td>
+        <td style="text-align:left; border-top-width: 0; " colspan="4" class="ce33"><p>{{ spravka_issuer }}</p>
     </tr>
     <tr class="ro4">
         <td style="text-align:left; border-bottom-width: 0; " class="ce9 co1"><p>М.П.</p></td>
         <td style="text-align:left; border-bottom-width: 0; " class="ce20 co2"> </td>
         <td style="text-align:left; border-bottom-width: 0; " class="ce20"> </td>
-        <td colspan="3" style="text-align:left; border-bottom-width: 0; " class="ce27"><p>(подпись)</p></td>
-        <td colspan="3" style="text-align:left; border-bottom-width: 0; " class="ce34"><p>(расшифровка подписи)</p>
+        <td colspan="2" style="text-align:left; border-bottom-width: 0; " class="ce27"><p>(подпись)</p></td>
+        <td colspan="4" style="text-align:left; border-bottom-width: 0; " class="ce34"><p>(расшифровка подписи)</p>
     </tr>
     {% if global_context_CREATE_CABINET_ALLOW %}
         <tr>

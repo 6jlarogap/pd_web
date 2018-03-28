@@ -1747,6 +1747,13 @@ class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
 
         return self.cleaned_data
 
+class SpravkaForm(forms.Form):
+
+    spravka_applicant = forms.CharField(required=False, max_length=100, label=_(u"Кому выдается"))
+    spravka_applicant_address = forms.CharField(required=False, max_length=100, label=_(u"Кому выдается, адрес"))
+    spravka_issuer_title = forms.CharField(required=False, max_length=100, label=_(u"Кто выдал, должность"))
+    spravka_issuer = forms.CharField(required=False, max_length=100, label=_(u"Кто выдал, фамилия и.о."))
+
 class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
     class Meta:
         model = Org

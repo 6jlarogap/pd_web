@@ -1,5 +1,21 @@
 {% load i18n %}
 
+<div id="make_spravka" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "Справка" %}" aria-hidden="true">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h3 id="myModalLabel">{% trans "Справка" %}</h3>
+    </div>
+    <div class="modal-body">
+        <form autocomplete="on">
+            {{ spravka_form.as_p }}
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "отмена" %}</button>
+        <a class="btn btn-primary" href="{% url make_spravka b.pk %}" target="_blank">{% trans "создать" %}</a>
+    </div>
+</div>
+
 <div id="add_org" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="{% trans "добавить юрлицо" %}" aria-hidden="true">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
