@@ -12,7 +12,9 @@
     </div>
     <div class="modal-footer">
         <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "отмена" %}</button>
-        <a class="btn btn-primary" href="{% url make_spravka b.pk %}" target="_blank">{% trans "создать" %}</a>
+        {% if b %}
+            <a class="btn btn-primary" href="{% url make_spravka b.pk %}" target="_blank">{% trans "создать" %}</a>
+        {% endif %}
     </div>
 </div>
 
