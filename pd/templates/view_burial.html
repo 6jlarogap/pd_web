@@ -341,7 +341,7 @@
                     <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
                 {% endif %}
                 {% if b.can_ugh_print_reference %}
-                    <a href="#make_spravka" role="button" class="btn btn-loru" data-toggle="modal">
+                    <a href="#make_spravka" role="button" class="btn" data-toggle="modal">
                         {% trans "справка" %}
                     </a>
                 {% elif b.exhumated %}
