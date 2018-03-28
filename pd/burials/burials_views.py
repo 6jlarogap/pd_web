@@ -18,7 +18,7 @@ from django.views.generic.edit import CreateView, DeleteView
 from django.views.generic.list import ListView
 
 from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, \
-                          BurialApproveCloseForm, AddDocTypeForm, AddGravesForm
+                          BurialApproveCloseForm, AddDocTypeForm, AddGravesForm, SpravkaForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
 from burials.models import Reason, Burial, Burial1, Cemetery, Place, ExhumationRequest, OrderPlace
 from persons.models import DeathCertificate, OrderDeadPerson, DeadPerson, AlivePerson
@@ -493,6 +493,18 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             self._object = super(BurialView, self).get_object(queryset=queryset)
         return self._object
 
+    def get_spravka_form(self, b):
+        form = SpravkaForm()
+        if b.applicant and b.applicant.last_name:
+            form.initial['spravka_applicant'] = b.applicant.full_name_complete()
+            if b.applicant.address:
+                form.initial['spravka_applicant_address'] = u"%s" % b.applicant.address
+        if self.request.user.profile.title:
+            form.initial['spravka_issuer_title'] = self.request.user.profile.title
+        if self.request.user.profile.user_last_name:
+            form.initial['spravka_issuer'] = self.request.user.profile.last_name_initials()
+        return form
+
     def get_context_data(self, **kwargs):
         b = self.get_object()
         org = self.request.user.profile.org
@@ -503,6 +515,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'reason_typical_annulate': Reason.objects.filter(org=org, reason_type=Reason.TYPE_ANNULATE),
             'reason_typical_disapprove': Reason.objects.filter(org=org, reason_type=Reason.TYPE_DISAPPROVE),
             'approve_close_form': self.get_approve_close_form(),
+            'spravka_form': self.get_spravka_form(b),
             'comment_form': CommentForm(),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
             'medic_form': AddOrgForm(request=self.request, prefix='medic', instance=Org(type=Org.PROFILE_MEDIC)),
@@ -1244,6 +1257,13 @@ class MakeSpravka(BurialsListGenericMixin, DetailView):
         return Burial.objects.filter(qs).distinct()
 
     def render_to_response(self, context, **response_kwargs):
+        for cc in (
+            'spravka_applicant',
+            'spravka_applicant_address',
+            'spravka_issuer_title',
+            'spravka_issuer',
+            ):
+            context[cc] = self.request.GET.get(cc, '')
         context['now'] = datetime.datetime.now()
         report = make_report(
             user=self.request.user,
