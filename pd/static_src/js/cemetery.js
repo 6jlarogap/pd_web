@@ -916,7 +916,11 @@ $(function() {
     $('#make_spravka').find('.btn-primary').click(function() {
         var data = $('#make_spravka form').serialize();
         var href = $(this).attr('href');
-        $(this).attr('href', href + '?' + data)
+        var get_parm_index = href.indexOf('?');
+        if (get_parm_index != -1) {
+            href = href.substr(0, get_parm_index);
+        }
+        $(this).attr('href', href + '?' + data);
         $('#make_spravka').modal('hide');
     });
 
