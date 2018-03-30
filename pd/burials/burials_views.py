@@ -1264,12 +1264,16 @@ class MakeSpravka(BurialsListGenericMixin, DetailView):
             'spravka_issuer',
             ):
             context[cc] = self.request.GET.get(cc, '')
+        context['spravka_relative'] = bool(self.request.GET.get('spravka0_relative', ''))
         context['now'] = datetime.datetime.now()
+        template = 'spravka_minsk.html' if host_country_code(self.request) == 'by' else 'spravka.html'
+        template = "reports/%s" % template
+        context['print_now'] = True
         report = make_report(
             user=self.request.user,
             msg=_(u"Справка"),
             obj=self.get_object(),
-            template='reports/spravka.html',
+            template=template,
             context=RequestContext(self.request, context),
         )
         return redirect('report_view', report.pk)

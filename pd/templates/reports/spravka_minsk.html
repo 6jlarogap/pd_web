@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+<HTML>
+<HEAD>
+
+    <META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+    <TITLE>Справка о захоронении</TITLE>
+
+    <STYLE>
+        <!--
+        BODY {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: large
+        }
+        -->
+    </STYLE>
+
+</HEAD>
+
+<BODY TEXT="#000000">
+
+<TABLE FRAME=VOID CELLSPACING=0 COLS=5 RULES=NONE BORDER=0>
+    <COLGROUP>
+        <COL style="width:13mm">
+        <COL style="width:40mm">
+        <COL style="width:38mm">
+        <COL style="width:38mm">
+        <COL style="width:40mm">
+    </COLGROUP>
+    <TBODY>
+    {% for i in "123456789012" %}
+        <TR>
+            <TD>
+                <br />
+            </TD>
+        </TR>
+    {% endfor %}
+    <TR>
+        <TD COLSPAN=5 ALIGN=LEFT>
+            СПРАВКА
+         </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5 ALIGN=LEFT>
+            о месте захоронения {% if spravka_relative %} родственника {% endif %}
+         </TD>
+    </TR>
+    <TR>
+        <TD>
+            <br />
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5 ALIGN=CENTER>
+            {{ user.profile.org.name }}
+         </TD>
+    </TR>
+    <TR>
+        <TD>
+            <br />
+        </TD>
+    </TR>
+    <TR>
+        <TD COLSPAN=5 ALIGN=LEFT>
+            Фамилия, имя, отчество умершего:
+         </TD>
+    </TR>
+    <TR>
+        <TD>
+         </TD>
+        <TD COLSPAN=4 ALIGN=LEFT>
+            {{ burial.deadman.full_name_complete }}
+         </TD>
+    </TR>
+    </TBODY>
+</TABLE>
+
+{% if print_now %}
+    <script type="text/javascript">
+        window.onload = function () {
+            window.print();
+        }
+    </script>
+{% endif %}
+</BODY>
+
+</HTML>
