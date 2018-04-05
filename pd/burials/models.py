@@ -85,6 +85,9 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
     def __unicode__(self):
         return self.name
 
+    def is_columbarium_str(self):
+        return u'колумбарий' in self.name.lower()
+
     def unique_error_message(self, model_class, unique_check):
         if len(unique_check) == 1:
             return super(Cemetery, self).unique_error_message(model_class, unique_check)

@@ -1749,6 +1749,9 @@ class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
 
 class SpravkaForm(forms.Form):
 
+    # Все текстовые (!) поля формы начинаются со spravka_. Javascript увеличит их ширину
+    #
+    spravka0_relative = forms.BooleanField(required=False, initial=True, label=_(u"Справка родственнику?"))
     spravka_applicant = forms.CharField(required=False, max_length=100, label=_(u"Кому выдается"))
     spravka_applicant_address = forms.CharField(required=False, max_length=100, label=_(u"Кому выдается, адрес"))
     spravka_issuer_title = forms.CharField(required=False, max_length=100, label=_(u"Кто выдал, должность"))
