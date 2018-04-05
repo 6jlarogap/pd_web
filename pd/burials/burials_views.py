@@ -495,6 +495,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
 
     def get_spravka_form(self, b):
         form = SpravkaForm()
+        if host_country_code(self.request) != 'by':
+            del form.fields['spravka0_relative']
         if b.applicant and b.applicant.last_name:
             form.initial['spravka_applicant'] = b.applicant.full_name_complete()
             if b.applicant.address:
