@@ -46,9 +46,16 @@
     <TR><TD><br /></TD></TR>
     <TR>
         <TD COLSPAN=6 ALIGN=CENTER>
-            {{ user.profile.org.name }}
+            {{ user.profile.org.full_name_split_quotes.0 }}
          </TD>
     </TR>
+    {% if user.profile.org.full_name_split_quotes.1 %}
+        <TR>
+            <TD COLSPAN=6 ALIGN=CENTER>
+                {{ user.profile.org.full_name_split_quotes.1 }}
+            </TD>
+        </TR>
+    {% endif %}
     <TR><TD><br /></TD></TR>
     <TR>
         <TD COLSPAN=6>
