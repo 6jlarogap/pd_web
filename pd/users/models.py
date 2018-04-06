@@ -1129,6 +1129,16 @@ class Org(GetLogsMixin, BaseModel):
         else:
             return settings.ORG_AD_PAY_RECIPIENT_PK
 
+    def full_name_split_quotes(self):
+        """
+        Вернуть две строки полного названия, вторая строка в кавычках
+        """
+        m = re.search(ur'^\s*(.+)\s+(["«].+["»])$', self.full_name)
+        if m:
+            return (m.group(1), m.group(2),)
+        else:
+            return (self.full_name, u'',)
+
     def phone_list(self):
         return phones_from_text(self.phones)
 
