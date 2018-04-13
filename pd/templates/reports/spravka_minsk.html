@@ -167,7 +167,7 @@
                 Ряд: {{ burial.row }}
             </TD>
             <TD>
-                {% if burial.cemetery.is_columbarium_str %}Ячейка{% else %}Участок{% endif %}: {{ burial.place_number }}
+                {% if burial.cemetery.is_columbarium %}Ячейка{% else %}Участок{% endif %}: {{ burial.place_number }}
             </TD>
         </TR>
     {% endif %}

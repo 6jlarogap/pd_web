@@ -75,6 +75,7 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
     caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
                                   related_name='caretaker_cemeteries', on_delete=models.PROTECT)
+    code = models.CharField(_(u"Код"), max_length=50, default=u'')
 
     class Meta:
         verbose_name = _(u"Кладбище")
@@ -85,7 +86,8 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
     def __unicode__(self):
         return self.name
 
-    def is_columbarium_str(self):
+    @property
+    def is_columbarium(self):
         return u'колумбарий' in self.name.lower()
 
     def unique_error_message(self, model_class, unique_check):
@@ -864,6 +866,11 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     plan_time = models.TimeField(_(u"План. время"), null=True, blank=True)
     fact_date = UnclearDateModelField(_(u"Факт. дата"), null=True, blank=True)
 
+    # То же что дата/время последней модификации, но только если изменились поля, значимые для реестра:
+    # ФИО, идент. номер, место.
+    #
+    dt_register = models.DateTimeField(_(u"Дата/время закрытия, модификации полей для реестра"), editable=False, null=True)
+
     deadman = models.ForeignKey(DeadPerson, verbose_name=_(u"Усопший"), null=True, editable=False,
                                 on_delete=models.PROTECT)
 
@@ -988,6 +995,21 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         # из статуса "Отправлено на обследование"
         # в статус "На согласовании"
         return self.is_full() and self.is_inspecting()
+
+    def is_valid_for_register(self):
+        """
+        Захоронение может быть занесено в реестр
+        """
+        result = settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+                 self.is_closed() and \
+                 self.deadman and \
+                 self.deadman.ident_number and \
+                 self.deadman.last_name and \
+                 self.deadman.first_name and \
+                 self.fact_date and \
+                 self.fact_date.d >= settings.DEADMAN_REGISTER_START_DATE and \
+                 self.place_number != u'-'
+        return bool(result)
 
     def dc_filled(self):
         """
@@ -1206,7 +1228,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def approved_dt(self):
         return self.dt_modified
 
-    def close(self, request, old_place=None):
+    def close(self, request, old_place=None, update_for_register=False):
         if not self.account_number:
             self.set_account_number(user=self.changed_by)
 
@@ -1284,6 +1306,9 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         self.place_number = place.place
         old_status = self.status
         self.status = self.STATUS_CLOSED
+        if self.is_valid_for_register() and \
+           (update_for_register or old_status != self.STATUS_CLOSED):
+            self.dt_register = datetime.datetime.now()
         self.save()
 
         if old_status != self.STATUS_CLOSED:
