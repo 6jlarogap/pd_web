@@ -1,6 +1,6 @@
 # coding: utf-8
 
-import os
+import os, datetime
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
@@ -175,7 +175,12 @@ SOUTH_TESTS_MIGRATE = False
 INTERNAL_IPS = ['127.0.0.1',]
 
 # Разрешить вводить идентификационный номер для усопшего:
+# Это же применяется для кода, значимого для реестра
+#
 DEADMAN_IDENT_NUMBER_ALLOW = False
+# Год, с которого введен реестр в стране
+#
+DEADMAN_REGISTER_START_DATE = datetime.date(2013, 1, 1)
 
 # Разрешить формирование кабинетов отвественного, посредством задания
 # мобильного телефона для входа отвественного:

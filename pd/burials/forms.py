@@ -580,6 +580,16 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         data = self.data or None
         deadman = self.instance and self.instance.deadman
         self.old_place = self.instance and self.instance.get_place()
+
+        if settings.DEADMAN_IDENT_NUMBER_ALLOW:
+            self.deadman_old_last_name = self.deadman_old_first_name = self.deadman_old_ident_number = ''
+            if self.instance:
+                if self.instance.deadman:
+                    self.deadman_old_last_name = self.instance.deadman.last_name
+                    self.deadman_old_first_name = self.instance.deadman.first_name
+                    self.deadman_old_ident_number = self.instance.deadman.ident_number
+                self.old_grave_number = self.instance.grave_number or 1
+
         self.deadman_form = DeadPersonForm(request=self.request, data=data, prefix='deadman', instance=deadman)
         if self.funeral_deadman_address:
             deadman_addr = Location(addr_str=self.funeral_deadman_address)
@@ -739,6 +749,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.instance = super(BurialForm, self).save(commit=False)
         is_new_burial = not bool(self.instance.pk)
 
+        # Изменились ли поля, которые существенны в регистре
+        #
+        update_for_register = False
+
         if self.cleaned_data.get('agent_director'):
             self.instance.agent = None
             self.instance.dover = None
@@ -772,9 +786,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                     self.instance.source_type = Burial.SOURCE_UGH
 
         if self.deadman_form.is_valid() and self.instance.burial_container != Burial.CONTAINER_BIO:
+
             deadman = self.deadman_form.save(commit=False)
             if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
-                self.deadman_form.cleaned_data.get("ident_number"):
+               self.deadman_form.cleaned_data.get("ident_number"):
                 deadman.ident_number = rus_to_lat(deadman.ident_number.strip().upper())
 
             if self.deadman_address_form.is_valid_data():
@@ -859,31 +874,50 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if remove_responsible:
             self.safe_delete('responsible', self.instance)
 
-        if self.instance.is_closed() and \
-            self.old_place and \
-            (self.cleaned_data['cemetery'] != self.old_place.cemetery or \
-             self.cleaned_data['area'] != self.old_place.area or \
-             self.cleaned_data['row'] != self.old_place.row or \
-             self.cleaned_data['place_number'] != self.old_place.place):
-            place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
-                                                         area=self.cleaned_data['area'],
-                                                         row=self.cleaned_data['row'],
-                                                         place=self.cleaned_data['place_number'],
-                                         defaults = { 'place_length': self.cleaned_data['place_length'],
-                                                      'place_width': self.cleaned_data['place_width'],
-                                                    }
-                             )
-            self.instance.place=place
-            if created:
-                self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
-                                                     self.cleaned_data['grave_number'],
-                                                    ),
-                                                 self.cleaned_data['grave_number'],
-                )
-            # Пока не привязываем здесь могилу к захоронению, если место существует.
-            # Это будет сделано ниже в self.instance.close(....)
+        if self.instance.is_closed() and self.old_place:
+            if self.cleaned_data['cemetery'] != self.old_place.cemetery or \
+               self.cleaned_data['area'] != self.old_place.area or \
+               self.cleaned_data['row'] != self.old_place.row or \
+               self.cleaned_data['place_number'] != self.old_place.place:
+                place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
+                                                            area=self.cleaned_data['area'],
+                                                            row=self.cleaned_data['row'],
+                                                            place=self.cleaned_data['place_number'],
+                                            defaults = { 'place_length': self.cleaned_data['place_length'],
+                                                        'place_width': self.cleaned_data['place_width'],
+                                                        }
+                                )
+                self.instance.place=place
+                if created:
+                    self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
+                                                        self.cleaned_data['grave_number'],
+                                                        ),
+                                                    self.cleaned_data['grave_number'],
+                    )
+                # Пока не привязываем здесь могилу к захоронению, если место существует.
+                # Это будет сделано ниже в self.instance.close(....)
+
+                if settings.DEADMAN_IDENT_NUMBER_ALLOW:
+                    update_for_register = True
+            if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+               not update_for_register and \
+               not self.cleaned_data['cemetery'].is_columbarium and \
+               self.old_grave_number != self.cleaned_data['grave_number']:
+                update_for_register = True
+
+        if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+           not update_for_register and \
+           self.instance.is_closed() and \
+           self.instance.deadman and \
+           (
+                self.instance.deadman.last_name != self.deadman_old_last_name or \
+                self.instance.deadman.first_name != self.deadman_old_first_name or \
+                self.instance.deadman.ident_number != self.deadman_old_ident_number \
+           ):
+           update_for_register = True
 
         self.instance.save()
+
         if self.comment_form.is_valid():
             comment = self.comment_form.cleaned_data.get('comment', '').strip()
             if comment:
@@ -912,7 +946,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 )
 
         if self.instance.is_closed():
-            self.instance.close(request=self.request, old_place=self.old_place)
+            self.instance.close(
+                request=self.request,
+                old_place=self.old_place,
+                update_for_register=update_for_register,
+            )
 
         self.put_log_data()
 

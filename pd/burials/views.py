@@ -617,6 +617,9 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 ))
                 b.row = object.row
                 b.place_number = object.place
+                if b.is_valid_for_register():
+                    # есть изменения, существенные для регистра
+                    b.dt_register = datetime.datetime.now()
                 b.save()
 
         if object.responsible:
