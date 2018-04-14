@@ -167,6 +167,10 @@
                                                 <li><a href="{% url burials_doubles %}">{% trans "Дубли захоронений" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
+                                            {% if global_context_DEADMAN_IDENT_NUMBER_ALLOW %}
+                                                <li><a href="{% url burials_registry %}">{% trans "Для реестра населения" %}</a></li>
+                                                <li class="divider"></li>
+                                            {% endif %}
                                         {% endif %}
                                         {% if user.profile.is_trade %}
                                             <li><a href="{{ global_context_FRONT_END_URL }}loru/products">{% trans "Товары и услуги" %}</a></li>

@@ -1935,6 +1935,7 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
             self.instance.agent_director = False
             self.instance.agent = None
             self.instance.dover = None
+
         else:
             self.safe_delete('applicant', self.instance)
 
@@ -2014,3 +2015,41 @@ class AddGravesForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(AddGravesForm, self).__init__(*args, **kwargs)
         self.fields['place_grave_choice'].widget = forms.Select(choices=((1,1),))
+
+class RegistryForm(forms.ModelForm):
+
+    date_from = forms.DateField(required=True, label=_(u"С"))
+    date_to = forms.DateField(required=True, label=_(u"по"))
+
+    class Meta:
+        model = Profile
+        fields = ('date_from', 'date_to', 'cemeteries',)
+
+    def clean_date_from(self):
+        d = self.cleaned_data['date_from']
+        if d > datetime.date.today():
+            raise forms.ValidationError(_(u"Дата больше текущей"))
+        return d
+
+    def clean_date_to(self):
+        d = self.cleaned_data['date_to']
+        if d > datetime.date.today():
+            raise forms.ValidationError(_(u"Дата больше текущей"))
+        return d
+
+    def clean_cemeteries(self):
+        cemeteries = self.cleaned_data['cemeteries']
+        if len(cemeteries) == 0:
+            raise forms.ValidationError(_(u"Не заданы кладбища"))
+        return cemeteries
+
+    def clean(self):
+        cleaned_data = super(RegistryForm, self).clean()
+        if self.is_valid():
+            date_from = self.cleaned_data['date_from']
+            date_to = self.cleaned_data['date_to']
+            if date_from > date_to:
+                raise forms.ValidationError(_(u"Начальная дата больше конечной"))
+            if (date_to - date_from).days >= 30:
+                raise forms.ValidationError(_(u"Интервал между датами не дложен быть больше месяца"))
+        return cleaned_data

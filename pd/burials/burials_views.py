@@ -14,17 +14,18 @@ from django.template.context import RequestContext
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView, DeleteView
+from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.views.generic.list import ListView
 
 from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, \
-                          BurialApproveCloseForm, AddDocTypeForm, AddGravesForm, SpravkaForm
+                          BurialApproveCloseForm, AddDocTypeForm, AddGravesForm, SpravkaForm, \
+                          RegistryForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
 from burials.models import Reason, Burial, Burial1, Cemetery, Place, ExhumationRequest, OrderPlace
 from persons.models import DeathCertificate, OrderDeadPerson, DeadPerson, AlivePerson
 from logs.models import write_log
 from orders.models import Order
-from users.models import Org, Profile, is_cabinet_user
+from users.models import Org, Profile, is_cabinet_user, is_ugh_user
 from pd.utils import re_search, host_country_code
 from pd.forms import CommentForm
 from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
@@ -1397,3 +1398,40 @@ class RemoveResponsible(ArchiveMixin, View):
             raise Http404
 
 rm_responsible = RemoveResponsible.as_view()
+
+class RegistryView(FormInvalidMixin, UpdateView):
+    template_name = 'registry.html'
+    model = Profile
+    form_class = RegistryForm
+
+    def get_object(self):
+        if not settings.DEADMAN_IDENT_NUMBER_ALLOW or not is_ugh_user(self.request.user):
+            raise Http404
+        return self.request.user.profile
+
+    def get_form(self, *args, **kwargs):
+        form = super(RegistryView, self).get_form(*args, **kwargs)
+        cemeteries_qs = Cemetery.objects.filter(ugh=self.request.user.profile.org)
+        form.fields['cemeteries'].queryset = cemeteries_qs
+        form.fields['cemeteries'].widget.attrs.update({'size': str(min(cemeteries_qs.count()+1, 15))})
+        cc = list()
+        for c in cemeteries_qs:
+            cc.append(c.pk)
+        form.initial['cemeteries'] = cc
+        form.initial['date_from'] = datetime.date.today()
+        form.initial['date_to'] = form.initial['date_from']
+        return form
+
+    def form_valid(self, form):
+        org_pk = self.request.user.profile.org.pk
+        media_path = os.path.join('tmp', 'export', 'registry',
+            '%s' % org_pk,
+        )
+        export_path = os.path.join(settings.MEDIA_ROOT, media_path)
+        if not os.path.exists(export_path):
+            os.makedirs(export_path)
+        zip_fname = 'd.zip'
+        return redirect(os.path.join(settings.MEDIA_URL, media_path, zip_fname))
+
+burials_registry = RegistryView.as_view()
+
