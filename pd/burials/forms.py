@@ -2050,6 +2050,6 @@ class RegistryForm(forms.ModelForm):
             date_to = self.cleaned_data['date_to']
             if date_from > date_to:
                 raise forms.ValidationError(_(u"Начальная дата больше конечной"))
-            if (date_to - date_from).days >= 30:
-                raise forms.ValidationError(_(u"Интервал между датами не дложен быть больше месяца"))
+            if (date_to - date_from).days > 30:
+                raise forms.ValidationError(_(u"Интервал между датами не дложен быть больше 30 дней"))
         return cleaned_data
