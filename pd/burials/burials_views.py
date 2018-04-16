@@ -1,4 +1,4 @@
-## coding=utf-8
+# coding=utf-8
 import datetime, time, os, csv, re, tempfile
 import json
 from django import db
@@ -1528,7 +1528,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                             ~Q(area__in=areas_hc)
             qs = Burial.objects.filter(q_cemeteries).order_by('dt_register'). \
                     select_related(*select_related).distinct()
-            fname = u'registry-1-%s-from-%s-to%s.csv' % (dt_now_str, date_from_str, date_to_str)
+            fname = u'registry-1-%s-from-%s-to-%s.csv' % (dt_now_str, date_from_str, date_to_str)
             with open(os.path.join(temp_dir, fname), 'w') as f:
                 for b in qs.iterator():
                     full_name = self.check_names(b.deadman)
@@ -1548,11 +1548,10 @@ class RegistryView(FormInvalidMixin, UpdateView):
 
         if columbariums_list:
             q_vertical_columbariums =  q_dates & \
-                            Q(cemetery__in=columbariums_list) & \
-                            ~Q(place_number=u'-')
+                            Q(cemetery__in=columbariums_list)
             qs = Burial.objects.filter(q_vertical_columbariums).order_by('dt_register'). \
                     select_related(*select_related).distinct()
-            fname = u'registry-2-%s-from-%s-to%s.csv' % (dt_now_str, date_from_str, date_to_str)
+            fname = u'registry-2-%s-from-%s-to-%s.csv' % (dt_now_str, date_from_str, date_to_str)
             with open(os.path.join(temp_dir, fname), 'w') as f:
                 for b in qs.iterator():
                     full_name = self.check_names(b.deadman)
@@ -1576,7 +1575,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                         Q(area__in=areas_hc)
         qs = Burial.objects.filter(q_horizontal_columbariums).order_by('dt_register'). \
                 select_related(*select_related).distinct()
-        fname = u'registry-3-%s-from-%s-to%s.csv' % (dt_now_str, date_from_str, date_to_str)
+        fname = u'registry-3-%s-from-%s-to-%s.csv' % (dt_now_str, date_from_str, date_to_str)
         with open(os.path.join(temp_dir, fname), 'w') as f:
             for b in qs.iterator():
                 full_name = self.check_names(b.deadman)
