@@ -1462,15 +1462,6 @@ class RegistryView(FormInvalidMixin, UpdateView):
 
     def form_valid(self, form):
 
-        # Горизонтальные колумбарии
-        #
-        horz_columbariums = (
-            dict(
-                cemetery__name=u'Колодищи',
-                name=u'132у'
-            ),
-        )
-
         org = self.request.user.profile.org
         org_pk = org.pk
         media_path = os.path.join('tmp', 'export', 'burials',
@@ -1508,9 +1499,27 @@ class RegistryView(FormInvalidMixin, UpdateView):
             deadman__ident_number__gt=u'',
         )
         q_dates &= ~Q(place_number=u'-')
+
+        # Горизонтальные колумбарии. Пока так.
+        #
+        horz_columbariums = (
+            dict(
+                cemetery__name=u'Колодищи',
+                name=u'132у'
+            ),
+        )
         areas_hc = list()
         for horz_columbarium in horz_columbariums:
-            areas_hc.append(Area.objects.get(cemetery__ugh=org, **horz_columbarium))
+            try:
+                areas_hc.append(Area.objects.get(cemetery__ugh=org, **horz_columbarium))
+            except Area.DoesNotExist:
+                pass
+        # TODO
+        # Когда определимя, что считать захоронением в горизонтальный колумбарий,
+        # изменим q_hc
+        #
+        q_hc = Q(area__in=areas_hc)
+
         select_related = (
             'area__name',
             'deadman__last_name', 'deadman__first_name', 'deadman__middle_name',
@@ -1525,7 +1534,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                             Q(cemetery__in=cemeteries_list) & \
                             Q(row__gt=u'') & \
                             ~Q(row=u'-') & \
-                            ~Q(area__in=areas_hc)
+                            ~q_hc
             qs = Burial.objects.filter(q_cemeteries).order_by('dt_register'). \
                     select_related(*select_related).distinct()
             fname = u'registry-1-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
@@ -1569,29 +1578,31 @@ class RegistryView(FormInvalidMixin, UpdateView):
             if self.check_empty_file(temp_dir, fname):
                 got_data.append(fname)
 
-        q_horizontal_columbariums =  q_dates & \
-                        Q(row__gt=u'') & \
-                        ~Q(row=u'-') & \
-                        Q(area__in=areas_hc)
-        qs = Burial.objects.filter(q_horizontal_columbariums).order_by('dt_register'). \
-                select_related(*select_related).distinct()
-        fname = u'registry-3-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
-        with open(os.path.join(temp_dir, fname), 'w') as f:
-            for b in qs.iterator():
-                full_name = self.check_names(b.deadman)
-                if not full_name:
-                    pass
-                f.write((u"%s\n" % ";".join((
-                    "3",
-                    b.deadman.ident_number,
-                    full_name[0], full_name[1], full_name[2],
-                    b.cemetery.code,
-                    b.area.name,
-                    b.row,
-                    b.place_number,
-                ))).encode('utf-8'))
-        if self.check_empty_file(temp_dir, fname):
-            got_data.append(fname)
+        if cemeteries_list:
+            q_horizontal_columbariums =  q_dates & \
+                            Q(cemetery__in=cemeteries_list) & \
+                            Q(row__gt=u'') & \
+                            ~Q(row=u'-') & \
+                            q_hc
+            qs = Burial.objects.filter(q_horizontal_columbariums).order_by('dt_register'). \
+                    select_related(*select_related).distinct()
+            fname = u'registry-3-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+            with open(os.path.join(temp_dir, fname), 'w') as f:
+                for b in qs.iterator():
+                    full_name = self.check_names(b.deadman)
+                    if not full_name:
+                        pass
+                    f.write((u"%s\n" % ";".join((
+                        "3",
+                        b.deadman.ident_number,
+                        full_name[0], full_name[1], full_name[2],
+                        b.cemetery.code,
+                        b.area.name,
+                        b.row,
+                        b.place_number,
+                    ))).encode('utf-8'))
+            if self.check_empty_file(temp_dir, fname):
+                got_data.append(fname)
 
         if got_data:
             zip_fname = u'registry-from-%s-to-%s-at-%s.zip' % (date_from_str, date_to_str, dt_now_str, )
