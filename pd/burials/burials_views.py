@@ -1,5 +1,5 @@
 # coding=utf-8
-import datetime, time, os, csv, re, tempfile
+import datetime, time, os, csv, re, tempfile, zipfile
 import json
 from django import db
 
@@ -1528,7 +1528,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                             ~Q(area__in=areas_hc)
             qs = Burial.objects.filter(q_cemeteries).order_by('dt_register'). \
                     select_related(*select_related).distinct()
-            fname = u'registry-1-%s-from-%s-to-%s.csv' % (dt_now_str, date_from_str, date_to_str)
+            fname = u'registry-1-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
             with open(os.path.join(temp_dir, fname), 'w') as f:
                 for b in qs.iterator():
                     full_name = self.check_names(b.deadman)
@@ -1551,7 +1551,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                             Q(cemetery__in=columbariums_list)
             qs = Burial.objects.filter(q_vertical_columbariums).order_by('dt_register'). \
                     select_related(*select_related).distinct()
-            fname = u'registry-2-%s-from-%s-to-%s.csv' % (dt_now_str, date_from_str, date_to_str)
+            fname = u'registry-2-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
             with open(os.path.join(temp_dir, fname), 'w') as f:
                 for b in qs.iterator():
                     full_name = self.check_names(b.deadman)
@@ -1575,7 +1575,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                         Q(area__in=areas_hc)
         qs = Burial.objects.filter(q_horizontal_columbariums).order_by('dt_register'). \
                 select_related(*select_related).distinct()
-        fname = u'registry-3-%s-from-%s-to-%s.csv' % (dt_now_str, date_from_str, date_to_str)
+        fname = u'registry-3-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
         with open(os.path.join(temp_dir, fname), 'w') as f:
             for b in qs.iterator():
                 full_name = self.check_names(b.deadman)
@@ -1593,9 +1593,21 @@ class RegistryView(FormInvalidMixin, UpdateView):
         if self.check_empty_file(temp_dir, fname):
             got_data.append(fname)
 
-        # messages.info(self.request, _(u'Не найдены данные за указанный интервал дат'))
-        return self.get(self.request, *self.args, **self.kwargs)
-        # return redirect(os.path.join(settings.MEDIA_URL, media_path, temp_dir_name, zip_fname))
+        if got_data:
+            zip_fname = u'registry-from-%s-to-%s-at-%s.zip' % (date_from_str, date_to_str, dt_now_str, )
+            with zipfile.ZipFile(os.path.join(temp_dir, zip_fname), 'w') as f:
+                for fname in got_data:
+                    f.write(os.path.join(temp_dir, fname), fname)
+            for fname in got_data:
+                os.unlink(os.path.join(temp_dir, fname))
+            return redirect(os.path.join(settings.MEDIA_URL, media_path, temp_dir_name, zip_fname))
+        else:
+            try:
+                os.rmdir(temp_dir)
+            except OSError:
+                pass
+            messages.info(self.request, _(u'Не найдены данные для реестра за указанный интервал дат'))
+            return self.get(self.request, *self.args, **self.kwargs)
 
 burials_registry = RegistryView.as_view()
 
