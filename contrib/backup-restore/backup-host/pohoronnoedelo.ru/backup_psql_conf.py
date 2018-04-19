@@ -15,7 +15,7 @@
 # SSH_KEY может быть пустой, если ssh без него работает
 #
 SSH_KEY = ""
-HOST = "pohoronnoedelo.ru"
+HOST = "register.ritual-minsk.by"
 HOST_USER = "reserve"
 # Здесь на сервере формируются дампы
 #
@@ -23,11 +23,11 @@ HOST_FOLDER = "/home/reserve/pgsql-backup/"
 
 # список баз данных на HOST
 #
-DATABASES = ('pd_prod', 'pd', )
+DATABASES = ('pd', )
 
 # каталог резервных копий, должен быть предварительно создан!
 #
-BACKUP_PATH = '/home/soul/reserve/pohoronnoedelo.ru/pgsql-backup/'
+BACKUP_PATH = '/home/soul/reserve/register.ritual-minsk.by/pgsql-backup/'
 
 # папки сегодняшних, ежедневных, еженедельных, ежемесячных архивов,
 # внутри BACKUP_PATH. Должны быть предварительно созданы

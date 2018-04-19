@@ -1,0 +1,15 @@
+# pohoronnoedelo.ru backup
+
+33 9-19/2  * * *     soul    python ~/reserve/pohoronnoedelo.ru/backup_psql.py  >/dev/null 2>&1
+50 9-21/3  * * *     soul    sh     ~/reserve/pohoronnoedelo.ru/rsyncs.sh > ~/reserve/pohoronnoedelo.ru/rsyncs.last.log 2>&1
+00 5       * * *     soul    python ~/reserve/pohoronnoedelo.ru/restore_replicate.py > ~/reserve/pohoronnoedelo.ru/restore_replicate.last.log 2>&1
+
+# register.ritual-minsk.by backup
+
+03 8-20/2  * * *     soul   python ~/reserve/register.ritual-minsk.by/backup_psql.py  >/dev/null 2>&1
+10 8-20/2  * * *     soul   sh     ~/reserve/register.ritual-minsk.by/rsyncs.sh > ~/reserve/register.ritual-minsk.by/rsyncs.last.log 2>&1
+30 5       * * *     soul   python ~/reserve/register.ritual-minsk.by/restore_replicate.py > ~/reserve/register.ritual-minsk.by/restore_replicate.last.log 2>&1
+
+# all projects django code sync with corresponding git repos
+
+00 6      * * *      soul    python ~/users_projects/users_projects_.py > ~/users_projects/last.log 2>&1
