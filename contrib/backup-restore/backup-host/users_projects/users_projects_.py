@@ -33,16 +33,14 @@ from users_projects_conf import *
 
 def main():
     for project in PROJECTS:
-        print '\nChecking %s ...' % project[MANAGE_PY]
-        os.chdir(project[MANAGE_PY])
+        print '\nChecking %s ...' % project
+        os.chdir(project)
         outp = do_cmd('sudo -u %s -H git pull' % (APACHE2_USER, ))
         if ALREADY_UP_TO_DATE in outp:
             continue
         else:
-            do_cmd('sudo -u %s %s/bin/python ./manage.py migrate --noinput' % 
-                    (APACHE2_USER, project[VENV]), )
-            do_cmd('sudo -u %s %s/bin/python ./manage.py collectstatic --noinput' % 
-                    (APACHE2_USER, project[VENV]), )
+            do_cmd('sudo -u %s ./manage.py migrate --noinput' % APACHE2_USER) 
+            do_cmd('sudo -u %s ./manage.py collectstatic --noinput' % APACHE2_USER)
             do_cmd(APACHE2_RELOAD)
 
 def do_cmd(cmd):
