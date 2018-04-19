@@ -18,7 +18,9 @@ while [ $loopcount -lt 10 ]; do
     loopcount=`expr $loopcount + 1`
     rm -f $BACKUP_PATH/current.tgz $FILE_LIST
     find /etc > $FILE_LIST
+    find /var/lib/redis >> $FILE_LIST
     find /home/www-data/django | egrep "local_settings.py$" >> $FILE_LIST
+    find /home/www-data/django/pd.certs  >> $FILE_LIST
     find /home -type d -links 2 | egrep "/\.ssh$" >> $FILE_LIST
     find /root -type d -links 2 | egrep "/\.ssh$" >> $FILE_LIST
     find /var/www  -type d -links 2| egrep "/\.ssh$" >> $FILE_LIST

@@ -3,18 +3,20 @@
 
 #   backup_psql.py
 #   --------------
-#   Параметры конфигурации:
+#   Параметры конфигурации
 #       Переменные ПРОПИСНЫМИ буквами. Импортируются
-#       из backup_psql_conf.py, в каталоге запуска сценария
-#       или в /usr/local/etc
+#       из backup_psql_conf.py в каталоге запуска сценария
 #
 #   Назначение:
-#       *   Резервное копирование psql баз данных:
+#       *   Резервное копирование psql баз данных
+#           с удаленного сервера
 #           - сегодняшнее (today):
 #               Производится при любом запуске сценария, например,
 #               планировщиком задач (crontab).
 #               Туда попопадают все дампы, созданные за последние 24 ч.
 #               Дампы старше суток удаляются.
+#               На удаленном сервере удаляются страые дампы, чтоб
+#               их осталось не более CURRENT_DUMPS_NUM
 #           -  ежедневное (daily):
 #               Там по одному дампу в день, но не старше недели.
 #           -  еженедельное (weekly):
@@ -35,10 +37,60 @@
 
 import sys, os, datetime
 
-conf_dir = '/usr/local/etc'
-if conf_dir not in sys.path:
-    sys.path.append(conf_dir)
 from backup_psql_conf import *
+
+db_dump_ext = '.pg.gz'
+datetime_format = '%Y%m%d%H%M%S'
+
+rssh = "ssh %(ssh_key)s %(host_user)s@%(host)s" % dict(
+    ssh_key=SSH_KEY,
+    host_user=HOST_USER,
+    host=HOST,
+)
+host_folder = HOST_FOLDER.rstrip('/')
+
+def backup(db_name, dst_dir):
+    now_str = datetime.datetime.now().strftime(datetime_format)
+    gz_name = '%s-%s%s' % (db_name, now_str, db_dump_ext)
+    pg_dump_command = \
+        '%(rssh)s ' \
+        '"' \
+            'pg_dump -U postgres %(db_name)s | ' \
+            'gzip > %(host_folder)s/%(gz_name)s' \
+        '"' % dict(
+        rssh=rssh,
+        db_name=db_name,
+        host_folder=host_folder,
+        gz_name=gz_name,
+    )
+    rc = os.system(pg_dump_command)
+    if rc:
+        print "Failed to create db '%s' dump at %s" % (db_name, HOST)
+        exit(1)
+
+    dst_f_name = '%s%s-%s%s' % (dst_dir, db_name, now_str, db_dump_ext)
+    pg_copy_command = \
+        'scp ' \
+        '%(ssh_key)s ' \
+        '%(host_user)s@%(host)s:%(host_folder)s/%(gz_name)s ' \
+        '%(dst_f_name)s ' \
+        '> /dev/null 2>&1 ' \
+        % dict(
+            ssh_key=SSH_KEY,
+            host_user=HOST_USER,
+            host=HOST,
+            host_folder=host_folder,
+            gz_name=gz_name,
+            dst_f_name=dst_f_name,
+        )
+    rc = os.system(pg_copy_command)
+    if rc:
+        print "Failed to copy db dump from %s to here: %s" % (HOST, dst_f_name)
+        exit(1)
+
+def delta_datetime(fname):
+    fname_datetime_str = fname.split('-')[-1].split('.')[0]
+    return datetime.datetime.now() - datetime.datetime.strptime(fname_datetime_str, datetime_format)
 
 # Чтоб все пути были каталогами, существовали и завершались '/'
 for parm in ('BACKUP_PATH', 'TODAY_PATH', 'DAILY_PATH', 'WEEKLY_PATH', 'MONTHLY_PATH', ):
@@ -49,21 +101,6 @@ for parm in ('BACKUP_PATH', 'TODAY_PATH', 'DAILY_PATH', 'WEEKLY_PATH', 'MONTHLY_
     if not os.path.isdir(globals()[parm]):
         print "Failed to find folder: %s" % globals()[parm]
         exit(1)
-
-db_dump_ext = '.pg.gz'
-datetime_format = '%Y%m%d%H%M%S'
-
-def backup(db_name, dst_dir):
-    now_str = datetime.datetime.now().strftime(datetime_format)
-    dst_f_name = '%s%s-%s%s' % (dst_dir, db_name, now_str, db_dump_ext)
-    rc = os.system('pg_dump -U postgres %s | gzip > %s' % (db_name, dst_f_name))
-    if rc:
-        print "Failed to create the db '%s' backup" % db_name
-        exit(1)
-
-def delta_datetime(fname):
-    fname_datetime_str = fname.split('-')[-1].split('.')[0]
-    return datetime.datetime.now() - datetime.datetime.strptime(fname_datetime_str, datetime_format)
 
 # today backups
 if LOCK_FILE:
@@ -121,5 +158,53 @@ for db in DATABASES:
                 os.remove(MONTHLY_PATH + fname)
     if min_delta >= one_month:
         backup(db, MONTHLY_PATH)
+
+# Почистить старые дампы с удаленного сервера
+#
+current_dumps_num = CURRENT_DUMPS_NUM + 1
+for db_name in DATABASES:
+    pg_list_command = \
+            '%(rssh)s ' \
+            '"' \
+                'find %(host_folder)s/%(db_name)s-*%(db_dump_ext)s -type f | sort' \
+            '"' % dict(
+            rssh=rssh,
+            host_folder=host_folder,
+            db_name=db_name,
+            db_dump_ext=db_dump_ext,
+        )
+
+    pipe = os.popen(pg_list_command)
+    remote_dumps = pipe.read()
+    rc = pipe.close()
+    if rc:
+        print "Failed to count dumps at %s" % (HOST, dst_f_name)
+        exit(1)
+    remote_dumps = remote_dumps.strip().split('\n')
+    # Ограничим число удаляемых файлов до 3 шт, чтоб не была слишкой длинной строка удаления
+    #
+    to_remove = ''
+    count_removed_dumps = 0
+    num_remote_dumps = len(remote_dumps)
+    if num_remote_dumps > CURRENT_DUMPS_NUM:
+        for rd in remote_dumps:
+            if count_removed_dumps >= 3 or num_remote_dumps <= CURRENT_DUMPS_NUM:
+                break
+            num_remote_dumps -= 1
+            count_removed_dumps += 1
+            to_remove = "%s %s" % (to_remove, rd)
+    if to_remove:
+        pg_remove_command = \
+            '%(rssh)s ' \
+            '"' \
+                'rm %(to_remove)s' \
+            '"' % dict(
+            rssh=rssh,
+            to_remove=to_remove,
+        )
+        rc = os.system(pg_remove_command)
+        if rc:
+            print "Failed to remove outdated dumps at %s" % HOST
+            exit(1)
 
 exit(0)

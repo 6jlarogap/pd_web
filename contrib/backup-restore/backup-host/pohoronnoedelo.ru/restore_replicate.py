@@ -4,23 +4,19 @@
 #   restore_replicate.py
 #   -------------------
 #
-#   Восстановление на резервном сервере
-#   баз данных, получаемых с основного сервера по Rsync
+#   Восстановление на резервном сервере баз данных
 #
 #   Параметры (переменные ПРОПИСНЫМИ буквами) импортируются из
 #   restore_replicate_conf.py, в каталоге запуска сценария или в /usr/local/etc
 #
 #   - работаем в каталоге BACKUP_PATH
-#   - запоминаем его содержимое.
-#   - в каталог BACKUP_PATH копируем по rsync содержимое аналогичного
+#   - в каталоге BACKUP_PATH должны быть данные для восстановления
 #   - каталога на основном сервере. Там должны быть дампы
 #       * имя дампа: db-YYYYMMDDhhmmss.pg.gz, db - имя б.д.,
 #       * в которую и будем восстанавливать
 #     но может быть и lock_file. Если есть lock_file, то ждем
 #     10 сек, далее повторяем rsync, если обнаружился lock_file,
 #     еще 10 сек, но не более 5 мин.
-#     сравниваем содержимое с тем, что ранее запомнили. Если
-#     отличается выполняем восстановление.
 #   - восстанавливаем из последнего файла для каждой б.д
 
 import os, sys, time, re
@@ -48,14 +44,9 @@ wait_if_locked = 10
                                         # sec
 stop_waiting = 30 * wait_if_locked
 
-old_listdir = os.listdir(BACKUP_PATH)
 waiting = 0
 stopped_waiting = False
 while True:
-    rc = os.system('rsync -rltupv --delete %s %s' % (RSYNC_SENDER, BACKUP_PATH, ))
-    if rc:
-        scram("Failed to rsync '%s' into '%s' herein" % (RSYNC_SENDER, BACKUP_PATH, ))
-
     listdir = os.listdir(BACKUP_PATH)
     if lock_file not in listdir:
         break
@@ -70,9 +61,6 @@ if stopped_waiting:
 
 if not listdir:
     print 'No dump files from the original server received. Nothing to do now'
-    exit(0)
-if not (set(listdir) - set(old_listdir)):
-    print 'No changes against previous restore noticed. Nothing to do now'
     exit(0)
 
 # нужен последний дамп для каждой базы из всех файлов
