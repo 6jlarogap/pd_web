@@ -1400,6 +1400,12 @@ class RemoveResponsible(ArchiveMixin, View):
 rm_responsible = RemoveResponsible.as_view()
 
 class RegistryView(FormInvalidMixin, UpdateView):
+
+    ENCODING = 'cp1251'
+    SEPARATOR = ';'
+    LINE_END = '\r\n'
+    EMPTY_FIELD = u'-'
+
     template_name = 'registry.html'
     model = Profile
     form_class = RegistryForm
@@ -1438,7 +1444,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
         return result
 
     def correct_name(self, name):
-        return name.replace(u';', u'').strip()
+        return name.replace(self.SEPARATOR, u'').strip()
 
     def check_names(self, deadman):
         """
@@ -1448,16 +1454,39 @@ class RegistryView(FormInvalidMixin, UpdateView):
         last_name = first_name = middle_name = u''
         if deadman:
             last_name = self.correct_name(deadman.last_name)
-            if last_name == u'-':
+            if last_name == self.EMPTY_FIELD:
                 last_name = u''
             first_name = self.correct_name(deadman.first_name)
-            if first_name == u'-':
+            if first_name == self.EMPTY_FIELD:
                 first_name = u''
             middle_name = self.correct_name(deadman.middle_name)
             if not middle_name:
-                middle_name = u'-'
+                middle_name = self.EMPTY_FIELD
         if last_name and first_name:
             result = (last_name, first_name, middle_name)
+        return result
+
+    def encode_(self, s):
+        """
+        Кодирование, исправление ошибок в вых строке
+        """
+        got_error = False
+        s = u'%s%s' % (s, self.LINE_END)
+        try:
+            result = s.encode(self.ENCODING)
+        except UnicodeEncodeError:
+            result = ''
+            for c in s:
+                try:
+                    result += c.encode(self.ENCODING)
+                except UnicodeEncodeError:
+                    pass
+            result = result.replace(
+                '%s%s'  % (self.SEPARATOR, self.SEPARATOR,),
+                '%s-%s' % (self.SEPARATOR, self.SEPARATOR,)
+            )
+            if result.endswith(self.SEPARATOR):
+                result += self.EMPTY_FIELD
         return result
 
     def form_valid(self, form):
@@ -1543,7 +1572,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                     full_name = self.check_names(b.deadman)
                     if not full_name:
                         pass
-                    f.write((u"%s\n" % ";".join((
+                    f.write(self.encode_(self.SEPARATOR.join((
                         "1",
                         b.deadman.ident_number,
                         full_name[0], full_name[1], full_name[2],
@@ -1551,7 +1580,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                         b.area.name,
                         b.row,
                         b.place_number,
-                    ))).encode('utf-8'))
+                    ))))
             if self.check_empty_file(temp_dir, fname):
                 got_data.append(fname)
 
@@ -1566,7 +1595,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                     full_name = self.check_names(b.deadman)
                     if not full_name:
                         pass
-                    f.write((u"%s\n" % ";".join((
+                    f.write(self.encode_(self.SEPARATOR.join((
                         "2",
                         b.deadman.ident_number,
                         full_name[0], full_name[1], full_name[2],
@@ -1574,7 +1603,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                         b.area.name,
                         b.row or u'-',
                         b.place_number,
-                    ))).encode('utf-8'))
+                    ))))
             if self.check_empty_file(temp_dir, fname):
                 got_data.append(fname)
 
@@ -1592,7 +1621,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                     full_name = self.check_names(b.deadman)
                     if not full_name:
                         pass
-                    f.write((u"%s\n" % ";".join((
+                    f.write(self.encode_(self.SEPARATOR.join((
                         "3",
                         b.deadman.ident_number,
                         full_name[0], full_name[1], full_name[2],
@@ -1600,7 +1629,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                         b.area.name,
                         b.row,
                         b.place_number,
-                    ))).encode('utf-8'))
+                    ))))
             if self.check_empty_file(temp_dir, fname):
                 got_data.append(fname)
 
