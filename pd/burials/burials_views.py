@@ -1580,6 +1580,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                         b.area.name,
                         b.row,
                         b.place_number,
+                        str(b.grave_number),
                     ))))
             if self.check_empty_file(temp_dir, fname):
                 got_data.append(fname)
