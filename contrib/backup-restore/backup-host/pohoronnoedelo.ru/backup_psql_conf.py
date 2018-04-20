@@ -15,7 +15,7 @@
 # SSH_KEY может быть пустой, если ssh без него работает
 #
 SSH_KEY = ""
-HOST = "register.ritual-minsk.by"
+HOST = "pohoronnoedelo.ru"
 HOST_USER = "reserve"
 # Здесь на сервере формируются дампы
 #
@@ -23,11 +23,11 @@ HOST_FOLDER = "/home/reserve/pgsql-backup/"
 
 # список баз данных на HOST
 #
-DATABASES = ('pd', )
+DATABASES = ('pd_prod', 'pd', )
 
 # каталог резервных копий, должен быть предварительно создан!
 #
-BACKUP_PATH = '/home/soul/reserve/register.ritual-minsk.by/pgsql-backup/'
+BACKUP_PATH = '/home/soul/reserve/pohoronnoedelo.ru/pgsql-backup/'
 
 # папки сегодняшних, ежедневных, еженедельных, ежемесячных архивов,
 # внутри BACKUP_PATH. Должны быть предварительно созданы
@@ -36,10 +36,11 @@ TODAY_PATH = 'today/'
 DAILY_PATH = 'daily/'
 WEEKLY_PATH = 'weekly/'
 MONTHLY_PATH = 'monthly/'
+YEARLY_PATH = 'yearly/'
 
-# самый старый ежемесячный архив, в месяцах от текущей даты. В месяце 30 дней :)
+# Cамый старый ежегодный, в годах от текущей даты
 #
-MONTHS = 12
+YEARS = 10
 
 # Файл, создаваемый здесь перед сегодняшним перед снятием дампов б.д. из DATABASES.
 # Сегодняшний очередной дамп каждой базы из DATABASES производится при любом
