@@ -22,7 +22,9 @@
 #           -  еженедельное (weekly):
 #               Там по одному дампу в неделю, но не старше месяца.
 #           -  ежемесячное (monthly):
-#               Там по одному дампу в месяц, но не старше MONTHS*30 дней.
+#               Там по одному дампу в месяц
+#           -  ежегодное (yearly):
+#               Там по одному дампу в год, но не старше YEARS лет
 #           Дампы производятся в gzip- упакованные файлы
 #           с именами db-YYYYMMDDhhmmss.pg.gz, где:
 #               - db:   имя б.д;
@@ -93,7 +95,7 @@ def delta_datetime(fname):
     return datetime.datetime.now() - datetime.datetime.strptime(fname_datetime_str, datetime_format)
 
 # Чтоб все пути были каталогами, существовали и завершались '/'
-for parm in ('BACKUP_PATH', 'TODAY_PATH', 'DAILY_PATH', 'WEEKLY_PATH', 'MONTHLY_PATH', ):
+for parm in ('BACKUP_PATH', 'TODAY_PATH', 'DAILY_PATH', 'WEEKLY_PATH', 'MONTHLY_PATH', 'YEARLY_PATH',):
     if not globals()[parm].endswith('/'):
         globals()[parm] += '/'
     if parm != 'BACKUP_PATH':
@@ -147,17 +149,30 @@ for db in DATABASES:
         backup(db, WEEKLY_PATH)
 
 # monthly backups
-max_month = datetime.timedelta(days=MONTHS*30)
+one_year = datetime.timedelta(days=365)
 for db in DATABASES:
     min_delta = max_delta
     for fname in os.listdir(MONTHLY_PATH):
         if fname.startswith(db + '-'):
             delta = delta_datetime(fname)
             min_delta = min(delta, min_delta)
-            if delta >= max_month:
+            if delta >= one_year:
                 os.remove(MONTHLY_PATH + fname)
     if min_delta >= one_month:
         backup(db, MONTHLY_PATH)
+
+# yearly backups
+max_years = datetime.timedelta(days=YEARS * 365)
+for db in DATABASES:
+    min_delta = max_delta
+    for fname in os.listdir(YEARLY_PATH):
+        if fname.startswith(db + '-'):
+            delta = delta_datetime(fname)
+            min_delta = min(delta, min_delta)
+            if delta >= max_years:
+                os.remove(YEARLY_PATH + fname)
+    if min_delta >= one_year:
+        backup(db, YEARLY_PATH)
 
 # Почистить старые дампы с удаленного сервера
 #
