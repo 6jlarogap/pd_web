@@ -10,7 +10,7 @@
 # Запуск из ./manage.py shell :
 # execfile('/path/to/minsk_to_register_2.py')
 
-import os, datetime, xlwt
+import os, datetime, xlwt, zipfile
 
 from django.db.models.query_utils import Q
 
@@ -19,7 +19,7 @@ from users.models import Org
 
 dir_out = os.getenv("HOME")
 date_from = datetime.date(2013, 1, 1)
-date_to = datetime.date(2013, 4, 30)
+date_to = datetime.date(2018, 4, 30)
 org = Org.objects.get(pk=2)
 
 SEPARATOR = ';'
@@ -37,11 +37,16 @@ horz_columbariums = (
     ),
 )
 
+date_from_str = datetime.datetime.strftime(date_from, '%Y%m%d')
+date_to_str = datetime.datetime.strftime(date_to, '%Y%m%d')
+
 def make_xlss(org, date_from, date_to, dir_out):
     
+    got_data = list()
+
     q_dates = Q(
         annulated=False,
-        status= Burial.STATUS_CLOSED,
+        status=Burial.STATUS_CLOSED,
         ugh=org,
         fact_date__isnull=False,
         fact_date_no_day=False,
@@ -59,12 +64,16 @@ def make_xlss(org, date_from, date_to, dir_out):
         areas_hc.append(Area.objects.get(cemetery__ugh=org, **horz_columbarium))
     q = q_dates & Q(area__in=areas_hc)
     mode_cemetery = 3
+    file_id = fname_(mode_cemetery, with_id=True)
+    file_noid = fname_(mode_cemetery, with_id=False)
+    got_data.append(file_id)
+    got_data.append(file_noid)
     print_xls(
         q,
         dir_out,
         mode_cemetery=mode_cemetery,
-        file_id=fname_(mode_cemetery, with_id=True),
-        file_noid=fname_(mode_cemetery, with_id=False),
+        file_id=file_id,
+        file_noid=file_noid,
         put_grave=False
     )
 
@@ -73,12 +82,16 @@ def make_xlss(org, date_from, date_to, dir_out):
     q = q_dates & \
         Q(cemetery__name__icontains=u'колумбарий')
     mode_cemetery = 2
+    file_id = fname_(mode_cemetery, with_id=True)
+    file_noid = fname_(mode_cemetery, with_id=False)
+    got_data.append(file_id)
+    got_data.append(file_noid)
     print_xls(
         q,
         dir_out,
         mode_cemetery=mode_cemetery,
-        file_id=fname_(mode_cemetery, with_id=True),
-        file_noid=fname_(mode_cemetery, with_id=False),
+        file_id=file_id,
+        file_noid=file_noid,
         put_grave=False
     )
 
@@ -88,38 +101,52 @@ def make_xlss(org, date_from, date_to, dir_out):
         ~Q(cemetery__name__icontains=u'колумбарий') & \
         ~Q(area__in=areas_hc)
     mode_cemetery = 1
+    file_id = fname_(mode_cemetery, with_id=True)
+    file_noid = fname_(mode_cemetery, with_id=False)
+    got_data.append(file_id)
+    got_data.append(file_noid)
     print_xls(
         q,
         dir_out,
         mode_cemetery=mode_cemetery,
-        file_id=fname_(mode_cemetery, with_id=True),
-        file_noid=fname_(mode_cemetery, with_id=False),
+        file_id=file_id,
+        file_noid=file_noid,
         put_grave=True
     )
+
+    d = datetime.datetime.now()
+    dt_now_str = datetime.datetime.strftime(d, '%Y%m%d%H%M%S')
+    zip_fname = u'registry-from-%s-to-%s-at-%s.zip' % (
+        date_from_str,
+        date_to_str,
+        dt_now_str,
+    )
+    with zipfile.ZipFile(os.path.join(dir_out, zip_fname), 'w') as f:
+        for fname in got_data:
+            f.write(os.path.join(dir_out, fname), fname)
+    for fname in got_data:
+        os.unlink(os.path.join(dir_out, fname))
+
 
 def fname_(mode_cemetery, with_id):
 
     with_id_str = 'with_id' if with_id else 'without_id'
-    date_from_str = datetime.datetime.strftime(date_from, '%Y%m%d')
-    date_to_str = datetime.datetime.strftime(date_to, '%Y%m%d')
-    dt_now_str = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S')
-
-    fname = u'registry-%s-%s-from-%s-to-%s-at-%s.xls' % (
+    fname = u'registry-%s-%s-from-%s-to-%s.xls' % (
         mode_cemetery,
         with_id_str,
         date_from_str,
         date_to_str,
-        dt_now_str, 
     )
     return fname
 
-def print_xls(q, dir_out, mode_cemetery, file_id, file_noid, put_grave=False):
+def print_xls(q, dir_out, mode_cemetery, file_id, file_noid, put_grave):
 
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('output')
     set_xls_col_width(ws)
     n = 0
-    for b in Burial.objects.filter(q & Q(deadman__ident_number__gt='')).order_by('fact_date'):
+    for b in Burial.objects.filter(q & Q(deadman__ident_number__gt='')). \
+       order_by('fact_date').distinct():
         line = get_line(b, mode_cemetery, put_grave)
         if line:
             for i in range(len(line)):
@@ -131,7 +158,8 @@ def print_xls(q, dir_out, mode_cemetery, file_id, file_noid, put_grave=False):
     ws = wb.add_sheet('output')
     set_xls_col_width(ws)
     n = 0
-    for b in Burial.objects.filter(q & Q(deadman__ident_number__lte='')).order_by('fact_date'):
+    for b in Burial.objects.filter(q & Q(deadman__ident_number__lte='')). \
+       order_by('fact_date').distinct():
         line = get_line(b, mode_cemetery, put_grave)
         if line:
             for i in range(len(line)):
@@ -145,7 +173,7 @@ def get_line(b, mode_cemetery, put_grave):
     full_name = check_names(b.deadman)
 
     if full_name:
-        result = (
+        result = [
             str(mode_cemetery),
             id_,
             full_name[0],
@@ -156,18 +184,22 @@ def get_line(b, mode_cemetery, put_grave):
             b.area and b.area.name or '-',
             b.row or '-',
             b.place_number and b.place_number or '-',
-            put_grave and str(b.grave_number) or '',
-        )
+        ]
+        if put_grave:
+            result.append(str(b.grave_number) or '')
+
     else:
         result = None
     return result
 
 def set_xls_col_width(ws):
+    ws.col(0).width = 1000
+    ws.col(1).width = 5000
     ws.col(2).width = 4000
     ws.col(3).width = 4000
     ws.col(4).width = 4000
 
-    ws.col(6).width = 4000
+    ws.col(6).width = 3000
 
 def correct_name(name):
     return name.replace(SEPARATOR, u'').strip()
