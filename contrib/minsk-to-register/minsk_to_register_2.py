@@ -19,7 +19,7 @@ from users.models import Org
 
 dir_out = os.getenv("HOME")
 date_from = datetime.date(2013, 1, 1)
-date_to = datetime.date(2018, 4, 30)
+date_to = datetime.date(2013, 4, 30)
 org = Org.objects.get(pk=2)
 
 SEPARATOR = ';'
@@ -48,11 +48,9 @@ def make_xlss(org, date_from, date_to, dir_out):
         fact_date_no_month=False,
         deadman__last_name__gt=u'',
         deadman__first_name__gt=u'',
+        fact_date__gte=date_from,
+        fact_date__lte=date_to,
     )
-    if date_from:
-        q_dates &= Q(fact_date__gte=date_from)
-    if date_to:
-        q_dates &= Q(fact_date__lte=date_to)
 
     # Горизонтальные колумбарии
     #
@@ -60,12 +58,13 @@ def make_xlss(org, date_from, date_to, dir_out):
     for horz_columbarium in horz_columbariums:
         areas_hc.append(Area.objects.get(cemetery__ugh=org, **horz_columbarium))
     q = q_dates & Q(area__in=areas_hc)
+    mode_cemetery = 3
     print_xls(
         q,
         dir_out,
-        mode_cemetery=3,
-        file_id='horizontal_columbariums_with_id.xls',
-        file_noid='horizontal_columbariums_without_id.xls',
+        mode_cemetery=mode_cemetery,
+        file_id=fname_(mode_cemetery, with_id=True),
+        file_noid=fname_(mode_cemetery, with_id=False),
         put_grave=False
     )
 
@@ -73,12 +72,13 @@ def make_xlss(org, date_from, date_to, dir_out):
     #
     q = q_dates & \
         Q(cemetery__name__icontains=u'колумбарий')
+    mode_cemetery = 2
     print_xls(
         q,
         dir_out,
-        mode_cemetery=2,
-        file_id='vertical_columbariums_with_id.xls',
-        file_noid='vertical_columbariums_without_id.xls',
+        mode_cemetery=mode_cemetery,
+        file_id=fname_(mode_cemetery, with_id=True),
+        file_noid=fname_(mode_cemetery, with_id=False),
         put_grave=False
     )
 
@@ -87,14 +87,31 @@ def make_xlss(org, date_from, date_to, dir_out):
     q = q_dates & \
         ~Q(cemetery__name__icontains=u'колумбарий') & \
         ~Q(area__in=areas_hc)
+    mode_cemetery = 1
     print_xls(
         q,
         dir_out,
-        mode_cemetery=1,
-        file_id='cemeteries_with_id.xls',
-        file_noid='cemeteries_without_id.xls',
+        mode_cemetery=mode_cemetery,
+        file_id=fname_(mode_cemetery, with_id=True),
+        file_noid=fname_(mode_cemetery, with_id=False),
         put_grave=True
     )
+
+def fname_(mode_cemetery, with_id):
+
+    with_id_str = 'with_id' if with_id else 'without_id'
+    date_from_str = datetime.datetime.strftime(date_from, '%Y%m%d')
+    date_to_str = datetime.datetime.strftime(date_to, '%Y%m%d')
+    dt_now_str = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d%H%M%S')
+
+    fname = u'registry-%s-%s-from-%s-to-%s-at-%s.xls' % (
+        mode_cemetery,
+        with_id_str,
+        date_from_str,
+        date_to_str,
+        dt_now_str, 
+    )
+    return fname
 
 def print_xls(q, dir_out, mode_cemetery, file_id, file_noid, put_grave=False):
 
