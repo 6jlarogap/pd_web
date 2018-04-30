@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# minsk_to_register.py
+# minsk_to_register_1.py
 #
 # Записать в домашний каталог пользователя 8 файлов xls
 # в соответствии с format.xls.
@@ -9,7 +9,7 @@
 #   - склепов у нас нет, пропускаем, точнее формируем пустые файлы
 #
 # Запуск из ./manage.py shell :
-# execfile('/path/to/minsk_to_register.py')
+# execfile('/path/to/minsk_to_register_1.py')
 
 import os, datetime, xlwt
 

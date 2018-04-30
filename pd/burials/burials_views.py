@@ -1405,6 +1405,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
     SEPARATOR = ';'
     LINE_END = '\r\n'
     EMPTY_FIELD = u'-'
+    DATE_FORMAT='%d.%m.%Y'
 
     template_name = 'registry.html'
     model = Profile
@@ -1519,6 +1520,9 @@ class RegistryView(FormInvalidMixin, UpdateView):
 
         q_dates = Q(
             annulated=False,
+            fact_date__isnull=False,
+            fact_date_no_day=False,
+            fact_date_no_month=False,
             status= Burial.STATUS_CLOSED,
             ugh=org,
             dt_register__gte=date_from,
@@ -1576,6 +1580,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                         "1",
                         b.deadman.ident_number,
                         full_name[0], full_name[1], full_name[2],
+                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
                         b.cemetery.code,
                         b.area.name,
                         b.row,
@@ -1600,6 +1605,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                         "2",
                         b.deadman.ident_number,
                         full_name[0], full_name[1], full_name[2],
+                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
                         b.cemetery.code,
                         b.area.name,
                         b.row or u'-',
@@ -1626,6 +1632,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
                         "3",
                         b.deadman.ident_number,
                         full_name[0], full_name[1], full_name[2],
+                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
                         b.cemetery.code,
                         b.area.name,
                         b.row,
