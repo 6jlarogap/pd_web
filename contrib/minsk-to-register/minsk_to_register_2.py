@@ -97,10 +97,29 @@ def make_xlss(org, date_from, date_to, dir_out):
 
     # Кладбища
     #
-    q = q_dates & \
+    q_cemeteries = q_dates & \
         ~Q(cemetery__name__icontains=u'колумбарий') & \
         ~Q(area__in=areas_hc)
+
+    # Кладбища - Гробы
+    q =  q_cemeteries & Q(burial_container=Burial.CONTAINER_COFFIN)
     mode_cemetery = 1
+    file_id = fname_(mode_cemetery, with_id=True)
+    file_noid = fname_(mode_cemetery, with_id=False)
+    got_data.append(file_id)
+    got_data.append(file_noid)
+    print_xls(
+        q,
+        dir_out,
+        mode_cemetery=mode_cemetery,
+        file_id=file_id,
+        file_noid=file_noid,
+        put_grave=True
+    )
+
+    # Кладбища - Урны
+    q =  q_cemeteries & Q(burial_container=Burial.CONTAINER_URN)
+    mode_cemetery = 5
     file_id = fname_(mode_cemetery, with_id=True)
     file_noid = fname_(mode_cemetery, with_id=False)
     got_data.append(file_id)

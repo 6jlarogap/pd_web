@@ -815,8 +815,6 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         (BURIAL_OVER, _(u'Захоронение в существующую')),
     )
 
-    NEW_BURIAL_TYPES = ['common', 'urn']
-
     SOURCE_FULL = 'full'
     SOURCE_UGH = 'ugh'
     SOURCE_ARCHIVE = 'archive'
