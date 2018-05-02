@@ -1562,13 +1562,17 @@ class RegistryView(FormInvalidMixin, UpdateView):
         # Список файлов для архивации
         #
         got_data = list()
+
         if cemeteries_list:
             q_cemeteries =  q_dates & \
                             Q(cemetery__in=cemeteries_list) & \
                             Q(row__gt=u'') & \
                             ~Q(row=u'-') & \
                             ~q_hc
-            qs = Burial.objects.filter(q_cemeteries).order_by('dt_register'). \
+
+            q_cemeteries_coffins =  q_cemeteries & Q(burial_container=Burial.CONTAINER_COFFIN)
+
+            qs = Burial.objects.filter(q_cemeteries_coffins).order_by('dt_register'). \
                     select_related(*select_related).distinct()
             fname = u'registry-1-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
             with open(os.path.join(temp_dir, fname), 'w') as f:
@@ -1578,6 +1582,30 @@ class RegistryView(FormInvalidMixin, UpdateView):
                         pass
                     f.write(self.encode_(self.SEPARATOR.join((
                         "1",
+                        b.deadman.ident_number,
+                        full_name[0], full_name[1], full_name[2],
+                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
+                        b.cemetery.code,
+                        b.area.name,
+                        b.row,
+                        b.place_number,
+                        str(b.grave_number),
+                    ))))
+            if self.check_empty_file(temp_dir, fname):
+                got_data.append(fname)
+
+            q_cemeteries_urns =  q_cemeteries & Q(burial_container=Burial.CONTAINER_URN)
+
+            qs = Burial.objects.filter(q_cemeteries_urns).order_by('dt_register'). \
+                    select_related(*select_related).distinct()
+            fname = u'registry-5-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+            with open(os.path.join(temp_dir, fname), 'w') as f:
+                for b in qs.iterator():
+                    full_name = self.check_names(b.deadman)
+                    if not full_name:
+                        pass
+                    f.write(self.encode_(self.SEPARATOR.join((
+                        "5",
                         b.deadman.ident_number,
                         full_name[0], full_name[1], full_name[2],
                         datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
