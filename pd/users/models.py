@@ -60,6 +60,12 @@ class Role(models.Model):
     ROLE_ADMIN = 'admin'
     ROLE_REGISTRATOR = 'registrator'
 
+    # Может выдавать данные в реестр.
+    # Эту роль не надо вносить в таблицу, если на сайте
+    # нет выдачи данных в реестр
+    #
+    ROLE_REGISTRY = 'registry_handler'
+
     name = models.CharField(_(u"Код"), max_length=255, editable=False)
     title = models.CharField(_(u"Название"), max_length=255, editable=False)
 
@@ -247,6 +253,9 @@ class Profile(CommonProfile):
 
     def is_registrator(self):
         return self.is_ugh() and self.role.filter(name=Role.ROLE_REGISTRATOR).exists()
+
+    def is_registry_handler(self):
+        return self.is_ugh() and self.role.filter(name=Role.ROLE_REGISTRY).exists()
 
     def has_all_cemeteries(self):
         Cemetery = get_model('burials', 'Cemetery')
