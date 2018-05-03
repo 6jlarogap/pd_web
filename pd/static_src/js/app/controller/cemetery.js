@@ -69,6 +69,7 @@ function CemeteryCtrl($rootScope, $scope, $http, $location, $resource, naturalSe
                     {cemeteryID:0}, // fake cemetery id to find out necessary auth data
                     function(result) {
             $scope.ugh_registrators = result.ugh_registrators; 
+            $scope.editor.need_code = result.need_code;
             $scope.editor.cemetery_editors = [];
             if (result.profile_pk) {
                 for (var i=0; i< $scope.ugh_registrators.length; i++) {

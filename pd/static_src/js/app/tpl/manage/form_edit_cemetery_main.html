@@ -4,7 +4,7 @@
   <span class="error" ng-show="cemeteryEditForm.cemetery_name.$error.required">Не указано название кладбища</span>
 </p>
 
-<p><label for="id_code">Код (для реестра населения):</label>
+<p ng-show="editor.need_code"><label for="id_code">Код (для реестра населения):</label>
   <input id="id_code" name="cemetery_code" type="text" name="code" ng-model="editor.cemetery.code"
          maxlength="30">
 </p>
