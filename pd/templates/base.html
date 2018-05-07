@@ -167,7 +167,7 @@
                                                 <li><a href="{% url burials_doubles %}">{% trans "Дубли захоронений" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
-                                            {% if global_context_DEADMAN_IDENT_NUMBER_ALLOW %}
+                                            {% if global_context_DEADMAN_IDENT_NUMBER_ALLOW and user.profile.is_registry_handler %}
                                                 <li><a href="{% url burials_registry %}">{% trans "Реестр населения" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}

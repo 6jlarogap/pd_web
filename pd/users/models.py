@@ -68,6 +68,7 @@ class Role(models.Model):
 
     name = models.CharField(_(u"Код"), max_length=255, editable=False)
     title = models.CharField(_(u"Название"), max_length=255, editable=False)
+    ordering = ('pk', )
 
     class Meta:
         verbose_name = _(u'Роль пользователя')
