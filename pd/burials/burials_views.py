@@ -9,6 +9,7 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render_to_response
 from django.template.context import RequestContext
 from django.views.generic.base import TemplateView, View
@@ -1414,6 +1415,8 @@ class RegistryView(FormInvalidMixin, UpdateView):
     def get_object(self):
         if not settings.DEADMAN_IDENT_NUMBER_ALLOW or not is_ugh_user(self.request.user):
             raise Http404
+        if not self.request.user.profile.is_registry_handler():
+            raise PermissionDenied
         return self.request.user.profile
 
     def get_form(self, *args, **kwargs):
