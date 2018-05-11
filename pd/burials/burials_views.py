@@ -1543,6 +1543,14 @@ class RegistryView(FormInvalidMixin, UpdateView):
                 cemetery__name=u'Колодищи',
                 name=u'132у'
             ),
+            dict(
+                cemetery__name=u'Северное-1',
+                name=u'56У'
+            ),
+            dict(
+                cemetery__name=u'Северное-1',
+                name=u'139У'
+            ),
         )
         areas_hc = list()
         for horz_columbarium in horz_columbariums:
