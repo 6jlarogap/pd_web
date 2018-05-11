@@ -146,6 +146,9 @@ function CemeteryViewCtrl(
             }
 
             $scope.cemetery = new Cemetery(result.cemetery);
+            if ($scope.cemetery.name.match(/колумбарий/i)) {
+                $scope.area.kind = 'v';
+            }
             $scope.is_editable = result.is_editable;
             $scope.can_add_area = result.can_add_area;
             $scope.editor.caretaker = result.cemetery.caretaker;
