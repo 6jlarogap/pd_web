@@ -35,6 +35,14 @@ horz_columbariums = (
         cemetery__name=u'Колодищи',
         name=u'132у'
     ),
+    dict(
+        cemetery__name=u'Северное-1',
+        name=u'56У'
+    ),
+    dict(
+        cemetery__name=u'Северное-1',
+        name=u'139У'
+    ),
 )
 
 date_from_str = datetime.datetime.strftime(date_from, '%Y%m%d')
