@@ -153,7 +153,7 @@ class AreaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Area
-        fields = ('id', 'cemetery', 'name', 'availability', 'places_count', 'purpose', 'caretaker')
+        fields = ('id', 'cemetery', 'name', 'availability', 'kind', 'places_count', 'purpose', 'caretaker')
 
     def is_valid(self):
         valid = not self.errors

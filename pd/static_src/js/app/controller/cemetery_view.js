@@ -10,6 +10,7 @@ function CemeteryViewCtrl(
                         '/area/{{row.getProperty(\'id\')}}">Открыть</a>',
 
     tplAvailability = '<span>{{row.getProperty(\'availability\')|list:AVAILABILITY_CHOICES}}</span>',
+    tplKind = '<span>{{row.getProperty(\'kind\')|list:AREA_KIND_CHOICES}}</span>',
     tplPurpose = '<span>{{row.getProperty(\'purpose\')|objList:PURPOSE_LIST}}</span>',
     item = {
         address:false
@@ -49,6 +50,7 @@ function CemeteryViewCtrl(
     $scope.PLACE_TYPES = PLACE_TYPES;
     $scope.PLACE_ARCHIVE_TYPES = PLACE_ARCHIVE_TYPES;
     $scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES;
+    $scope.AREA_KIND_CHOICES = AREA_KIND_CHOICES;
 
     AreaPurpose.get(function(result) {
         $scope.PURPOSE_LIST = result;
@@ -128,6 +130,7 @@ function CemeteryViewCtrl(
     $scope.update = function() {
         $scope.area = {
             availability: 'open',
+            kind: 'g',
             purpose: 1,
             places_count: 1
         };

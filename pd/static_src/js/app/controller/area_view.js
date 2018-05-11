@@ -15,6 +15,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	};
 	$scope.area_max_places = 100;
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES; 
+	$scope.AREA_KIND_CHOICES = AREA_KIND_CHOICES; 
 	$scope.search = '';
 	$scope.place_list_filtered = [];
 

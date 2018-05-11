@@ -212,11 +212,21 @@ class Area(BaseModelManualDtCreated):
         (AVAILABILITY_CLOSED, _(u'Закрыт')),
     )
 
+    KIND_GRAVES = 'g'
+    KIND_COLUMBARIUM_VERT = 'v'
+    KIND_COLUMBARIUM_HORZ = 'h'
+    AREA_KINDS = (
+        (KIND_GRAVES, _(u'Кладбищенский (Могилы)'),),
+        (KIND_COLUMBARIUM_VERT, _(u'Колумбарная стена'),),
+        (KIND_COLUMBARIUM_HORZ, _(u'Горизонтальный колумбарий'),),
+    )
+
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     name = models.CharField(_(u"Название"), max_length=255)
     availability = models.CharField(_(u"Открытость"), max_length=32,
                                     choices=AVAILABILITY_CHOICES,
                                     default=AVAILABILITY_OPEN)
+    kind = models.CharField(_(u"Тип"), max_length=8, choices=AREA_KINDS, default=KIND_GRAVES)
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Макс. кол-во могил в месте"), default=1)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
@@ -266,6 +276,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
     oldplace = models.CharField(_(u"Старое место"), max_length=255, blank=True, null=True)
     place = models.CharField(_(u"Место"), max_length=255, blank=True, default='')
     available_count = models.PositiveSmallIntegerField(_(u"Число свободных могил"), default=0)
+    kind_crypt = models.BooleanField(_(u"Это склеп"), default=False)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
     place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2,
