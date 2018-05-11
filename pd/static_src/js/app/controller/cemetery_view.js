@@ -39,6 +39,7 @@ function CemeteryViewCtrl(
         enableRowSelection:false,
         columnDefs: [
             {field: 'name', displayName: 'Наименование'},
+            {cellTemplate:tplKind, displayName: 'Тип'},
             {cellTemplate:tplAvailability, displayName: 'Открытость'},
             {cellTemplate:tplPurpose, displayName: 'Назначение'},
             {field: 'places_count', displayName: $scope.localeText.GravesInPlace},
