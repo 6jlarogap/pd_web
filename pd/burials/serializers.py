@@ -238,7 +238,7 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     class Meta:
         model = Place
         fields = ('id', 'cemetery', 'lat', 'lng', 'area', 'row', 'place', 'responsible', 'responsible_txt',
-                  'place_length', 'place_width', 'gallery',
+                  'place_length', 'place_width', 'gallery', 'kind_crypt',
                   'dt_free',
                   'dt_wrong_fio', 'dt_military', 'dt_size_violated', 'dt_unowned', 'dt_unindentified',
                   'caretaker', 'create_cabinet',
