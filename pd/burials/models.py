@@ -1207,6 +1207,27 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         except Place.DoesNotExist:
             return None
 
+    def place_name(self):
+        result = u''
+        area = self.area
+        if area:
+            if area.kind == Area.KIND_GRAVES:
+                result = _(u'место')
+                place = self.get_place()
+                if place and place.kind_crypt:
+                    result = _(u'склеп')
+            else:
+                # В колумбариях
+                result = 'место'
+        return result
+
+    def show_grave(self):
+        result = True
+        area = self.area
+        if area and area.kind != Area.KIND_GRAVES:
+            result = False
+        return result
+
     def get_responsible(self):
         return self.responsible or (self.get_place() and self.get_place().responsible) or None
 
