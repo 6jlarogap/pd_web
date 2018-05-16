@@ -238,7 +238,7 @@
                     {% if b.get_place %}
                         {# Эксгумированое зх не имеет b.place, но его место можно найти как b.get_place #}
                         <br />
-                        <a class="btn" href="{{ b.get_place.url }}" target="_blank">{% trans "место" %}</a>
+                        <a class="btn" href="{{ b.get_place.url }}" target="_blank">{{ b.place_name }}</a>
                         {% if b.cemetery and b.cemetery in editable_ugh_cemeteries %}
                             <a class="btn" href="{% url create_burial %}?place_id={{ b.get_place.pk }}&burial_add=1" target="_blank" title="{% trans "Подзахоронение в то же место" %}">+</a>
                         {% endif %}

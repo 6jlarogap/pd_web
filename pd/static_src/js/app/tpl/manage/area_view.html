@@ -6,6 +6,8 @@
     <dl class="dl-horizontal">
         <dt>Название</dt>
         <dd>{{area.name}}</dd>
+        <dt>Тип</dt>
+        <dd>{{area.kind|list:AREA_KIND_CHOICES}}</dd>
         <dt>Открытость</dt>
         <dd>{{area.availability|list:AVAILABILITY_CHOICES}}</dd>
         <dt>Назначение</dt>
