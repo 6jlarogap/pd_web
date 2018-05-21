@@ -44,6 +44,7 @@ from users.models import Profile, Org, CustomerProfile, PermitIfUgh, PermitIfTra
 from users.views import SupervisorRequiredMixin, UGHRequiredMixin, UghOrLoruRequiredMixin, ApiClientSiteMixin
 from persons.models import Phone, AlivePerson, CustomPlace
 from geo.models import Location
+from restthumbnails.files import ThumbnailContentFile
 
 from rest_framework import generics, viewsets
 from rest_framework.views import APIView
@@ -51,6 +52,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from rest_framework_jsonp.renderers import JSONPRenderer
 
 from django.db import transaction
@@ -1566,6 +1568,47 @@ class ApiOmsPhotoPlaces(APIView):
         return Response(status=200, data=data)
 
 api_oms_photo_places = ApiOmsPhotoPlaces.as_view()
+
+class ApiPlacePhotoUpload(APIView):
+    permission_classes = (PermitIfUgh,)
+
+    def post(self, request, pk):
+        place = get_object_or_404(Place, pk=pk)
+        if place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
+            raise PermissionDenied
+        # -------------------
+        # Если размер картинки size_х * size_y > minsize, то
+        #   cохраняем файл в тех же размерах (size_y, size_y),
+        #   с правкой ориентации, если необходимо
+        #   с качеством quality,
+        #   тем самым уменьшая размер файла по сравнению с поданным
+        # иначе возвращаем оригинал.
+        # В любом случае результатом будет ContentFile
+        #
+        photo_content = ThumbnailContentFile(
+            request.FILES['file'],
+            quality=30,
+            minsize=1600*1200,
+        ).generate()
+        if photo_content:
+            data = dict()
+            status = 200
+            photo = PlacePhoto(place=place)
+            photo.save()
+            photo.bfile.save(request.FILES['file'].name, photo_content)
+            msg = request.build_absolute_uri(photo.bfile.url)
+            write_log(
+                request,
+                place,
+                operation=LogOperation.PHOTO_TO_PLACE_MOBILE,
+                msg=msg,
+            )
+        else:
+            data = {"__all__" : [_(u"Загружаемый файл не является изображением")],}
+            status = 400
+        return Response(status=status, data=data)
+
+api_place_photo_upload = ApiPlacePhotoUpload.as_view()
 
 class ApiOmsPhotoPlacesDetail(APIView):
     permission_classes = (PermitIfUgh,)

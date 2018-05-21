@@ -1,4 +1,4 @@
-﻿app.controller('PlaceViewCtrl', function PlaceViewCtrl($scope, $routeParams, $location, Place, Cemetery, Grave, Burial, Area, AlivePerson, Phone, Address, Log, ymapData, $dialog) {
+﻿app.controller('PlaceViewCtrl', function PlaceViewCtrl($scope, $rootScope, $routeParams, $location, Place, Cemetery, Grave, Burial, Area, AlivePerson, Phone, Address, Log, ymapData, $dialog, fileUpload) {
   "use strict";
 
   //Constants
@@ -605,7 +605,37 @@
       });
     }
   };
-  // EOF Diallog
+
+    $scope.uploadImageModalOpened = false;
+    $scope.wasUploaded = false;
+    $scope.ShowUploadForm = true;
+    $scope.openUploadImageModal = function() {
+        $scope.myFile = undefined;
+        $scope.wasUploaded = false;
+        $scope.ShowUploadForm = true;
+        $scope.uploadImageModalOpened = true;
+    };
+    $scope.closeUploadImageModal = function() {
+        $scope.uploadImageModalOpened = false;
+        $scope.ShowUploadForm = true;
+        if ($scope.wasUploaded) {
+            location.reload();
+        }
+    };
+    $scope.uploadFile = function(){
+        var file = $scope.myFile;
+        if (file.size > 10 * 1024 * 1024) {
+            alert("Превышен допустимый размер файла");
+            return;
+        }
+        $scope.wasUploaded = true;
+        var uploadUrl = "/api/place/" + $routeParams.place_id + "/photo-upload";
+        fileUpload.uploadFileToUrl(file, uploadUrl);
+        $scope.ShowUploadForm = false;
+        $('#myFile').attr("disabled", true);
+    };
+
+    // EOF Diallog
 
   // RUN
   $scope.$on("$routeChangeSuccess", function (event) {
