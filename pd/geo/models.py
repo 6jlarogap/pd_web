@@ -62,7 +62,7 @@ class Country(models.Model):
     name = models.CharField(_(u"Название"), max_length=255, db_index=True, unique=True)
 
     def __unicode__(self):
-        return self.name[:16]
+        return self.name[:24]
 
     @classmethod
     def get_yandex_address_info(cls, latitude, longitude):

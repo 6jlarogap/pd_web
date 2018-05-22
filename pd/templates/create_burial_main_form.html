@@ -314,7 +314,7 @@
     <br /> &nbsp;&nbsp;&nbsp;&nbsp;
     <a href="/burialfiles/{{ f.pk }}/editcomment/" target="_self">редактировать описание</a>
     <br /> &nbsp;&nbsp;&nbsp;&nbsp;
-    <small><i>{{ f.creator.profile.org }} / {{ f.creator }}</i>, {{ f.date_of_creation }}</small><br /><br />
+    <small>{% if f.creator %}<i>{{ f.creator }}</i>, {% endif %}{{ f.date_of_creation }}</small><br /><br />
 {%  endfor %}
 <h4>{% trans "Новый:" %}</h4>
 &nbsp; макс. {{ form.bfiles_form.MAX_UPLOAD_SIZE_MB }} Мб.
