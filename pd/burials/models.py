@@ -240,12 +240,14 @@ class Area(BaseModelManualDtCreated):
         unique_together = ('cemetery', 'name',)
 
     def __unicode__(self):
-        return _(u'%(name)s (%(availability)s, %(purpose)s, %(places_count)s могил)') % dict(
-            name=self.name,
-            availability=self.get_availability_display(),
-            purpose=self.purpose or _(u"назн. неизв"),
-            places_count=self.places_count
-        )
+        addit = self.purpose and self.purpose.name or _(u"назн. неизв")
+        if self.kind == self.KIND_GRAVES:
+            addit = u"%s, %s могил" % (addit, self.places_count)
+        if self.availability != self.AVAILABILITY_OPEN:
+            addit = u"%s, %s" % (self.get_availability_display(), addit)
+        if self.kind != self.KIND_GRAVES:
+            addit = u"%s, %s" % (self.get_kind_display(), addit)
+        return u"%s (%s)" % (self.name, addit)
 
     def unique_error_message(self, model_class, unique_check):
         if len(unique_check) == 1:
@@ -259,6 +261,14 @@ class Area(BaseModelManualDtCreated):
             self.name=''
         self.fill_dt_created()
         return super(Area, self).save(*args, **kwargs)
+
+    def place_name(self):
+        if self.kind == Area.KIND_GRAVES:
+            result = _(u'место')
+        else:
+            # В колумбариях
+            result = _(u'место-в-колумбарии')
+        return result
 
 class AreaCoordinates(CoordinatesModel):
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), on_delete=models.PROTECT, related_name='coordinates')
@@ -630,6 +640,9 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
                 latitude=latitude,
                 longitude=longitude,
             )
+
+    def is_columbarium(self):
+        return self.area and self.area.kind != Area.KIND_GRAVES
 
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
@@ -1208,11 +1221,10 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             return None
 
     def place_name(self):
-        result = u''
+        result = _(u'место')
         area = self.area
         if area:
             if area.kind == Area.KIND_GRAVES:
-                result = _(u'место')
                 place = self.get_place()
                 if place and place.kind_crypt:
                     result = _(u'склеп')

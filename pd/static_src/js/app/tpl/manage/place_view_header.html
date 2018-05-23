@@ -6,8 +6,8 @@
     <li><a href="/manage/cemetery/{{cemetery.id}}/area/{{area.id}}">{{localeText.Area}} "{{area.name}}"</a></li>
     <li><span class="divider">|</span></li>
     <li>{{localeText.Place}} "{{item.place}}"</li>
-    <li ng-show="is_editable"><span class="divider">|</span></li>
+    <li ng-show="is_editable && area.kind == 'g'"><span class="divider">|</span></li>
     <!-- li><a href="#" ng-click="openEditForm('isPlaceEditorOpen')" ng-disabled="loading">Редактировать</a></li>
     <li><span class="divider">|</span></li -->
-    <li ng-show="is_editable" ng-disabled="loading"><a href="#" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</a></li>
+    <li ng-show="is_editable && area.kind == 'g'" ng-disabled="loading"><a href="#" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</a></li>
 </ul>

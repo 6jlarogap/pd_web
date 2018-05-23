@@ -418,6 +418,8 @@ class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
     def pre_save(self, object):
         item = getCemetery(self.request)
         object.cemetery = item
+        if object.kind != Area.KIND_GRAVES:
+            object.places_count = 1
 
         try:
             old = self.model.objects.get(pk=object.pk)
@@ -1429,6 +1431,15 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
             return table
             
         place = self.object
+        if place.is_columbarium():
+            title1 = _(u'ПАСПОРТ МЕСТА-В-КОЛУМБАРИИ')
+            title2 = _(u'ОТВЕТСТВЕННЫЙ ЗА МЕСТО-В-КОЛУМБАРИИ')
+            title3 = _(u'АДРЕС МЕСТА-В-КОЛУМБАРИИ')
+        else:
+            title1 = _(u'ПАСПОРТ МЕСТА')
+            title2 = _(u'ОТВЕТСТВЕННЫЙ ЗА МЕСТО')
+            title3 = _(u'АДРЕС МЕСТА')
+            
         ugh = place.cemetery.ugh
         left = [ ugh, ]
         if ugh.off_address:
@@ -1485,7 +1496,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         if place.row:
             urm = u"%s, %s: %s" % (urm, _(u"ряд"), place.row, )
         if place.place:
-            urm = u"%s, %s: %s" % (urm, _(u"место"), place.place, )
+            urm = u"%s, %s: %s" % (urm, _(u"место-в-колумбарии") if place.is_columbarium() else _(u"место"), place.place, )
         right.append(urm)
 
         yandex_api_key = None
@@ -1506,6 +1517,9 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         except IndexError:
             place_photo = None
         return dict(
+            title1=title1,
+            title2=title2,
+            title3=title3,
             table1=table1,
             table2=table2,
             yandex_api_key=yandex_api_key,

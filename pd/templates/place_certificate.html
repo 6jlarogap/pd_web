@@ -22,7 +22,7 @@
         }
     </script>
  {% endif %}
-<TITLE>{% trans "Паспорт места" %} {{ place.pk }}</TITLE>
+<TITLE>{{ title1 }} {{ place.pk }}</TITLE>
 <style type="text/css">
   .topheader { 
     font-size: 110%; 
@@ -56,7 +56,7 @@
 <TABLE border="0" width="900px" height="100%" cellspacing="3px" cellpadding="3px" align="center">
 <TR class="topheader">
 <TD align="left" valign="top"><img src="{{ STATIC_URL}}img/place_passport/lefttop.jpg" width="100px" height="115px"></TD>
-<TD align="center">{% trans "ПАСПОРТ МЕСТА" %}<BR> ЗАХОРОНЕНИЯ<BR>№ {{ place.pk }}</TD>
+<TD align="center">{{ title1 }}<BR> ЗАХОРОНЕНИЯ<BR>№ {{ place.pk }}</TD>
 <TD></TD>
 <TD align="right" valign="top"><img src="{{ STATIC_URL}}img/place_passport/righttop.jpg" width="100px" height="115px"></TD>
 </TR>
@@ -82,8 +82,8 @@
 
 <TR class="header">
  <TD></TD>
- <TD align="center"> {% trans "ОТВЕТСТВЕННЫЙ ЗА МЕСТО" %} <BR> {% trans "ЗАХОРОНЕНИЯ" %}</TD>
- <TD valign="top" align="center">{% trans "АДРЕС МЕСТА ЗАХОРОНЕНИЯ" %}</TD>
+ <TD align="center"> {{ title2 }} <BR> {% trans "ЗАХОРОНЕНИЯ" %}</TD>
+ <TD valign="top" align="center">{{ title3 }} {% trans "ЗАХОРОНЕНИЯ" %}</TD>
  <TD></TD>
 </TR>
 

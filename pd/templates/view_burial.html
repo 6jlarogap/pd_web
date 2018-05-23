@@ -24,7 +24,7 @@
         {% endif %}
         <dt>{% trans "Тип" %}:</dt><dd>{{ b.get_burial_container_display|default:"" }}</dd>
         <dt>{% trans "Вид" %}:</dt><dd>{{ b.get_burial_type_display|default:"" }}</dd>
-        {% if b.ugh %}
+        {% if b.ugh and request.profile.is_loru %}
             <dt>{% trans "ОМС" %}:</dt><dd>{{ b.ugh }}</dd>
         {% endif %}
         {% if b.applicant_organization and show_private_data %}
@@ -120,13 +120,13 @@
             {% endif %}
         {% endif %}
         <dt>{% trans "Кладбище" %}:</dt><dd>{{ b.cemetery|default:"не указано" }}</dd>
-        <dt>{% trans "Место" %}:</dt><dd>
+        <dt>{{ b.place_name|title }}:</dt><dd>
             {% if b.area %}
                 {% trans "Участок" %}: {{ b.area }}<br/>
             {% else %}
                 <span style="color:red"><b><big>{% trans "Участок не указан" %}.</big></b></span>
             {% endif %}
-            {% if not place %}
+            {% if not place and b.show_grave %}
                 {% trans "Запрошено место на число могил: " %}{{ b.desired_graves_count }}<br/>
                 {% if b.area and b.desired_graves_count > b.area.places_count  %}
                 <span style="color:blue"><b>{% trans "Число могил больше, чем задано у участка" %}!</b></span><br />
@@ -135,20 +135,24 @@
                 {% endif %}
             {% endif %}
             {% if b.row %}{% trans "Ряд" %}: {{ b.row }}<br/>{% endif %}
-            {% if b.place_number %}{% trans "Место" %}: {{ b.place_number }}<br/>{% endif %}
-            {% if b.grave_number %}{% trans "№ могилы" %}: {{ b.grave_number }}<br/>{% endif %}
+            {% if b.place_number %}{{ b.place_name|title }}: {{ b.place_number }}<br/>{% endif %}
+            {% if b.show_grave %}
+                {% if b.grave_number %}{% trans "№ могилы" %}: {{ b.grave_number }}<br/>{% endif %}
+            {% endif %}
             {% if place %}
-                {% trans "Размер места, м." %}: 
+                {% trans "Размер, м." %}: 
                 {% if place.place_width and place.place_length %}
                     {{ place.place_length }} x {{ place.place_width }}
                 {% else %}
                     {% trans "не указан" %}
                 {% endif %}
                 <br/>
-                {% trans "Количество могил" %}: {{ place.get_graves_count }}
-                <br/>
-                {% trans "Свободно" %}: {{ place.get_available_count }}
-                <br/>
+                {% if b.show_grave %}
+                    {% trans "Количество могил" %}: {{ place.get_graves_count }}
+                    <br/>
+                    {% trans "Свободно" %}: {{ place.get_available_count }}
+                    <br/>
+                {% endif %}
             {% endif %}
             {% if user.profile.is_ugh %}
                 {% if b.exhumated and b.exhumationrequest.place %}

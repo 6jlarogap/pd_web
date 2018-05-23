@@ -12,8 +12,8 @@
         <dd>{{area.availability|list:AVAILABILITY_CHOICES}}</dd>
         <dt>Назначение</dt>
         <dd>{{area.purpose|objList:PURPOSE_LIST}}</dd>
-        <dt>{{localeText.GravesInPlace}}</dt>
-        <dd>{{area.places_count}}</dd>
+        <dt ng-show = "!is_columbarium">{{localeText.GravesInPlace}}</dt>
+        <dd ng-show = "!is_columbarium">{{area.places_count}}</dd>
         <dt>Ответственный смотритель</dt>
         <dd>{{ caretaker_show }}</dd>
     </dl>
