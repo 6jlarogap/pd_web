@@ -410,6 +410,10 @@
       });
     }
   };
+  
+    $scope.validateCrypt = function(value) {
+        return $scope.area.kind == 'g';
+    };
 
   //Responsible
   $scope.isResponsibleEditorOpen = false;

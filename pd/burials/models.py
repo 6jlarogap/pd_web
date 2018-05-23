@@ -1218,7 +1218,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                     result = _(u'склеп')
             else:
                 # В колумбариях
-                result = 'место'
+                result = _(u'место-в-колумбарии')
         return result
 
     def show_grave(self):

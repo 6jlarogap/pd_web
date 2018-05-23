@@ -63,11 +63,13 @@
             </div>
             </div>
 
-            <div class="control-group">
+            <div class="control-group" ng-class="{error: placeEditForm.kindCrypt.$invalid}">
             <label class="control-label" for="kindCrypt">Это склеп</label>
             <div class="controls">
                 <input type="checkbox" id="kindCrypt" name="kindCrypt"
+                    ui-validate="{validCrypt : 'validateCrypt($value)' }"
                     ng-model="editor.item.kind_crypt" />
+                <span class="help-block " ng-show="placeEditForm.kindCrypt.$error.validCrypt">Склеп не может быть в колумбарии</span>
             </div>
             </div>
 
