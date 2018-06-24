@@ -99,4 +99,6 @@ urlpatterns = patterns('burials.views',
 
     url(r'^burials/doubles/$', 'burials_doubles', name='burials_doubles'),
     url(r'^burials/double/$', 'burials_double', name='burials_double'),
+
+    url(r'^burials/registry/$', 'burials_registry', name='burials_registry'),
 )

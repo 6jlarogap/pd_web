@@ -1,5 +1,5 @@
 # coding=utf-8
-import datetime, time, os, csv, re
+import datetime, time, os, csv, re, tempfile, zipfile
 import json
 from django import db
 
@@ -9,22 +9,24 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render_to_response
 from django.template.context import RequestContext
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView, DeleteView
+from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.views.generic.list import ListView
 
 from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, BurialCommitForm, \
-                          BurialApproveCloseForm, AddDocTypeForm, AddGravesForm
+                          BurialApproveCloseForm, AddDocTypeForm, AddGravesForm, SpravkaForm, \
+                          RegistryForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
-from burials.models import Reason, Burial, Burial1, Cemetery, Place, ExhumationRequest, OrderPlace
+from burials.models import Reason, Burial, Burial1, Cemetery, Area, Place, ExhumationRequest, OrderPlace
 from persons.models import DeathCertificate, OrderDeadPerson, DeadPerson, AlivePerson
 from logs.models import write_log
 from orders.models import Order
-from users.models import Org, Profile, is_cabinet_user
+from users.models import Org, Profile, is_cabinet_user, is_ugh_user
 from pd.utils import re_search, host_country_code
 from pd.forms import CommentForm
 from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
@@ -493,6 +495,20 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             self._object = super(BurialView, self).get_object(queryset=queryset)
         return self._object
 
+    def get_spravka_form(self, b):
+        form = SpravkaForm()
+        if host_country_code(self.request) != 'by':
+            del form.fields['spravka0_relative']
+        if b.applicant and b.applicant.last_name:
+            form.initial['spravka_applicant'] = b.applicant.full_name_complete()
+            if b.applicant.address:
+                form.initial['spravka_applicant_address'] = u"%s" % b.applicant.address
+        if self.request.user.profile.title:
+            form.initial['spravka_issuer_title'] = self.request.user.profile.title
+        if self.request.user.profile.user_last_name:
+            form.initial['spravka_issuer'] = self.request.user.profile.last_name_initials()
+        return form
+
     def get_context_data(self, **kwargs):
         b = self.get_object()
         org = self.request.user.profile.org
@@ -503,6 +519,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'reason_typical_annulate': Reason.objects.filter(org=org, reason_type=Reason.TYPE_ANNULATE),
             'reason_typical_disapprove': Reason.objects.filter(org=org, reason_type=Reason.TYPE_DISAPPROVE),
             'approve_close_form': self.get_approve_close_form(),
+            'spravka_form': self.get_spravka_form(b),
             'comment_form': CommentForm(),
             'zags_form': AddOrgForm(request=self.request, prefix='zags', instance=Org(type=Org.PROFILE_ZAGS)),
             'medic_form': AddOrgForm(request=self.request, prefix='medic', instance=Org(type=Org.PROFILE_MEDIC)),
@@ -671,8 +688,8 @@ class BurialsListView(PaginateListView):
         if not isinstance(s, list):
             s = [s]
 
+        burials = burials.order_by(*s).distinct()
         burials_count = burials.count()
-        burials = burials.order_by(*s)
         burials.count = lambda: burials_count
         return burials
 
@@ -1244,12 +1261,23 @@ class MakeSpravka(BurialsListGenericMixin, DetailView):
         return Burial.objects.filter(qs).distinct()
 
     def render_to_response(self, context, **response_kwargs):
+        for cc in (
+            'spravka_applicant',
+            'spravka_applicant_address',
+            'spravka_issuer_title',
+            'spravka_issuer',
+            ):
+            context[cc] = self.request.GET.get(cc, '')
+        context['spravka_relative'] = bool(self.request.GET.get('spravka0_relative', ''))
         context['now'] = datetime.datetime.now()
+        template = 'spravka_minsk.html' if host_country_code(self.request) == 'by' else 'spravka.html'
+        template = "reports/%s" % template
+        context['print_now'] = True
         report = make_report(
             user=self.request.user,
             msg=_(u"Справка"),
             obj=self.get_object(),
-            template='reports/spravka.html',
+            template=template,
             context=RequestContext(self.request, context),
         )
         return redirect('report_view', report.pk)
@@ -1371,3 +1399,302 @@ class RemoveResponsible(ArchiveMixin, View):
             raise Http404
 
 rm_responsible = RemoveResponsible.as_view()
+
+class RegistryView(FormInvalidMixin, UpdateView):
+
+    ENCODING = 'cp1251'
+    SEPARATOR = ';'
+    LINE_END = '\r\n'
+    EMPTY_FIELD = u'-'
+    DATE_FORMAT='%d.%m.%Y'
+
+    template_name = 'registry.html'
+    model = Profile
+    form_class = RegistryForm
+
+    def get_object(self):
+        if not settings.DEADMAN_IDENT_NUMBER_ALLOW or not is_ugh_user(self.request.user):
+            raise Http404
+        if not self.request.user.profile.is_registry_handler():
+            raise PermissionDenied
+        return self.request.user.profile
+
+    def get_form(self, *args, **kwargs):
+        form = super(RegistryView, self).get_form(*args, **kwargs)
+        cemeteries_qs = Cemetery.objects.filter(ugh=self.request.user.profile.org)
+        form.fields['cemeteries'].queryset = cemeteries_qs
+        form.fields['cemeteries'].widget.attrs.update({'size': str(min(cemeteries_qs.count()+1, 15))})
+        cc = list()
+        for c in cemeteries_qs:
+            cc.append(c.pk)
+        form.initial['cemeteries'] = cc
+        form.initial['date_from'] = datetime.date.today()
+        form.initial['date_to'] = form.initial['date_from']
+        return form
+
+    def check_empty_file(self, temp_dir, fname):
+        """
+        Пустой экспорт удалить. Возвращает True если экспорт не пустой
+        """
+        fpath = os.path.join(temp_dir, fname)
+        result = False
+        try:
+            if os.path.getsize(fpath) > 0:
+                result = True
+            else:
+                os.unlink(fpath)
+        except OSError:
+            pass
+        return result
+
+    def correct_name(self, name):
+        return name.replace(self.SEPARATOR, u'').strip()
+
+    def check_names(self, deadman):
+        """
+        Убрать из фио ';'. Пустое отчество -> '-'
+        """
+        result = None
+        last_name = first_name = middle_name = u''
+        if deadman:
+            last_name = self.correct_name(deadman.last_name)
+            if last_name == self.EMPTY_FIELD:
+                last_name = u''
+            first_name = self.correct_name(deadman.first_name)
+            if first_name == self.EMPTY_FIELD:
+                first_name = u''
+            middle_name = self.correct_name(deadman.middle_name)
+            if not middle_name:
+                middle_name = self.EMPTY_FIELD
+        if last_name and first_name:
+            result = (last_name, first_name, middle_name)
+        return result
+
+    def encode_(self, s):
+        """
+        Кодирование, исправление ошибок в вых строке
+        """
+        got_error = False
+        s = u'%s%s' % (s, self.LINE_END)
+        try:
+            result = s.encode(self.ENCODING)
+        except UnicodeEncodeError:
+            result = ''
+            for c in s:
+                try:
+                    result += c.encode(self.ENCODING)
+                except UnicodeEncodeError:
+                    pass
+            result = result.replace(
+                '%s%s'  % (self.SEPARATOR, self.SEPARATOR,),
+                '%s-%s' % (self.SEPARATOR, self.SEPARATOR,)
+            )
+            if result.endswith(self.SEPARATOR):
+                result += self.EMPTY_FIELD
+        return result
+
+    def form_valid(self, form):
+
+        org = self.request.user.profile.org
+        org_pk = org.pk
+        media_path = os.path.join('tmp', 'export', 'burials',
+            '%s' % org_pk,
+        )
+        export_path = os.path.join(settings.MEDIA_ROOT, media_path)
+        temp_dir = tempfile.mkdtemp(dir=export_path)
+        temp_dir_name = os.path.basename(temp_dir)
+        d = datetime.datetime.now()
+        dt_now_str = datetime.datetime.strftime(d, '%Y%m%d%H%M%S')
+        date_from = form.cleaned_data['date_from']
+        date_from_str = datetime.datetime.strftime(date_from, '%Y%m%d')
+        date_to = form.cleaned_data['date_to']
+        date_to_str = datetime.datetime.strftime(date_to, '%Y%m%d')
+        date_to_1 = date_to + datetime.timedelta(days=1)
+
+        cemeteries_list = list()
+        columbariums_list = list()
+        for c in form.cleaned_data['cemeteries']:
+            if c.ugh != org:
+                raise Http404
+            if c.is_columbarium:
+                columbariums_list.append(c)
+            else:
+                cemeteries_list.append(c)
+
+        q_dates = Q(
+            annulated=False,
+            fact_date__isnull=False,
+            fact_date_no_day=False,
+            fact_date_no_month=False,
+            status= Burial.STATUS_CLOSED,
+            ugh=org,
+            dt_register__gte=date_from,
+            dt_register__lt=date_to_1,
+            deadman__last_name__gt=u'',
+            deadman__first_name__gt=u'',
+            deadman__ident_number__gt=u'',
+        )
+        q_dates &= ~Q(place_number=u'-')
+
+        # Горизонтальные колумбарии. Пока так.
+        #
+        horz_columbariums = (
+            dict(
+                cemetery__name=u'Колодищи',
+                name=u'132у'
+            ),
+            dict(
+                cemetery__name=u'Северное-1',
+                name=u'56У'
+            ),
+            dict(
+                cemetery__name=u'Северное-1',
+                name=u'139У'
+            ),
+        )
+        areas_hc = list()
+        for horz_columbarium in horz_columbariums:
+            try:
+                areas_hc.append(Area.objects.get(cemetery__ugh=org, **horz_columbarium))
+            except Area.DoesNotExist:
+                pass
+        # TODO
+        # Когда определимя, что считать захоронением в горизонтальный колумбарий,
+        # изменим q_hc
+        #
+        q_hc = Q(area__in=areas_hc)
+
+        select_related = (
+            'area__name',
+            'deadman__last_name', 'deadman__first_name', 'deadman__middle_name',
+            'deadman__ident_number'
+        )
+
+        # Список файлов для архивации
+        #
+        got_data = list()
+
+        if cemeteries_list:
+            q_cemeteries =  q_dates & \
+                            Q(cemetery__in=cemeteries_list) & \
+                            Q(row__gt=u'') & \
+                            ~Q(row=u'-') & \
+                            ~q_hc
+
+            q_cemeteries_coffins =  q_cemeteries & Q(burial_container=Burial.CONTAINER_COFFIN)
+
+            qs = Burial.objects.filter(q_cemeteries_coffins).order_by('dt_register'). \
+                    select_related(*select_related).distinct()
+            fname = u'registry-1-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+            with open(os.path.join(temp_dir, fname), 'w') as f:
+                for b in qs.iterator():
+                    full_name = self.check_names(b.deadman)
+                    if not full_name:
+                        pass
+                    f.write(self.encode_(self.SEPARATOR.join((
+                        "1",
+                        b.deadman.ident_number,
+                        full_name[0], full_name[1], full_name[2],
+                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
+                        b.cemetery.code,
+                        b.area.name,
+                        b.row,
+                        b.place_number,
+                        str(b.grave_number),
+                    ))))
+            if self.check_empty_file(temp_dir, fname):
+                got_data.append(fname)
+
+            q_cemeteries_urns =  q_cemeteries & Q(burial_container=Burial.CONTAINER_URN)
+
+            qs = Burial.objects.filter(q_cemeteries_urns).order_by('dt_register'). \
+                    select_related(*select_related).distinct()
+            fname = u'registry-5-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+            with open(os.path.join(temp_dir, fname), 'w') as f:
+                for b in qs.iterator():
+                    full_name = self.check_names(b.deadman)
+                    if not full_name:
+                        pass
+                    f.write(self.encode_(self.SEPARATOR.join((
+                        "5",
+                        b.deadman.ident_number,
+                        full_name[0], full_name[1], full_name[2],
+                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
+                        b.cemetery.code,
+                        b.area.name,
+                        b.row,
+                        b.place_number,
+                        str(b.grave_number),
+                    ))))
+            if self.check_empty_file(temp_dir, fname):
+                got_data.append(fname)
+
+        if columbariums_list:
+            q_vertical_columbariums =  q_dates & \
+                            Q(cemetery__in=columbariums_list)
+            qs = Burial.objects.filter(q_vertical_columbariums).order_by('dt_register'). \
+                    select_related(*select_related).distinct()
+            fname = u'registry-2-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+            with open(os.path.join(temp_dir, fname), 'w') as f:
+                for b in qs.iterator():
+                    full_name = self.check_names(b.deadman)
+                    if not full_name:
+                        pass
+                    f.write(self.encode_(self.SEPARATOR.join((
+                        "2",
+                        b.deadman.ident_number,
+                        full_name[0], full_name[1], full_name[2],
+                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
+                        b.cemetery.code,
+                        b.area.name,
+                        b.row or u'-',
+                        b.place_number,
+                    ))))
+            if self.check_empty_file(temp_dir, fname):
+                got_data.append(fname)
+
+        if cemeteries_list:
+            q_horizontal_columbariums =  q_dates & \
+                            Q(cemetery__in=cemeteries_list) & \
+                            Q(row__gt=u'') & \
+                            ~Q(row=u'-') & \
+                            q_hc
+            qs = Burial.objects.filter(q_horizontal_columbariums).order_by('dt_register'). \
+                    select_related(*select_related).distinct()
+            fname = u'registry-3-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+            with open(os.path.join(temp_dir, fname), 'w') as f:
+                for b in qs.iterator():
+                    full_name = self.check_names(b.deadman)
+                    if not full_name:
+                        pass
+                    f.write(self.encode_(self.SEPARATOR.join((
+                        "3",
+                        b.deadman.ident_number,
+                        full_name[0], full_name[1], full_name[2],
+                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
+                        b.cemetery.code,
+                        b.area.name,
+                        b.row,
+                        b.place_number,
+                    ))))
+            if self.check_empty_file(temp_dir, fname):
+                got_data.append(fname)
+
+        if got_data:
+            zip_fname = u'registry-from-%s-to-%s-at-%s.zip' % (date_from_str, date_to_str, dt_now_str, )
+            with zipfile.ZipFile(os.path.join(temp_dir, zip_fname), 'w') as f:
+                for fname in got_data:
+                    f.write(os.path.join(temp_dir, fname), fname)
+            for fname in got_data:
+                os.unlink(os.path.join(temp_dir, fname))
+            return redirect(os.path.join(settings.MEDIA_URL, media_path, temp_dir_name, zip_fname))
+        else:
+            try:
+                os.rmdir(temp_dir)
+            except OSError:
+                pass
+            messages.info(self.request, _(u'Не найдены данные для реестра за указанный интервал дат'))
+            return self.get(self.request, *self.args, **self.kwargs)
+
+burials_registry = RegistryView.as_view()
+

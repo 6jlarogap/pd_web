@@ -580,6 +580,16 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         data = self.data or None
         deadman = self.instance and self.instance.deadman
         self.old_place = self.instance and self.instance.get_place()
+
+        if settings.DEADMAN_IDENT_NUMBER_ALLOW:
+            self.deadman_old_last_name = self.deadman_old_first_name = self.deadman_old_ident_number = ''
+            if self.instance:
+                if self.instance.deadman:
+                    self.deadman_old_last_name = self.instance.deadman.last_name
+                    self.deadman_old_first_name = self.instance.deadman.first_name
+                    self.deadman_old_ident_number = self.instance.deadman.ident_number
+                self.old_grave_number = self.instance.grave_number or 1
+
         self.deadman_form = DeadPersonForm(request=self.request, data=data, prefix='deadman', instance=deadman)
         if self.funeral_deadman_address:
             deadman_addr = Location(addr_str=self.funeral_deadman_address)
@@ -739,6 +749,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.instance = super(BurialForm, self).save(commit=False)
         is_new_burial = not bool(self.instance.pk)
 
+        # Изменились ли поля, которые существенны в регистре
+        #
+        update_for_register = False
+
         if self.cleaned_data.get('agent_director'):
             self.instance.agent = None
             self.instance.dover = None
@@ -772,9 +786,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                     self.instance.source_type = Burial.SOURCE_UGH
 
         if self.deadman_form.is_valid() and self.instance.burial_container != Burial.CONTAINER_BIO:
+
             deadman = self.deadman_form.save(commit=False)
             if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
-                self.deadman_form.cleaned_data.get("ident_number"):
+               self.deadman_form.cleaned_data.get("ident_number"):
                 deadman.ident_number = rus_to_lat(deadman.ident_number.strip().upper())
 
             if self.deadman_address_form.is_valid_data():
@@ -796,10 +811,20 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.instance.agent = None
             self.instance.dover = None
             if self.applicant_form.is_valid():
+                old_address = self.applicant_address_form.instance
                 applicant = self.applicant_form.save(commit=False)
-                if self.applicant_address_form.is_valid_data():
+                if old_address and old_address.pk:
+                    applicant_address_valid = self.applicant_address_form.is_valid()
+                else:
+                    applicant_address_valid = self.applicant_address_form.is_valid_data()
+                if applicant_address_valid:
                     applicant.address = self.applicant_address_form.save()
                 applicant.save()
+                if not applicant.address and old_address and old_address.pk:
+                    try:
+                        old_address.delete()
+                    except ProtectedError:
+                        pass
                 self.instance.applicant = applicant
                 if self.applicant_id_form.is_valid():
                     self.instance.flag_no_applicant_doc_required = \
@@ -821,7 +846,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.instance.responsible = self.instance.applicant.deep_copy()
             self.instance.applicant.login_phone = applicant_login_phone
         elif self.responsible_form.is_valid():
-            responsible_address_valid = self.responsible_address_form.is_valid_data()
+            old_address = self.responsible_address_form.instance
+            if old_address and old_address.pk:
+                responsible_address_valid = self.responsible_address_form.is_valid()
+            else:
+                responsible_address_valid = self.responsible_address_form.is_valid_data()
             if self.responsible_form.cleaned_data.get('last_name').strip() or \
                self.responsible_form.cleaned_data.get('first_name').strip() or \
                self.responsible_form.cleaned_data.get('middle_name').strip() or \
@@ -832,6 +861,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 if responsible_address_valid:
                     responsible.address = self.responsible_address_form.save()
                 responsible.save()
+                if not responsible.address and old_address and old_address.pk:
+                    try:
+                        old_address.delete()
+                    except ProtectedError:
+                        pass
                 self.instance.responsible = responsible
             else:
                 remove_responsible = True
@@ -840,31 +874,50 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         if remove_responsible:
             self.safe_delete('responsible', self.instance)
 
-        if self.instance.is_closed() and \
-            self.old_place and \
-            (self.cleaned_data['cemetery'] != self.old_place.cemetery or \
-             self.cleaned_data['area'] != self.old_place.area or \
-             self.cleaned_data['row'] != self.old_place.row or \
-             self.cleaned_data['place_number'] != self.old_place.place):
-            place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
-                                                         area=self.cleaned_data['area'],
-                                                         row=self.cleaned_data['row'],
-                                                         place=self.cleaned_data['place_number'],
-                                         defaults = { 'place_length': self.cleaned_data['place_length'],
-                                                      'place_width': self.cleaned_data['place_width'],
-                                                    }
-                             )
-            self.instance.place=place
-            if created:
-                self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
-                                                     self.cleaned_data['grave_number'],
-                                                    ),
-                                                 self.cleaned_data['grave_number'],
-                )
-            # Пока не привязываем здесь могилу к захоронению, если место существует.
-            # Это будет сделано ниже в self.instance.close(....)
+        if self.instance.is_closed() and self.old_place:
+            if self.cleaned_data['cemetery'] != self.old_place.cemetery or \
+               self.cleaned_data['area'] != self.old_place.area or \
+               self.cleaned_data['row'] != self.old_place.row or \
+               self.cleaned_data['place_number'] != self.old_place.place:
+                place, created = Place.objects.get_or_create(cemetery=self.cleaned_data['cemetery'],
+                                                            area=self.cleaned_data['area'],
+                                                            row=self.cleaned_data['row'],
+                                                            place=self.cleaned_data['place_number'],
+                                            defaults = { 'place_length': self.cleaned_data['place_length'],
+                                                        'place_width': self.cleaned_data['place_width'],
+                                                        }
+                                )
+                self.instance.place=place
+                if created:
+                    self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
+                                                        self.cleaned_data['grave_number'],
+                                                        ),
+                                                    self.cleaned_data['grave_number'],
+                    )
+                # Пока не привязываем здесь могилу к захоронению, если место существует.
+                # Это будет сделано ниже в self.instance.close(....)
+
+                if settings.DEADMAN_IDENT_NUMBER_ALLOW:
+                    update_for_register = True
+            if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+               not update_for_register and \
+               not self.cleaned_data['cemetery'].is_columbarium and \
+               self.old_grave_number != self.cleaned_data['grave_number']:
+                update_for_register = True
+
+        if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
+           not update_for_register and \
+           self.instance.is_closed() and \
+           self.instance.deadman and \
+           (
+                self.instance.deadman.last_name != self.deadman_old_last_name or \
+                self.instance.deadman.first_name != self.deadman_old_first_name or \
+                self.instance.deadman.ident_number != self.deadman_old_ident_number \
+           ):
+           update_for_register = True
 
         self.instance.save()
+
         if self.comment_form.is_valid():
             comment = self.comment_form.cleaned_data.get('comment', '').strip()
             if comment:
@@ -893,7 +946,11 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 )
 
         if self.instance.is_closed():
-            self.instance.close(request=self.request, old_place=self.old_place)
+            self.instance.close(
+                request=self.request,
+                old_place=self.old_place,
+                update_for_register=update_for_register,
+            )
 
         self.put_log_data()
 
@@ -1728,6 +1785,16 @@ class AddDoverForm(StrippedStringsMixin, forms.ModelForm):
 
         return self.cleaned_data
 
+class SpravkaForm(forms.Form):
+
+    # Все текстовые (!) поля формы начинаются со spravka_. Javascript увеличит их ширину
+    #
+    spravka0_relative = forms.BooleanField(required=False, initial=True, label=_(u"Справка родственнику?"))
+    spravka_applicant = forms.CharField(required=False, max_length=100, label=_(u"Кому выдается"))
+    spravka_applicant_address = forms.CharField(required=False, max_length=100, label=_(u"Кому выдается, адрес"))
+    spravka_issuer_title = forms.CharField(required=False, max_length=100, label=_(u"Кто выдал, должность"))
+    spravka_issuer = forms.CharField(required=False, max_length=100, label=_(u"Кто выдал, фамилия и.о."))
+
 class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
     class Meta:
         model = Org
@@ -1868,6 +1935,7 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
             self.instance.agent_director = False
             self.instance.agent = None
             self.instance.dover = None
+
         else:
             self.safe_delete('applicant', self.instance)
 
@@ -1904,13 +1972,29 @@ class BaseBurialCommentEditFormSet(BaseInlineFormSet):
         for f in self.forms:
             f.formset = self
             f.fields['comment'].required = False
-            f.own_ = True
+            f.owner_ = False
+            f.can_edit_ = False
+            f.owner_retired_ = False
             f.own_cemetery = self.own_cemetery
             if not self.own_cemetery:
                 f.fields['comment'].widget.attrs.update({'readonly':'True'})
             if f.instance.pk:
-                if  f.instance.creator != request.user:
-                    f.own_ = False
+                owner = f.instance.owner()
+                if owner == request.user:
+                    f.owner_ = True
+                    f.can_edit_ = self.own_cemetery
+                elif self.instance.cemetery and self.own_cemetery:
+                    #
+                    # Создал комментарий не этот пользователь
+                    # Если:
+                    # - захоронение имеет кладбище
+                    # - текущий пользователь имеет доступ к этому кладбищу
+                    # - создал комментарий уволенный или перешедший на другое кладбище сотрудник
+                    # то текущий пользователь может править/удалять комментарий
+                    #
+                    f.owner_retired_ = self.instance.cemetery not in Cemetery.editable_ugh_cemeteries(user=owner)
+                    f.can_edit_ = f.owner_retired_
+                if not f.can_edit_:
                     f.fields['comment'].widget.attrs.update({'readonly':'True'})
             f.fields['comment'].widget.attrs.update({'rows':'4'})
 
@@ -1931,3 +2015,41 @@ class AddGravesForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(AddGravesForm, self).__init__(*args, **kwargs)
         self.fields['place_grave_choice'].widget = forms.Select(choices=((1,1),))
+
+class RegistryForm(forms.ModelForm):
+
+    date_from = forms.DateField(required=True, label=_(u"С"))
+    date_to = forms.DateField(required=True, label=_(u"по"))
+
+    class Meta:
+        model = Profile
+        fields = ('date_from', 'date_to', 'cemeteries',)
+
+    def clean_date_from(self):
+        d = self.cleaned_data['date_from']
+        if d > datetime.date.today():
+            raise forms.ValidationError(_(u"Дата больше текущей"))
+        return d
+
+    def clean_date_to(self):
+        d = self.cleaned_data['date_to']
+        if d > datetime.date.today():
+            raise forms.ValidationError(_(u"Дата больше текущей"))
+        return d
+
+    def clean_cemeteries(self):
+        cemeteries = self.cleaned_data['cemeteries']
+        if len(cemeteries) == 0:
+            raise forms.ValidationError(_(u"Не заданы кладбища"))
+        return cemeteries
+
+    def clean(self):
+        cleaned_data = super(RegistryForm, self).clean()
+        if self.is_valid():
+            date_from = self.cleaned_data['date_from']
+            date_to = self.cleaned_data['date_to']
+            if date_from > date_to:
+                raise forms.ValidationError(_(u"Начальная дата больше конечной"))
+            if (date_to - date_from).days > 30:
+                raise forms.ValidationError(_(u"Интервал между датами не дложен быть больше 30 дней"))
+        return cleaned_data

@@ -8,9 +8,9 @@
 # ---------------------------------------------------------------------------
 
 PROJECTS = ( 
-            ('/home/www-data/django/pd_prod/pd',      # manage.py && git
-             '/home/www-data/django/pd_prod/ENV',     # virtual_env
-            ),
+            # Где находится ./manage.py
+            '/home/www-data/django/pd_prod/pd',
+            '/home/www-data/django/pd_web/pd',
            )
 
 # ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ MANAGE_PY, VENV = 0, 1                      # индексы в списках P
 ALREADY_UP_TO_DATE = 'Already up-to-date.'  # если такое будет, значит ничего
                                             # нового в git
 
-APACHE2_RELOAD = 'sudo /home/suprune20/users_projects/apache-reload.sh'
+APACHE2_RELOAD = 'sudo /home/soul/users_projects/apache-reload.sh'
     # 'sudo /etc/init.d/apache2 reload'
 
 APACHE2_USER = 'www-data'

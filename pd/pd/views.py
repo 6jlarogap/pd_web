@@ -220,7 +220,7 @@ def media_xsendfile(request, path, document_root):
         else:
             # Для товаров, их категорий, поддержки и др.: открыто всем
             m_anyone = re.search(r'^/?(?:product\-photo|icons|support)/',path)
-            # Для экспорта захоронений организации
+            # Для экспорта захоронений организации, например в реестр населения
             m_export = re.search(r'^/?tmp/export/burials/(\d+)/',path)
             if m_anyone:
                 pass
