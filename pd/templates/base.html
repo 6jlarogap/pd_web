@@ -167,6 +167,10 @@
                                                 <li><a href="{% url burials_doubles %}">{% trans "Дубли захоронений" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
+                                            {% if global_context_DEADMAN_IDENT_NUMBER_ALLOW and user.profile.is_registry_handler %}
+                                                <li><a href="{% url burials_registry %}">{% trans "Реестр населения" %}</a></li>
+                                                <li class="divider"></li>
+                                            {% endif %}
                                         {% endif %}
                                         {% if user.profile.is_trade %}
                                             <li><a href="{{ global_context_FRONT_END_URL }}loru/products">{% trans "Товары и услуги" %}</a></li>
@@ -274,7 +278,7 @@
             {% block content %}{% endblock %}
         </div>
 
-        {% if global_context_PRODUCTION_SITE %}
+        {% if global_context_HOST_COUNTRY_CODE != "by" and global_context_PRODUCTION_SITE %}
             {% include "yandex_metrika.html" %}
         {% endif %}
 

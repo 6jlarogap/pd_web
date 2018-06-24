@@ -275,6 +275,8 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
             как единственный cemetery editor
         -   список всех регистраторов организации
         -   список pk всех текущих регистраторов кладбища
+        -   нужен ли код кладбища, - используемый только для выгрузки
+            в реестр, а для этого нужно разрешение на ид у усопшего
         """
         profile = request.user.profile
         if profile.is_registrator():
@@ -287,6 +289,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 profile_pk=profile_pk,
                 ugh_registrators=self.get_ugh_registrators(request.user.profile.org),
                 cemetery_editors_pks=self.get_cemetery_editors_pks(pk),
+                need_code = settings.DEADMAN_IDENT_NUMBER_ALLOW,
         ))
 
     @action(methods=['GET',])
@@ -617,6 +620,9 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 ))
                 b.row = object.row
                 b.place_number = object.place
+                if b.is_valid_for_register():
+                    # есть изменения, существенные для регистра
+                    b.dt_register = datetime.datetime.now()
                 b.save()
 
         if object.responsible:
@@ -1301,6 +1307,8 @@ class BurialEditComments(UGHRequiredMixin, View):
                         write_log(request, burial, _(u"Комментарий от %s удален") % str_dt_modified)
                         f.instance.delete()
                     elif 'comment' in f.changed_data:
+                        if f.instance.owner() != request.user:
+                            f.instance.modifier = request.user
                         write_log(
                             request,
                             burial,
@@ -1315,6 +1323,7 @@ class BurialEditComments(UGHRequiredMixin, View):
                             burial=burial,
                             comment=f_data,
                             creator=request.user,
+                            modifier=request.user,
                         )
 
             return redirect(reverse('burials_comments_edit', args=[self.kwargs['pk']]))

@@ -62,7 +62,7 @@ class Country(models.Model):
     name = models.CharField(_(u"Название"), max_length=255, db_index=True, unique=True)
 
     def __unicode__(self):
-        return self.name[:16]
+        return self.name[:24]
 
     @classmethod
     def get_yandex_address_info(cls, latitude, longitude):
@@ -230,6 +230,15 @@ class Location(models.Model):
         if self.info:
             addr += u', %s' % self.info
         return addr
+
+    def city_addr(self):
+        """
+        Только адрес города, строка
+        """
+        if self.city:
+            return u'%s, %s, %s' % (self.city, self.region, self.country,)
+        else:
+            return u''
 
     def address_(self, is_short=False, empty=False):
         if self.addr_str and self.addr_str.strip():

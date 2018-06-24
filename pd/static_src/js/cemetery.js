@@ -911,6 +911,19 @@ $(function() {
         })
     });
 
+    $('input[id^=id_spravka_]').css('width', '500px')
+
+    $('#make_spravka').find('.btn-primary').click(function() {
+        var data = $('#make_spravka form').serialize();
+        var href = $(this).attr('href');
+        var get_parm_index = href.indexOf('?');
+        if (get_parm_index != -1) {
+            href = href.substr(0, get_parm_index);
+        }
+        $(this).attr('href', href + '?' + data);
+        $('#make_spravka').modal('hide');
+    });
+
     $('#add_org').find('.btn-primary').click(function() {
         var data = $('#add_org form').serialize();
         //TODO validation on client!

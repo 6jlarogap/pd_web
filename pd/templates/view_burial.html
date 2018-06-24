@@ -335,16 +335,20 @@
                 {% endif %}
                 {% if b.is_ugh or b.is_transferred or b.is_closed %}
                     {# (Ручные, архивные), перенесенные, закрытые: #}
-                    <a class="btn" href="{% url edit_burial b.pk %}">{% trans "правка" %}</a>
+                    <a class="btn" href="{% url edit_burial b.pk %}">{% if global_context_HOST_COUNTRY_CODE == 'ru'%}{% trans "правка" %}{% else %}{% trans "редактировать" %}{% endif %}</a>
                 {% endif %}
-                {% if b.can_ugh_print_notification %}
+                {% if b.can_ugh_print_notification and global_context_HOST_COUNTRY_CODE == 'ru'%}
                     <a class="btn" href="{% url make_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
                 {% endif %}
                 {% if b.can_ugh_print_reference %}
-                    <a class="btn" href="{% url make_spravka b.pk %}" target="_blank">{% trans "справка" %}</a>
+                    <a href="#make_spravka" role="button" class="btn" data-toggle="modal">
+                        {% trans "справка" %}
+                    </a>
                 {% elif b.exhumated %}
                     <a class="btn" href="{% url make_exhumate_report b.pk %}" target="_blank">{% trans "справка" %}</a>
-                    <a class="btn" href="{% url make_exhumate_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
+                    {% if global_context_HOST_COUNTRY_CODE == 'ru' %}
+                        <a class="btn" href="{% url make_exhumate_notification b.pk %}" target="_blank">{% trans "уведомление" %}</a>
+                {% endif %}
                 {% endif %}
             {% endif %}
         {% endif %}

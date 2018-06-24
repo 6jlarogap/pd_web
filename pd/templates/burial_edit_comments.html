@@ -49,9 +49,10 @@
             <tr>
               <th style="text-align: center"></th>
               <th></th>
+              <th>{% trans "Создатель" %}</th>
               <th>{% trans "Дата создания" %}</th>
-              <th>{% trans "Создан" %}</th>
-              <th>{% trans "Дата изменения" %}</th>
+              <th>{% trans 'Последний изменивший ("владелец")' %}</th>
+              <th>{% trans "Дата последнего изменения" %}</th>
             </tr>
         </thead>
         <tbody>
@@ -61,9 +62,9 @@
                         <td style="text-align: center">{{ f.comment.errors }}{{ f.comment }}</td>
                         <td >
                             {% if f.instance.pk %}
-                                {% if f.own_ and f.own_cemetery %}
+                                {% if f.can_edit_ %}
                                     {{ f.DELETE }}&nbsp; &nbsp;{% trans "Удалить" %}
-                                {% elif f.own_ %}
+                                {% elif not f.owner_ %}
                                     {% trans "Не Ваш комментарий" %}
                                 {% elif not f.own_cemetery %}
                                     {% trans "Захоронение не Вашего кладбища" %}
@@ -72,13 +73,33 @@
                                 {% trans "Новый комментарий" %}
                             {% endif %}
                         </td>
-                        <td>{{ f.instance.dt_created|default_if_none:"" }}</td>
                         <td>
                             {% if f.instance.pk %}
                                 {% if f.instance.creator.profile.user_last_name %}
                                     {{ f.instance.creator.profile.last_name_initials }} ({{ f.instance.creator.username }})
                                 {% else %}
                                     ({{ f.instance.creator.username }})
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>{{ f.instance.dt_created|default_if_none:"" }}</td>
+                        <td>
+                            {% if f.instance.pk %}
+                                {% if f.instance.modifier %}
+                                    {% if f.instance.modifier.profile.user_last_name %}
+                                        {{ f.instance.modifier.profile.last_name_initials }} ({{ f.instance.modifier.username }})
+                                    {% else %}
+                                        ({{ f.instance.modifier.username }})
+                                    {% endif %}
+                                {% elif f.instance.creator %}
+                                    {% if f.instance.creator.profile.user_last_name %}
+                                        {{ f.instance.creator.profile.last_name_initials }} ({{ f.instance.creator.username }})
+                                    {% else %}
+                                        ({{ f.instance.creator.username }})
+                                    {% endif %}
+                                {% endif %}
+                                {% if f.owner_retired_ %}
+                                    <br/>{% trans "Не работает уже на этом кладбище" %}
                                 {% endif %}
                             {% endif %}
                         </td>

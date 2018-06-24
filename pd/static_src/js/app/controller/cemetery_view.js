@@ -200,6 +200,7 @@ function CemeteryViewCtrl(
                     {cemeteryID: $scope.cemetery.id},
                     function(result) {
             $scope.ugh_registrators = result.ugh_registrators; 
+            $scope.editor.need_code = result.need_code;
             $scope.editor.cemetery_editors = [];
             $scope.cemetery_editors_pks = result.cemetery_editors_pks;
             for (var i=0; i< $scope.ugh_registrators.length; i++) {
