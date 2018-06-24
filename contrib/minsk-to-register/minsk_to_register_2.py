@@ -2,10 +2,7 @@
 
 # minsk_to_register_2.py
 #
-# Записать в домашний каталог пользователя 8 файлов xls
-#
-#   - захоронения берем с 2013г.
-#   - склепов у нас нет, пропускаем, точнее формируем пустые файлы
+# Записать в домашний каталог пользователя файлы xls
 #
 # Запуск из ./manage.py shell :
 # execfile('/path/to/minsk_to_register_2.py')
@@ -18,8 +15,8 @@ from burials.models import Area, Burial
 from users.models import Org
 
 dir_out = os.getenv("HOME")
-date_from = datetime.date(2013, 1, 1)
-date_to = datetime.date(2018, 4, 30)
+date_from = datetime.date(2013, 7, 1)
+date_to = datetime.date(2018, 5, 30)
 org = Org.objects.get(pk=2)
 
 SEPARATOR = ';'
@@ -172,9 +169,10 @@ def print_xls(q, dir_out, mode_cemetery, file_id, file_noid, put_grave):
     ws = wb.add_sheet('output')
     set_xls_col_width(ws)
     n = 0
+    put_birth_date = False
     for b in Burial.objects.filter(q & Q(deadman__ident_number__gt='')). \
        order_by('fact_date').distinct():
-        line = get_line(b, mode_cemetery, put_grave)
+        line = get_line(b, mode_cemetery, put_grave, put_birth_date)
         if line:
             for i in range(len(line)):
                 ws.write(n, i, line[i])
@@ -185,16 +183,17 @@ def print_xls(q, dir_out, mode_cemetery, file_id, file_noid, put_grave):
     ws = wb.add_sheet('output')
     set_xls_col_width(ws)
     n = 0
+    put_birth_date = True
     for b in Burial.objects.filter(q & Q(deadman__ident_number__lte='')). \
        order_by('fact_date').distinct():
-        line = get_line(b, mode_cemetery, put_grave)
+        line = get_line(b, mode_cemetery, put_grave, put_birth_date)
         if line:
             for i in range(len(line)):
                 ws.write(n, i, line[i])
             n += 1
     wb.save(os.path.join(dir_out, file_noid))
     
-def get_line(b, mode_cemetery, put_grave):
+def get_line(b, mode_cemetery, put_grave, put_birth_date):
 
     id_= b.deadman.ident_number or ''
     full_name = check_names(b.deadman)
@@ -214,6 +213,13 @@ def get_line(b, mode_cemetery, put_grave):
         ]
         if put_grave:
             result.append(str(b.grave_number) or '')
+        if put_birth_date:
+            birth_date = u'-'
+            if b.deadman.birth_date and \
+               not b.deadman.birth_date.no_day and \
+               not b.deadman.birth_date.no_month:
+                birth_date = b.deadman.birth_date.str_safe(format='d.m.y')
+            result.append(birth_date)
 
     else:
         result = None
