@@ -327,7 +327,11 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
         ordering = ['row', 'place']
 
     def __unicode__(self):
-        return _(u'Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место %(place)s') % dict(
+        if self.is_columbarium():
+            pattern = _(u'Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место-в-колумбарии %(place)s')
+        else:
+            pattern = _(u'Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место %(place)s')
+        return pattern % dict(
             cemetery=self.cemetery,
             area=self.area and self.area.name or '',
             row=self.row,

@@ -232,7 +232,7 @@ class BurialSearchForm(forms.Form):
     cemetery = forms.CharField(required=False, label=_(u"Кладбище"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
-    place = forms.CharField(required=False, label=_(u"Место"))
+    place = forms.CharField(required=False, label=_(u"Участок/место в колумбарии"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
     is_inbook = forms.NullBooleanField(required=False, initial=None, label=_(u"Отметка об ответственном"))
     source = forms.TypedChoiceField(required=False, label=_(u"Источник"))
