@@ -562,14 +562,15 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                         self.initial['desired_graves_count'] = self.initial['area'].places_count or 1
 
                 if self.request.user.profile.is_ugh():
-                    desired_graves_count = self.initial.get('desired_graves_count') or 1
-                    try:
-                        place_size = PlaceSize.objects.get(org=self.request.user.profile.org,
-                                                        graves_count=desired_graves_count)
-                        self.initial['place_length'] = place_size.place_length
-                        self.initial['place_width'] = place_size.place_width
-                    except PlaceSize.DoesNotExist:
-                        pass
+                    if not self.initial.get('area') or not self.initial['area'].is_columbarium():
+                        desired_graves_count = self.initial.get('desired_graves_count') or 1
+                        try:
+                            place_size = PlaceSize.objects.get(org=self.request.user.profile.org,
+                                                            graves_count=desired_graves_count)
+                            self.initial['place_length'] = place_size.place_length
+                            self.initial['place_width'] = place_size.place_width
+                        except PlaceSize.DoesNotExist:
+                            pass
 
         if self.request.user.profile.is_loru() or \
            self.request.REQUEST.get('archive') or \
@@ -906,10 +907,15 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                 )
                 self.instance.place=place
                 if created:
-                    self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
-                                                        self.cleaned_data['grave_number'],
+                    desired_graves_count = self.cleaned_data.get('desired_graves_count') or 1
+                    grave_number = self.cleaned_data.get('grave_number') or 1
+                    if self.cleaned_data['area'].is_columbarium():
+                        desired_graves_count = 1
+                        grave_number = 1
+                    self.grave = place.create_graves(max(desired_graves_count,
+                                                        grave_number,
                                                         ),
-                                                    self.cleaned_data['grave_number'],
+                                                    grave_number,
                     )
                 # Пока не привязываем здесь могилу к захоронению, если место существует.
                 # Это будет сделано ниже в self.instance.close(....)
@@ -932,6 +938,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 self.instance.deadman.ident_number != self.deadman_old_ident_number \
            ):
            update_for_register = True
+
+        if self.cleaned_data.get('area') and self.cleaned_data['area'].is_columbarium():
+            self.instance.grave_number = 1
+            self.desired_graves_count = 1
 
         self.instance.save()
 
@@ -1291,7 +1301,7 @@ class BurialCommitForm(BurialForm):
                 place = Place.objects.get(cemetery=cemetery, area=area, row=row, place=place_number)
             except Place.DoesNotExist:
                 pass
-        if place:
+        if place and not place.is_columbarium():
             place_graves_count = place.get_graves_count()
             if place_graves_count < grave_number:
                 if place_graves_count == 0 and grave_number == 1:
@@ -1301,7 +1311,7 @@ class BurialCommitForm(BurialForm):
                 else:
                     msg = _(u"Номер могилы превышает количество могил в существующем месте")
                     raise forms.ValidationError(msg)
-        else:
+        elif not area or not area.is_columbarium():
             #if area and area.places_count  < grave_number:
                 #msg = _(u"Номер могилы превышает количество могил в месте для участка")
                 #raise forms.ValidationError(msg)
@@ -1575,7 +1585,10 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
             self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
             if place:
-                self.initial['desired_graves_count'] = place_graves_count
+                if place.is_columbarium():
+                    self.initial['desired_graves_count'] = 1
+                else:
+                    self.initial['desired_graves_count'] = place_graves_count
                 self.initial['place_length'] = place.place_length
                 self.initial['place_width'] = place.place_width
 
@@ -1634,7 +1647,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         if 'place_length' in self.fields:
             self.fields['place_length'].required = False
             self.fields['place_width'].required = False
-            if not self.instance.place_length or not self.instance.place_width:
+            if (not self.instance.place_length or not self.instance.place_width) and \
+               (not self.instance.area or not self.instance.area.is_columbarium):
                 try:
                     place_size = PlaceSize.objects.get(org=request.user.profile.org,
                                                        graves_count=self.instance.desired_graves_count)
@@ -1698,7 +1712,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                             place_number = self.instance.place_number
                         )
             if not b_temp.get_place() and self.instance.grave_number > desired_graves_count:
-                raise forms.ValidationError(_(u"Номер могилы превышает запрошенное количество могил в новом месте"))
+                if not self.instance.area or not self.instance.area.is_columbarium():
+                    raise forms.ValidationError(_(u"Номер могилы превышает запрошенное количество могил в новом месте"))
         return desired_graves_count
 
     def clean_fact_date(self):
