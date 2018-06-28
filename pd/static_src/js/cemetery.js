@@ -342,8 +342,10 @@ function setup_address_autocompletes() {
     });
 }
 
-function area_kind(area_list, pk) {
-    var result = undefined;
+function area_kind(cemetery_id, area_id) {
+    var pk = parseInt(area_id);
+    var area_list = CEMETERY_AREAS[cemetery_id] || [];
+    var result = '';
     for (var i in area_list) {
         if (area_list[i][0] == pk) {
             result = area_list[i][2];
@@ -1017,8 +1019,7 @@ $(function() {
             area_id &&
             typeof CEMETERY_AREAS !== 'undefined'
            ) {
-            var area_list = CEMETERY_AREAS[cemetery_id] || [];
-            var kind = area_kind(area_list, parseInt(area_id));
+            var kind = area_kind(cemetery_id, area_id);
             show_ = kind === 'g';
         }
         if (show_) {
