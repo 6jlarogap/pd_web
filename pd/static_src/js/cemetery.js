@@ -342,6 +342,17 @@ function setup_address_autocompletes() {
     });
 }
 
+function area_kind(area_list, pk) {
+    var result = undefined;
+    for (var i in area_list) {
+        if (area_list[i][0] == pk) {
+            result = area_list[i][2];
+            break;
+        }
+    }
+    return result;
+}
+
 function updateAnything(parent, children, data) {
     // В качестве parent может передаваться:
     // - объект select, тогда берем значение соответствующего select
@@ -998,17 +1009,22 @@ $(function() {
     old_grave_value = $('#id_grave_number').val();
 
     $('#view_burial_approve_close #id_area').change(function() {
-        $('#id_desired_graves_count').closest('p').hide();
         var cemetery_id = $('#id_cemetery').val();
         var area_id = $('#id_area').val();
         var show_ = true;
         if (
             cemetery_id &&
             area_id &&
-            typeof CEMETERY_AREAS !== 'undefined' &&
-            CEMETERY_AREAS[cemetery_id]
+            typeof CEMETERY_AREAS !== 'undefined'
            ) {
-            var area_list = data[cem] || [];
+            var area_list = CEMETERY_AREAS[cemetery_id] || [];
+            var kind = area_kind(area_list, parseInt(area_id));
+            show_ = kind === 'g';
+        }
+        if (show_) {
+            $('#id_desired_graves_count').closest('p').show();
+        } else {
+            $('#id_desired_graves_count').closest('p').hide();
         }
     });
 
