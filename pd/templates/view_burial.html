@@ -211,7 +211,7 @@
             <dd>{% trans "отсутствуют" %}</dd>
         {% endfor %}
     </dl>
-    <form action="" method="POST" enctype="multipart/form-data">
+    <form action="" method="POST" id="view_burial_approve_close" enctype="multipart/form-data">
         {% csrf_token %}
         {% if user.profile.is_loru and b.loru and b.loru == user.profile.org %}
             {# ВНИМАНИЕ: #}
@@ -313,6 +313,7 @@
                     <input type="submit" class="btn btn-primary" name="approve" value="{% trans "согласовать захоронение" %}">
                 {% endif %}
                 {% if b.can_finish and not b.is_archive %}
+                    <br /><br />
                     {{ approve_close_form.as_p }}
                     <script type="text/javascript">
                         CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};

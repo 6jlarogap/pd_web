@@ -26,7 +26,7 @@ from users.models import Profile, Dover
 
 
 class ChildrenJSONMixin:
-    def universal_children_json(self, parent, ch_model, ch_rel, filter_kw=None, related=None):
+    def universal_children_json(self, parent, ch_model, ch_rel, filter_kw=None, related=None, add_field=None):
         parents = {}
         filter_kw = filter_kw or {}
         related = related or []
@@ -38,11 +38,15 @@ class ChildrenJSONMixin:
                 p = getattr(c, ch_rel)
                 if not parents.get(p.pk):
                     parents[p.pk] = []
-                parents[p.pk].append([c.pk, u'%s' % c])
+                list_ = [c.pk, u'%s' % c]
+                if add_field:
+                    # третий элемент, поле потомка в список
+                    list_.append(getattr(c, add_field))
+                parents[p.pk].append(list_)
         return mark_safe(json.dumps(parents))
 
     def cemetery_areas_json(self):
-        return self.universal_children_json('cemetery', Area, 'cemetery', related=['purpose'])
+        return self.universal_children_json('cemetery', Area, 'cemetery', related=['purpose'], add_field='kind')
 
     def cemetery_times_json(self):
         parents = {}

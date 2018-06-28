@@ -997,6 +997,21 @@ $(function() {
 
     old_grave_value = $('#id_grave_number').val();
 
+    $('#view_burial_approve_close #id_area').change(function() {
+        $('#id_desired_graves_count').closest('p').hide();
+        var cemetery_id = $('#id_cemetery').val();
+        var area_id = $('#id_area').val();
+        var show_ = true;
+        if (
+            cemetery_id &&
+            area_id &&
+            typeof CEMETERY_AREAS !== 'undefined' &&
+            CEMETERY_AREAS[cemetery_id]
+           ) {
+            var area_list = data[cem] || [];
+        }
+    });
+
     $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number, #cont_place #id_desired_graves_count').change(function() {
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
 
