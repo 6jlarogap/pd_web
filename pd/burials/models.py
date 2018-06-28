@@ -86,7 +86,6 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
     def __unicode__(self):
         return self.name
 
-    @property
     def is_columbarium(self):
         return u'колумбарий' in self.name.lower()
 
@@ -269,6 +268,9 @@ class Area(BaseModelManualDtCreated):
             # В колумбариях
             result = _(u'место-в-колумбарии')
         return result
+
+    def is_columbarium(self):
+        return self.kind != Area.KIND_GRAVES
 
 class AreaCoordinates(CoordinatesModel):
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), on_delete=models.PROTECT, related_name='coordinates')

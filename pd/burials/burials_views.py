@@ -865,7 +865,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
 
     def get_form_kwargs(self, *args, **kwargs):
         data = super(CreateBurial, self).get_form_kwargs(*args, **kwargs)
-        if self.request.REQUEST.get('place_id'):
+        if self.request.REQUEST.get('place_id') and not data.get('instance'):
             try:
                 place = Place.objects.get(pk=self.request.REQUEST.get('place_id'))
                 grave_number_max = place.get_graves_count()
@@ -877,20 +877,26 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                         pass
                 elif self.request.REQUEST.get('burial_add'):
                     grave_number = grave_number_max or 1
+
+                burial_type = Burial._meta.get_field('burial_type').default
+                burial_container = Burial._meta.get_field('burial_container').default
+                if place.is_columbarium():
+                    burial_container = Burial.CONTAINER_URN
                 if self.request.REQUEST.get('burial_add'):
-                    burial_type = Burial.BURIAL_ADD
-                else:
-                    burial_type = Burial._meta.get_field('burial_type').default
-                if not data.get('instance'):
-                    data['instance'] = Burial(
-                        burial_type=burial_type,
-                        cemetery=place.cemetery,
-                        area=place.area,
-                        row=place.row,
-                        place_number=place.place,
-                        responsible=place.responsible,
-                        grave_number=grave_number,
-                    )
+                    if place.is_columbarium():
+                        burial_type = Burial.BURIAL_OVER
+                    else:
+                        burial_type = Burial.BURIAL_ADD
+                data['instance'] = Burial(
+                    burial_type=burial_type,
+                    burial_container=burial_container,
+                    cemetery=place.cemetery,
+                    area=place.area,
+                    row=place.row,
+                    place_number=place.place,
+                    responsible=place.responsible,
+                    grave_number=grave_number,
+                )
             except Place.DoesNotExist:
                 pass
         order = self.get_funeral_order()
@@ -1516,7 +1522,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
         for c in form.cleaned_data['cemeteries']:
             if c.ugh != org:
                 raise Http404
-            if c.is_columbarium:
+            if c.is_columbarium():
                 columbariums_list.append(c)
             else:
                 cemeteries_list.append(c)

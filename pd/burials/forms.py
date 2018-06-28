@@ -534,25 +534,42 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         if not self.instance.pk:
             self.initial['burial_container'] = Burial.CONTAINER_COFFIN
-            if self.request.REQUEST.get('place_id'):
+            self.initial['burial_type'] = Burial.BURIAL_NEW
+
+            place_id = self.request.REQUEST.get('place_id')
+            if place_id:
                 # Вызов из карточки места
                 self.initial['burial_type'] = Burial.BURIAL_ADD
-            else:
-                self.initial['burial_type'] = Burial.BURIAL_NEW
-            if self.request.user.profile.cemetery and not self.initial.get('cemetery'):
-                self.initial['cemetery'] = self.request.user.profile.cemetery
-            if self.request.user.profile.area and not self.initial.get('area'):
-                self.initial['area'] = self.request.user.profile.area
-                self.initial['desired_graves_count'] = self.initial['area'].places_count or 1
-            if self.request.user.profile.is_ugh():
-                desired_graves_count = self.initial.get('desired_graves_count') or 1
                 try:
-                    place_size = PlaceSize.objects.get(org=self.request.user.profile.org,
-                                                       graves_count=desired_graves_count)
-                    self.initial['place_length'] = place_size.place_length
-                    self.initial['place_width'] = place_size.place_width
-                except PlaceSize.DoesNotExist:
+                    place_ = Place.objects.get(pk=place_id)
+                    if place_.is_columbarium():
+                        self.initial['burial_type'] = Burial.BURIAL_OVER
+                        self.initial['burial_container'] = Burial.CONTAINER_URN
+                except Place.DoesNotExist:
                     pass
+            else:
+                if self.request.user.profile.cemetery and not self.initial.get('cemetery'):
+                    self.initial['cemetery'] = self.request.user.profile.cemetery
+                    if self.initial['cemetery'].is_columbarium():
+                        self.initial['burial_container'] = Burial.CONTAINER_URN
+
+                if self.request.user.profile.area and not self.initial.get('area'):
+                    self.initial['area'] = self.request.user.profile.area
+                    if self.initial['area'].is_columbarium():
+                        self.initial['burial_container'] = Burial.CONTAINER_URN
+                        self.initial['desired_graves_count'] = 1
+                    else:
+                        self.initial['desired_graves_count'] = self.initial['area'].places_count or 1
+
+                if self.request.user.profile.is_ugh():
+                    desired_graves_count = self.initial.get('desired_graves_count') or 1
+                    try:
+                        place_size = PlaceSize.objects.get(org=self.request.user.profile.org,
+                                                        graves_count=desired_graves_count)
+                        self.initial['place_length'] = place_size.place_length
+                        self.initial['place_width'] = place_size.place_width
+                    except PlaceSize.DoesNotExist:
+                        pass
 
         if self.request.user.profile.is_loru() or \
            self.request.REQUEST.get('archive') or \
@@ -901,7 +918,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                     update_for_register = True
             if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
                not update_for_register and \
-               not self.cleaned_data['cemetery'].is_columbarium and \
+               not self.cleaned_data['area'].is_columbarium() and \
                self.old_grave_number != self.cleaned_data['grave_number']:
                 update_for_register = True
 
