@@ -6,6 +6,10 @@
     </div>
 
     <h3>{{ place }}</h3>
+    {% if place.kind_crypt %}
+        <h4>{% trans "Это склеп" %}<h4>
+        <br />
+    {% endif %}
 
     {% if user.profile.is_ugh %}
         <p><a href="{{ place.url }}" target="_blank">{% trans "карточка" %}</a></p>
