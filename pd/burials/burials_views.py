@@ -1503,17 +1503,18 @@ class RegistryView(FormInvalidMixin, UpdateView):
         date_to_str = datetime.datetime.strftime(date_to, '%Y%m%d')
         date_to_1 = date_to + datetime.timedelta(days=1)
 
-        cemeteries_list = list()
+        selected_cemeteries = list()
         columbariums_list = list()
         for c in form.cleaned_data['cemeteries']:
             if c.ugh != org:
                 raise Http404
-            if c.is_columbarium():
-                columbariums_list.append(c)
-            else:
-                cemeteries_list.append(c)
+            selected_cemeteries.append(c)
+        if len(selected_cemeteries) == Cemetery.objects.filter(ugh=org).count():
+            q_selected_cemeteries = Q(cemetery__ugh=org)
+        else:
+            q_selected_cemeteries = Q(cemetery__in=selected_cemeteries)
 
-        q_dates = Q(
+        q_dates = q_selected_cemeteries & Q(
             annulated=False,
             fact_date__isnull=False,
             fact_date_no_day=False,
@@ -1528,34 +1529,6 @@ class RegistryView(FormInvalidMixin, UpdateView):
         )
         q_dates &= ~Q(place_number=u'-')
 
-        # Горизонтальные колумбарии. Пока так.
-        #
-        horz_columbariums = (
-            dict(
-                cemetery__name=u'Колодищи',
-                name=u'132у'
-            ),
-            dict(
-                cemetery__name=u'Северное-1',
-                name=u'56У'
-            ),
-            dict(
-                cemetery__name=u'Северное-1',
-                name=u'139У'
-            ),
-        )
-        areas_hc = list()
-        for horz_columbarium in horz_columbariums:
-            try:
-                areas_hc.append(Area.objects.get(cemetery__ugh=org, **horz_columbarium))
-            except Area.DoesNotExist:
-                pass
-        # TODO
-        # Когда определимя, что считать захоронением в горизонтальный колумбарий,
-        # изменим q_hc
-        #
-        q_hc = Q(area__in=areas_hc)
-
         select_related = (
             'area__name',
             'deadman__last_name', 'deadman__first_name', 'deadman__middle_name',
@@ -1566,111 +1539,141 @@ class RegistryView(FormInvalidMixin, UpdateView):
         #
         got_data = list()
 
-        if cemeteries_list:
-            q_cemeteries =  q_dates & \
-                            Q(cemetery__in=cemeteries_list) & \
-                            Q(row__gt=u'') & \
-                            ~Q(row=u'-') & \
-                            ~q_hc
+        q_graves =  q_dates & \
+                        Q(area__kind=Area.KIND_GRAVES) & \
+                        Q(place__kind_crypt=False) & \
+                        Q(row__gt=u'') & \
+                        ~Q(row=u'-')
 
-            q_cemeteries_coffins =  q_cemeteries & Q(burial_container=Burial.CONTAINER_COFFIN)
+        # Кладбищенские участки, гробы
+        #
+        q_graves_coffins =  q_graves & Q(burial_container=Burial.CONTAINER_COFFIN)
 
-            qs = Burial.objects.filter(q_cemeteries_coffins).order_by('dt_register'). \
-                    select_related(*select_related).distinct()
-            fname = u'registry-1-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
-            with open(os.path.join(temp_dir, fname), 'w') as f:
-                for b in qs.iterator():
-                    full_name = self.check_names(b.deadman)
-                    if not full_name:
-                        pass
-                    f.write(self.encode_(self.SEPARATOR.join((
-                        "1",
-                        b.deadman.ident_number,
-                        full_name[0], full_name[1], full_name[2],
-                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
-                        b.cemetery.code,
-                        b.area.name,
-                        b.row,
-                        b.place_number,
-                        str(b.grave_number),
-                    ))))
-            if self.check_empty_file(temp_dir, fname):
-                got_data.append(fname)
+        qs = Burial.objects.filter(q_graves_coffins).order_by('dt_register'). \
+                select_related(*select_related).distinct()
+        fname = u'registry-1-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+        with open(os.path.join(temp_dir, fname), 'w') as f:
+            for b in qs.iterator():
+                full_name = self.check_names(b.deadman)
+                if not full_name:
+                    pass
+                f.write(self.encode_(self.SEPARATOR.join((
+                    "1",
+                    b.deadman.ident_number,
+                    full_name[0], full_name[1], full_name[2],
+                    datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
+                    b.cemetery.code,
+                    b.area.name,
+                    b.row,
+                    b.place_number,
+                    str(b.grave_number),
+                ))))
+        if self.check_empty_file(temp_dir, fname):
+            got_data.append(fname)
 
-            q_cemeteries_urns =  q_cemeteries & Q(burial_container=Burial.CONTAINER_URN)
+        # Кладбищенские участки, урны
+        #
+        q_graves_urns =  q_graves & Q(burial_container=Burial.CONTAINER_URN)
 
-            qs = Burial.objects.filter(q_cemeteries_urns).order_by('dt_register'). \
-                    select_related(*select_related).distinct()
-            fname = u'registry-5-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
-            with open(os.path.join(temp_dir, fname), 'w') as f:
-                for b in qs.iterator():
-                    full_name = self.check_names(b.deadman)
-                    if not full_name:
-                        pass
-                    f.write(self.encode_(self.SEPARATOR.join((
-                        "5",
-                        b.deadman.ident_number,
-                        full_name[0], full_name[1], full_name[2],
-                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
-                        b.cemetery.code,
-                        b.area.name,
-                        b.row,
-                        b.place_number,
-                        str(b.grave_number),
-                    ))))
-            if self.check_empty_file(temp_dir, fname):
-                got_data.append(fname)
+        qs = Burial.objects.filter(q_graves_urns).order_by('dt_register'). \
+                select_related(*select_related).distinct()
+        fname = u'registry-5-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+        with open(os.path.join(temp_dir, fname), 'w') as f:
+            for b in qs.iterator():
+                full_name = self.check_names(b.deadman)
+                if not full_name:
+                    pass
+                f.write(self.encode_(self.SEPARATOR.join((
+                    "5",
+                    b.deadman.ident_number,
+                    full_name[0], full_name[1], full_name[2],
+                    datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
+                    b.cemetery.code,
+                    b.area.name,
+                    b.row,
+                    b.place_number,
+                    str(b.grave_number),
+                ))))
+        if self.check_empty_file(temp_dir, fname):
+            got_data.append(fname)
 
-        if columbariums_list:
-            q_vertical_columbariums =  q_dates & \
-                            Q(cemetery__in=columbariums_list)
-            qs = Burial.objects.filter(q_vertical_columbariums).order_by('dt_register'). \
-                    select_related(*select_related).distinct()
-            fname = u'registry-2-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
-            with open(os.path.join(temp_dir, fname), 'w') as f:
-                for b in qs.iterator():
-                    full_name = self.check_names(b.deadman)
-                    if not full_name:
-                        pass
-                    f.write(self.encode_(self.SEPARATOR.join((
-                        "2",
-                        b.deadman.ident_number,
-                        full_name[0], full_name[1], full_name[2],
-                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
-                        b.cemetery.code,
-                        b.area.name,
-                        b.row or u'-',
-                        b.place_number,
-                    ))))
-            if self.check_empty_file(temp_dir, fname):
-                got_data.append(fname)
+        # Колумбарные стены
+        #
+        q_vertical_columbariums = q_dates & \
+                                    Q(area__kind=Area.KIND_COLUMBARIUM_VERT) & \
+                                    Q(place__kind_crypt=False)
+        qs = Burial.objects.filter(q_vertical_columbariums).order_by('dt_register'). \
+                select_related(*select_related).distinct()
+        fname = u'registry-2-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+        with open(os.path.join(temp_dir, fname), 'w') as f:
+            for b in qs.iterator():
+                full_name = self.check_names(b.deadman)
+                if not full_name:
+                    pass
+                f.write(self.encode_(self.SEPARATOR.join((
+                    "2",
+                    b.deadman.ident_number,
+                    full_name[0], full_name[1], full_name[2],
+                    datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
+                    b.cemetery.code,
+                    b.area.name,
+                    b.row or u'-',
+                    b.place_number,
+                ))))
+        if self.check_empty_file(temp_dir, fname):
+            got_data.append(fname)
 
-        if cemeteries_list:
-            q_horizontal_columbariums =  q_dates & \
-                            Q(cemetery__in=cemeteries_list) & \
-                            Q(row__gt=u'') & \
-                            ~Q(row=u'-') & \
-                            q_hc
-            qs = Burial.objects.filter(q_horizontal_columbariums).order_by('dt_register'). \
-                    select_related(*select_related).distinct()
-            fname = u'registry-3-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
-            with open(os.path.join(temp_dir, fname), 'w') as f:
-                for b in qs.iterator():
-                    full_name = self.check_names(b.deadman)
-                    if not full_name:
-                        pass
-                    f.write(self.encode_(self.SEPARATOR.join((
-                        "3",
-                        b.deadman.ident_number,
-                        full_name[0], full_name[1], full_name[2],
-                        datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
-                        b.cemetery.code,
-                        b.area.name,
-                        b.row,
-                        b.place_number,
-                    ))))
-            if self.check_empty_file(temp_dir, fname):
-                got_data.append(fname)
+        # Горизонтальные колумбарии
+        #
+        q_horizontal_columbariums =  q_dates & \
+                        Q(area__kind=Area.KIND_COLUMBARIUM_HORZ) & \
+                        Q(place__kind_crypt=False) & \
+                        Q(row__gt=u'') & \
+                        ~Q(row=u'-')
+        qs = Burial.objects.filter(q_horizontal_columbariums).order_by('dt_register'). \
+                select_related(*select_related).distinct()
+        fname = u'registry-3-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+        with open(os.path.join(temp_dir, fname), 'w') as f:
+            for b in qs.iterator():
+                full_name = self.check_names(b.deadman)
+                if not full_name:
+                    pass
+                f.write(self.encode_(self.SEPARATOR.join((
+                    "3",
+                    b.deadman.ident_number,
+                    full_name[0], full_name[1], full_name[2],
+                    datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
+                    b.cemetery.code,
+                    b.area.name,
+                    b.row,
+                    b.place_number,
+                ))))
+        if self.check_empty_file(temp_dir, fname):
+            got_data.append(fname)
+
+        # Склепы
+        #
+        q_crypts =  q_dates & \
+                        Q(area__kind=Area.KIND_GRAVES) & \
+                        Q(place__kind_crypt=True)
+        qs = Burial.objects.filter(q_crypts).order_by('dt_register'). \
+                select_related(*select_related).distinct()
+        fname = u'registry-4-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
+        with open(os.path.join(temp_dir, fname), 'w') as f:
+            for b in qs.iterator():
+                full_name = self.check_names(b.deadman)
+                if not full_name:
+                    pass
+                f.write(self.encode_(self.SEPARATOR.join((
+                    "4",
+                    b.deadman.ident_number,
+                    full_name[0], full_name[1], full_name[2],
+                    datetime.datetime.strftime(b.fact_date.d, self.DATE_FORMAT),
+                    b.cemetery.code,
+                    b.place_number,
+                ))))
+        if self.check_empty_file(temp_dir, fname):
+            got_data.append(fname)
 
         if got_data:
             zip_fname = u'registry-from-%s-to-%s-at-%s.zip' % (date_from_str, date_to_str, dt_now_str, )
