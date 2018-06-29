@@ -342,14 +342,24 @@ function setup_address_autocompletes() {
     });
 }
 
-function area_kind(cemetery_id, area_id) {
-    var pk = parseInt(area_id);
-    var area_list = CEMETERY_AREAS[cemetery_id] || [];
-    var result = '';
-    for (var i in area_list) {
-        if (area_list[i][0] == pk) {
-            result = area_list[i][2];
-            break;
+function is_grave_area() {
+    var result = true;
+    var cemetery_id = $('#id_cemetery').val();
+    var area_id = $('#id_area').val();
+    if (
+        cemetery_id &&
+        area_id &&
+        typeof CEMETERY_AREAS !== 'undefined'
+        ) {
+            var pk = parseInt(area_id);
+            if (pk) {
+                var area_list = CEMETERY_AREAS[cemetery_id] || [];
+                for (var i in area_list) {
+                if (area_list[i][0] == pk && area_list[i][2]) {
+                    result = area_list[i][2] == 'g';
+                    break;
+                }
+            }
         }
     }
     return result;
@@ -1011,18 +1021,7 @@ $(function() {
     old_grave_value = $('#id_grave_number').val();
 
     $('#view_burial_approve_close #id_area').change(function() {
-        var cemetery_id = $('#id_cemetery').val();
-        var area_id = $('#id_area').val();
-        var show_ = true;
-        if (
-            cemetery_id &&
-            area_id &&
-            typeof CEMETERY_AREAS !== 'undefined'
-           ) {
-            var kind = area_kind(cemetery_id, area_id);
-            show_ = kind === 'g';
-        }
-        if (show_) {
+        if (is_grave_area()) {
             $('#id_desired_graves_count').closest('p').show();
         } else {
             $('#id_desired_graves_count').closest('p').hide();
