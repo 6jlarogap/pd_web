@@ -11,8 +11,11 @@ class Migration(DataMigration):
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
         
         Area = orm['burials.Area']
-        n = Area.objects.filter(cemetery__name__icontains=u'Колумбарий').update(kind='v')
-        print '%s vertical columbarium areas kind updated' % n
+        v_columbariums = Area.objects.filter(cemetery__name__icontains=u'Колумбарий')
+        n = v_columbariums.update(kind='v')
+        print '%s vertical columbarium areas kind set to "v"' % n
+        v_columbariums.update(places_count=1)
+        print '%s vertical columbarium areas graves count set to 1' % n
 
         horz_columbariums = (
             dict(

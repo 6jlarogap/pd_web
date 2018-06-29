@@ -81,12 +81,6 @@ msgstr  "Сектор изменен"
 msgid   "Создан участок: %s"
 msgstr  "Создан сектор: %s"
 
-msgid   "Участки объединены"
-msgstr  "Секторы объединены"
-
-msgid   "Участки <a href=\"%(manage_cemeteries_edit)s\">кладбища %(cemetery)s</a> изменены"
-msgstr  "Секторы <a href=\"%(manage_cemeteries_edit)s\">кладбища %(cemetery)s</a> изменены"
-
 msgid   "Задайте название участка:"
 msgstr  "Задайте название сектора:"
 
