@@ -46,9 +46,6 @@ urlpatterns = patterns('burials.views',
 
     url(r'^places/(?P<pk>\d+)/certificate$', 'place_certificate', name='place_certificate'),
 
-    url(r'^places/(?P<pk>\d+)/$', 'view_place', name='view_place'),
-    url(r'^places/(?P<pk>\d+)/responsible/remove/$', 'rm_responsible', name='rm_responsible'),
-
     #url(r'^manage/cemetery/$', 'manage_cemeteries', name='manage_cemeteries'),
     #url(r'^manage/cemetery/create/$', 'manage_cemeteries_create', name='manage_cemeteries_create'),
     #url(r'^manage/cemetery/(?P<pk>\d+)/edit/$', 'manage_cemeteries_edit', name='manage_cemeteries_edit'),

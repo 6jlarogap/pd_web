@@ -143,60 +143,6 @@ class AreaItemForm(StrippedStringsMixin, forms.ModelForm):
 
 AreaFormset = inlineformset_factory(Cemetery, Area, form=AreaItemForm, formset=BaseAreaFormset, can_delete=True)
 
-class PlaceEditForm(ChildrenJSONMixin, forms.ModelForm):
-    class Meta:
-        model = Place
-        fields = ('place_length', 'place_width', )
-
-    new_graves_count = forms.IntegerField(required=True, label=_(u"Кол-во могил в месте"))
-
-    def __init__(self, request, *args, **kwargs):
-        super(PlaceEditForm, self).__init__(*args, **kwargs)
-        self.request = request
-        self.initial['new_graves_count'] = self.instance.get_graves_count()
-        self.fields['place_length'].required = False
-        self.fields['place_width'].required = False
-        if not self.instance.place_length or not self.instance.place_width:
-            try:
-                place_size = PlaceSize.objects.get(org=self.instance.cemetery.ugh,
-                                                   graves_count=self.instance.get_graves_count())
-                if not self.instance.place_length:
-                    self.initial['place_length'] = place_size.place_length
-                if not self.instance.place_width:
-                    self.initial['place_width'] = place_size.place_width
-            except PlaceSize.DoesNotExist:
-                pass
-        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
-
-    def clean_new_graves_count(self):
-        new_graves_count = self.cleaned_data['new_graves_count']
-        graves_count = self.instance.get_graves_count()
-        max_num = self.instance.burial_count()
-        if new_graves_count < max_num:
-            raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
-        elif new_graves_count < graves_count:
-            deleted_ = 0
-            for grave_number in range(graves_count, new_graves_count, -1):
-                try:
-                    Grave.objects.filter(place=self.instance, grave_number=grave_number)[0].delete(request=self.request)
-                except (IndexError, ProtectedError):
-                    break
-                deleted_ += 1 
-            if deleted_ < graves_count - new_graves_count:
-                if deleted_ == 0:
-                    raise forms.ValidationError(_(u"Не удалось удалить могилы из места, могилы заняты или удалены ранее"))
-                else:
-                    raise forms.ValidationError(_(u"Удалены лишь %s могил, остальные заняты или удалены ранее") % deleted_)
-        elif new_graves_count > graves_count:
-            self.instance.get_or_create_graves(new_graves_count)
-        return new_graves_count
-
-    def clean(self):
-        if self.cleaned_data.get('place_width') and not self.cleaned_data.get('place_length') or \
-           not self.cleaned_data.get('place_width') and self.cleaned_data.get('place_length'):
-            raise forms.ValidationError(_(u"Надо указывать и длину, и ширину места"))
-        return self.cleaned_data
-
 EMPTY = (('', '--------'),)
 
 class BurialSearchForm(forms.Form):

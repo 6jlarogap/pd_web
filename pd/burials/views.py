@@ -31,7 +31,7 @@ from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, Se
 from pd.models import UnclearDate, validate_phone_as_number
 from pd.utils import utcisoformat, re_search, dictfetchall
 
-from burials.forms import CemeteryForm, AreaFormset, PlaceEditForm, AddOrgForm, \
+from burials.forms import CemeteryForm, AreaFormset, AddOrgForm, \
                           AreaMergeForm, BurialfileCommentEditForm, BurialCommentEditFormSet, \
                           AddGravesForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
@@ -1031,23 +1031,6 @@ class CemeteryMerge(UGHRequiredMixin, TemplateView):
         return self.get(request, *args, **kwargs)
 
 manage_cemeteries_merge = CemeteryMerge.as_view()
-
-class PlaceView(UGHRequiredMixin, RequestToFormMixin, UpdateView):
-    template_name = 'view_place.html'
-    context_object_name = 'place'
-    model = Place
-    form_class = PlaceEditForm
-
-    def get_queryset(self):
-        org = self.request.user.profile.org
-        return Place.objects.filter(Q(burial__ugh=org) | Q(cemetery__ugh=org)).distinct()
-
-    def get_success_url(self):
-        messages.success(self.request, _(u"Данные обновлены"))
-        return reverse('view_place', args=[self.get_object().pk])
-
-
-view_place = PlaceView.as_view()
 
 class AddDoverView(UghOrLoruRequiredMixin, View):
     def post(self, request, *args, **kwargs):

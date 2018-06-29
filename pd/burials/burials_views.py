@@ -1391,21 +1391,6 @@ class CancelExhumationView(ArchiveMixin, DeleteView):
 
 burial_cancel_exhumation = CancelExhumationView.as_view()
 
-class RemoveResponsible(ArchiveMixin, View):
-    def post(self, request, *args, **kwargs):
-        try:
-            place = Place.objects.get(cemetery__ugh=self.request.user.profile.org, pk=kwargs['pk'])
-            resp = place.responsible
-            if resp:
-                place.remove_responsible()
-                write_log(self.request, place, _(u'Ответственный %s откреплен') % resp)
-                messages.success(self.request, _(u"Ответственный %s откреплен") % resp)
-            return redirect('view_place', place.pk)
-        except Place.DoesNotExist:
-            raise Http404
-
-rm_responsible = RemoveResponsible.as_view()
-
 class RegistryView(FormInvalidMixin, UpdateView):
 
     ENCODING = 'cp1251'
