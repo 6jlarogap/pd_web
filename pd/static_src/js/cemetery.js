@@ -1031,6 +1031,7 @@ $(function() {
     $('#cont_place #id_cemetery, #cont_place #id_area, #cont_place #id_row, #cont_place #id_place_number, #cont_place #id_desired_graves_count').change(function() {
         $('#id_responsible-take_from_0').removeAttr('checked').closest('li').hide();
 
+        var is_this_grave_area = undefined;
         var data = $('#id_cemetery, #id_area, #id_row, #id_place_number, #id_desired_graves_count').serialize();
         if ($('#id_cemetery').val() &&  $('#id_area').val() && $('#id_place_number').val()) {
             // $('#place_info').load('/burials/get_place/?'+data)
@@ -1070,7 +1071,11 @@ $(function() {
                     $('#id_add_graves-place_grave_choice').html(options);
                 }
                 else {
-                    $('#id_desired_graves_count').closest('p').show();
+                    if (is_grave_area()) {
+                        $('#id_desired_graves_count').closest('p').show();
+                    } else {
+                        $('#id_desired_graves_count').closest('p').hide();
+                    }
                     if ($('#id_place_length').length > 0) {
                         $('#id_place_length').closest('p').show();
                         $('#id_place_width').closest('p').show();
@@ -1088,7 +1093,12 @@ $(function() {
                 }
             });
         } else {
-            $('#id_desired_graves_count').closest('p').show();
+            is_this_grave_area = is_grave_area();
+            if (is_this_grave_area) {
+                $('#id_desired_graves_count').closest('p').show();
+            } else {
+                $('#id_desired_graves_count').closest('p').hide();
+            }
             if ($('#id_place_length').length > 0) {
                 $('#id_place_length').closest('p').show();
                 $('#id_place_width').closest('p').show();
