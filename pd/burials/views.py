@@ -31,7 +31,7 @@ from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, Se
 from pd.models import UnclearDate, validate_phone_as_number
 from pd.utils import utcisoformat, re_search, dictfetchall
 
-from burials.forms import CemeteryForm, AreaFormset, AddOrgForm, \
+from burials.forms import AreaFormset, AddOrgForm, \
                           AreaMergeForm, BurialfileCommentEditForm, BurialCommentEditFormSet, \
                           AddGravesForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
@@ -123,7 +123,6 @@ class CaretakerMixin(object):
 
 class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Cemetery
-    form_class = CemeteryForm
     serializer_class = CemeterySerializer
     permission_classes = (PermitIfUgh,)
     paginate_by = None
@@ -356,53 +355,6 @@ class CemeteryEditorsView(APIView):
         return Response({}, status=200)
 
 api_cemeteries_editors = CemeteryEditorsView.as_view()
-
-class CemeteryList(UGHRequiredMixin, ListView):
-    template_name = 'cemetery_list.html'
-    model = Cemetery
-
-    def get_queryset(self):
-        return Cemetery.objects.filter(ugh=self.request.user.profile.org)
-
-manage_cemeteries = CemeteryList.as_view()
-
-
-class CemeteryCreate(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, CreateView):
-    template_name = 'cemetery_create.html'
-    form_class = CemeteryForm
-
-    def form_valid(self, form):
-        self.object = form.save(commit=False)
-        self.object.creator = self.request.user
-        self.object.ugh = self.request.user.profile.org
-        self.object.save()
-        write_log(self.request, self.object, _(u'Кладбище создано'))
-        msg = _(u"<a href='%(manage_cemeteries_edit)s'>Кладбище %(cemetery)s</a> создано") % dict(
-            manage_cemeteries_edit=reverse('manage_cemeteries_edit', args=[self.object.pk]),
-            cemetery=self.object.name,
-        )
-        messages.success(self.request, msg)
-        return redirect('manage_cemeteries')
-
-manage_cemeteries_create = CemeteryCreate.as_view()
-
-class CemeteryEdit(UGHRequiredMixin, RequestToFormMixin, FormInvalidMixin, UpdateView):
-    template_name = 'cemetery_edit.html'
-    form_class = CemeteryForm
-
-
-    def get_queryset(self):
-        return Cemetery.objects.filter(ugh=self.request.user.profile.org)
-
-    def form_valid(self, form):
-        self.object = form.save()
-        msg = _(u"<a href='%(manage_cemeteries_edit)s'>Кладбище %(cemetery)s</a> изменено") % dict(
-            manage_cemeteries_edit=reverse('manage_cemeteries_edit', args=[self.object.pk]),
-            cemetery=self.object.name,
-        )
-        messages.success(self.request, msg)
-        return redirect('manage_cemeteries')
-
 
 class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
     model = Area
@@ -976,7 +928,6 @@ class PlaceSizeViewSet(viewsets.ModelViewSet):
         qs = self.model.objects.filter(org=self.request.user.profile.org)
         return  qs.all()
 
-
 class ExhumationRequestViewSet(viewsets.ModelViewSet):
     model = ExhumationRequest
     serializer_class = ExhumationRequestSerializer
@@ -993,44 +944,6 @@ class ExhumationRequestViewSet(viewsets.ModelViewSet):
             item = get_object_or_404(Place, id=id)
             qs = qs.filter(place=item)
         return  qs.all()
-
-
-
-
-class CemeteryMerge(UGHRequiredMixin, TemplateView):
-    template_name = 'cemetery_merge.html'
-
-    def get_object(self):
-        return get_object_or_404(Cemetery, ugh=self.request.user.profile.org, pk=self.kwargs['pk'])
-
-    def get_form(self):
-        return AreaMergeForm(data=self.request.POST or None, cemetery=self.get_object())
-
-    def get_context_data(self, **kwargs):
-        return {
-            'cemetery': self.get_object(),
-            'form': self.get_form(),
-        }
-
-    def post(self, request, *args, **kwargs):
-        self.request = request
-        self.args = args
-        self.kwargs = kwargs
-
-        form = self.get_form()
-        self.object = self.get_object()
-        if form.is_valid():
-            form.save()
-            write_log(self.request, self.object, _(u'Участки объединены'))
-            msg = _(u"Участки <a href='%(manage_cemeteries_edit)s'>кладбища %(cemetery)s</a> изменены") % dict(
-                manage_cemeteries_edit=reverse('manage_cemeteries_edit', args=[self.object.pk]),
-                cemetery=self.object.name,
-            )
-            messages.success(self.request, msg)
-            return redirect('manage_cemeteries_edit', self.get_object().pk)
-        return self.get(request, *args, **kwargs)
-
-manage_cemeteries_merge = CemeteryMerge.as_view()
 
 class AddDoverView(UghOrLoruRequiredMixin, View):
     def post(self, request, *args, **kwargs):
