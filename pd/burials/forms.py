@@ -1846,21 +1846,6 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
 
         return self.instance
 
-class AreaMergeForm(forms.Form):
-    correct = forms.ModelChoiceField(queryset=Area.objects.none(), required=True, label=_(u"Правильный"))
-    incorrect = forms.ModelChoiceField(queryset=Area.objects.none(), required=True, label=_(u"Неправильный"))
-
-    def __init__(self, cemetery, *args, **kwargs):
-        super(AreaMergeForm, self).__init__(*args, **kwargs)
-        self.fields['correct'].queryset = Area.objects.filter(cemetery=cemetery)
-        self.fields['incorrect'].queryset = Area.objects.filter(cemetery=cemetery)
-
-    def save(self):
-        if self.cleaned_data['incorrect'] != self.cleaned_data['correct']:
-            Place.objects.filter(area=self.cleaned_data['incorrect']).update(area=self.cleaned_data['correct'])
-            Burial.objects.filter(area=self.cleaned_data['incorrect']).update(area=self.cleaned_data['correct'])
-            self.cleaned_data['incorrect'].delete()
-
 class BurialCommentEditForm(forms.ModelForm):
 
     class Meta:

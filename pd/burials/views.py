@@ -32,7 +32,7 @@ from pd.models import UnclearDate, validate_phone_as_number
 from pd.utils import utcisoformat, re_search, dictfetchall
 
 from burials.forms import AreaFormset, AddOrgForm, \
-                          AreaMergeForm, BurialfileCommentEditForm, BurialCommentEditFormSet, \
+                          BurialfileCommentEditForm, BurialCommentEditFormSet, \
                           AddGravesForm
 from burials.models import Cemetery, Place, Area, BurialFiles, Grave, Burial, BurialComment, AreaPhoto, PlacePhoto, \
                            ExhumationRequest, AreaPurpose, PlaceSize
