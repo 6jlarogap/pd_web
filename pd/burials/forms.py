@@ -1081,6 +1081,15 @@ class BurialCommitForm(BurialForm):
         else:
             burial_type_str = burial_type
 
+        burial_container = self.cleaned_data.get('burial_container')
+        if area and area.is_columbarium():
+            if burial_container == Burial.CONTAINER_COFFIN:
+                msg = _(u"Гроб нельзя положить в колумбарном участке")
+                raise forms.ValidationError(msg)
+            if burial_type == Burial.BURIAL_ADD:
+                msg = _(u"Подзахоронение (т.е в новую могилу) немыслимо для колумбарного участка")
+                raise forms.ValidationError(msg)
+
         fact_date  = self.cleaned_data.get('fact_date')
         if is_ugh:
             acc_number = self.cleaned_data.get('account_number') or ''
@@ -1286,7 +1295,7 @@ class BurialCommitForm(BurialForm):
                 #not (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
                 #not self.instance.is_transferred() and \
                 #self.deadman_form.cleaned_data.get("last_name") and \
-                #not self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO and \
+                #not (burial_container == Burial.CONTAINER_BIO) and \
                 #not self.deadman_form.cleaned_data.get("ident_number"):
                 #msg = _(u"Нет идентификационного номера для усопшего")
                  #raise forms.ValidationError(msg)
@@ -1310,7 +1319,7 @@ class BurialCommitForm(BurialForm):
                     self.instance.is_archive() or self.request.REQUEST.get('archive') or \
                     self.instance.is_transferred() or \
                     self.request.user.profile.is_loru() or \
-                    self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO or \
+                    burial_container == Burial.CONTAINER_BIO or \
                     not can_personal_data
                ):
                 if not death_certificate_s_number:
