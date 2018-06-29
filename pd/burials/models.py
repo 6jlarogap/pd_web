@@ -75,7 +75,7 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
     caretaker = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный смотритель"), null=True, editable=False,
                                   related_name='caretaker_cemeteries', on_delete=models.PROTECT)
-    code = models.CharField(_(u"Код"), max_length=50, default=u'')
+    code = models.CharField(_(u"Код"), max_length=50, default=u'', blank=True)
 
     class Meta:
         verbose_name = _(u"Кладбище")
