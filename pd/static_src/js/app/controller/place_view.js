@@ -135,7 +135,7 @@
                 result.caretakers
         );
         
-        $scope.is_columbarium = $scope.area != 'g' ? 1 : 0;
+        $scope.is_columbarium = $scope.area.kind != 'g' ? 1 : 0;
         if($scope.is_columbarium) {
             $scope.localeText.Place = gettext("Место-в-колумбарии");
             $scope.localeText.PlaceCertificate = gettext("Паспорт места-в-колумбарии");
