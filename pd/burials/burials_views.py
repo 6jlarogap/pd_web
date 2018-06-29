@@ -870,7 +870,8 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 place = Place.objects.get(pk=self.request.REQUEST.get('place_id'))
                 grave_number_max = place.get_graves_count()
                 grave_number = 1
-                if self.request.REQUEST.get('grave_number'):
+                if self.request.REQUEST.get('grave_number') and \
+                   not place.area.is_columbarium():
                     try:
                         grave_number = int(self.request.REQUEST['grave_number'])
                     except ValueError:

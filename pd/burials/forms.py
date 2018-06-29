@@ -1112,15 +1112,21 @@ class BurialCommitForm(BurialForm):
                     except ValueError:
                         raise forms.ValidationError(msg)
 
-            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and not acc_number.strip():
-                if not cemetery or cemetery.archive_burial_account_number_required:
-                    msg = _(u"Нельзя %s архивное захоронение без указания его номера в книге учета") % msg_complete
-                    raise forms.ValidationError(msg)
-                if not place_number.strip() and \
-                    cemetery and \
-                    cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER:
-                    msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
-                    raise forms.ValidationError(msg)
+            if (self.instance.is_archive() or self.request.REQUEST.get('archive')):
+                if not acc_number.strip():
+                    if not cemetery or cemetery.archive_burial_account_number_required:
+                        msg = _(u"Нельзя %s архивное захоронение без указания его номера в книге учета") % msg_complete
+                        raise forms.ValidationError(msg)
+                    if not place_number.strip() and \
+                        cemetery and \
+                        cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER:
+                        msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
+                        raise forms.ValidationError(msg)
+            elif not place_number.strip() and \
+                cemetery and \
+                cemetery.places_algo == Cemetery.PLACE_MANUAL:
+                msg = _(u"Номер места не может быть пуст при его задании вручную")
+                raise forms.ValidationError(msg)
 
         if not place_number.strip() and \
            (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
