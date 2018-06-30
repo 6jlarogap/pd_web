@@ -367,6 +367,15 @@ class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
         qs = self.model.objects.filter(cemetery=item)
         return  qs.all()
 
+    def update(self, request, *args, **kwargs):
+        area = self.get_object_or_none()
+        kind = request.DATA.get('kind')
+        if area and kind and kind != Area.KIND_GRAVES and \
+           Place.objects.filter(area=area, kind_crypt=True).exists():
+            data = {"__all__":[_(u"Здесь есть склеп(ы): нельзя в колумбарии"),]}
+            return Response(status=400, data=data)
+        return super(AreaViewSet, self).update(request, *args, **kwargs)
+
     def pre_save(self, object):
         item = getCemetery(self.request)
         object.cemetery = item
