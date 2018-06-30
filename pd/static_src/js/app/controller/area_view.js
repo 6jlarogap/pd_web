@@ -76,10 +76,10 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 
         $scope.is_columbarium = area.kind != 'g' ? 1 : 0;
         if ($scope.is_columbarium) {
-            $scope.localeText.AddPlace = gettext('Добавить место-в-колумбарии');
-            $scope.localeText.Places = gettext('Места-в-колумбарии');
-            $scope.localeText.Place = gettext('Место-в-колумбарии');
-            $scope.localeText.NoPlaceName = gettext('Не указано название места-в-колумбарии');
+            $scope.localeText.AddPlace = gettext('Добавить место в колумбарии');
+            $scope.localeText.Places = gettext('Места в колумбарии');
+            $scope.localeText.Place = gettext('Место в колумбарии');
+            $scope.localeText.NoPlaceName = gettext('Не указано название места в колумбарии');
         }
 
             $scope.place = {

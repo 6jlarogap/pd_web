@@ -266,7 +266,7 @@ class Area(BaseModelManualDtCreated):
             result = _(u'место')
         else:
             # В колумбариях
-            result = _(u'место-в-колумбарии')
+            result = _(u'место в колумбарии')
         return result
 
     def is_columbarium(self):
@@ -328,7 +328,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
 
     def __unicode__(self):
         if self.is_columbarium():
-            pattern = _(u'Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место-в-колумбарии %(place)s')
+            pattern = _(u'Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место в колумбарии %(place)s')
         else:
             pattern = _(u'Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место %(place)s')
         return pattern % dict(
@@ -1236,7 +1236,7 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
                     result = _(u'склеп')
             else:
                 # В колумбариях
-                result = _(u'место-в-колумбарии')
+                result = _(u'место в колумбарии')
         return result
 
     def show_grave(self):

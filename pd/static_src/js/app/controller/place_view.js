@@ -137,13 +137,13 @@
         
         $scope.is_columbarium = $scope.area.kind != 'g' ? 1 : 0;
         if($scope.is_columbarium) {
-            $scope.localeText.Place = gettext("Место-в-колумбарии");
-            $scope.localeText.PlaceCertificate = gettext("Паспорт места-в-колумбарии");
-            $scope.localeText.EditPlace = gettext("Редактировать место-в-колумбарии");
-            $scope.localeText.NoPlaceName = gettext("Не указано название места-в-колумбарии");
-            $scope.localeText.IncorrectWidth = gettext("Неверное число для ширины места-в-колумбарии");
-            $scope.localeText.IncorrectLength = gettext("Неверное число для длины места-в-колумбарии");
-            $scope.localeText.PlaceFree = gettext("Место-в-колумбарии свободно");
+            $scope.localeText.Place = gettext("Место в колумбарии");
+            $scope.localeText.PlaceCertificate = gettext("Паспорт места в колумбарии");
+            $scope.localeText.EditPlace = gettext("Редактировать место в колумбарии");
+            $scope.localeText.NoPlaceName = gettext("Не указано название места в колумбарии");
+            $scope.localeText.IncorrectWidth = gettext("Неверное число для ширины места в колумбарии");
+            $scope.localeText.IncorrectLength = gettext("Неверное число для длины места в колумбарии");
+            $scope.localeText.PlaceFree = gettext("Место в колумбарии свободно");
         }
 
         $scope.place_log = [];

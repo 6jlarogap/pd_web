@@ -1337,9 +1337,9 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
             
         place = self.object
         if place.is_columbarium():
-            title1 = _(u'ПАСПОРТ МЕСТА-В-КОЛУМБАРИИ')
-            title2 = _(u'ОТВЕТСТВЕННЫЙ ЗА МЕСТО-В-КОЛУМБАРИИ')
-            title3 = _(u'АДРЕС МЕСТА-В-КОЛУМБАРИИ')
+            title1 = _(u'ПАСПОРТ МЕСТА В КОЛУМБАРИИ')
+            title2 = _(u'ОТВЕТСТВЕННЫЙ ЗА МЕСТО В КОЛУМБАРИИ')
+            title3 = _(u'АДРЕС МЕСТА В КОЛУМБАРИИ')
         else:
             title1 = _(u'ПАСПОРТ МЕСТА')
             title2 = _(u'ОТВЕТСТВЕННЫЙ ЗА МЕСТО')
@@ -1401,7 +1401,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         if place.row:
             urm = u"%s, %s: %s" % (urm, _(u"ряд"), place.row, )
         if place.place:
-            urm = u"%s, %s: %s" % (urm, _(u"место-в-колумбарии") if place.is_columbarium() else _(u"место"), place.place, )
+            urm = u"%s, %s: %s" % (urm, _(u"место в колумбарии") if place.is_columbarium() else _(u"место"), place.place, )
         right.append(urm)
 
         yandex_api_key = None
