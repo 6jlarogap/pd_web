@@ -31,6 +31,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
         AddPlace: gettext("Добавить место"),
         Places: gettext("Места"),
         Place: gettext("Место"),
+        UchastokOrMesto: gettext("Участок / Место в колумбарии"),
         NoPlaceName: gettext("Не указано название места"),
         NoAreaName: gettext("Не указано название участка")
     };
@@ -139,9 +140,12 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
         enableRowSelection:false,
         showGroupPanel: true,
         columnDefs: [
-        	{field: 'row', displayName: 'Ряд'},
-        	{field: 'place', displayName: 'Место'},
-        	{displayName:'Ответственный', field:'responsible_txt'}, 
+            {field: 'row', displayName: 'Ряд'},
+
+            // К сожалению, нельзя иначе в gridOptions.columnDefs:
+            //
+            {field: 'place', displayName: $scope.localeText.UchastokOrMesto},
+            {displayName:'Ответственный', field:'responsible_txt'}, 
             {displayName:'Действие',cellTemplate:tplButtonEdit}
         ]
     };
