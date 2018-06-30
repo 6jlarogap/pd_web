@@ -1,0 +1,74 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-07-07 17:20+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# Для получения po - словаря выполнить: msgfmt django.po -o django.mo
+
+msgid   "место в колумбарии"
+msgstr  "место"
+
+msgid   "места в колумбарии"
+msgstr  "места"
+
+msgid   "Место в колумбарии"
+msgstr  "Место"
+
+msgid   "Места в колумбарии"
+msgstr  "Места"
+
+msgid   "ПАСПОРТ МЕСТА В КОЛУМБАРИИ"
+msgstr  "ПАСПОРТ МЕСТА"
+
+msgid   "ОТВЕТСТВЕННЫЙ ЗА МЕСТО В КОЛУМБАРИИ"
+msgstr  "ОТВЕТСТВЕННЫЙ ЗА МЕСТО"
+
+msgid   "АДРЕС МЕСТА В КОЛУМБАРИИ"
+msgstr  "АДРЕС МЕСТА"
+
+msgid   "Добавить место в колумбарии"
+msgstr  "Добавить место"
+
+msgid   "Паспорт места в колумбарии"
+msgstr  "Паспорт места"
+
+msgid   "Редактировать место в колумбарии"
+msgstr  "Редактировать место"
+
+msgid   "Не указано название места в колумбарии"
+msgstr  "Не указано название места"
+
+msgid   "Неверное число для ширины места в колумбарии"
+msgstr  "Неверное число для ширины места"
+
+msgid   "Неверное число для длины места в колумбарии"
+msgstr  "Неверное число для длины места"
+
+msgid   "Место в колумбарии свободно"
+msgstr  "Место свободно"
+
+msgid   "Участок/место в колумбарии"
+msgstr  "Место"
+
+msgid   "Место в колумбарии найдено"
+msgstr  "Место найдено"
+
+msgid   "Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место в колумбарии %(place)s"
+msgstr  "Кл. %(cemetery)s, сектор %(area)s, ряд %(row)s, место %(place)s"
+
+msgid   "Участок / Место в колумбарии"
+msgstr  "Место"

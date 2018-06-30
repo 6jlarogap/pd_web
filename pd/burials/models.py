@@ -86,7 +86,6 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
     def __unicode__(self):
         return self.name
 
-    @property
     def is_columbarium(self):
         return u'колумбарий' in self.name.lower()
 
@@ -212,11 +211,21 @@ class Area(BaseModelManualDtCreated):
         (AVAILABILITY_CLOSED, _(u'Закрыт')),
     )
 
+    KIND_GRAVES = 'g'
+    KIND_COLUMBARIUM_VERT = 'v'
+    KIND_COLUMBARIUM_HORZ = 'h'
+    AREA_KINDS = (
+        (KIND_GRAVES, _(u'Кладбищенский (Могилы)'),),
+        (KIND_COLUMBARIUM_VERT, _(u'Колумбарная стена'),),
+        (KIND_COLUMBARIUM_HORZ, _(u'Горизонтальный колумбарий'),),
+    )
+
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), on_delete=models.PROTECT)
     name = models.CharField(_(u"Название"), max_length=255)
     availability = models.CharField(_(u"Открытость"), max_length=32,
                                     choices=AVAILABILITY_CHOICES,
                                     default=AVAILABILITY_OPEN)
+    kind = models.CharField(_(u"Тип"), max_length=8, choices=AREA_KINDS, default=KIND_GRAVES)
     purpose = models.ForeignKey(AreaPurpose, verbose_name=_(u"Назначение"), null=True, on_delete=models.PROTECT)
     places_count = models.PositiveIntegerField(_(u"Макс. кол-во могил в месте"), default=1)
     square = models.FloatField(_(u"Площадь"), null=True, editable=False)
@@ -230,12 +239,14 @@ class Area(BaseModelManualDtCreated):
         unique_together = ('cemetery', 'name',)
 
     def __unicode__(self):
-        return _(u'%(name)s (%(availability)s, %(purpose)s, %(places_count)s могил)') % dict(
-            name=self.name,
-            availability=self.get_availability_display(),
-            purpose=self.purpose or _(u"назн. неизв"),
-            places_count=self.places_count
-        )
+        addit = self.purpose and self.purpose.name or _(u"назн. неизв")
+        if self.kind == self.KIND_GRAVES:
+            addit = u"%s, %s могил" % (addit, self.places_count)
+        if self.availability != self.AVAILABILITY_OPEN:
+            addit = u"%s, %s" % (self.get_availability_display(), addit)
+        if self.kind != self.KIND_GRAVES:
+            addit = u"%s, %s" % (self.get_kind_display(), addit)
+        return u"%s (%s)" % (self.name, addit)
 
     def unique_error_message(self, model_class, unique_check):
         if len(unique_check) == 1:
@@ -249,6 +260,17 @@ class Area(BaseModelManualDtCreated):
             self.name=''
         self.fill_dt_created()
         return super(Area, self).save(*args, **kwargs)
+
+    def place_name(self):
+        if self.kind == Area.KIND_GRAVES:
+            result = _(u'место')
+        else:
+            # В колумбариях
+            result = _(u'место в колумбарии')
+        return result
+
+    def is_columbarium(self):
+        return self.kind != Area.KIND_GRAVES
 
 class AreaCoordinates(CoordinatesModel):
     area = models.ForeignKey(Area, verbose_name=_(u"Участок"), on_delete=models.PROTECT, related_name='coordinates')
@@ -266,6 +288,7 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
     oldplace = models.CharField(_(u"Старое место"), max_length=255, blank=True, null=True)
     place = models.CharField(_(u"Место"), max_length=255, blank=True, default='')
     available_count = models.PositiveSmallIntegerField(_(u"Число свободных могил"), default=0)
+    kind_crypt = models.BooleanField(_(u"Это склеп"), default=False)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Ответственный"), blank=True, null=True,
                                     on_delete=models.PROTECT)
     place_length = models.DecimalField(_(u"Длина, м."), max_digits=5, decimal_places=2,
@@ -304,7 +327,11 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
         ordering = ['row', 'place']
 
     def __unicode__(self):
-        return _(u'Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место %(place)s') % dict(
+        if self.is_columbarium():
+            pattern = _(u'Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место в колумбарии %(place)s')
+        else:
+            pattern = _(u'Кл. %(cemetery)s, уч. %(area)s, ряд %(row)s, место %(place)s')
+        return pattern % dict(
             cemetery=self.cemetery,
             area=self.area and self.area.name or '',
             row=self.row,
@@ -619,6 +646,9 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
                 latitude=latitude,
                 longitude=longitude,
             )
+
+    def is_columbarium(self):
+        return self.area and self.area.kind != Area.KIND_GRAVES
 
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
@@ -1195,6 +1225,26 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             return Place.objects.get(**params)
         except Place.DoesNotExist:
             return None
+
+    def place_name(self):
+        result = _(u'место')
+        area = self.area
+        if area:
+            if area.kind == Area.KIND_GRAVES:
+                place = self.get_place()
+                if place and place.kind_crypt:
+                    result = _(u'склеп')
+            else:
+                # В колумбариях
+                result = _(u'место в колумбарии')
+        return result
+
+    def show_grave(self):
+        result = True
+        area = self.area
+        if area and area.kind != Area.KIND_GRAVES:
+            result = False
+        return result
 
     def get_responsible(self):
         return self.responsible or (self.get_place() and self.get_place().responsible) or None

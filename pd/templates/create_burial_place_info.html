@@ -2,31 +2,37 @@
 
 <div class="well">
     <div id="place_exists">
-        <h2>{% trans "Место найдено" %}</h2>
+        <h2>{% if place.is_columbarium %}{% trans "Место в колумбарии найдено" %}{% else %}{% trans "Место найдено" %}{% endif %}</h2>
     </div>
 
     <h3>{{ place }}</h3>
+    {% if place.kind_crypt %}
+        <h4 style="color:blue">{% trans "Это склеп" %}<h4>
+        <br />
+    {% endif %}
 
     {% if user.profile.is_ugh %}
         <p><a href="{{ place.url }}" target="_blank">{% trans "карточка" %}</a></p>
     {% endif %}
 
     <dl>
-        <dt>{% trans "Могил" %}</dt>
-        <dd>
-            {{ place.get_graves_count }}
-            ({% trans "свободно" %} {{ place.get_available_count }})
-            {% if user.profile.is_ugh %}
-                &nbsp;&nbsp;&nbsp;
-                <a href="#add_graves" role="button" class="btn" data-toggle="modal">
-                    {% trans "добавить/удалить могилы" %}
-                </a>
-                <input type="hidden" id="place_info_id" value="{{ place.pk }}" />
-                <input type="hidden" id="place_info_last_occupied_grave_number" value="{{ place.last_occupied_grave_number }}" />
-                <input type="hidden" id="place_info_graves_count" value="{{ place.get_graves_count }}" /> 
-                <input type="hidden" id="place_info_max_graves_count" value="{{ place.cemetery.ugh.max_graves_count }}" /> 
-            {% endif %}
-        </dd>
+        {% if not place.is_columbarium %}
+            <dt>{% trans "Могил" %}</dt>
+            <dd>
+                {{ place.get_graves_count }}
+                ({% trans "свободно" %} {{ place.get_available_count }})
+                {% if user.profile.is_ugh %}
+                    &nbsp;&nbsp;&nbsp;
+                    <a href="#add_graves" role="button" class="btn" data-toggle="modal">
+                        {% trans "добавить/удалить могилы" %}
+                    </a>
+                    <input type="hidden" id="place_info_id" value="{{ place.pk }}" />
+                    <input type="hidden" id="place_info_last_occupied_grave_number" value="{{ place.last_occupied_grave_number }}" />
+                    <input type="hidden" id="place_info_graves_count" value="{{ place.get_graves_count }}" /> 
+                    <input type="hidden" id="place_info_max_graves_count" value="{{ place.cemetery.ugh.max_graves_count }}" /> 
+                {% endif %}
+            </dd>
+        {% endif %}
         {% if place.responsible %}
             <div id="place_has_responsible">
                 <dt>{% trans "Ответственный" %}</dt>
@@ -39,7 +45,9 @@
     <ul>
         {% for b in burials %}
             <li>
-                {{ b.grave.grave_number }} &mdash;
+                {% if not place.is_columbarium %}
+                    {{ b.grave.grave_number }} &mdash;
+                {% endif %}
                 {{ b.get_burial_type_display }} &mdash;
                 {{ b.get_burial_container_display }} &mdash;
                 {% if user.profile.is_loru and b.is_full %}
