@@ -1192,9 +1192,6 @@ class BurialCommitForm(BurialForm):
                     msg = _(u"Номер могилы превышает количество могил в существующем месте")
                     raise forms.ValidationError(msg)
         elif not area or not area.is_columbarium():
-            #if area and area.places_count  < grave_number:
-                #msg = _(u"Номер могилы превышает количество могил в месте для участка")
-                #raise forms.ValidationError(msg)
             desired_graves_count = self.cleaned_data.get('desired_graves_count')
             if grave_number > desired_graves_count:
                 msg = _(u"Номер могилы превышает запрошенное количество могил в новом месте")
@@ -1591,8 +1588,10 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                             row = self.instance.row,
                             place_number = self.instance.place_number
                         )
-            if not b_temp.get_place() and self.instance.grave_number > desired_graves_count:
-                if not self.instance.area or not self.instance.area.is_columbarium():
+            if self.instance.area and self.instance.area.is_columbarium():
+                desired_graves_count = 1
+            else:
+                if not b_temp.get_place() and self.instance.grave_number > desired_graves_count:
                     raise forms.ValidationError(_(u"Номер могилы превышает запрошенное количество могил в новом месте"))
         return desired_graves_count
 
