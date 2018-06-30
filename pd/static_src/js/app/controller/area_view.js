@@ -15,6 +15,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	};
 	$scope.area_max_places = 100;
 	$scope.AVAILABILITY_CHOICES = AVAILABILITY_CHOICES; 
+	$scope.AREA_KIND_CHOICES = AREA_KIND_CHOICES; 
 	$scope.search = '';
 	$scope.place_list_filtered = [];
 
@@ -30,6 +31,7 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
         AddPlace: gettext("Добавить место"),
         Places: gettext("Места"),
         Place: gettext("Место"),
+        UchastokOrMesto: gettext("Участок / Место в колумбарии"),
         NoPlaceName: gettext("Не указано название места"),
         NoAreaName: gettext("Не указано название участка")
     };
@@ -58,56 +60,63 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
 	
 	
 	$scope.update = function(){
+        Area.get({areaID:$routeParams.area_id,  cemetery_id: $routeParams.cemetery_id}, function(area) {
+            if(!area.id)
+                window.location = '/manage/500?title=Участок не найден';
 
-		Area.get({areaID:$routeParams.area_id,  cemetery_id: $routeParams.cemetery_id}, function(area) {
-			if(!area.id)
-				window.location = '/manage/500?title=Участок не найден';
+        $scope.area = area;
 
-			$scope.area = area;
+        $scope.editor = {};
+        $scope.editor.caretaker = area.caretaker;
+        $scope.editor.caretakers = area.caretakers;
+        $scope.caretaker_show = caretakerShow(
+        area.caretaker,
+        area.caretakers
+        );
 
-		$scope.editor = {};
-		$scope.editor.caretaker = area.caretaker;
-		$scope.editor.caretakers = area.caretakers;
-		$scope.caretaker_show = caretakerShow(
-		area.caretaker,
-		area.caretakers
-		);
+        $scope.is_columbarium = area.kind != 'g' ? 1 : 0;
+        if ($scope.is_columbarium) {
+            $scope.localeText.AddPlace = gettext('Добавить место в колумбарии');
+            $scope.localeText.Places = gettext('Места в колумбарии');
+            $scope.localeText.Place = gettext('Место в колумбарии');
+            $scope.localeText.NoPlaceName = gettext('Не указано название места в колумбарии');
+        }
 
-			$scope.place = {
-			        row :'',
-			        place : '',
-			        place_length:null,
-			        place_width:null,
-			        cemetery: $routeParams.cemetery_id,
-			        area: $routeParams.area_id,
-			        places_count: area.places_count>0?area.places_count:1
-			};
+            $scope.place = {
+                row :'',
+                place : '',
+                place_length:null,
+                place_width:null,
+                cemetery: $routeParams.cemetery_id,
+                area: $routeParams.area_id,
+                places_count: area.places_count > 0 && !$scope.is_columbarium ? area.places_count : 1
+            };
 
-	        AreaPhoto.query({area_id:area.id}, function(photo){
-	            $scope.area_photo = photo;
-	            $scope.currentImage = photo[0];
-	        });
-		});
-		Cemetery.get({cemeteryID:$routeParams.cemetery_id}, function(result) {
-		    $scope.cemetery = result;
-		});
+            AreaPhoto.query({area_id:area.id}, function(photo){
+                $scope.area_photo = photo;
+                $scope.currentImage = photo[0];
+            });
+        });
+        Cemetery.get({cemeteryID:$routeParams.cemetery_id}, function(result) {
+            $scope.cemetery = result;
+        });
         Cemetery.isEditable(
                     {cemeteryID:$routeParams.cemetery_id},
                     function(result) {
-           $scope.is_editable = result.is_editable;
+            $scope.is_editable = result.is_editable;
         });
-		Place.query({
-			 	cemetery_id: $routeParams.cemetery_id, 
-				area_id: $routeParams.area_id
-			}, function(result) {
-			$scope.place_list = result;
-			$scope.place_list.sort();
-			$scope.place_list_filtered = $scope.place_list;
-			try{
-				$scope.$digest();
-			}catch(e){}
-		});
-	};
+        Place.query({
+                cemetery_id: $routeParams.cemetery_id, 
+                area_id: $routeParams.area_id
+            }, function(result) {
+            $scope.place_list = result;
+            $scope.place_list.sort();
+            $scope.place_list_filtered = $scope.place_list;
+            try{
+                $scope.$digest();
+            }catch(e){}
+        });
+    };
 
     $scope.setCurrentImage = function (image) {
         $scope.currentImage = image;
@@ -126,15 +135,17 @@ function AreaViewCtrl($scope, $rootScope, $http, $routeParams, $resource, $locat
         }
     });
 
-    
     $scope.gridOptions = { 
         data: 'place_list_filtered', //|filter:search
         enableRowSelection:false,
         showGroupPanel: true,
         columnDefs: [
-        	{field: 'row', displayName: 'Ряд'},
-        	{field: 'place', displayName: $scope.localeText.Place},
-        	{displayName:'Ответственный', field:'responsible_txt'}, 
+            {field: 'row', displayName: 'Ряд'},
+
+            // К сожалению, нельзя иначе в gridOptions.columnDefs:
+            //
+            {field: 'place', displayName: $scope.localeText.UchastokOrMesto},
+            {displayName:'Ответственный', field:'responsible_txt'}, 
             {displayName:'Действие',cellTemplate:tplButtonEdit}
         ]
     };

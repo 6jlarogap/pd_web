@@ -2,8 +2,7 @@
 
 {% if burial.area %}{% trans "Участок" %} {{ burial.area.name|default:"" }}<br/>{% endif %}
 {% if burial.row %}{% trans "ряд" %} {{ burial.row }},{% endif %}
-{% if burial.place_number %}{% trans "место" %} {{ burial.place_number }},{% endif %}
-{% if burial.grave_number %}{% trans "могила" %} {{ burial.grave_number }}{% endif %}
+{% if burial.place_number %}{{ burial.place_name }} {{ burial.place_number }}{% endif %}{% if burial.area and burial.grave_number and burial.show_grave %}, {% trans "могила" %} {{ burial.grave_number }}{% endif %}
 <br/>
 {{ burial.get_burial_type_display|default:"" }}<br />{{ burial.get_burial_container_display|default:"" }}
 {% if burial.get_responsible %}

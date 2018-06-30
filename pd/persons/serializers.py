@@ -16,7 +16,6 @@ from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, U
                             HyperlinkedFileField
 
 from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None, capitalize
-from pd.serializers import ArchFilesSerializer
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
     #person = serializers.PrimaryKeyRelatedField()
@@ -426,67 +425,4 @@ class ArchPersonIDSerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonID
         fields = ('id', 'person_id', 'id_type_id', 'series', 'number', 'source_id', 'date')
-
-class ArchPhoneSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Phone
-        fields = ('phonetype', 'number',)
-
-class ArchAlivePersonSerializer(serializers.ModelSerializer):
-    address_id = serializers.Field('address.id')
-    user_id = serializers.Field('user.id')
-    birth_date = UnclearDateFieldSafeSerializer()
-    phones = serializers.SerializerMethodField('phones_func')
-
-    class Meta:
-        model = AlivePerson
-        fields = (
-            'id', 'last_name', 'first_name', 'middle_name', 'birth_date',
-            'address_id', 'phones',
-            # 'user_id' # расшифровку пользователя-кабинетчика не даем в ОМС.
-            #             Кабинетчик мог их поменять, а эти изменения волновать
-            #             ОМС не должны
-            'login_phone',
-        )
-
-    def phones_func(self, aliveperson):
-        phones = list()
-        if hasattr(aliveperson, 'phones') and aliveperson.phones:
-            for phone in re.split(r'[,;\n]+', aliveperson.phones):
-                phone = re.sub(r'[-\s]+', '', phone)
-                if re.match(r'^\d{5,}$', phone):
-                    phones.append(dict(
-                        phonetype=Phone.PHONE_TYPE_OTHER,
-                        number=phone,
-                    ))
-        for phone in aliveperson.phone_set.all():
-            phones.append(ArchPhoneSerializer(phone).data)
-        return phones
-
-class ArchDeathCertificateSerializer(serializers.ModelSerializer):
-    deadperson_id = serializers.Field('person.id')
-    zags_id = serializers.Field('zags.id')
-
-    class Meta:
-        model = DeathCertificate
-        fields = ('id', 'deadperson_id', 'type', 's_number', 'release_date', 'zags_id')
-
-class ArchDeathCertificateScanSerializer(ArchFilesSerializer):
-    deathcertificate_id = serializers.Field('deathcertificate.id')
-
-    class Meta:
-        model = DeathCertificateScan
-        fields = ('id', 'deathcertificate_id',
-                  'bfile', 'comment', 'original_name', 'comment', 'creator_id', 'date_of_creation', )
-
-class ArchDeadPersonSerializer(serializers.ModelSerializer):
-    birth_date = UnclearDateFieldSafeSerializer()
-    death_date = UnclearDateFieldSafeSerializer()
-    address_id = serializers.Field('address.id')
-
-    class Meta:
-        model = DeadPerson
-        fields = (
-            'id', 'last_name', 'first_name', 'middle_name', 'birth_date', 'death_date', 'address_id',
-        )
 

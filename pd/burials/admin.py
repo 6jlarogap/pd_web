@@ -1,21 +1,10 @@
 from django.contrib import admin
 
 from burials.models import Cemetery, Burial, Reason, Area, Place, AreaPurpose, ExhumationRequest
-from burials.forms import CemeteryAdminForm
-
 
 class AreaInine(admin.TabularInline):
     model = Area
     can_delete = False
-
-class CemeteryAdmin(admin.ModelAdmin):
-    form = CemeteryAdminForm
-    inlines = [AreaInine, ]
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-admin.site.register(Cemetery, CemeteryAdmin)
 
 class AreaPurposeAdmin(admin.ModelAdmin):
     pass
