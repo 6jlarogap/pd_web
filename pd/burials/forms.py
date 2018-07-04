@@ -35,87 +35,6 @@ from pd.forms import AppOrgFormMixin
 
 OPF_CHOICES = list(Org.OPF_CHOICES)[1:]
 
-class BaseCemeteryForm(forms.ModelForm):
-    def clean_time_slots(self):
-        slots = self.cleaned_data['time_slots'].split('\n')
-        slots = filter(lambda s: s.strip(), slots)
-        try:
-            slots = map(lambda s: datetime.datetime.strptime(s.strip(), '%H:%M'), slots)
-        except ValueError:
-            raise forms.ValidationError(_(u'Формат должен быть: по одному времени в формате ЧЧ:ММ на строку'))
-        return u'\n'.join([s.strftime('%H:%M') for s in slots])
-
-class CemeteryForm(LoggingFormMixin, BaseCemeteryForm):
-    class Meta:
-        model = Cemetery
-        exclude = ('ugh', 'creator', )
-
-    def __init__(self, request, *args, **kwargs):
-        self.request = request
-        super(CemeteryForm, self).__init__(*args, **kwargs)
-        address = self.instance and self.instance.address
-        self.address_form = LocationForm(data=self.data or None, instance=address, prefix='address')
-        #self.address_form.fields['country_name'].required = True
-        self.forms = [self.address_form, ]
-        if self.instance and self.instance.pk:
-            self.area_formset = AreaFormset(data=self.data or None, instance=self.instance)
-        else:
-            self.area_formset = None
-
-    def clean_places_algo(self):
-        """
-        Если у угх стоит рег. номер "ост. пустым", то в кладбище не должно быть место "по рег. №",
-        """
-        places_algo = self.cleaned_data.get('places_algo')
-        if places_algo and \
-           places_algo == Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER and \
-           self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY:
-            raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. рег. номера захоронений могут быть пустыми"))
-        return places_algo
-
-    def clean_places_algo_archive(self):
-        """
-        Если у угх стоит рег. номер "ост. пустым", то в кладбище не должно быть место "по рег. №",
-        """
-        places_algo_archive = self.cleaned_data.get('places_algo_archive')
-        if places_algo_archive and \
-           places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
-           self.request.user.profile.org.numbers_algo == Org.NUM_EMPTY:
-            raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. рег. номера захоронений могут быть пустыми"))
-        return places_algo_archive
-
-    def clean(self):
-        cleaned_data = super(CemeteryForm, self).clean()
-        if self.is_valid():
-            if self.cleaned_data['places_algo_archive'] == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER and \
-               not self.cleaned_data['archive_burial_account_number_required']:
-                raise forms.ValidationError(_(u'Номер архивного захоронения обязателен, '
-                                              u'если расстановка мест архивных захоронений: по рег. номеру'))
-        return cleaned_data
-
-    def is_valid(self):
-        return super(CemeteryForm, self).is_valid() and self.address_form.is_valid() and (not self.area_formset or self.area_formset.is_valid())
-
-    def get_prefix(self, form):
-        return _(u"Адрес, ") if form is self.address_form else u''
-
-    def save(self, commit=True, *args, **kwargs):
-        self.collect_log_data()
-        obj = super(CemeteryForm, self).save(commit=False, *args, **kwargs)
-        if obj.pk and self.area_formset:
-            self.area_formset.save()
-        obj.address = None
-        if self.address_form.is_valid_data():
-            obj.address = self.address_form.save()
-        if commit:
-            obj.save()
-            self.put_log_data(_(u'Кладбище изменено'))
-        return obj
-
-class CemeteryAdminForm(BaseCemeteryForm):
-    class Meta:
-        model = Cemetery
-
 class BaseAreaFormset(BaseInlineFormSet):
     def __init__(self, *args, **kwargs):
         super(BaseAreaFormset, self).__init__(*args, **kwargs)
@@ -142,60 +61,6 @@ class AreaItemForm(StrippedStringsMixin, forms.ModelForm):
         return self.cleaned_data
 
 AreaFormset = inlineformset_factory(Cemetery, Area, form=AreaItemForm, formset=BaseAreaFormset, can_delete=True)
-
-class PlaceEditForm(ChildrenJSONMixin, forms.ModelForm):
-    class Meta:
-        model = Place
-        fields = ('place_length', 'place_width', )
-
-    new_graves_count = forms.IntegerField(required=True, label=_(u"Кол-во могил в месте"))
-
-    def __init__(self, request, *args, **kwargs):
-        super(PlaceEditForm, self).__init__(*args, **kwargs)
-        self.request = request
-        self.initial['new_graves_count'] = self.instance.get_graves_count()
-        self.fields['place_length'].required = False
-        self.fields['place_width'].required = False
-        if not self.instance.place_length or not self.instance.place_width:
-            try:
-                place_size = PlaceSize.objects.get(org=self.instance.cemetery.ugh,
-                                                   graves_count=self.instance.get_graves_count())
-                if not self.instance.place_length:
-                    self.initial['place_length'] = place_size.place_length
-                if not self.instance.place_width:
-                    self.initial['place_width'] = place_size.place_width
-            except PlaceSize.DoesNotExist:
-                pass
-        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
-
-    def clean_new_graves_count(self):
-        new_graves_count = self.cleaned_data['new_graves_count']
-        graves_count = self.instance.get_graves_count()
-        max_num = self.instance.burial_count()
-        if new_graves_count < max_num:
-            raise forms.ValidationError(_(u"Нельзя установить меньше %s, столько могил уже занято") % max_num)
-        elif new_graves_count < graves_count:
-            deleted_ = 0
-            for grave_number in range(graves_count, new_graves_count, -1):
-                try:
-                    Grave.objects.filter(place=self.instance, grave_number=grave_number)[0].delete(request=self.request)
-                except (IndexError, ProtectedError):
-                    break
-                deleted_ += 1 
-            if deleted_ < graves_count - new_graves_count:
-                if deleted_ == 0:
-                    raise forms.ValidationError(_(u"Не удалось удалить могилы из места, могилы заняты или удалены ранее"))
-                else:
-                    raise forms.ValidationError(_(u"Удалены лишь %s могил, остальные заняты или удалены ранее") % deleted_)
-        elif new_graves_count > graves_count:
-            self.instance.get_or_create_graves(new_graves_count)
-        return new_graves_count
-
-    def clean(self):
-        if self.cleaned_data.get('place_width') and not self.cleaned_data.get('place_length') or \
-           not self.cleaned_data.get('place_width') and self.cleaned_data.get('place_length'):
-            raise forms.ValidationError(_(u"Надо указывать и длину, и ширину места"))
-        return self.cleaned_data
 
 EMPTY = (('', '--------'),)
 
@@ -232,7 +97,7 @@ class BurialSearchForm(forms.Form):
     cemetery = forms.CharField(required=False, label=_(u"Кладбище"))
     area = forms.CharField(required=False, label=_(u"Участок"))
     row = forms.CharField(required=False, label=_(u"Ряд"))
-    place = forms.CharField(required=False, label=_(u"Место"))
+    place = forms.CharField(required=False, label=_(u"Участок/место в колумбарии"))
     no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
     is_inbook = forms.NullBooleanField(required=False, initial=None, label=_(u"Отметка об ответственном"))
     source = forms.TypedChoiceField(required=False, label=_(u"Источник"))
@@ -534,25 +399,43 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         if not self.instance.pk:
             self.initial['burial_container'] = Burial.CONTAINER_COFFIN
-            if self.request.REQUEST.get('place_id'):
+            self.initial['burial_type'] = Burial.BURIAL_NEW
+
+            place_id = self.request.REQUEST.get('place_id')
+            if place_id:
                 # Вызов из карточки места
                 self.initial['burial_type'] = Burial.BURIAL_ADD
-            else:
-                self.initial['burial_type'] = Burial.BURIAL_NEW
-            if self.request.user.profile.cemetery and not self.initial.get('cemetery'):
-                self.initial['cemetery'] = self.request.user.profile.cemetery
-            if self.request.user.profile.area and not self.initial.get('area'):
-                self.initial['area'] = self.request.user.profile.area
-                self.initial['desired_graves_count'] = self.initial['area'].places_count or 1
-            if self.request.user.profile.is_ugh():
-                desired_graves_count = self.initial.get('desired_graves_count') or 1
                 try:
-                    place_size = PlaceSize.objects.get(org=self.request.user.profile.org,
-                                                       graves_count=desired_graves_count)
-                    self.initial['place_length'] = place_size.place_length
-                    self.initial['place_width'] = place_size.place_width
-                except PlaceSize.DoesNotExist:
+                    place_ = Place.objects.get(pk=place_id)
+                    if place_.is_columbarium():
+                        self.initial['burial_type'] = Burial.BURIAL_OVER
+                        self.initial['burial_container'] = Burial.CONTAINER_URN
+                except Place.DoesNotExist:
                     pass
+            else:
+                if self.request.user.profile.cemetery and not self.initial.get('cemetery'):
+                    self.initial['cemetery'] = self.request.user.profile.cemetery
+                    if self.initial['cemetery'].is_columbarium():
+                        self.initial['burial_container'] = Burial.CONTAINER_URN
+
+                if self.request.user.profile.area and not self.initial.get('area'):
+                    self.initial['area'] = self.request.user.profile.area
+                    if self.initial['area'].is_columbarium():
+                        self.initial['burial_container'] = Burial.CONTAINER_URN
+                        self.initial['desired_graves_count'] = 1
+                    else:
+                        self.initial['desired_graves_count'] = self.initial['area'].places_count or 1
+
+                if self.request.user.profile.is_ugh():
+                    if not self.initial.get('area') or not self.initial['area'].is_columbarium():
+                        desired_graves_count = self.initial.get('desired_graves_count') or 1
+                        try:
+                            place_size = PlaceSize.objects.get(org=self.request.user.profile.org,
+                                                            graves_count=desired_graves_count)
+                            self.initial['place_length'] = place_size.place_length
+                            self.initial['place_width'] = place_size.place_width
+                        except PlaceSize.DoesNotExist:
+                            pass
 
         if self.request.user.profile.is_loru() or \
            self.request.REQUEST.get('archive') or \
@@ -889,10 +772,15 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                 )
                 self.instance.place=place
                 if created:
-                    self.grave = place.create_graves(max(self.cleaned_data['desired_graves_count'] or 1,
-                                                        self.cleaned_data['grave_number'],
+                    desired_graves_count = self.cleaned_data.get('desired_graves_count') or 1
+                    grave_number = self.cleaned_data.get('grave_number') or 1
+                    if self.cleaned_data['area'].is_columbarium():
+                        desired_graves_count = 1
+                        grave_number = 1
+                    self.grave = place.create_graves(max(desired_graves_count,
+                                                        grave_number,
                                                         ),
-                                                    self.cleaned_data['grave_number'],
+                                                    grave_number,
                     )
                 # Пока не привязываем здесь могилу к захоронению, если место существует.
                 # Это будет сделано ниже в self.instance.close(....)
@@ -901,7 +789,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                     update_for_register = True
             if settings.DEADMAN_IDENT_NUMBER_ALLOW and \
                not update_for_register and \
-               not self.cleaned_data['cemetery'].is_columbarium and \
+               not self.cleaned_data['area'].is_columbarium() and \
                self.old_grave_number != self.cleaned_data['grave_number']:
                 update_for_register = True
 
@@ -915,6 +803,10 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 self.instance.deadman.ident_number != self.deadman_old_ident_number \
            ):
            update_for_register = True
+
+        if self.cleaned_data.get('area') and self.cleaned_data['area'].is_columbarium():
+            self.instance.grave_number = 1
+            self.desired_graves_count = 1
 
         self.instance.save()
 
@@ -1189,6 +1081,15 @@ class BurialCommitForm(BurialForm):
         else:
             burial_type_str = burial_type
 
+        burial_container = self.cleaned_data.get('burial_container')
+        if area and area.is_columbarium():
+            if burial_container == Burial.CONTAINER_COFFIN:
+                msg = _(u"Гроб нельзя положить в колумбарном участке")
+                raise forms.ValidationError(msg)
+            if burial_type == Burial.BURIAL_ADD:
+                msg = _(u"Подзахоронение (т.е в новую могилу) немыслимо для колумбарного участка")
+                raise forms.ValidationError(msg)
+
         fact_date  = self.cleaned_data.get('fact_date')
         if is_ugh:
             acc_number = self.cleaned_data.get('account_number') or ''
@@ -1220,15 +1121,21 @@ class BurialCommitForm(BurialForm):
                     except ValueError:
                         raise forms.ValidationError(msg)
 
-            if (self.instance.is_archive() or self.request.REQUEST.get('archive')) and not acc_number.strip():
-                if not cemetery or cemetery.archive_burial_account_number_required:
-                    msg = _(u"Нельзя %s архивное захоронение без указания его номера в книге учета") % msg_complete
-                    raise forms.ValidationError(msg)
-                if not place_number.strip() and \
-                    cemetery and \
-                    cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER:
-                    msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
-                    raise forms.ValidationError(msg)
+            if (self.instance.is_archive() or self.request.REQUEST.get('archive')):
+                if not acc_number.strip():
+                    if not cemetery or cemetery.archive_burial_account_number_required:
+                        msg = _(u"Нельзя %s архивное захоронение без указания его номера в книге учета") % msg_complete
+                        raise forms.ValidationError(msg)
+                    if not place_number.strip() and \
+                        cemetery and \
+                        cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER:
+                        msg = _(u"Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
+                        raise forms.ValidationError(msg)
+            elif not place_number.strip() and \
+                cemetery and \
+                cemetery.places_algo == Cemetery.PLACE_MANUAL:
+                msg = _(u"Номер места не может быть пуст при его задании вручную")
+                raise forms.ValidationError(msg)
 
         if not place_number.strip() and \
            (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
@@ -1274,7 +1181,7 @@ class BurialCommitForm(BurialForm):
                 place = Place.objects.get(cemetery=cemetery, area=area, row=row, place=place_number)
             except Place.DoesNotExist:
                 pass
-        if place:
+        if place and not place.is_columbarium():
             place_graves_count = place.get_graves_count()
             if place_graves_count < grave_number:
                 if place_graves_count == 0 and grave_number == 1:
@@ -1284,10 +1191,7 @@ class BurialCommitForm(BurialForm):
                 else:
                     msg = _(u"Номер могилы превышает количество могил в существующем месте")
                     raise forms.ValidationError(msg)
-        else:
-            #if area and area.places_count  < grave_number:
-                #msg = _(u"Номер могилы превышает количество могил в месте для участка")
-                #raise forms.ValidationError(msg)
+        elif not area or not area.is_columbarium():
             desired_graves_count = self.cleaned_data.get('desired_graves_count')
             if grave_number > desired_graves_count:
                 msg = _(u"Номер могилы превышает запрошенное количество могил в новом месте")
@@ -1388,7 +1292,7 @@ class BurialCommitForm(BurialForm):
                 #not (self.instance.is_archive() or self.request.REQUEST.get('archive')) and \
                 #not self.instance.is_transferred() and \
                 #self.deadman_form.cleaned_data.get("last_name") and \
-                #not self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO and \
+                #not (burial_container == Burial.CONTAINER_BIO) and \
                 #not self.deadman_form.cleaned_data.get("ident_number"):
                 #msg = _(u"Нет идентификационного номера для усопшего")
                  #raise forms.ValidationError(msg)
@@ -1412,7 +1316,7 @@ class BurialCommitForm(BurialForm):
                     self.instance.is_archive() or self.request.REQUEST.get('archive') or \
                     self.instance.is_transferred() or \
                     self.request.user.profile.is_loru() or \
-                    self.cleaned_data.get('burial_container') == Burial.CONTAINER_BIO or \
+                    burial_container == Burial.CONTAINER_BIO or \
                     not can_personal_data
                ):
                 if not death_certificate_s_number:
@@ -1558,7 +1462,10 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
             self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
             if place:
-                self.initial['desired_graves_count'] = place_graves_count
+                if place.is_columbarium():
+                    self.initial['desired_graves_count'] = 1
+                else:
+                    self.initial['desired_graves_count'] = place_graves_count
                 self.initial['place_length'] = place.place_length
                 self.initial['place_width'] = place.place_width
 
@@ -1617,7 +1524,8 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
         if 'place_length' in self.fields:
             self.fields['place_length'].required = False
             self.fields['place_width'].required = False
-            if not self.instance.place_length or not self.instance.place_width:
+            if (not self.instance.place_length or not self.instance.place_width) and \
+               (not self.instance.area or not self.instance.area.is_columbarium):
                 try:
                     place_size = PlaceSize.objects.get(org=request.user.profile.org,
                                                        graves_count=self.instance.desired_graves_count)
@@ -1680,8 +1588,11 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                             row = self.instance.row,
                             place_number = self.instance.place_number
                         )
-            if not b_temp.get_place() and self.instance.grave_number > desired_graves_count:
-                raise forms.ValidationError(_(u"Номер могилы превышает запрошенное количество могил в новом месте"))
+            if self.instance.area and self.instance.area.is_columbarium():
+                desired_graves_count = 1
+            else:
+                if not b_temp.get_place() and self.instance.grave_number > desired_graves_count:
+                    raise forms.ValidationError(_(u"Номер могилы превышает запрошенное количество могил в новом месте"))
         return desired_graves_count
 
     def clean_fact_date(self):
@@ -1942,21 +1853,6 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
         self.instance.save()
 
         return self.instance
-
-class AreaMergeForm(forms.Form):
-    correct = forms.ModelChoiceField(queryset=Area.objects.none(), required=True, label=_(u"Правильный"))
-    incorrect = forms.ModelChoiceField(queryset=Area.objects.none(), required=True, label=_(u"Неправильный"))
-
-    def __init__(self, cemetery, *args, **kwargs):
-        super(AreaMergeForm, self).__init__(*args, **kwargs)
-        self.fields['correct'].queryset = Area.objects.filter(cemetery=cemetery)
-        self.fields['incorrect'].queryset = Area.objects.filter(cemetery=cemetery)
-
-    def save(self):
-        if self.cleaned_data['incorrect'] != self.cleaned_data['correct']:
-            Place.objects.filter(area=self.cleaned_data['incorrect']).update(area=self.cleaned_data['correct'])
-            Burial.objects.filter(area=self.cleaned_data['incorrect']).update(area=self.cleaned_data['correct'])
-            self.cleaned_data['incorrect'].delete()
 
 class BurialCommentEditForm(forms.ModelForm):
 
