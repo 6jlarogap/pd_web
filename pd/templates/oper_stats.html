@@ -119,7 +119,7 @@
 
             {% data mark.inventoried_places.values "inventoried_places" %}
                 {% col "string" "Date" %}"{{ val|date:"M j" }}"{% endcol %}
-                {% col "number" "Число мест" %}{{ val }}{% endcol %}
+                {% col "number" "Кол-во" %}{{ val }}{% endcol %}
             {% enddata %}
 
             {% data mark.inventoried_photos.values "inventoried_photos" %}

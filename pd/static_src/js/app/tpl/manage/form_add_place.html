@@ -13,10 +13,10 @@
         <input name="placeName" id="id_place_set-name" type="text" required ng-model="place.place" maxlength="255" />
         <span class="error" ng-show="placeEditForm.placeName.$error.required">{{localeText.NoPlaceName}}</span>
     </dd>
-    <dt>
+    <dt ng-hide = "is_columbarium">
         <label for="id_places_count">Количество могил:</label>
     </dt>
-    <dd>
+    <dd ng-hide = "is_columbarium">
         <input name="places_count" id="id_places_count" type="number" 
         min="1" max="{{area.max_graves_count}}"
         required ng-model="place.places_count" />
@@ -25,25 +25,23 @@
         <span class="error" ng-show="placeEditForm.places_count.$error.max">Число должно быть меньше, либо равным {{area.max_graves_count}}</span> 
     </dd>
     <dt>
-        <label for="id_place_set-len">Длина:</label>
+        <label for="id_place_set-len">Длина (м.):</label>
     </dt>
     <dd>
         <input name="placeLen" id="id_place_set-len" type="number" 
-        step="0.01"  min="0.1" max="10" required
+        step="0.01"  min="0.1" max="10"
         ng-model="place.place_length" maxlength="255" />
-        <span class="error" ng-show="placeEditForm.placeLen.$error.required">Не указано</span>
         <span class="error "ng-show="placeEditForm.placeLen.$error.min">Число должно быть больше 0</span> 
         <span class="error" ng-show="placeEditForm.placeLen.$error.max">Число должно быть меньше либо равным 10</span> 
     </dd>
     
     <dt>
-        <label for="id_place_set-w">Ширина:</label>
+        <label for="id_place_set-w">Ширина (м.):</label>
     </dt>
     <dd>
         <input name="placeW" id="id_place_set-w" type="number" 
-        step="0.01"  min="0.1" max="10" required
+        step="0.01"  min="0.1" max="10"
         ng-model="place.place_width" maxlength="255" />
-        <span class="error" ng-show="placeEditForm.placeW.$error.required">Не указано</span> 
         <span class="error" ng-show="placeEditForm.placeW.$error.min">Число должно быть больше 0</span> 
         <span class="error" ng-show="placeEditForm.placeW.$error.max">Число должно быть меньше либо равным 10</span> 
     </dd>

@@ -96,95 +96,106 @@
     $scope.$broadcast('handleMapChanged');
   };
 
-  $scope.update = function () {
-    $scope.loading = true;
-    item_params = {
-      placeID: $routeParams.place_id,
-      cemetery_id: $routeParams.cemetery_id,
-      area_id: $routeParams.area_id,
-      grave_page: $scope.grave_page,
-      log_page: $scope.log_page
-    };
-    $scope.address_class = 'Place';
-    $scope.address_class_params = item_params;
+    $scope.update = function () {
+        $scope.loading = true;
+        item_params = {
+        placeID: $routeParams.place_id,
+        cemetery_id: $routeParams.cemetery_id,
+        area_id: $routeParams.area_id,
+        grave_page: $scope.grave_page,
+        log_page: $scope.log_page
+        };
+        $scope.address_class = 'Place';
+        $scope.address_class_params = item_params;
 
-    Place.getForm(item_params, function (result) {
-      // Prepare place gallery
-      if (result.place.gallery.length) {
-        $scope.placeGallery = _(result.place.gallery)
-          .sortBy('createdAt')
-          .reverse()
-          .value();
-        $scope.placeGalleryFirstPhoto = $scope.placeGallery[0];
-      }
+        Place.getForm(item_params, function (result) {
+        // Prepare place gallery
+        if (result.place.gallery.length) {
+            $scope.placeGallery = _(result.place.gallery)
+            .sortBy('createdAt')
+            .reverse()
+            .value();
+            $scope.placeGalleryFirstPhoto = $scope.placeGallery[0];
+        }
 
-      $scope.cemetery = new Cemetery(result.cemetery);
-      $scope.area = new Area(result.area);
-      $scope.item = new Place(result.place);
-      $scope.is_editable = result.is_editable;
-       // координаты места, а если их нет, то кладбища {latitude: xxx, longitude: ...}
-      $scope.location = result.location;
-      $scope.item.place_length = parseFloat($scope.item.place_length); // html5 input[type=number]
-      $scope.item.place_width = parseFloat($scope.item.place_width);
+        $scope.cemetery = new Cemetery(result.cemetery);
+        $scope.area = new Area(result.area);
+        $scope.item = new Place(result.place);
+        $scope.is_editable = result.is_editable;
+        // координаты места, а если их нет, то кладбища {latitude: xxx, longitude: ...}
+        $scope.location = result.location;
+        $scope.item.place_length = parseFloat($scope.item.place_length); // html5 input[type=number]
+        $scope.item.place_width = parseFloat($scope.item.place_width);
 
-      $scope.editor.caretaker = result.place.caretaker;
-      $scope.editor.create_cabinet = result.place.create_cabinet;
-      $scope.editor.caretakers = result.caretakers;
-      $scope.caretaker_show = caretakerShow(
-            result.place.caretaker,
-            result.caretakers
-      );
+        $scope.editor.caretaker = result.place.caretaker;
+        $scope.editor.create_cabinet = result.place.create_cabinet;
+        $scope.editor.caretakers = result.caretakers;
+        $scope.caretaker_show = caretakerShow(
+                result.place.caretaker,
+                result.caretakers
+        );
+        
+        $scope.is_columbarium = $scope.area.kind != 'g' ? 1 : 0;
+        if($scope.is_columbarium) {
+            $scope.localeText.Place = gettext("Место в колумбарии");
+            $scope.localeText.PlaceCertificate = gettext("Паспорт места в колумбарии");
+            $scope.localeText.EditPlace = gettext("Редактировать место в колумбарии");
+            $scope.localeText.NoPlaceName = gettext("Не указано название места в колумбарии");
+            $scope.localeText.IncorrectWidth = gettext("Неверное число для ширины места в колумбарии");
+            $scope.localeText.IncorrectLength = gettext("Неверное число для длины места в колумбарии");
+            $scope.localeText.PlaceFree = gettext("Место в колумбарии свободно");
+        }
 
-      $scope.place_log = [];
-      angular.forEach(result.log, function (item) {
-        item.msg = item.msg.replace(/(?:\n|\r\n|\r)/g, '<br/>');
-        $scope.place_log.push(new Log(item));
-      });
-
-      $scope.log_page = result.log_page;
-      $scope.log_pages = result.log_pages;
-
-      $scope.responsible_address = new Address(result.responsible_address);
-      $scope.responsible_phones = [];
-      angular.forEach(result.responsible_phones, function (item) {
-        $scope.responsible_phones.push(new Phone(item));
-      });
-
-      //$scope.burials = new Burial(result.burials);
-      //$scope.graves = new Grave(result.graves);
-
-      if (result.responsible) {
-        $scope.responsible = new AlivePerson(result.responsible);
-      } else {
-        $scope.responsible = new AlivePerson({
-          is_new: true
+        $scope.place_log = [];
+        angular.forEach(result.log, function (item) {
+            item.msg = item.msg.replace(/(?:\n|\r\n|\r)/g, '<br/>');
+            $scope.place_log.push(new Log(item));
         });
-      }
 
-      $scope.item.name = $scope.cemetery.name;
-      $scope.loading = false;
+        $scope.log_page = result.log_page;
+        $scope.log_pages = result.log_pages;
 
-      $scope.grave_count = result.grave_count;
-      if ($scope.placeCoordinates) {
-        var lat = $scope.placeCoordinates.lat, lng = $scope.placeCoordinates.lng;
-      }
-      $scope.newGrave = new Grave({
-        place: $scope.item.id,
-        is_wrong_fio: false,
-        is_military: false,
-        grave_number: $scope.grave_count + 1 //todo add way to count next grave_number or add validation of grave_number
-        //lat :geo.getLat(lat || $scope.item.latitude),
-        //lng :geo.getLng(lng || $scope.item.longitude )
-      });
-      $scope.updateGraves();
-    }, function (data) {
-      $scope.loading = false;
-      if (data.status == 404) {
-        window.location = '/manage/404?title=Место не найдено';
-      }
-    });
+        $scope.responsible_address = new Address(result.responsible_address);
+        $scope.responsible_phones = [];
+        angular.forEach(result.responsible_phones, function (item) {
+            $scope.responsible_phones.push(new Phone(item));
+        });
 
-  };
+        //$scope.burials = new Burial(result.burials);
+        //$scope.graves = new Grave(result.graves);
+
+        if (result.responsible) {
+            $scope.responsible = new AlivePerson(result.responsible);
+        } else {
+            $scope.responsible = new AlivePerson({
+            is_new: true
+            });
+        }
+
+        $scope.item.name = $scope.cemetery.name;
+        $scope.loading = false;
+
+        $scope.grave_count = result.grave_count;
+        if ($scope.placeCoordinates) {
+            var lat = $scope.placeCoordinates.lat, lng = $scope.placeCoordinates.lng;
+        }
+        $scope.newGrave = new Grave({
+            place: $scope.item.id,
+            is_wrong_fio: false,
+            is_military: false,
+            grave_number: $scope.grave_count + 1 //todo add way to count next grave_number or add validation of grave_number
+            //lat :geo.getLat(lat || $scope.item.latitude),
+            //lng :geo.getLng(lng || $scope.item.longitude )
+        });
+        $scope.updateGraves();
+        }, function (data) {
+        $scope.loading = false;
+        if (data.status == 404) {
+            window.location = '/manage/404?title=Место не найдено';
+        }
+        });
+
+    };
 
   $scope.updateGraves = function () {
     $scope.loading = true;
@@ -410,6 +421,13 @@
       });
     }
   };
+  
+    $scope.validateCrypt = function(value) {
+        if (value) {
+            return $scope.area.kind == 'g';
+        }
+        return true;
+    };
 
   //Responsible
   $scope.isResponsibleEditorOpen = false;

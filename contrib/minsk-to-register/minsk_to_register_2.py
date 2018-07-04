@@ -27,21 +27,6 @@ DATE_FORMAT='%d.%m.%Y'
 
 # Горизонтальные колумбарии
 #
-horz_columbariums = (
-    dict(
-        cemetery__name=u'Колодищи',
-        name=u'132у'
-    ),
-    dict(
-        cemetery__name=u'Северное-1',
-        name=u'56У'
-    ),
-    dict(
-        cemetery__name=u'Северное-1',
-        name=u'139У'
-    ),
-)
-
 date_from_str = datetime.datetime.strftime(date_from, '%Y%m%d')
 date_to_str = datetime.datetime.strftime(date_to, '%Y%m%d')
 
@@ -62,12 +47,30 @@ def make_xlss(org, date_from, date_to, dir_out):
         fact_date__lte=date_to,
     )
 
+    # Склепы
+    #
+    q = q_dates & \
+        Q(area__kind=Area.KIND_GRAVES) & \
+        Q(place__kind_crypt=True)
+    mode_cemetery = 4
+    file_id = fname_(mode_cemetery, with_id=True)
+    file_noid = fname_(mode_cemetery, with_id=False)
+    got_data.append(file_id)
+    got_data.append(file_noid)
+    print_xls(
+        q,
+        dir_out,
+        mode_cemetery=mode_cemetery,
+        file_id=file_id,
+        file_noid=file_noid,
+        put_grave=False
+    )
+
     # Горизонтальные колумбарии
     #
-    areas_hc = list()
-    for horz_columbarium in horz_columbariums:
-        areas_hc.append(Area.objects.get(cemetery__ugh=org, **horz_columbarium))
-    q = q_dates & Q(area__in=areas_hc)
+    q = q_dates & \
+        Q(area__kind=Area.KIND_COLUMBARIUM_HORZ) & \
+        Q(place__kind_crypt=False)
     mode_cemetery = 3
     file_id = fname_(mode_cemetery, with_id=True)
     file_noid = fname_(mode_cemetery, with_id=False)
@@ -85,7 +88,8 @@ def make_xlss(org, date_from, date_to, dir_out):
     # Вертикальные колумбарии
     #
     q = q_dates & \
-        Q(cemetery__name__icontains=u'колумбарий')
+        Q(area__kind=Area.KIND_COLUMBARIUM_VERT) & \
+        Q(place__kind_crypt=False)
     mode_cemetery = 2
     file_id = fname_(mode_cemetery, with_id=True)
     file_noid = fname_(mode_cemetery, with_id=False)
@@ -103,11 +107,11 @@ def make_xlss(org, date_from, date_to, dir_out):
     # Кладбища
     #
     q_cemeteries = q_dates & \
-        ~Q(cemetery__name__icontains=u'колумбарий') & \
-        ~Q(area__in=areas_hc)
+        Q(area__kind=Area.KIND_GRAVES) & \
+        Q(place__kind_crypt=False)
 
     # Кладбища - Гробы
-    q =  q_cemeteries & Q(burial_container=Burial.CONTAINER_COFFIN)
+    q = q_cemeteries & Q(burial_container=Burial.CONTAINER_COFFIN)
     mode_cemetery = 1
     file_id = fname_(mode_cemetery, with_id=True)
     file_noid = fname_(mode_cemetery, with_id=False)
@@ -123,7 +127,8 @@ def make_xlss(org, date_from, date_to, dir_out):
     )
 
     # Кладбища - Урны
-    q =  q_cemeteries & Q(burial_container=Burial.CONTAINER_URN)
+    #
+    q = q_cemeteries & Q(burial_container=Burial.CONTAINER_URN)
     mode_cemetery = 5
     file_id = fname_(mode_cemetery, with_id=True)
     file_noid = fname_(mode_cemetery, with_id=False)
