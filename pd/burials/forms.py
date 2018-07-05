@@ -1086,6 +1086,9 @@ class BurialCommitForm(BurialForm):
             if burial_container == Burial.CONTAINER_COFFIN:
                 msg = _(u"Гроб нельзя положить в колумбарном участке")
                 raise forms.ValidationError(msg)
+            elif burial_container == Burial.CONTAINER_BIO:
+                msg = _(u"Биоотходы не захораниваются в колумбарном участке")
+                raise forms.ValidationError(msg)
             if burial_type == Burial.BURIAL_ADD:
                 msg = _(u"Подзахоронение (т.е в новую могилу) немыслимо для колумбарного участка")
                 raise forms.ValidationError(msg)
