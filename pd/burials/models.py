@@ -650,6 +650,18 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
     def is_columbarium(self):
         return self.area and self.area.kind != Area.KIND_GRAVES
 
+    def place_name(self):
+        result = _(u'место')
+        area = self.area
+        if area:
+            if area.kind == Area.KIND_GRAVES:
+                if self.kind_crypt:
+                    result = _(u'склеп')
+            else:
+                # В колумбариях
+                result = _(u'место в колумбарии')
+        return result
+
 class PlaceSize(models.Model):
     org = models.ForeignKey(Org, verbose_name=_(u"Организация"), editable=False, on_delete=models.PROTECT) 
     graves_count = models.PositiveSmallIntegerField(_(u"Число могил"), )
