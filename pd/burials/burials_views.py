@@ -1493,6 +1493,10 @@ class RegistryView(FormInvalidMixin, UpdateView):
             '%s' % org_pk,
         )
         export_path = os.path.join(settings.MEDIA_ROOT, media_path)
+        try:
+            os.makedirs(export_path)
+        except OSError:
+            pass
         temp_dir = tempfile.mkdtemp(dir=export_path)
         temp_dir_name = os.path.basename(temp_dir)
         d = datetime.datetime.now()
