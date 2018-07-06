@@ -108,13 +108,24 @@ class LoggingFormMixin:
                     if not new_value and not isinstance(new_value, bool):
                         new_value = ''
 
-                    if isinstance(old_value, datetime.date) or isinstance(old_value, UnclearDate):
-                        old_value = old_value.strftime('%d.%m.%Y')
-                    if isinstance(new_value, datetime.date) or isinstance(new_value, UnclearDate):
-                        new_value = new_value.strftime('%d.%m.%Y')
-                    if isinstance(old_value, datetime.time):
+                    if isinstance(old_value, UnclearDate):
+                        old_value = old_value.str_safe(format='d.m.y')
+                    if isinstance(old_value, datetime.date):
+                        try:
+                            old_value = old_value.strftime('%d.%m.%Y')
+                        except ValueError:
+                            old_value = _(u"Неверная старая дата")
+                    elif isinstance(old_value, datetime.time):
                         old_value = old_value.strftime('%H:%M')
-                    if isinstance(new_value, datetime.time):
+
+                    if isinstance(new_value, UnclearDate):
+                        new_value = new_value.str_safe(format='d.m.y')
+                    elif isinstance(new_value, datetime.date):
+                        try:
+                            new_value = new_value.strftime('%d.%m.%Y')
+                        except ValueError:
+                            new_value = _(u"Неверная новая дата")
+                    elif isinstance(new_value, datetime.time):
                         new_value = new_value.strftime('%H:%M')
 
                     if isinstance(form.fields[f], django.forms.models.ModelMultipleChoiceField):
