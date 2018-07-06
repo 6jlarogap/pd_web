@@ -94,7 +94,7 @@ class DashboardView(TemplateView):
                     dict(message=_(u"Рабочее место пользователя кабинета организовано другими средствами"))
                 )
         elif request.user.profile.is_ugh():
-             if request.user.profile.is_registrator() and request.user.profile.cemeteries.count():
+             if request.user.profile.is_registrator_or_caretaker() and request.user.profile.cemeteries.count():
                  return super(DashboardView, self).get(request, *args, **kwargs)
              else:
                 return redirect(reverse('burial_list'))
@@ -704,7 +704,7 @@ class BurialsListView(PaginateListView):
         # набор своих кладбищ не совпадает с общим набором кладбищ ОМС
         profile = self.request.user.profile
         cemeteries_count = profile.cemeteries.count()
-        if profile.is_ugh() and profile.is_registrator() and \
+        if profile.is_ugh() and profile.is_registrator_or_caretaker() and \
            cemeteries_count != Cemetery.objects.filter(ugh=profile.org).count() and \
            cemeteries_count > 0:
             pass
@@ -955,7 +955,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             if order and order.burial and order.burial != self.get_object():
                 return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
         elif self.request.user.profile.is_ugh() and \
-             self.request.user.profile.is_registrator() and \
+             self.request.user.profile.is_registrator_or_caretaker() and \
              self.request.user.profile.cemeteries.count():
             pass
         else:

@@ -168,7 +168,7 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
         Используется в таблице захоронений
         """
         result = cls.objects.none()
-        if user.is_active and is_ugh_user(user) and user.profile.is_registrator():
+        if user.is_active and is_ugh_user(user) and user.profile.is_registrator_or_caretaker():
             return user.profile.cemeteries.all()
         return result
 

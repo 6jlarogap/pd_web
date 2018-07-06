@@ -262,7 +262,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
             status=200,
             data =dict(
                 can_add_cemetery=request.user.profile.is_admin() or \
-                                 request.user.profile.is_registrator(),
+                                 request.user.profile.is_registrator_or_caretaker(),
             ))
 
     @action(methods=['GET',])
@@ -278,7 +278,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
             в реестр, а для этого нужно разрешение на ид у усопшего
         """
         profile = request.user.profile
-        if profile.is_registrator():
+        if profile.is_registrator_or_caretaker():
             profile_pk = profile.pk
         else:
             profile_pk = None
@@ -1464,7 +1464,7 @@ class ApiOmsPhotoPlaces(APIView):
                 ))
             except IndexError:
                 message = None
-                if not request.user.profile.is_registrator():
+                if not request.user.profile.is_registrator_or_caretaker():
                     message = _(u"У вас нет прав вносить захоронения. Обратитесь к администратору")
                 elif not request.user.profile.cemeteries.count():
                     message = _(u"Вам не назначены кладбища для ввода захоронений. Обратитесь к администратору")
