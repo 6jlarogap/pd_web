@@ -1149,11 +1149,12 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
                 return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
         elif request.user.profile.is_ugh():
             if not b.cemetery or b.cemetery in Cemetery.editable_ugh_cemeteries(request.user):
-                pass
+                if b.is_closed() and request.user.profile.is_caretaker_only():
+                    raise PermissionDenied
             else:
-                raise Http404
+                raise PermissionDenied
         else:
-            raise Http404
+            raise PermissionDenied
         return super(EditBurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
