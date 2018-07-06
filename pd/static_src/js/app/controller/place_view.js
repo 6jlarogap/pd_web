@@ -122,6 +122,7 @@
         $scope.area = new Area(result.area);
         $scope.item = new Place(result.place);
         $scope.is_editable = result.is_editable;
+        $scope.is_caretaker_only = result.is_caretaker_only;
         // координаты места, а если их нет, то кладбища {latitude: xxx, longitude: ...}
         $scope.location = result.location;
         $scope.item.place_length = parseFloat($scope.item.place_length); // html5 input[type=number]

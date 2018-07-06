@@ -226,7 +226,7 @@
                     <i class="icon-search"></i>
                   </a>
                   <a class="btn btn-mini" popover="Правка" popover-trigger="mouseenter"
-                     ng-show="is_editable"
+                     ng-show="is_editable && !is_caretaker_only"
                      href="/burials/{{burial.id}}/edit/" target="_new">
                     <i class="icon-edit"></i>
                   </a>
@@ -349,7 +349,7 @@
                     <button
                         style="color:red"
                         ng-click="deleteImage(currentImage)"
-                        ng-show="is_editable"
+                        ng-show="is_editable && !is_caretaker_only"
                         >Удалить</button>
                 </span>
                 <img ng-hide="currentImage" alt="Нет фотографии"

@@ -108,7 +108,7 @@
                         <td>{% for r in p.role.all %}
                                 {{ r }}<br/>
                             {% endfor %}
-                            {% if p.is_registrator %}
+                            {% if p.is_registrator_or_caretaker %}
                                 <br />{% trans "Назначенные кладбища" %}:
                                 {% if not p.cemeteries.count %}
                                     <br />&nbsp;&nbsp; {% trans "не назначены" %}

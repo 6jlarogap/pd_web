@@ -59,6 +59,7 @@ class Role(models.Model):
 
     ROLE_ADMIN = 'admin'
     ROLE_REGISTRATOR = 'registrator'
+    ROLE_CARETAKER = 'caretaker'
 
     # Может выдавать данные в реестр.
     # Эту роль не надо вносить в таблицу, если на сайте
@@ -252,8 +253,24 @@ class Profile(CommonProfile):
     def is_admin(self):
         return self.role.filter(name=Role.ROLE_ADMIN).exists()
 
-    def is_registrator(self):
-        return self.is_ugh() and self.role.filter(name=Role.ROLE_REGISTRATOR).exists()
+    def get_roles(self):
+        return self.role.values_list('name', flat=True)
+
+    def is_registrator_or_caretaker(self):
+        result = False
+        if self.is_ugh():
+            roles = self.get_roles()
+            result = Role.ROLE_REGISTRATOR in roles or \
+                     Role.ROLE_CARETAKER in roles
+        return result
+
+    def is_caretaker_only(self):
+        result = False
+        if self.is_ugh():
+            roles = self.get_roles()
+            result = Role.ROLE_CARETAKER in roles and \
+                     Role.ROLE_REGISTRATOR not in roles
+        return result
 
     def is_registry_handler(self):
         return self.is_ugh() and self.role.filter(name=Role.ROLE_REGISTRY).exists()
