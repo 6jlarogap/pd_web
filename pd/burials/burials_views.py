@@ -540,7 +540,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             'can_personal_data': b.can_personal_data(self.request),
             'can_ugh_annulate': b.can_ugh_annulate() and \
                                 (self.request.user.profile.is_registrator() or \
-                                 self.request.user.profile.is_caretaker_only and not b.is_closed()),
+                                 self.request.user.profile.is_caretaker_only() and not b.is_closed()),
             'place': b.get_place(),
             'editable_ugh_cemeteries': Cemetery.editable_ugh_cemeteries(self.request.user)
         }
