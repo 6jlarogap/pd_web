@@ -256,6 +256,13 @@ class Profile(CommonProfile):
     def get_roles(self):
         return self.role.values_list('name', flat=True)
 
+    def is_registrator(self):
+        result = False
+        if self.is_ugh():
+            roles = self.get_roles()
+            result = Role.ROLE_REGISTRATOR in roles
+        return result
+
     def is_registrator_or_caretaker(self):
         result = False
         if self.is_ugh():
