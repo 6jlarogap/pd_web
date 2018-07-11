@@ -142,7 +142,7 @@ class ApiCemeteryUpload(APIView):
             cem = Cemetery(name = cemeteryName, square = square, creator = request.user, ugh = org, dt_created = dtCreated)
             cem.save()
             write_log(request, cem, _(u"Кладбище '%s' создано через мобильное приложение") % cem.name)
-            if request.user.profile.is_registrator():
+            if request.user.profile.is_registrator_or_caretaker():
                 request.user.profile.cemeteries.add(cem)
                 log_mes = _(u"Добавлен доступ к кладбищу: '%s'") % cem.name
                 user_mes=_(u'Изменены данные пользователя %(fio)s (%(username)s)') % dict(

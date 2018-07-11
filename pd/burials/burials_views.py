@@ -94,7 +94,7 @@ class DashboardView(TemplateView):
                     dict(message=_(u"Рабочее место пользователя кабинета организовано другими средствами"))
                 )
         elif request.user.profile.is_ugh():
-             if request.user.profile.is_registrator() and request.user.profile.cemeteries.count():
+             if request.user.profile.is_registrator_or_caretaker() and request.user.profile.cemeteries.count():
                  return super(DashboardView, self).get(request, *args, **kwargs)
              else:
                 return redirect(reverse('burial_list'))
@@ -396,9 +396,13 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 return self.get(request, *args, **kwargs)
 
         if request.POST.get('annulate') and \
-            (request.user.profile.is_ugh() and b.can_ugh_annulate() or \
-             request.user.profile.is_loru() and b.can_loru_annulate() \
-            ):
+            b.can_ugh_annulate() and \
+            (request.user.profile.is_registrator() or \
+             request.user.profile.is_caretaker_only() and not b.is_closed() \
+            ) \
+            or \
+            request.user.profile.is_loru() and b.can_loru_annulate() \
+            :
             b.grave = None
             b.annulated = True
             write_log(request, b, _(u'Захоронение аннулировано'), reason)
@@ -410,9 +414,13 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             redirect_to_view = True
 
         if request.POST.get('deannulate') and \
-           (request.user.profile.is_ugh() and b.can_ugh_deannulate() or \
-            request.user.profile.is_loru() and b.can_loru_deannulate()
-           ):
+           b.can_ugh_deannulate() and \
+            (request.user.profile.is_registrator() or \
+             request.user.profile.is_caretaker_only() and not b.is_closed() \
+            ) \
+           or \
+           request.user.profile.is_loru() and b.can_loru_deannulate() \
+           :
             if b.place:
                 b.grave = b.place.get_or_create_graves(b.grave_number)
             b.annulated = False
@@ -530,6 +538,9 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                                  b.is_full() and not b.is_closed() and not b.is_exhumated() and \
                                  b.loru and b.loru == self.request.user.profile.org,
             'can_personal_data': b.can_personal_data(self.request),
+            'can_ugh_annulate': b.can_ugh_annulate() and \
+                                (self.request.user.profile.is_registrator() or \
+                                 self.request.user.profile.is_caretaker_only() and not b.is_closed()),
             'place': b.get_place(),
             'editable_ugh_cemeteries': Cemetery.editable_ugh_cemeteries(self.request.user)
         }
@@ -704,7 +715,7 @@ class BurialsListView(PaginateListView):
         # набор своих кладбищ не совпадает с общим набором кладбищ ОМС
         profile = self.request.user.profile
         cemeteries_count = profile.cemeteries.count()
-        if profile.is_ugh() and profile.is_registrator() and \
+        if profile.is_ugh() and profile.is_registrator_or_caretaker() and \
            cemeteries_count != Cemetery.objects.filter(ugh=profile.org).count() and \
            cemeteries_count > 0:
             pass
@@ -955,7 +966,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             if order and order.burial and order.burial != self.get_object():
                 return redirect(reverse('edit_burial', args=[order.burial.pk]) + '?order=%s' % order.pk)
         elif self.request.user.profile.is_ugh() and \
-             self.request.user.profile.is_registrator() and \
+             self.request.user.profile.is_registrator_or_caretaker() and \
              self.request.user.profile.cemeteries.count():
             pass
         else:
@@ -1149,11 +1160,12 @@ class EditBurialView(BurialsListGenericMixin, CreateBurial):
                 return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
         elif request.user.profile.is_ugh():
             if not b.cemetery or b.cemetery in Cemetery.editable_ugh_cemeteries(request.user):
-                pass
+                if b.is_closed() and request.user.profile.is_caretaker_only():
+                    raise PermissionDenied
             else:
-                raise Http404
+                raise PermissionDenied
         else:
-            raise Http404
+            raise PermissionDenied
         return super(EditBurialView, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):

@@ -168,7 +168,7 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
         Используется в таблице захоронений
         """
         result = cls.objects.none()
-        if user.is_active and is_ugh_user(user) and user.profile.is_registrator():
+        if user.is_active and is_ugh_user(user) and user.profile.is_registrator_or_caretaker():
             return user.profile.cemeteries.all()
         return result
 
@@ -1080,13 +1080,13 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         """
         Условия возможности согласование ручного черновика
         """
-        return self.is_ugh() and self.is_draft()
+        return self.is_ugh_only() and self.is_draft()
 
     def can_disapprove_ugh(self):
         """
-        Условия отзыва угх ручного или архивного согласованного захоронения
+        Условия отзыва угх ручного согласованного захоронения
         """
-        return self.is_ugh() and self.is_approved()
+        return self.is_ugh_only() and self.is_approved()
 
     def can_ugh_annulate(self):
         if self.annulated:
