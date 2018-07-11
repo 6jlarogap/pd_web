@@ -1080,13 +1080,13 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         """
         Условия возможности согласование ручного черновика
         """
-        return self.is_ugh() and self.is_draft()
+        return self.is_ugh_only() and self.is_draft()
 
     def can_disapprove_ugh(self):
         """
-        Условия отзыва угх ручного или архивного согласованного захоронения
+        Условия отзыва угх ручного согласованного захоронения
         """
-        return self.is_ugh() and self.is_approved()
+        return self.is_ugh_only() and self.is_approved()
 
     def can_ugh_annulate(self):
         if self.annulated:

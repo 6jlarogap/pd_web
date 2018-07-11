@@ -396,9 +396,13 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 return self.get(request, *args, **kwargs)
 
         if request.POST.get('annulate') and \
-            (request.user.profile.is_ugh() and b.can_ugh_annulate() or \
-             request.user.profile.is_loru() and b.can_loru_annulate() \
-            ):
+            b.can_ugh_annulate() and \
+            (request.user.profile.is_registrator() or \
+             request.user.profile.is_caretaker_only() and not b.is_closed() \
+            ) \
+            or \
+            request.user.profile.is_loru() and b.can_loru_annulate() \
+            :
             b.grave = None
             b.annulated = True
             write_log(request, b, _(u'Захоронение аннулировано'), reason)
@@ -410,9 +414,13 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
             redirect_to_view = True
 
         if request.POST.get('deannulate') and \
-           (request.user.profile.is_ugh() and b.can_ugh_deannulate() or \
-            request.user.profile.is_loru() and b.can_loru_deannulate()
-           ):
+           b.can_ugh_deannulate() and \
+            (request.user.profile.is_registrator() or \
+             request.user.profile.is_caretaker_only() and not b.is_closed() \
+            ) \
+           or \
+           request.user.profile.is_loru() and b.can_loru_deannulate() \
+           :
             if b.place:
                 b.grave = b.place.get_or_create_graves(b.grave_number)
             b.annulated = False
@@ -530,6 +538,9 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                                  b.is_full() and not b.is_closed() and not b.is_exhumated() and \
                                  b.loru and b.loru == self.request.user.profile.org,
             'can_personal_data': b.can_personal_data(self.request),
+            'can_ugh_annulate': b.can_ugh_annulate() and \
+                                (self.request.user.profile.is_registrator() or \
+                                 self.request.user.profile.is_caretaker_only and not b.is_closed()),
             'place': b.get_place(),
             'editable_ugh_cemeteries': Cemetery.editable_ugh_cemeteries(self.request.user)
         }

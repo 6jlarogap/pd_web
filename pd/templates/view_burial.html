@@ -257,24 +257,28 @@
         {% endif %}
         {% if user.profile.is_ugh %}
             {% if not b.cemetery or b.cemetery in editable_ugh_cemeteries %}
-                {% if b.can_ugh_deannulate %}
-                    <input type="submit" class="btn" name="deannulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "де-аннулировать" %}">
+                {% if user.profile.is_caretaker_only and b.is_closed %}
+                {% else %}
+                    {% if b.can_ugh_deannulate %}
+                        <input type="submit" class="btn" name="deannulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "де-аннулировать" %}">
+                    {% endif %}
                 {% endif %}
-                {% if b.can_ugh_annulate or b.can_disapprove_ugh %}
+                {% if can_ugh_annulate or b.can_disapprove_ugh %}
                     <br/><br/>
-                    <label>{% if b.can_ugh_annulate and b.can_disapprove_ugh %}{% if b.is_archive %}{% trans "Причина аннулирования" %}{% else %}{% trans "Причина аннулирования или отказа от согласования" %}{% endif %}{% elif b.can_ugh_annulate %}{% trans "Причина аннулирования" %}{% elif b.can_disapprove_ugh and not b.is_archive %}{% trans "Причина отказа от согласования" %}{% endif %}:</label>
+                    <label>{% if can_ugh_annulate and b.can_disapprove_ugh %}{% trans "Причина аннулирования или отказа от согласования:" %}{% elif can_ugh_annulate %}{% trans "Причина аннулирования:" %}{% elif b.can_disapprove_ugh and not b.is_archive %}{% trans "Причина отказа от согласования:" %}{% endif %}:
+                    </label>
                     <select name="reason_typical">
                         <option value="">-------</option>
-                        {% if b.can_ugh_annulate %}
+                        {% if can_ugh_annulate %}
                             {% for r in reason_typical_annulate %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                         {% endif %}
-                        {% if b.can_disapprove_ugh and not b.is_archive %}
+                        {% if b.can_disapprove_ugh %}
                             {% for r in reason_typical_disapprove %}<option value="{{ r.text }}">{{ r.name }}</option>{% endfor %}
                         {% endif %}
                     </select>
                     <textarea name="reason" rows="5" cols="30"></textarea>
                     <br/>
-                    {% if b.can_ugh_annulate %}
+                    {% if can_ugh_annulate %}
                         <input type="submit" class="btn" name="annulate"  onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}">
                     {% endif %}
                     {% if b.can_disapprove_ugh %}
