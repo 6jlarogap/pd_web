@@ -85,17 +85,35 @@ class Log(models.Model):
             result = _(u"Захоронение <a href='%(ref)s'>%(obj_id)s</a>") % dict(
                 ref=ref, obj_id=obj_id,
             )
-        elif model_name in ('Place', 'Cemetery'):
+        elif model_name =='Cemetery':
             try:
                 obj = Model.objects.get(pk=obj_id)
                 href = "<a href='%(url)s'>%(name)s</a>" % dict(
                     url=obj.url(),
-                    name=obj.place if model_name == 'Place' else obj.name
+                    name=obj.name
                 )
             except Model.DoesNotExist:
                 href = _(u"не найдено")
             result = _(u"%s %s") % (
                 Model._meta.verbose_name.title(),
+                href,
+            )
+        elif model_name == 'Place':
+            title = Model._meta.verbose_name.title()
+            try:
+                obj = Model.objects.get(pk=obj_id)
+                title = obj.place_name()
+                href = "<a href='%(url)s'>%(name)s</a>" % dict(
+                    url=obj.url(),
+                    name=_(u"ряд %s, %s %s") % (
+                        obj.row,
+                        title,
+                        obj.place,
+                ))
+            except Model.DoesNotExist:
+                href = _(u"не найдено")
+            result = _(u"%s %s") % (
+                title.title(),
                 href,
             )
         elif model_name == 'Grave':

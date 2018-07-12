@@ -163,7 +163,7 @@
                                                 <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
-                                            {% if user.profile.is_registrator %}
+                                            {% if user.profile.is_registrator_or_caretaker %}
                                                 <li><a href="{% url burials_doubles %}">{% trans "Дубли захоронений" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
@@ -223,7 +223,7 @@
                     {% endif %}
                     <div class="nav-collapse">
                         <ul class="nav">
-                            {% if user.profile.is_loru or global_context_REDIRECT_LOGIN_TO_FRONT_END or user.profile.is_ugh and user.profile.is_registrator and user.profile.cemeteries.count %}
+                            {% if user.profile.is_loru or global_context_REDIRECT_LOGIN_TO_FRONT_END or user.profile.is_ugh and user.profile.is_registrator_or_caretaker and user.profile.cemeteries.count %}
                                 <li{% if request.path == '/' %} class="active"{% endif %}>
                                     <a href="{% url dashboard %}">{% trans "Открытые" %}</a>
                                 </li>
@@ -232,7 +232,7 @@
                                 <li{% if request.path == '/burials/' %} class="active"{% endif %}>
                                     <a href="{% url burial_list %}">{% trans "Захоронения" %}</a>
                                 </li>
-                                {% if global_context_REDIRECT_LOGIN_TO_FRONT_END or user.profile.is_registrator and user.profile.cemeteries.count %}
+                                {% if global_context_REDIRECT_LOGIN_TO_FRONT_END or user.profile.is_registrator_or_caretaker and user.profile.cemeteries.count %}
                                     <li{% if request.path == '/burials/create/' and not request.GET.archive %} class="active"{% endif %}>
                                         <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
                                     </li>
