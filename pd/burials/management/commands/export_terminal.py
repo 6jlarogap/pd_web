@@ -29,30 +29,25 @@ CEMETERIES = (
         export='kolodischi',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Колодищи',),
-        full_name_separate_line = True,
    ),
     dict(
         export='voennoe',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Военное',),
-        full_name_separate_line = True,
    ),
     dict(
         export='vostochnoe',
         #csv_kwargs=dict(delimiter=" ", quotechar='"', quoting=csv.QUOTE_ALL),
-        #put_cemetery = True,
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(
             u'Восточное',
             u'Уручье',
             ),
-        full_name_separate_line = True,
    ),
     dict(
         export='zapadnoe',
         csv_kwargs=dict(delimiter="\t"),
         cemeteries=(u'Западное',),
-        full_name_separate_line = True,
    ),
 )
 
@@ -118,23 +113,20 @@ class Command(BaseCommand):
                     pk = str(deadman.pk)
 
                     last_name = last_name.upper().encode('cp1251')
-                    if cemetery_parms.get('full_name_separate_line'):
-                        initials = u""
-                        first_name = deadman.first_name and deadman.first_name.rstrip(u".")
-                        first_name = re.sub(BAD_CHAR_RE, '', first_name)
-                        middle_name = deadman.middle_name and deadman.middle_name.rstrip(u".")
-                        middle_name = re.sub(BAD_CHAR_RE, '', middle_name)
-                        if first_name:
-                            if len(first_name) == 1:
-                                initials = deadman.get_initials()
-                            else:
-                                initials = first_name
-                                if middle_name:
-                                    initials = u"%s %s" % (first_name, middle_name,)
-                        if len(initials) > 30:
-                            initials = u"%s..." % initials[:28]
-                    else:
-                        initials = deadman.get_initials()
+                    initials = u""
+                    first_name = deadman.first_name and deadman.first_name.rstrip(u".")
+                    first_name = re.sub(BAD_CHAR_RE, '', first_name)
+                    middle_name = deadman.middle_name and deadman.middle_name.rstrip(u".")
+                    middle_name = re.sub(BAD_CHAR_RE, '', middle_name)
+                    if first_name:
+                        if len(first_name) == 1:
+                            initials = deadman.get_initials()
+                        else:
+                            initials = first_name
+                            if middle_name:
+                                initials = u"%s %s" % (first_name, middle_name,)
+                    if len(initials) > 30:
+                        initials = u"%s..." % initials[:28]
                     initials = initials.encode('cp1251') or u"-"
 
                     b_date = burial.fact_date
@@ -159,10 +151,6 @@ class Command(BaseCommand):
                     seat = seat.encode('cp1251')
 
                     columns = [pk, last_name, initials, date, area, row, seat]
-                    if cemetery_parms.get('put_cemetery'):
-                        cemetery = place.cemetery.name.encode('cp1251')
-                        columns.append(cemetery)
-
                     writer.writerow(columns)
                     db.reset_queries()
             f.close()
