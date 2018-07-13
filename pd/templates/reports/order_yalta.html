@@ -122,7 +122,7 @@
     </TR>
     {% if order.initial_time or order.initial_place or order.get_catafalquedata.start_time or order.get_catafalquedata.start_place or  order.orderplace.size %}
         <TR>
-            <TD COLSPAN=3>
+            <TD COLSPAN=7>
             {% if order.initial_time or order.initial_place or order.get_catafalquedata.start_time or order.get_catafalquedata.start_place %}
                 <B>
                 Выдача тела:
@@ -138,8 +138,9 @@
                     {{ order.initial_place }}
                 {% endif %}
             {% endif %}
-            </TD>
-            <TD COLSPAN=4>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             {% if order.orderplace.size %}
                 <B>Размер гроба:</B> {{ order.orderplace.size }}
             {% endif %}
@@ -150,7 +151,7 @@
         <TR>
             <TD COLSPAN=3>
                 <B>
-                Отпевание:
+                Отпевание (прощание):
                 </B>
                 {% if order.service_time %}
                     {{ order.service_time|time:"H:i" }}.
@@ -320,7 +321,7 @@
     </TR>
     <TR>
         <TD COLSPAN=7>
-            <B>В день захоронения  в 8:30 передать вещи санитарам морга</B>
+            <B>В день захоронения  с 8:00 до 8:30 передать вещи санитарам морга</B>
          </TD>
     </TR>
     </TBODY>
