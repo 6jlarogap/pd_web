@@ -23,43 +23,43 @@ from burials.models import Place, Grave, Burial, Cemetery
 # может формироваться экспорт для нескольких "подкладбищ"
 
 CEMETERIES = (
-    #dict(
-        ## Имя csv файла
-        ##
-        #export='kolodischi',
+    dict(
+        # Имя csv файла
+        #
+        export='kolodischi',
 
-        ## Список кладбищ/колумбариев, первичные ключи
-        ##
-        #cemeteries=[28, ],
+        # Список кладбищ/колумбариев, первичные ключи
+        #
+        cemeteries=[28, ],
 
-        ## формат:
-        ##   если False:
-        ##       pk last_name first_name__middle_name date area row seat
-        ##   если True:
-        ##       pk last_name first_name__middle_name date cemetery area row_seat
-        ##
-        ## * разделитель полей: символ табуляции
-        ## * seat: номер участка (места)
-        ## * row_seat: 'ряд X, место Y' или 'место Y', где место может быть
-        ##   'место' для колумбария или 'участок' для кладбищенского сектора
-        ##
-        #put_cemeteries=False,
-   #),
+        # формат:
+        #   если False:
+        #       pk last_name first_name__middle_name date area row seat
+        #   если True:
+        #       pk last_name first_name__middle_name date cemetery area row_seat
+        #
+        # * разделитель полей: символ табуляции
+        # * seat: номер участка (места)
+        # * row_seat: 'ряд X, место Y' или 'место Y', где место может быть
+        #   'место' для колумбария или 'участок' для кладбищенского сектора
+        #
+        put_cemeteries=False,
+   ),
 
-    #dict(
-        #export='voennoe',
-        #cemeteries=[23, ],
-        #put_cemeteries=False,
-   #),
+    dict(
+        export='voennoe',
+        cemeteries=[23, ],
+        put_cemeteries=False,
+   ),
 
-    #dict(
-        #export='vostochnoe',
-        #cemeteries=[
-            #2,              # Восточное
-            #7,              # Уручье
-            #],
-        #put_cemeteries=False,
-   #),
+    dict(
+        export='vostochnoe',
+        cemeteries=[
+            2,              # Восточное
+            7,              # Уручье
+            ],
+        put_cemeteries=False,
+   ),
 
     dict(
         export='vostochnoe_cemeteries',
