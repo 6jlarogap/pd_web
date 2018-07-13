@@ -23,43 +23,43 @@ from burials.models import Place, Grave, Burial, Cemetery
 # может формироваться экспорт для нескольких "подкладбищ"
 
 CEMETERIES = (
-    dict(
-        # Имя csv файла
-        #
-        export='kolodischi',
+    #dict(
+        ## Имя csv файла
+        ##
+        #export='kolodischi',
 
-        # Список кладбищ/колумбариев, первичные ключи
-        #
-        cemeteries=[28, ],
+        ## Список кладбищ/колумбариев, первичные ключи
+        ##
+        #cemeteries=[28, ],
 
-        # формат:
-        #   если False:
-        #       pk last_name first_name__middle_name date area row seat
-        #   если True:
-        #       pk last_name first_name__middle_name date cemetery area row_seat
-        #
-        # * разделитель полей: символ табуляции
-        # * seat: номер участка (места)
-        # * row_seat: 'ряд X, место Y' или 'место Y', где место может быть
-        #   'место' для колумбария или 'участок' для кладбищенского сектора
-        #
-        put_cemeteries=False,
-   ),
+        ## формат:
+        ##   если False:
+        ##       pk last_name first_name__middle_name date area row seat
+        ##   если True:
+        ##       pk last_name first_name__middle_name date cemetery area row_seat
+        ##
+        ## * разделитель полей: символ табуляции
+        ## * seat: номер участка (места)
+        ## * row_seat: 'ряд X, место Y' или 'место Y', где место может быть
+        ##   'место' для колумбария или 'участок' для кладбищенского сектора
+        ##
+        #put_cemeteries=False,
+   #),
 
-    dict(
-        export='voennoe',
-        cemeteries=[23, ],
-        put_cemeteries=False,
-   ),
+    #dict(
+        #export='voennoe',
+        #cemeteries=[23, ],
+        #put_cemeteries=False,
+   #),
 
-    dict(
-        export='vostochnoe',
-        cemeteries=[
-            2,              # Восточное
-            7,              # Уручье
-            ],
-        put_cemeteries=False,
-   ),
+    #dict(
+        #export='vostochnoe',
+        #cemeteries=[
+            #2,              # Восточное
+            #7,              # Уручье
+            #],
+        #put_cemeteries=False,
+   #),
 
     dict(
         export='vostochnoe_cemeteries',
@@ -201,6 +201,10 @@ class Command(BaseCommand):
                         if u'колумбари' not in cemetery_name_lower and \
                            u'кладбищ' not in cemetery_name_lower:
                             cemetery_name = u"Кладбище %s" % cemetery_name
+                        if cemetery_name.startswith(u"Колумбарий") and \
+                           u'кладбищ' in cemetery_name:
+                            cemetery_name = cemetery_name.replace(u"кладбище", u"кл.")
+                            cemetery_name = cemetery_name.replace(u"кладбища", u"кл.")
                         cemetery_name = cemetery_name.encode('cp1251')
                         if row and seat:
                             row_seat = u"ряд %s, %s %s " % (
