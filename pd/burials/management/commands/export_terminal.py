@@ -74,6 +74,16 @@ CEMETERIES = (
     dict(
         export='zapadnoe',
         cemeteries=[32, ],
+        put_cemeteries=False,
+   ),
+
+    dict(
+        export='zapadnoe_cemeteries',
+        cemeteries=[
+            32,         # Западное
+            44,         # Колумбарий кладбища Западное
+        ],
+        put_cemeteries=True,
    ),
 )
 
