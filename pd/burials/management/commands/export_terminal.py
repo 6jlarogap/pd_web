@@ -201,6 +201,10 @@ class Command(BaseCommand):
                         if u'колумбари' not in cemetery_name_lower and \
                            u'кладбищ' not in cemetery_name_lower:
                             cemetery_name = u"Кладбище %s" % cemetery_name
+                        if cemetery_name.startswith(u"Колумбарий") and \
+                           u'кладбищ' in cemetery_name:
+                            cemetery_name = cemetery_name.replace(u"кладбище", u"кл.")
+                            cemetery_name = cemetery_name.replace(u"кладбища", u"кл.")
                         cemetery_name = cemetery_name.encode('cp1251')
                         if row and seat:
                             row_seat = u"ряд %s, %s %s " % (
