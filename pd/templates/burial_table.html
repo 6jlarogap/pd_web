@@ -232,7 +232,10 @@
                     {# (Ручные, архивные), перенесенные, закрытые: #}
                     {% if b.is_ugh or b.is_transferred or b.is_closed %}
                         {% if not b.cemetery or b.cemetery in editable_ugh_cemeteries %}
-                            <br /><a class="btn" href="{% url edit_burial b.pk %}" target="_blank">{% trans "правка" %}</a>
+                            {% if user.profile.is_caretaker_only and b.is_closed %}
+                            {% else %}
+                                <br /><a class="btn" href="{% url edit_burial b.pk %}" target="_blank">{% trans "правка" %}</a>
+                            {% endif %}
                         {% endif %}
                     {% endif %}
                     {% if b.get_place %}
