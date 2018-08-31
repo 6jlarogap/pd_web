@@ -47,18 +47,21 @@ CEMETERIES = (
    ),
 
     dict(
+        export='kolodischi_cemeteries',
+        cemeteries=[28, ],
+        put_cemeteries=True,
+   ),
+
+    dict(
         export='voennoe',
         cemeteries=[23, ],
         put_cemeteries=False,
    ),
 
     dict(
-        export='vostochnoe',
-        cemeteries=[
-            2,              # Восточное
-            7,              # Уручье
-            ],
-        put_cemeteries=False,
+        export='voennoe_cemeteries',
+        cemeteries=[23, ],
+        put_cemeteries=True,
    ),
 
     dict(
