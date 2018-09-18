@@ -61,7 +61,23 @@ class AutocompleteFIO(View):
             ugh_q = Q(burial__ugh=user.profile.org)
         elif is_loru_user(user):
             loru = user.profile.org
-            ugh_q = Q(burial__applicant_organization=loru) | Q(burial__loru=loru) | Q(burial__ugh__loru_list__loru=loru)
+            # ugh_q = Q(burial__applicant_organization=loru) | Q(burial__loru=loru) | Q(burial__ugh__loru_list__loru=loru)
+            # Согласовываем с фильтром для поиска зх для лору (burials/burials_view::BurialsPublicListView.get_queryset())
+            ugh_q = \
+                    Q(burial__source_type__in=(Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED,)) & \
+                    Q(burial__loru = loru) & \
+                    (
+                        (
+                            Q(burial__annulated=False) &
+                            Q(burial__status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
+                        )
+                        |
+                        (
+                            Q(burial__annulated=True) &
+                            Q(burial__status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
+                        )
+                    )
+
         else:
             ugh_q = Q()
         q &= ugh_q
