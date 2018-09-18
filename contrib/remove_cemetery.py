@@ -3,7 +3,6 @@
 # remove_cemetery.py
 #
 # Удалить кладбище с местами, усопшими, ответственными, заявителями-ФЛ...
-# Само кладбище оставить
 #
 # Запуск из ./manage.py shell :
 # execfile('../contrib/remove_cemetery.py')
@@ -22,11 +21,11 @@ from burials.models import Cemetery, Burial, ExhumationRequest, BurialFiles, \
                            Grave
 from persons.models import AlivePerson, DeadPerson
 
-CEMETERY_NAME = u'Западное'
+CEMETERY_NAME = u'Бекетово-Парковое'
 #
 # Искажение во избежание случайного запуска процедуры
 #
-UGH_PK = -2
+UGH_PK = -394
 
 @transaction.commit_on_success
 def main():
@@ -165,9 +164,12 @@ def main():
     transaction.commit()
     gc.collect()
 
-    #print '\nremove cemetery log recs'
-    #ct = ContentType.objects.get(app_label="burials", model="cemetery")
-    #Log.objects.filter(ct=ct, obj_id=cemetery.pk).delete()
+    print '\nremove cemetery log recs'
+    ct = ContentType.objects.get(app_label="burials", model="cemetery")
+    Log.objects.filter(ct=ct, obj_id=cemetery.pk).delete()
+
+    print '\nremove cemetery'
+    cemetery.delete()
 
 def print_removed(i):
     print "%7d removed" % (i or 0)
