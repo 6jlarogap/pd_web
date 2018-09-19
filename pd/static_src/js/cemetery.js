@@ -25,6 +25,7 @@ function setup_address_autocompletes() {
     STREET_URL = '/geo/autocomplete/street/';
     DOCS_SOURCE_URL = '/autocomplete/doc_source/';
     FIO_URL = '/autocomplete/fio/';
+    FIO_ORDER_URL = '/autocomplete/fio_order/';
     CEMETERIES_URL = '/autocomplete/cemeteries/';
     AREAS_URL = '/autocomplete/areas/';
     ALIVE_FIO_URL = '/autocomplete/alive/';
@@ -194,6 +195,21 @@ function setup_address_autocompletes() {
             }
             $.ajax({
                 url: FIO_URL + query_s,
+                dataType: 'json',
+                success: function(data) {
+                    typeahead.process(data);
+                }
+            });
+        }
+    });
+
+    $('#id_fio_order_deadman').attr('autocomplete', 'off').typeahead({
+        items: 100,
+        source: function (typeahead, query) {
+            if (query.length < 2) { return }
+            var query_s = "?query=" + query;
+            $.ajax({
+                url: FIO_ORDER_URL + query_s,
                 dataType: 'json',
                 success: function(data) {
                     typeahead.process(data);
