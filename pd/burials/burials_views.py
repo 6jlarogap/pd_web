@@ -976,6 +976,8 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
         return super(CreateBurial, self).dispatch(request, *args, **kwargs)
 
     def form_valid(self, form, *args, **kwargs):
+        old_responsible_info = form.old_responsible_info
+        is_existing_burial = form.instance and form.instance.pk or None
         b = form.save()
 
         order = None
@@ -1060,6 +1062,12 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.changed_by = self.request.user
                 b.close(request=self.request)
+                form.compare_responsible_info(
+                    request=self.request,
+                    old_responsible_info=old_responsible_info,
+                    burial=b,
+                    is_new_burial=not is_existing_burial,
+                )
                 messages.success(
                     self.request,
                     _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
