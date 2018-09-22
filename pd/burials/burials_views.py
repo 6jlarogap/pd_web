@@ -899,6 +899,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                         burial_type = Burial.BURIAL_OVER
                     else:
                         burial_type = Burial.BURIAL_ADD
+                responsible = place.responsible and place.responsible.deep_copy() or None
                 data['instance'] = Burial(
                     burial_type=burial_type,
                     burial_container=burial_container,
@@ -906,7 +907,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                     area=place.area,
                     row=place.row,
                     place_number=place.place,
-                    responsible=place.responsible,
+                    responsible=responsible,
                     grave_number=grave_number,
                 )
             except Place.DoesNotExist:
