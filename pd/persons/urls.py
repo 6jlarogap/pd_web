@@ -5,6 +5,7 @@ from django.conf import settings
 
 
 urlpatterns = patterns('persons.views',
+    url(r'^autocomplete/fio_order/', 'autocomplete_fio_order', name='autocomplete_fio_order'),
     url(r'^autocomplete/fio/', 'autocomplete_fio', name='autocomplete_fio'),
     url(r'^autocomplete/alive/', 'autocomplete_alive', name='autocomplete_alive'),
     url(r'^autocomplete/(?P<what>firstname|middlename)/', 'autocomplete_name', name='autocomplete_name'),

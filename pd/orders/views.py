@@ -173,13 +173,21 @@ class OrderList(LORURequiredMixin, PaginateListView):
 
         form = self.get_form()
         if form.data and form.is_valid():
-            if form.cleaned_data['fio']:
+            fio_string = form.cleaned_data['fio_order_deadman']
+            if fio_string:
                 search_by =  [
                     'burial__deadman__last_name__iregex',
                     'burial__deadman__first_name__iregex',
                     'burial__deadman__middle_name__iregex'
                 ]
-                orders = self.filter_by_name(queryset=orders, search_by=search_by, name_string=form.cleaned_data['fio'])
+                q_burial_deadman = self.q_by_name(search_by=search_by, name_string=fio_string)
+                search_by =  [
+                    'orderdeadperson__last_name__iregex',
+                    'orderdeadperson__first_name__iregex',
+                    'orderdeadperson__middle_name__iregex'
+                ]
+                q_orderdeadperson = self.q_by_name(search_by=search_by, name_string=fio_string)
+                orders = orders.filter(q_burial_deadman | q_orderdeadperson)
             birth_date_from = form.cleaned_data['birth_date_from']
             if birth_date_from:
                 orders = orders.filter(
@@ -331,12 +339,16 @@ class OrderList(LORURequiredMixin, PaginateListView):
         paginator._count = queryset.count()
         return paginator
 
-    def filter_by_name(self, queryset, search_by, name_string):
+    def q_by_name(self, search_by, name_string):
         import operator
         values = [re_search(f) for f in name_string.split()]
         predicates = zip(search_by, values)
         query = [Q(p) for p in predicates]
         q = reduce(operator.and_, query)
+        return q
+
+    def filter_by_name(self, queryset, search_by, name_string):
+        q = self.q_by_name(search_by, name_string)
         return queryset.filter(q)
 
     def get(self, request, *args, **kwargs):
