@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+
+    <h3>{% trans "Журнал по организации и пользователям" %}</h3>
+    <h2>{{ request.user.profile.org }}</h2>
+    <div class="no-print">
+        <form id="mainform" method="get" action="">
+            <table>
+                <tr valign="top">
+                    <td>
+                        {{ form.date_from.errors }}
+                        <p>
+                            {{ form.date_from.label_tag }}
+                            {{ form.date_from }}
+                            <span class="helptext">{{ form.date_from.help_text }}</span>
+                        </p>
+                    </td>
+                    <td>
+                        {{ form.date_to.errors }}
+                        <p>
+                            {{ form.date_to.label_tag }}
+                            {{ form.date_to }}
+                            <span class="helptext">{{ form.date_to.help_text }}</span>
+                        </p>
+                    </td>
+                    <td>
+                        {{ form.per_page.errors }}
+                        <p>
+                            {{ form.per_page.label_tag }}
+                            {{ form.per_page }}
+                            <span class="helptext">{{ form.per_page.help_text }}</span>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <p class="buttons">
+                <input type="submit" value="искать" class="btn btn-primary" />
+            </p>
+        </form>
+    </div>
+
+    {% if not form.errors %}
+        <p>{% trans "Найдено:" %} {{ paginator.count|default:object_list.count }}</p>
+        {% include "paginator.html" %}
+
+        <table class="table table-bordered table-striped">
+        <tr>
+            <th>
+                {% if sort == '-dt' %}
+                    {% if sort == '-dt' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=dt">{% trans "Дата" %}</a>
+                {% else %}
+                    {% if sort == 'dt' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-dt">{% trans "Дата" %}</a>
+                {% endif %}
+            </th>
+            <th>
+                {% if sort == 'user' %}
+                    {% if sort == 'user' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=-user">{% trans "Пользователь" %}</a>
+                {% else %}
+                    {% if sort == '-user' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                    <a href="?{{ GET_PARAMS }}&sort=user">{% trans "Пользователь" %}</a>
+                {% endif %}
+            </th>
+            <th>{% trans "Действие" %}</th>
+        </tr>
+        {% for log in logs %}
+            <tr>
+                <td>{{ log.dt }}</td>
+                <td>{{ log.user.username }} / {{ log.user.profile.last_name_initials }}</td>
+                <td>{{ log.log_msg_display|linebreaksbr }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+
+    {% endif %}
+
+{% endblock %}
