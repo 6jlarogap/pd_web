@@ -24,46 +24,13 @@ from burials.models import Place, Grave, Burial, Cemetery
 
 CEMETERIES = (
     dict(
-        # Имя csv файла
-        #
-        export='kolodischi',
-
-        # Список кладбищ/колумбариев, первичные ключи
-        #
-        cemeteries=[28, ],
-
-        # формат:
-        #   если False:
-        #       pk last_name first_name__middle_name date area row seat
-        #   если True:
-        #       pk last_name first_name__middle_name date cemetery area row_seat
-        #
-        # * разделитель полей: символ табуляции
-        # * seat: номер участка (места)
-        # * row_seat: 'ряд X, место Y' или 'место Y', где место может быть
-        #   'место' для колумбария или 'участок' для кладбищенского сектора
-        #
-        put_cemeteries=False,
-   ),
-
-    dict(
         export='kolodischi_cemeteries',
         cemeteries=[28, ],
-        put_cemeteries=True,
    ),
-
-    dict(
-        export='voennoe',
-        cemeteries=[23, ],
-        put_cemeteries=False,
-   ),
-
     dict(
         export='voennoe_cemeteries',
         cemeteries=[23, ],
-        put_cemeteries=True,
    ),
-
     dict(
         export='vostochnoe_cemeteries',
         cemeteries=[
@@ -71,22 +38,13 @@ CEMETERIES = (
             7,              # Уручье
             37,             # Колумбарий Восточного
             ],
-        put_cemeteries=True,
    ),
-
-    dict(
-        export='zapadnoe',
-        cemeteries=[32, ],
-        put_cemeteries=False,
-   ),
-
     dict(
         export='zapadnoe_cemeteries',
         cemeteries=[
             32,         # Западное
             44,         # Колумбарий кладбища Западное
         ],
-        put_cemeteries=True,
    ),
 )
 
@@ -196,46 +154,37 @@ class Command(BaseCommand):
                     row = re.sub(BAD_CHAR_RE, '', place.row)
                     seat = re.sub(BAD_CHAR_RE, '', place.place)
 
-                    if cemetery_parms.get('put_cemeteries'):
-                        cemetery_name = burial.cemetery and burial.cemetery.name or ''
-                        if not cemetery_name:
-                            cemetery_name = u"-"
-                        cemetery_name_lower = cemetery_name.lower()
-                        if u'колумбари' not in cemetery_name_lower and \
-                           u'кладбищ' not in cemetery_name_lower:
-                            cemetery_name = u"Кладбище %s" % cemetery_name
-                        if cemetery_name.startswith(u"Колумбарий") and \
-                           u'кладбищ' in cemetery_name:
-                            cemetery_name = cemetery_name.replace(u"кладбище", u"кл.")
-                            cemetery_name = cemetery_name.replace(u"кладбища", u"кл.")
-                        cemetery_name = cemetery_name.encode('cp1251')
-                        if row and seat:
-                            row_seat = u"ряд %s, %s %s " % (
-                                row,
-                                place.place_name(),
-                                seat
-                            )
-                        elif seat:
-                            row_seat = u"%s %s" % (
-                                place.place_name(),
-                                seat
-                            )
-                        elif row:
-                            row_seat = u"ряд %s" % (
-                                row,
-                            )
-                        else:
-                            row_seat = u"-"
-                        row_seat = row_seat.encode('cp1251')
-                        columns = [pk, last_name, initials, date, cemetery_name, area, row_seat]
+                    cemetery_name = burial.cemetery and burial.cemetery.name or ''
+                    if not cemetery_name:
+                        cemetery_name = u"-"
+                    cemetery_name_lower = cemetery_name.lower()
+                    if u'колумбари' not in cemetery_name_lower and \
+                        u'кладбищ' not in cemetery_name_lower:
+                        cemetery_name = u"Кладбище %s" % cemetery_name
+                    if cemetery_name.startswith(u"Колумбарий") and \
+                        u'кладбищ' in cemetery_name:
+                        cemetery_name = cemetery_name.replace(u"кладбище", u"кл.")
+                        cemetery_name = cemetery_name.replace(u"кладбища", u"кл.")
+                    cemetery_name = cemetery_name.encode('cp1251')
+                    if row and seat:
+                        row_seat = u"ряд %s, %s %s " % (
+                            row,
+                            place.place_name(),
+                            seat
+                        )
+                    elif seat:
+                        row_seat = u"%s %s" % (
+                            place.place_name(),
+                            seat
+                        )
+                    elif row:
+                        row_seat = u"ряд %s" % (
+                            row,
+                        )
                     else:
-                        if not row:
-                            row = u"-"
-                        row = row.encode('cp1251')
-                        if not seat:
-                            seat = u"-"
-                        seat = seat.encode('cp1251')
-                        columns = [pk, last_name, initials, date, area, row, seat]
+                        row_seat = u"-"
+                    row_seat = row_seat.encode('cp1251')
+                    columns = [pk, last_name, initials, date, cemetery_name, area, row_seat]
 
                     writer.writerow(columns)
                     db.reset_queries()
