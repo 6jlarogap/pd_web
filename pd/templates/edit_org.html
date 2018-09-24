@@ -81,6 +81,9 @@
     {% endif %}
     
     {% if is_my_org %}
+        <br />
+        <a href="{% url org_log_org %}" target="_blank">{% trans "Журнал по организации и пользователям" %}</a>
+        <br /><br />
         <h2>{% trans "Пользователи" %}</h2>
         <table class="table table-bordered">
             <tr>
@@ -142,8 +145,6 @@
 </form>
 
 {% if is_my_org and object.get_logs %}
-    {% with object=object %}
-        {% include "object_logs.html" %}
-    {% endwith %}
+    <a href="{% url org_log_org %}" target="_blank">{% trans "Журнал по организации и пользователям" %}</a>
 {% endif %}
 {% endblock %}

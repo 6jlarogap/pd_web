@@ -47,10 +47,23 @@
                     <td>
                         <p>
                             <br />
-                            &nbsp;<span class="helptext">{% trans "Сtrl-Enter для выборки нескольких пользователей" %}</span>
+                            &nbsp;<span class="helptext">{% trans "Сtrl-Enter для выборки" %}
+                            <br />
+                            &nbsp;{% trans "нескольких пользователей" %}</span>
                             <br /><br />
                             &nbsp;<button onclick='return select_clear_users("select_all")'>{% trans "Выделить всех" %}</button>
                             &nbsp;&nbsp;&nbsp;<button onclick='return select_clear_users("clear_all")'>{% trans "Очистить" %}</button>
+                        </p>
+                    </td>
+                    <td>
+                        &nbsp;&nbsp;&nbsp;
+                    </td>
+                    <td>
+                        {{ form.per_page.errors }}
+                        <p>
+                            {{ form.per_page.label_tag }}
+                            {{ form.per_page }}
+                            <span class="helptext">{{ form.per_page.help_text }}</span>
                         </p>
                     </td>
                 </tr>
