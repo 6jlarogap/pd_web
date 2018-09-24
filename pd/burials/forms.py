@@ -459,10 +459,60 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         self.forms = self.construct_forms()
 
+    def get_responsible_info(self, place):
+        """
+        Получить инфо для записи в журнал об ответственном за место
+        """
+        result = dict()
+        for k in (
+            ('fio', _(u'ФИО')),
+            ('address', _(u'Адрес')),
+            ('phones', _(u'Телефон(ы)')),
+            ('login_phone', AlivePerson._meta.get_field('login_phone').verbose_name),
+            ):
+            result[k[0]] = dict(title=k[1], value='')
+
+        if place and place.pk and place.responsible:
+            result['fio']['value'] = place.responsible.full_human_name()
+            result['address']['value'] = place.responsible.address and \
+                                            place.responsible.address.address_(empty=True) or ''
+            result['phones']['value'] = place.responsible.phones or ''
+            result['login_phone']['value'] = str(place.responsible.login_phone or '')
+        return result
+
+    def compare_responsible_info(self, request, old_responsible_info, burial, is_new_burial):
+        """
+        Сравнить инфо об ответственном после закрытия зх. Изменения в журнал
+        """
+        place = burial and burial.place or None
+        if place:
+            responsible = place.responsible
+            new_responsible_info = self.get_responsible_info(place)
+            changes = []
+            for k in old_responsible_info:
+                if new_responsible_info[k]['value'] != old_responsible_info[k]['value']:
+                    changes.append(u"%s: '%s' -> '%s'" % (
+                        new_responsible_info[k]['title'],
+                        old_responsible_info[k]['value'],
+                        new_responsible_info[k]['value'],
+                    ))
+            if changes:
+                if is_new_burial:
+                    changes_title = _(u'Ответственный изменен при создании захоронения\n%s')
+                else:
+                    changes_title = _(u'Ответственный изменен при правке захоронения\n%s')
+                changes_str = changes_title % '\n'.join(changes)
+                write_log(request, place, changes_str)
+                if is_new_burial:
+                    write_log(self.request, burial, changes_str)
+
     def construct_forms(self):
         data = self.data or None
         deadman = self.instance and self.instance.deadman
         self.old_place = self.instance and self.instance.get_place()
+        self.old_responsible_info = dict()
+        if self.request.user.profile.is_ugh():
+            self.old_responsible_info = self.get_responsible_info(self.old_place)
 
         if settings.DEADMAN_IDENT_NUMBER_ALLOW:
             self.deadman_old_last_name = self.deadman_old_first_name = self.deadman_old_ident_number = ''
@@ -782,8 +832,14 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                                                         ),
                                                     grave_number,
                     )
-                # Пока не привязываем здесь могилу к захоронению, если место существует.
-                # Это будет сделано ниже в self.instance.close(....)
+                else:
+                    # Пока не привязываем здесь могилу к захоронению, если место существует.
+                    # Это будет сделано ниже в self.instance.close(....)
+
+                    # В старое место может быть записан заданный в форме
+                    # ответственный
+                    #
+                    self.old_responsible_info = self.get_responsible_info(place)
 
                 if settings.DEADMAN_IDENT_NUMBER_ALLOW:
                     update_for_register = True
@@ -842,6 +898,12 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 request=self.request,
                 old_place=self.old_place,
                 update_for_register=update_for_register,
+            )
+            self.compare_responsible_info(
+                request=self.request,
+                old_responsible_info=self.old_responsible_info,
+                burial=self.instance,
+                is_new_burial=False,
             )
 
         self.put_log_data()

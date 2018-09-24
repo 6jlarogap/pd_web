@@ -575,7 +575,7 @@ class FromToPageForm(forms.Form):
     date_to = forms.DateField(required=False, label=_(u"по"))
     per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
-OrgLogForm = FromToPageForm
+OrgLogOrgForm = FromToPageForm
 
 class OrgLogForm(FromToPageForm):
 
