@@ -4,6 +4,22 @@
 
 {% block content %}
 
+{% if is_my_org %}
+    <script type="text/javascript">
+        $(function() {
+            $('input[id=cb_show_only_active_users]').change(function() {
+                if ($(this).is(':checked')) {
+                    $('tr.not_active_user').hide();
+                } else {
+                    $('tr.not_active_user').show();
+                }
+            });
+            $('input[id=cb_show_only_active_users]').change();
+        });
+    </script>
+{% endif %}
+
+
 {% if is_readonly %}
     {% include "form_read_only.html" %}
 {% endif %}
@@ -85,6 +101,7 @@
         <a href="{% url org_log_org %}" target="_blank">{% trans "Журнал по организации и пользователям" %}</a>
         <br /><br />
         <h2>{% trans "Пользователи" %}</h2>
+        <p><input type="checkbox" id="cb_show_only_active_users">&nbsp;&nbsp;{% trans "Показать только активных пользователей" %}</p>
         <table class="table table-bordered">
             <tr>
                 <th>{% trans "Имя пользователя" %}<br/>({% trans "логин" %})</th>
@@ -98,7 +115,7 @@
                 {% endif %}
             </tr>
             {% for p in form.user_qs %}
-                <tr>
+                <tr{% if not p.user.is_active %} class="not_active_user"{% endif %}>
                     <td>{{ p.user.username }}</td>
                     <td>
                         {% if p.title %}{{ p.title }}<br />{% endif %}
