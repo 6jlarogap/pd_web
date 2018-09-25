@@ -104,9 +104,9 @@
         <p><input type="checkbox" id="cb_show_only_active_users">&nbsp;&nbsp;{% trans "Показать только активных пользователей" %}</p>
         <table class="table table-bordered">
             <tr>
+                <th>{% trans "ФИО" %}</th>
                 <th>{% trans "Имя пользователя" %}<br/>({% trans "логин" %})</th>
                 <th>{% trans "Должность" %}<br />{% trans "Телефон(ы)" %}<br />{% trans "Email" %}</th>
-                <th>{% trans "ФИО" %}</th>
                 {% if user.profile.is_ugh %}<th>{% trans "Роли в организации" %}{% endif %}
                 {% if user.profile.is_loru %}<th>{% trans "Агент" %}</th>{% endif %}
                 <th>{% trans "Активен" %}</th>
@@ -116,6 +116,7 @@
             </tr>
             {% for p in form.user_qs %}
                 <tr{% if not p.user.is_active %} class="not_active_user"{% endif %}>
+                    <td>{% if p.user.profile.user_last_name %}{{ p.user.profile.full_name }}{% endif %}</td>
                     <td>{{ p.user.username }}</td>
                     <td>
                         {% if p.title %}{{ p.title }}<br />{% endif %}
@@ -123,7 +124,6 @@
                         {% if p.user.email %}{{ p.user.email }}<br />{% endif %}
                         {% if p.out_of_staff %}{% trans "Внештатный сотрудник" %}<br />{% endif %}
                     </td>
-                    <td>{% if p.user.profile.user_last_name %}{{ p.user.profile.full_name }}{% endif %}</td>
                     {% if user.profile.is_ugh %}
                         <td>{% for r in p.role.all %}
                                 {{ r }}<br/>

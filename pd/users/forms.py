@@ -474,7 +474,11 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
 
         self.scan_form = scan = None
         if self.is_own_org:
-            self.user_qs = self.instance.profile_set.all().order_by('user__username')
+            self.user_qs = self.instance.profile_set.all().order_by(
+                'user_last_name',
+                'user_first_name',
+                'user_middle_name',
+            )
             self.reason_formset = ReasonFormset(data=request.POST or None, instance=self.instance)
             choices = [('', '---------')]
             for reason_type in Reason.TYPE_CHOICES:
