@@ -5,9 +5,13 @@
             switch (item.type) {
                 case 'select-one':
                 case 'checkbox':
-                    item.disabled = 'true';
+                    if (!$('#' + item.id).hasClass('always_enabled')) {
+                        item.disabled = 'true';
+                    }
                 default:
-                    item.readOnly = 'true';
+                    if (!$('#' + item.id).hasClass('always_enabled')) {
+                        item.readOnly = 'true';
+                    }
             }
         });
     });
