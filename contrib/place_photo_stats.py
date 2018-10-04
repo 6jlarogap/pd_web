@@ -18,10 +18,11 @@ for c in Cemetery.objects.filter(q).order_by('name'):
     count_places = places.distinct().count()
     count_places_with_photos = places.filter(placephoto__isnull=False).distinct().count()
     count_photos = PlacePhoto.objects.filter(place__cemetery=c).count()
-    # percent = round(1.0*count_places_with_photos/count_places, 2)
-    print u"%s, всего участков: %s, участков с фото: %s, всего фото участков: %s" % (
+    percent = round(100.0*count_places_with_photos/count_places, 2)
+    print u"%s, всего участков: %s, участков с фото: %s (%s%%), всего фото участков: %s" % (
         c.name,
         count_places,
         count_places_with_photos,
+        percent,
         count_photos,
     )
