@@ -456,7 +456,7 @@ function updateTimes() {
 
 function checkPersonalData() {
     var cem = $('#id_cemetery');
-    if (cem.length) {
+    if (cem.length && cem.is('select')) {
         cem = cem.val() || '';
         $.getJSON('/cemetery_personal_data/?cem='+cem, function(data) {
             var opf_id = '#id_opf_';
