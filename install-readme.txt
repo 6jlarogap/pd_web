@@ -14,9 +14,10 @@ install-readme.txt, utf8 code page
         - средства разработки:
             * python, не ниже 2.6
               - пакеты python, которые могут не быть в его "стандартной поставке":
+                  * (ubuntu 18.04) python-minimal
                   * (ubuntu) python-all-dev
                     - (ubuntu 14.04) это автоматически установит c/c++, g++
-                  * ubuntu 16.04: sudo apt install g++
+                  * ubuntu 16.04, 18.04: sudo apt install g++
                   * (ubuntu) python-virtualenv
                   * (ubuntu) python-pycurl
                   * (ubuntu) python-tz
@@ -31,7 +32,8 @@ install-readme.txt, utf8 code page
             полагаем, что используется база postgresql на localhost,
             в которой пользователю postgres всё дозволено. Это достигается
             правкой pg_hba.conf (на ubuntu 14.04 в /etc/postgresql/9.3/main/,
-            ubuntu 16.04 в /etc/postgresql/9.5/main/)
+            ubuntu 16.04 в /etc/postgresql/9.5/main/,
+            ubuntu 18.04 в /etc/postgresql/10/main/)
 
             заменой строки:
                 local all postgres peer
@@ -42,9 +44,14 @@ install-readme.txt, utf8 code page
          - библиотеки для графики, включая jpeg, в Ubuntu: libjpeg-dev
     
         - bower
-            * скачать NodeJS: http://nodejs.org/
-            * распаковать, cd node-<VERSION>; ./configure && make && sudo make install
-            * sudo npm install -g bower
+            ubuntu 16.4 и ниже:
+                * скачать NodeJS: http://nodejs.org/
+                * распаковать, cd node-<VERSION>; ./configure && make && sudo make install
+                * sudo npm install -g bower
+            ubuntu 18.4:
+                sudo apt install nodejs
+                sudo apt install npm
+                sudo npm install bower
 
         - программы:
             * wkhtmltopdf (конвертация в pdf, от Google):
@@ -58,7 +65,7 @@ install-readme.txt, utf8 code page
                     * sudo apt-get install fontconfig
                     * sudo apt-get install libxrender1
                     * sudo dpkg -i wkhtmltox-0.12.1_linux-trusty-amd64.deb
-                - для других дистрибутивов, включая ubuntu 16.04, придется довольствоваться
+                - для ubuntu 16.04, придется довольствоваться
                   архивной версией 0.12.0, в которой распространяется архив, который
                   распаковываешь куда-то и программа готова к запуску.
                     * (ubuntu 16.04) sudo apt-get install fontconfig
@@ -68,6 +75,16 @@ install-readme.txt, utf8 code page
                     * tar xf wkhtmltox-linux-<i386|amd64>_<версия>.tar.xz
                     * sudo rsync -a wkhtmltox /usr/local/bin && rm -rf wkhtmltox
                     * sudo ln -s /usr/local/bin/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+                ! На ubuntu 18.04:
+                    (приходится таки ставить wkhtmltopdf из дистрибутива, и это всё тануло кучу
+                     инсталяций для X server'a):
+                    sudo -i
+                    apt-get install wkhtmltopdf
+                    apt-get install xvfb
+                    echo -e '#!/bin/bash\nxvfb-run -a --server-args="-screen 0, 1024x768x24" /usr/bin/wkhtmltopdf -q $*' > /usr/local/bin/wkhtmltopdf.sh
+                    chmod a+x /usr/local/bin/wkhtmltopdf.sh
+                    ln -s /usr/local/bin/wkhtmltopdf.sh /usr/local/bin/wkhtmltopdf
+                    logout
                 - Проверка:
                     /usr/local/bin/wkhtmltopdf http://www.google.com musor.pdf
                     musor.pdf должен демонстрировать начальную страницу Google
