@@ -2549,7 +2549,44 @@ class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
 
 api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
 
-class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeteriesMixin, APIView):
+class OrderItemCheckMixin(object):
+
+    def checked_order_item(self, request, item):
+        product_id = item.get('id')
+        if not product_id:
+            raise ServiceException(_(u'Нет productId'))
+
+        try:
+            product = Product.objects.get(loru=request.user.profile.org, pk=product_id)
+        except Product.DoesNotExist:
+            raise ServiceException(
+                _(u'Не найден productId=%s вообще или у этого поставщика') % product_id)
+
+        msg = _(u'Неверное количество у продукта/услуги: %s') % product.name
+        try:
+            quantity = decimal.Decimal(item.get('amount') or 1)
+        except decimal.InvalidOperation:
+            raise ServiceException(msg)
+        if quantity < 0:
+            raise ServiceException(msg)
+
+        msg = _(u'Неверная скидка у продукта/услуги: %s') % product.name
+        try:
+            discount = decimal.Decimal(item.get('discount') or 0)
+        except decimal.InvalidOperation:
+            raise ServiceException(msg)
+        if discount < 0 or discount > 100:
+            raise ServiceException(msg)
+
+        return product, quantity, discount
+
+class ApiLoruOrdersView(
+    CheckLifeDatesMixin,
+    UnclearDateFieldMixin,
+    TradeCemeteriesMixin,
+    OrderItemCheckMixin,
+    APIView
+):
     permission_classes = (PermitIfTrade,)
 
     @transaction.commit_on_success
@@ -2684,19 +2721,12 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 )
             products = request.DATA.get('products', [])
             for item in products:
-                product_id = item.get('id')
-                if not product_id:
-                    raise ServiceException(_(u'Нет productId'))
-                try:
-                    product = Product.objects.get(loru=request.user.profile.org, pk=product_id)
-                except Product.DoesNotExist:
-                    raise ServiceException(
-                        _(u'Не найден productId=%s вообще или у этого поставщика') % product_id)
+                product, quantity, discount = self.checked_order_item(request, item)
                 orderitem = OrderItem.objects.create(
                     order=order,
                     product=product,
-                    quantity=item.get('amount') or 0,
-                    discount=item.get('discount') or 0,
+                    quantity=quantity,
+                    discount=discount,
                 )
             debug_text = None
             if login_phone:
@@ -2758,6 +2788,7 @@ class ApiLoruOrdersDetailView(
     CheckLifeDatesMixin,
     UnclearDateFieldMixin,
     TradeCemeteriesMixin,
+    OrderItemCheckMixin,
     APIView
 ):
     permission_classes = (PermitIfTrade,)
@@ -2885,19 +2916,12 @@ class ApiLoruOrdersDetailView(
                 for item in OrderItem.objects.filter(order=order):
                     item.delete()
                 for item in products:
-                    product_id = item.get('id')
-                    if not product_id:
-                        raise ServiceException(_(u'Нет productId'))
-                    try:
-                        product = Product.objects.get(loru=request.user.profile.org, pk=product_id)
-                    except Product.DoesNotExist:
-                        raise ServiceException(
-                            _(u'Не найден productId=%s вообще или у этого поставщика') % product_id)
+                    product, quantity, discount = self.checked_order_item(request, item)
                     orderitem = OrderItem.objects.create(
                         order=order,
                         product=product,
-                        quantity=item.get('amount') or 0,
-                        discount=item.get('discount') or 0,
+                        quantity=quantity,
+                        discount=discount,
                     )
             if 'deadman' in request.DATA:
                 deadman = request.DATA['deadman']
