@@ -4,6 +4,22 @@
 
 {% block content %}
 
+{% if is_my_org %}
+    <script type="text/javascript">
+        $(function() {
+            $('input[id=cb_show_only_active_users]').change(function() {
+                if ($(this).is(':checked')) {
+                    $('tr.not_active_user').hide();
+                } else {
+                    $('tr.not_active_user').show();
+                }
+            });
+            $('input[id=cb_show_only_active_users]').change();
+        });
+    </script>
+{% endif %}
+
+
 {% if is_readonly %}
     {% include "form_read_only.html" %}
 {% endif %}
@@ -81,12 +97,16 @@
     {% endif %}
     
     {% if is_my_org %}
+        <br />
+        <a href="{% url org_log_org %}" target="_blank">{% trans "Журнал по организации и пользователям" %}</a>
+        <br /><br />
         <h2>{% trans "Пользователи" %}</h2>
+        <p><input type="checkbox" id="cb_show_only_active_users" class="always_enabled" checked>&nbsp;&nbsp;{% trans "Показать только активных пользователей" %}</p>
         <table class="table table-bordered">
             <tr>
+                <th>{% trans "ФИО" %}</th>
                 <th>{% trans "Имя пользователя" %}<br/>({% trans "логин" %})</th>
                 <th>{% trans "Должность" %}<br />{% trans "Телефон(ы)" %}<br />{% trans "Email" %}</th>
-                <th>{% trans "ФИО" %}</th>
                 {% if user.profile.is_ugh %}<th>{% trans "Роли в организации" %}{% endif %}
                 {% if user.profile.is_loru %}<th>{% trans "Агент" %}</th>{% endif %}
                 <th>{% trans "Активен" %}</th>
@@ -95,7 +115,8 @@
                 {% endif %}
             </tr>
             {% for p in form.user_qs %}
-                <tr>
+                <tr{% if not p.user.is_active %} class="not_active_user"{% endif %}>
+                    <td>{% if p.user.profile.user_last_name %}{{ p.user.profile.full_name }}{% endif %}</td>
                     <td>{{ p.user.username }}</td>
                     <td>
                         {% if p.title %}{{ p.title }}<br />{% endif %}
@@ -103,7 +124,6 @@
                         {% if p.user.email %}{{ p.user.email }}<br />{% endif %}
                         {% if p.out_of_staff %}{% trans "Внештатный сотрудник" %}<br />{% endif %}
                     </td>
-                    <td>{% if p.user.profile.user_last_name %}{{ p.user.profile.full_name }}{% endif %}</td>
                     {% if user.profile.is_ugh %}
                         <td>{% for r in p.role.all %}
                                 {{ r }}<br/>
@@ -142,8 +162,6 @@
 </form>
 
 {% if is_my_org and object.get_logs %}
-    {% with object=object %}
-        {% include "object_logs.html" %}
-    {% endwith %}
+    <a href="{% url org_log_org %}" target="_blank">{% trans "Журнал по организации и пользователям" %}</a>
 {% endif %}
 {% endblock %}
