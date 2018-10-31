@@ -771,7 +771,7 @@ class Oauth(BaseModel):
                         elif key == 'site':
                             if not re.search(r'^\w+\://', user_details[key]):
                                 user_details[key] = u"http://%s" % user_details[key]
-                            validate = URLValidator(verify_exists=False)
+                            validate = URLValidator()
                             try:
                                 validate(user_details[key])
                             except ValidationError:

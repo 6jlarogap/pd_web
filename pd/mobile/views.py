@@ -12,7 +12,6 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.http import HttpResponse
 
-from django.utils import simplejson
 from geo.models import Location, CoordinatesModel
 from burials.models import Cemetery, CemeteryCoordinates, CemeteryPhoto, CemeterySchema
 from burials.models import Area

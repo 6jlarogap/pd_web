@@ -5,6 +5,8 @@ import os, datetime
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
+ALLOWED_HOSTS = ['*']
+
 ADMINS = ()
 
 MANAGERS = ADMINS

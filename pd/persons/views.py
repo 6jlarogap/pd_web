@@ -588,7 +588,7 @@ class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
                (not fields['text'] or not fields['text'].strip()):
                 raise ServiceException(_(u'Тип (type) %s требует непустой текст') % fields['type'])
             if fields['type'] == MemoryGallery.TYPE_LINK:
-                validate = URLValidator(verify_exists=False)
+                validate = URLValidator()
                 if not re.search(r'^\w+\://', fields['text'], flags=re.I):
                     fields['text'] = u"http://%s" % fields['text']
                 try:
