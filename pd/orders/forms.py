@@ -318,7 +318,7 @@ class OrderSearchForm(forms.Form):
         (100, 100),
     )
 
-    fio = forms.CharField(required=False, max_length=100, label=_(u"ФИО"))
+    fio_order_deadman = forms.CharField(required=False, max_length=100, label=_(u"ФИО усопшего"))
     no_last_name = forms.BooleanField(required=False, initial=False, label=_(u"Неизв."))
     birth_date_from = forms.DateField(required=False, label=_(u"Дата рожд. с"))
     birth_date_to = forms.DateField(required=False, label=_(u"по"))

@@ -15,7 +15,7 @@ from django.shortcuts import get_object_or_404
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \
                            CustomPlace, CustomPerson, MemoryGallery, \
-                           CustomPersonPermission, MemoryGalleryPermission
+                           CustomPersonPermission, MemoryGalleryPermission, OrderDeadPerson
 from persons.serializers import AlivePersonSerializer, DeadPersonSerializer, PhoneSerializer, \
                                 CustomPlaceDetailSerializer, CustomPlaceListSerializer, \
                                 CustomPlaceEditSerializer, DeadPerson2Serializer, \
@@ -61,7 +61,23 @@ class AutocompleteFIO(View):
             ugh_q = Q(burial__ugh=user.profile.org)
         elif is_loru_user(user):
             loru = user.profile.org
-            ugh_q = Q(burial__applicant_organization=loru) | Q(burial__loru=loru) | Q(burial__ugh__loru_list__loru=loru)
+            # ugh_q = Q(burial__applicant_organization=loru) | Q(burial__loru=loru) | Q(burial__ugh__loru_list__loru=loru)
+            # Согласовываем с фильтром для поиска зх для лору (burials/burials_view::BurialsPublicListView.get_queryset())
+            ugh_q = \
+                    Q(burial__source_type__in=(Burial.SOURCE_FULL, Burial.SOURCE_TRANSFERRED,)) & \
+                    Q(burial__loru = loru) & \
+                    (
+                        (
+                            Q(burial__annulated=False) &
+                            Q(burial__status__in=[Burial.STATUS_EXHUMATED, Burial.STATUS_CLOSED, ])
+                        )
+                        |
+                        (
+                            Q(burial__annulated=True) &
+                            Q(burial__status__in=[Burial.STATUS_BACKED, Burial.STATUS_DRAFT, Burial.STATUS_DECLINED, ])
+                        )
+                    )
+
         else:
             ugh_q = Q()
         q &= ugh_q
@@ -78,6 +94,43 @@ class AutocompleteFIO(View):
         return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
 
 autocomplete_fio = AutocompleteFIO.as_view()
+
+class AutocompleteFIOorder(View):
+
+    NUM_RESULTS = 20
+
+    def get(self, request, *args, **kwargs):
+        query = request.GET['query']
+        user = request.user
+        persons = []
+        if query and len(query) >= 2 and is_loru_user(user):
+            loru = user.profile.org
+            fio = [f.strip('.') for f in query.split(' ')]
+            q_fio = Q()
+            if len(fio) > 2:
+                q_fio &= Q(middle_name__istartswith=fio[2])
+            if len(fio) > 1:
+                q_fio &= Q(first_name__istartswith=fio[1])
+            if len(fio) > 0:
+                q_fio &= Q(last_name__istartswith=fio[0])
+
+            q = Q(order__loru=loru)
+            orderdeadpersons = OrderDeadPerson.objects.filter(q & q_fio). \
+                distinct('last_name', 'first_name', 'middle_name')[:self.NUM_RESULTS]
+            orderdeadpersons = [unicode(c) for c in orderdeadpersons]
+
+            q = Q(burial__loru = loru)
+            burialdeadpersons = DeadPerson.objects.filter(q & q_fio). \
+                distinct('last_name', 'first_name', 'middle_name')[:self.NUM_RESULTS]
+            burialdeadpersons = [unicode(c) for c in burialdeadpersons]
+
+            persons = list(set(orderdeadpersons + burialdeadpersons))
+            persons.sort()
+            perrsons = persons[:self.NUM_RESULTS]
+
+        return HttpResponse(json.dumps([{'value': c} for c in persons]), mimetype='text/javascript')
+
+autocomplete_fio_order = AutocompleteFIOorder.as_view()
 
 class AutocompleteNamesMixin(object):
 

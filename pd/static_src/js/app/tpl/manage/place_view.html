@@ -129,13 +129,13 @@
         <th>
           <button class="btn btn-success btn-mini"
                   ng-disabled="loading"
-                  ng-show="is_editable"
+                  ng-show="is_editable && (!is_caretaker_only || is_caretaker_only && !responsible.last_name)"
                   ng-click="openEditForm('isResponsibleEditorOpen')">
             <span class="icon-edit"></span>
           </button>
           <button class="btn btn-danger btn-mini"
                   ng-disabled="loading"
-                  ng-show="(responsible.last_name || responsible.first_name || responsible.middle_name) && is_editable"
+                  ng-show="responsible.last_name && is_editable && !is_caretaker_only"
                   ng-click="removeResponsible()">
             <span class="icon-remove"></span>
           </button>
@@ -226,7 +226,7 @@
                     <i class="icon-search"></i>
                   </a>
                   <a class="btn btn-mini" popover="Правка" popover-trigger="mouseenter"
-                     ng-show="is_editable"
+                     ng-show="is_editable && !is_caretaker_only"
                      href="/burials/{{burial.id}}/edit/" target="_new">
                     <i class="icon-edit"></i>
                   </a>
@@ -349,7 +349,7 @@
                     <button
                         style="color:red"
                         ng-click="deleteImage(currentImage)"
-                        ng-show="is_editable"
+                        ng-show="is_editable && !is_caretaker_only"
                         >Удалить</button>
                 </span>
                 <img ng-hide="currentImage" alt="Нет фотографии"

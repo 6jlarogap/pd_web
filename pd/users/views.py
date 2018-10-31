@@ -39,6 +39,7 @@ from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.views.generic.detail import DetailView
 from django.views.decorators.cache import cache_page
+from django.contrib.contenttypes.models import ContentType
 
 from wkhtmltopdf.views import PDFTemplateResponse
 
@@ -54,7 +55,7 @@ from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, 
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, \
                         TestCaptcha2Form, \
                         LoruOrdersStatsForm, ProfileDataForm, OmsOperStats, \
-                        VideoSearchForm, ThanksForm
+                        VideoSearchForm, ThanksForm, OrgLogOrgForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, is_loru_user, is_ugh_user, \
                          PermitIfTrade, PermitIfTradeOrSupervisor, PermitIfLoruOrUgh, \
@@ -1600,7 +1601,7 @@ class ReportDatesMixin(object):
 
     def get_dates(self):
         """
-        Получить начальные даты для отчета по умолчанию
+        Получить начальные даты для отчета по умолчанию, за месяц
 
         После 15-го числа: за текущий месяц
         До 15-го числа; начиная с предыдущего месяца
@@ -1616,6 +1617,22 @@ class ReportDatesMixin(object):
             date_from = datetime.date(year, month, 1)
         else:
             date_from = datetime.date(date_from.year, date_from.month, 1)
+        date_to = datetime.date.today()
+        return date_from, date_to
+
+    def get_dates_year(self):
+        """
+        Получить начальные даты для отчета за последний год
+
+        До 01.07: с начала предыдущего года
+        После 01.07: за текущий год
+        """
+        date_from = datetime.date.today()
+        if date_from.month > 6:
+            year = date_from.year
+        else:
+            year = date_from.year - 1
+        date_from = datetime.date(year, 1, 1)
         date_to = datetime.date.today()
         return date_from, date_to
 
@@ -1688,6 +1705,59 @@ class OrgLogView(UghOrLoruRequiredMixin, ReportDatesMixin, PaginateListView):
         return form
 
 org_log = OrgLogView.as_view()
+
+class OrgLogOrgView(UghOrLoruRequiredMixin, ReportDatesMixin, PaginateListView):
+    """
+    Журнал только по организации
+    """
+
+    template_name = 'org_log_org.html'
+    context_object_name = 'logs'
+
+    def get_queryset(self):
+        org=self.request.user.profile.org
+        self.date_from, self.date_to = self.get_dates_year()
+        form = self.get_form()
+        if not self.request.GET:
+            return Log.objects.none()
+
+        if form.data and form.is_valid():
+            self.date_from = form.cleaned_data.get('date_from')
+            self.date_to = form.cleaned_data.get('date_to')
+
+        ct = ContentType.objects.get_for_model(org)
+        logs = Log.objects.filter(ct=ct, obj_id=org.pk)
+        if self.date_from:
+            logs = logs.filter(dt__gte=self.date_from)
+        if self.date_to:
+            logs = logs.filter(dt__lt=self.date_to + datetime.timedelta(days=1))
+
+        sort = self.request.GET.get('sort', self.SORT_DEFAULT)
+        SORT_FIELDS = {
+            'dt': 'dt',
+            '-dt': '-dt',
+            'user': 'user__username',
+            '-user': '-user__username',
+        }
+        s = SORT_FIELDS[sort]
+        if not isinstance(s, list):
+            s = [s]
+
+        logs = logs.select_related(
+            'user__profile',
+        ).order_by(*s)
+        return logs
+
+    def get_form(self):
+        data = self.request.GET
+        form = OrgLogOrgForm(data=data or None)
+        if not data:
+            form.initial['date_from'] = self.date_from
+            form.initial['date_to'] = self.date_to
+            form.initial['per_page'] = 100
+        return form
+
+org_log_org = OrgLogOrgView.as_view()
 
 class LoginLogView(SupervisorRequiredMixin, PaginateListView):
     template_name = 'login_log.html'

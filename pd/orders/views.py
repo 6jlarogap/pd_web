@@ -173,13 +173,21 @@ class OrderList(LORURequiredMixin, PaginateListView):
 
         form = self.get_form()
         if form.data and form.is_valid():
-            if form.cleaned_data['fio']:
+            fio_string = form.cleaned_data['fio_order_deadman']
+            if fio_string:
                 search_by =  [
                     'burial__deadman__last_name__iregex',
                     'burial__deadman__first_name__iregex',
                     'burial__deadman__middle_name__iregex'
                 ]
-                orders = self.filter_by_name(queryset=orders, search_by=search_by, name_string=form.cleaned_data['fio'])
+                q_burial_deadman = self.q_by_name(search_by=search_by, name_string=fio_string)
+                search_by =  [
+                    'orderdeadperson__last_name__iregex',
+                    'orderdeadperson__first_name__iregex',
+                    'orderdeadperson__middle_name__iregex'
+                ]
+                q_orderdeadperson = self.q_by_name(search_by=search_by, name_string=fio_string)
+                orders = orders.filter(q_burial_deadman | q_orderdeadperson)
             birth_date_from = form.cleaned_data['birth_date_from']
             if birth_date_from:
                 orders = orders.filter(
@@ -331,12 +339,16 @@ class OrderList(LORURequiredMixin, PaginateListView):
         paginator._count = queryset.count()
         return paginator
 
-    def filter_by_name(self, queryset, search_by, name_string):
+    def q_by_name(self, search_by, name_string):
         import operator
         values = [re_search(f) for f in name_string.split()]
         predicates = zip(search_by, values)
         query = [Q(p) for p in predicates]
         q = reduce(operator.and_, query)
+        return q
+
+    def filter_by_name(self, queryset, search_by, name_string):
+        q = self.q_by_name(search_by, name_string)
         return queryset.filter(q)
 
     def get(self, request, *args, **kwargs):
@@ -2537,7 +2549,44 @@ class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
 
 api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
 
-class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeteriesMixin, APIView):
+class OrderItemCheckMixin(object):
+
+    def checked_order_item(self, request, item):
+        product_id = item.get('id')
+        if not product_id:
+            raise ServiceException(_(u'Нет productId'))
+
+        try:
+            product = Product.objects.get(loru=request.user.profile.org, pk=product_id)
+        except Product.DoesNotExist:
+            raise ServiceException(
+                _(u'Не найден productId=%s вообще или у этого поставщика') % product_id)
+
+        msg = _(u'Неверное количество у продукта/услуги: %s') % product.name
+        try:
+            quantity = decimal.Decimal(item.get('amount') or 1)
+        except decimal.InvalidOperation:
+            raise ServiceException(msg)
+        if quantity < 0:
+            raise ServiceException(msg)
+
+        msg = _(u'Неверная скидка у продукта/услуги: %s') % product.name
+        try:
+            discount = decimal.Decimal(item.get('discount') or 0)
+        except decimal.InvalidOperation:
+            raise ServiceException(msg)
+        if discount < 0 or discount > 100:
+            raise ServiceException(msg)
+
+        return product, quantity, discount
+
+class ApiLoruOrdersView(
+    CheckLifeDatesMixin,
+    UnclearDateFieldMixin,
+    TradeCemeteriesMixin,
+    OrderItemCheckMixin,
+    APIView
+):
     permission_classes = (PermitIfTrade,)
 
     @transaction.commit_on_success
@@ -2672,19 +2721,12 @@ class ApiLoruOrdersView(CheckLifeDatesMixin, UnclearDateFieldMixin, TradeCemeter
                 )
             products = request.DATA.get('products', [])
             for item in products:
-                product_id = item.get('id')
-                if not product_id:
-                    raise ServiceException(_(u'Нет productId'))
-                try:
-                    product = Product.objects.get(loru=request.user.profile.org, pk=product_id)
-                except Product.DoesNotExist:
-                    raise ServiceException(
-                        _(u'Не найден productId=%s вообще или у этого поставщика') % product_id)
+                product, quantity, discount = self.checked_order_item(request, item)
                 orderitem = OrderItem.objects.create(
                     order=order,
                     product=product,
-                    quantity=item.get('amount') or 0,
-                    discount=item.get('discount') or 0,
+                    quantity=quantity,
+                    discount=discount,
                 )
             debug_text = None
             if login_phone:
@@ -2746,6 +2788,7 @@ class ApiLoruOrdersDetailView(
     CheckLifeDatesMixin,
     UnclearDateFieldMixin,
     TradeCemeteriesMixin,
+    OrderItemCheckMixin,
     APIView
 ):
     permission_classes = (PermitIfTrade,)
@@ -2873,19 +2916,12 @@ class ApiLoruOrdersDetailView(
                 for item in OrderItem.objects.filter(order=order):
                     item.delete()
                 for item in products:
-                    product_id = item.get('id')
-                    if not product_id:
-                        raise ServiceException(_(u'Нет productId'))
-                    try:
-                        product = Product.objects.get(loru=request.user.profile.org, pk=product_id)
-                    except Product.DoesNotExist:
-                        raise ServiceException(
-                            _(u'Не найден productId=%s вообще или у этого поставщика') % product_id)
+                    product, quantity, discount = self.checked_order_item(request, item)
                     orderitem = OrderItem.objects.create(
                         order=order,
                         product=product,
-                        quantity=item.get('amount') or 0,
-                        discount=item.get('discount') or 0,
+                        quantity=quantity,
+                        discount=discount,
                     )
             if 'deadman' in request.DATA:
                 deadman = request.DATA['deadman']

@@ -120,12 +120,12 @@
             {% endif %}
          </TD>
     </TR>
-    {% if order.initial_time or order.initial_place or order.get_catafalquedata.start_time or order.get_catafalquedata.start_place or order.service_time or order.service_place %}
+    {% if order.initial_time or order.initial_place or order.get_catafalquedata.start_time or order.get_catafalquedata.start_place or  order.orderplace.size %}
         <TR>
             <TD COLSPAN=7>
             {% if order.initial_time or order.initial_place or order.get_catafalquedata.start_time or order.get_catafalquedata.start_place %}
                 <B>
-                Подача транспорта:
+                Выдача тела:
                 </B>
                 {% if order.initial_time %}
                     {{ order.initial_time|time:"H:i" }}.
@@ -138,9 +138,20 @@
                     {{ order.initial_place }}
                 {% endif %}
             {% endif %}
-            {% if order.service_time or order.service_place %}
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            {% if order.orderplace.size %}
+                <B>Размер гроба:</B> {{ order.orderplace.size }}
+            {% endif %}
+            </TD>
+        </TR>
+    {% endif %}
+    {% if order.service_time or order.service_place %}
+        <TR>
+            <TD COLSPAN=3>
                 <B>
-                Отпевание:
+                Отпевание (прощание):
                 </B>
                 {% if order.service_time %}
                     {{ order.service_time|time:"H:i" }}.
@@ -148,29 +159,25 @@
                 {% if order.service_place %}
                     {{ order.service_place }}.
                 {% endif %}
-            {% endif %}
+            </TD>
+            <TD COLSPAN=4>
             </TD>
         </TR>
     {% endif %}
-    {% if order.cemetery or order.dt_due or order.orderplace and order.orderplace.size %}
+    {% if order.cemetery or order.dt_due %}
         <TR>
             <TD COLSPAN=7>
-            {% if order.cemetery or order.dt_due or order.orderplace %}
+                {% if order.dt_due %}
+                    <B>Похороны:</B> {{ order.dt_due|date:"d.m.Y"|safe }}{% if not order.burial.plan_time and not order.burial_plan_time %}.{% endif %}
+                    {% if order.burial and order.burial.plan_time %}
+                        {{ order.burial.plan_time|time:"H:i" }}.
+                    {% elif order.burial_plan_time %}
+                        {{ order.burial_plan_time|time:"H:i" }}.
+                    {% endif %}
+                {% endif %}
                 {% if order.cemetery %}
                     <B>Кладбище:</B> {{ order.cemetery }}.
                 {% endif %}
-                {% if order.dt_due %}
-                    <B>Похороны:</B> {{ order.dt_due|date:"d.m.Y"|safe }}
-                    {% if order.burial and order.burial.plan_time %}
-                        {{ order.burial.plan_time|time:"H:i" }}
-                    {% elif order.burial_plan_time %}
-                        {{ order.burial_plan_time|time:"H:i" }}
-                    {% endif %}
-                {% endif %}
-            {% endif %}
-            {% if order.orderplace and order.orderplace.size %}
-                <B>Размер гроба:</B> {{ order.orderplace.size }}
-            {% endif %}
             </TD>
         </TR>
     {% endif %}
@@ -314,7 +321,7 @@
     </TR>
     <TR>
         <TD COLSPAN=7>
-            <B>В день захоронения  в 8:30 передать вещи санитарам морга</B>
+            <B>В день захоронения  с 8:00 до 8:30 передать вещи санитарам морга</B>
          </TD>
     </TR>
     </TBODY>

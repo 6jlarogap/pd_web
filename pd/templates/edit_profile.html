@@ -155,7 +155,7 @@
         {% if not form.instance.role.all %}
             &nbsp;&nbsp; {% trans "не назначены" %}<br/>
         {% endif %}
-        {% if form.instance.is_registrator %}
+        {% if form.instance.is_registrator_or_caretaker %}
             <br />
             <h4>{% trans "Назначенные кладбища" %}:</h4>
             {% if not form.instance.cemeteries.count %}
