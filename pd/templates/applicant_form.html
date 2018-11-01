@@ -163,7 +163,7 @@
                 {% if user.profile.is_supervisor %}
                     <a href="#add_doctype" role="button" class="btn" data-toggle="modal">
                 {% else %}
-                    <a href="{% url support %}?request=add_doctype{% if "burials" in request.path and "edit" in request.path %}&burial_path={{ request.get_full_path }}{% endif %}" role="button" class="btn" target="_blank">
+                    <a href="{% url 'support' %}?request=add_doctype{% if "burials" in request.path and "edit" in request.path %}&burial_path={{ request.get_full_path }}{% endif %}" role="button" class="btn" target="_blank">
                 {% endif %}
                     {% trans "добавить тип" %}
                 </a>

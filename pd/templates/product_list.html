@@ -30,7 +30,7 @@
                 <td>{{ c.price_wholesale }}</td>
                 <td>
                     {% if user.profile.org == c.loru %}
-                        <a href="{% url manage_products_edit c.pk %}" class="btn">{% trans "править" %}</a>
+                        <a href="{% url 'manage_products_edit' c.pk %}" class="btn">{% trans "править" %}</a>
                     {% endif %}
                 </td>
                 <td>
@@ -50,7 +50,7 @@
 
     {% if user.profile.is_loru %}
         <p>
-            <a class="btn" href="{% url manage_products_create %}">{% trans "создать" %}</a>
+            <a class="btn" href="{% url 'manage_products_create' %}">{% trans "создать" %}</a>
         </p>
     {% endif %}
 {% endblock %}

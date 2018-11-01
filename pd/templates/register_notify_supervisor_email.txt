@@ -18,10 +18,10 @@
 {% trans "Факс" %}: {{ obj.org_fax }}
 {% trans "Cкан свидетельства о регистрации" %}: {% if scan %}{{ host }}{{ scan }}{% else %}{% trans "не передан" %}{% endif %}
 
-{% trans "Одобрить" %}: {{ host }}{% url registrant_approve  obj.pk %}
+{% trans "Одобрить" %}: {{ host }}{% url 'registrant_approve' obj.pk %}
 
-{% trans "Отказать" %}: {{ host }}{% url registrant_decline  obj.pk %}
+{% trans "Отказать" %}: {{ host }}{% url 'registrant_decline' obj.pk %}
 
-{% trans "Все регистранты" %}: {{ host }}{% url registrants %}
+{% trans "Все регистранты" %}: {{ host }}{% url 'registrants' %}
 
 {% endautoescape %}

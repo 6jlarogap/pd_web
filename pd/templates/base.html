@@ -42,7 +42,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-ui-1.8.6.custom.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.ui.timepicker.js"></script>
 	{% endblock %}
-    <script type="text/javascript" src="{% url jsi18n %}"></script>
+    <script type="text/javascript" src="{% url 'jsi18n' %}"></script>
 
 	{% assets "css_static" %}
 	<link rel="stylesheet" type="text/css" href="{{ ASSET_URL }}" />{% endassets %}
@@ -110,11 +110,11 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a href="{% url support %}">{% trans "Задать вопрос" %}</a>
+                                <a href="{% url 'support' %}">{% trans "Задать вопрос" %}</a>
                             </li>
                             {% if user.is_authenticated %}
                                 <li>
-                                    <a href="{% url tutorial %}">{% trans "Курс обучения" %}</a>
+                                    <a href="{% url 'tutorial' %}">{% trans "Курс обучения" %}</a>
                                 </li>
                                 {% if user.profile.is_ugh %}
                                     <li>
@@ -136,8 +136,8 @@
                                     <ul class="dropdown-menu">
                                         {% if user.profile.pk %}
                                             {% if user.profile.org.pk %}
-                                                <li><a href="{% url edit_org user.profile.org.pk %}">{% trans "Организация" %}</a></li>
-                                                <li><a href="{% url user_profile %}">{% trans "Пользователь" %}</a></li>
+                                                <li><a href="{% url 'edit_org' user.profile.org.pk %}">{% trans "Организация" %}</a></li>
+                                                <li><a href="{% url 'user_profile' %}">{% trans "Пользователь" %}</a></li>
                                                 {% if global_context_REDIRECT_LOGIN_TO_FRONT_END %}
                                                     {% if user.profile.is_ugh %}
                                                         <li><a href="{{ global_context_FRONT_END_URL }}oms/orgplaces">{% trans "Подразделения" %}</a></li>
@@ -147,10 +147,10 @@
                                                 {% endif %}
                                             {% endif %}
                                             {% if user.profile.org.pk %}
-                                                <li><a href="{% url org_log %}">{% trans "Журнал" %}</a></li>
+                                                <li><a href="{% url 'org_log' %}">{% trans "Журнал" %}</a></li>
                                             {% endif %}
                                             {% if user.profile.is_ugh and global_context_SHOW_OPER_STATS %}
-                                                <li><a href="{% url oms_oper_stats %}">{% trans "Статистика операций" %}</a></li>
+                                                <li><a href="{% url 'oms_oper_stats' %}">{% trans "Статистика операций" %}</a></li>
                                             {% endif %}
                                             <li class="divider"></li>
                                         {% endif %}
@@ -160,15 +160,15 @@
                                                 <li><a href="{{ global_context_FRONT_END_URL }}oms/places-photos">{% trans "Ввод архива по фото" %}</a></li>
                                             {% endif %}
                                             {% if global_context_ARE_LORUS_IN_SYSTEM %}
-                                                <li><a href="{% url loru_registry %}">{% trans "Реестр ЛОРУ" %}</a></li>
+                                                <li><a href="{% url 'loru_registry' %}">{% trans "Реестр ЛОРУ" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
                                             {% if user.profile.is_registrator_or_caretaker %}
-                                                <li><a href="{% url burials_doubles %}">{% trans "Дубли захоронений" %}</a></li>
+                                                <li><a href="{% url 'burials_doubles' %}">{% trans "Дубли захоронений" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
                                             {% if global_context_DEADMAN_IDENT_NUMBER_ALLOW and user.profile.is_registry_handler %}
-                                                <li><a href="{% url burials_registry %}">{% trans "Реестр населения" %}</a></li>
+                                                <li><a href="{% url 'burials_registry' %}">{% trans "Реестр населения" %}</a></li>
                                                 <li class="divider"></li>
                                             {% endif %}
                                         {% endif %}
@@ -191,32 +191,32 @@
                                             <li class="divider"></li>
                                         {% endif %}
                                         {% if user.profile.is_supervisor %}
-                                            <li><a href="{% url registrants %}">{% trans "Регистрация" %}</a></li>
+                                            <li><a href="{% url 'registrants' %}">{% trans "Регистрация" %}</a></li>
                                             {% if global_context_PRODUCTION_SITE %}
-                                                <li><a href="{% url login_log %}">{% trans "Журнал входов в систему" %}</a></li>
-                                                <li><a href="{% url oms_burial_stats %}">{% trans "Статистика захоронений" %}</a></li>
-                                                <li><a href="{% url oms_current_stats %}">{% trans "Текущая статистика" %} {% trans "ОМС" %}</a></li>
-                                                <li><a href="{% url loru_current_stats %}">{% trans "Текущая статистика" %} {% trans "ЛОРУ" %}</a></li>
-                                                <li><a href="{% url loru_order_stats %}">{% trans "Статистика заказов" %}</a></li>
-                                                <li><a href="{% url videos %}">{% trans "Видеозаписи" %}</a></li>
-                                                <li><a href="{% url thanks %}">{% trans "Благодарности" %}</a></li>
+                                                <li><a href="{% url 'login_log' %}">{% trans "Журнал входов в систему" %}</a></li>
+                                                <li><a href="{% url 'oms_burial_stats' %}">{% trans "Статистика захоронений" %}</a></li>
+                                                <li><a href="{% url 'oms_current_stats' %}">{% trans "Текущая статистика" %} {% trans "ОМС" %}</a></li>
+                                                <li><a href="{% url 'loru_current_stats' %}">{% trans "Текущая статистика" %} {% trans "ЛОРУ" %}</a></li>
+                                                <li><a href="{% url 'loru_order_stats' %}">{% trans "Статистика заказов" %}</a></li>
+                                                <li><a href="{% url 'videos' %}">{% trans "Видеозаписи" %}</a></li>
+                                                <li><a href="{% url 'thanks' %}">{% trans "Благодарности" %}</a></li>
                                             {% endif %}
                                             <li class="divider"></li>
                                         {% endif %}
-                                        <li><a href="{% url ulogout %}">{% trans "Выйти" %}</a></li>
+                                        <li><a href="{% url 'ulogout' %}">{% trans "Выйти" %}</a></li>
                                     </ul>
                                 </li>
                             </ul>
                         {% else %}
-                            <a class="btn" href="{% url ulogin %}">{% trans "Войти" %}</a>
-                            {# <a class="btn" href="{% url register %}">{% trans "Зарегистрироваться (для ЮЛ)" %}</a> #}
+                            <a class="btn" href="{% url 'ulogin' %}">{% trans "Войти" %}</a>
+                            {# <a class="btn" href="{% url 'register' %}">{% trans "Зарегистрироваться (для ЮЛ)" %}</a> #}
                         {% endif %}
                     </div>
                     {% if user.profile.is_ugh %}
                         <div class="pull-right nav-collapse">
                             <ul class="nav">
                                 <li>
-                                    <a href="{% url manage_cemeteries %}">{% trans "Кладбища" %}</a>
+                                    <a href="{% url 'manage_cemeteries' %}">{% trans "Кладбища" %}</a>
                                 </li>
                             </ul>
                         </div>
@@ -225,35 +225,35 @@
                         <ul class="nav">
                             {% if user.profile.is_loru or global_context_REDIRECT_LOGIN_TO_FRONT_END or user.profile.is_ugh and user.profile.is_registrator_or_caretaker and user.profile.cemeteries.count %}
                                 <li{% if request.path == '/' %} class="active"{% endif %}>
-                                    <a href="{% url dashboard %}">{% trans "Открытые" %}</a>
+                                    <a href="{% url 'dashboard' %}">{% trans "Открытые" %}</a>
                                 </li>
                             {% endif %}
                             {% if user.profile.is_ugh %}
                                 <li{% if request.path == '/burials/' %} class="active"{% endif %}>
-                                    <a href="{% url burial_list %}">{% trans "Захоронения" %}</a>
+                                    <a href="{% url 'burial_list' %}">{% trans "Захоронения" %}</a>
                                 </li>
                                 {% if global_context_REDIRECT_LOGIN_TO_FRONT_END or user.profile.is_registrator_or_caretaker and user.profile.cemeteries.count %}
                                     <li{% if request.path == '/burials/create/' and not request.GET.archive %} class="active"{% endif %}>
-                                        <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
+                                        <a href="{% url 'create_burial' %}">{% trans "Создать захоронение" %}</a>
                                     </li>
 
                                     <li{% if request.path == '/burials/create/' and request.GET.archive %} class="active"{% endif %}>
-                                        <a href="{% url create_burial %}?archive=1">{% trans "Внести архивное" %}</a>
+                                        <a href="{% url 'create_burial' %}?archive=1">{% trans "Внести архивное" %}</a>
                                     </li>
                                 {% endif %}
                             {% elif user.profile.is_loru %}
                                 <li{% if request.path == '/burials/search/' %} class="active"{% endif %}>
-                                    <a href="{% url burial_public_list %}">{% trans "Захоронения" %}</a>
+                                    <a href="{% url 'burial_public_list' %}">{% trans "Захоронения" %}</a>
                                 </li>
                                 <li{% if request.path == '/burials/create/'  %} class="active"{% endif %}>
-                                    <a href="{% url create_burial %}">{% trans "Создать захоронение" %}</a>
+                                    <a href="{% url 'create_burial' %}">{% trans "Создать захоронение" %}</a>
                                 </li>
                                 <li{% if request.path == '/order/' %} class="active"{% endif %}>
-                                    <a href="{% url order_list %}">{% trans "Заказы" %}</a>
+                                    <a href="{% url 'order_list' %}">{% trans "Заказы" %}</a>
                                 </li>
 
                                 <li{% if request.path == '/order/create/' %} class="active"{% endif %}>
-                                    <a href="{% url order_create %}">{% trans "Создать Заказ" %}</a>
+                                    <a href="{% url 'order_create' %}">{% trans "Создать Заказ" %}</a>
                                 </li>
                             {% endif %}
                         </ul>

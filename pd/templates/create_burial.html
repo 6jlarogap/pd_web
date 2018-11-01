@@ -74,9 +74,9 @@
                             <input type="submit" class="btn btn-commit-burial" name="annulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}"/>
                         {% endif %}
                         {% if b.order %}
-                            <a href="{% url order_services b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
+                            <a href="{% url 'order_services' b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
                         {% elif self.request.REQUEST.order %}
-                            <a href="{% url order_services self.request.REQUEST.order %}" class="btn btn-next">{% trans "далее" %}</a>
+                            <a href="{% url 'order_services' self.request.REQUEST.order %}" class="btn btn-next">{% trans "далее" %}</a>
                         {% endif %}
                     {% endif %}
                 {% else %}
