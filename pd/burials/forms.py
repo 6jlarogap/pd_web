@@ -52,6 +52,7 @@ class AreaItemForm(StrippedStringsMixin, forms.ModelForm):
 
     class Meta:
         model = Area
+        fields = '__all__'
 
     def clean(self):
         StrippedStringsMixin.clean(self)
@@ -674,7 +675,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             prefix = _(u"Заявитель ")
         return prefix
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def save(self, commit=True, **kwargs):
         request = self.request
         self.collect_log_data()
@@ -1816,6 +1817,7 @@ class AddOrgForm(StrippedStringsMixin, BaseOrgForm):
 class AddDocTypeForm(forms.ModelForm):
     class Meta:
         model = IDDocumentType
+        fields = '__all__'
 
 class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.ModelForm):
     opf = forms.ChoiceField(label='', choices=OPF_CHOICES, widget=forms.RadioSelect, initial=Org.OPF_PERSON)

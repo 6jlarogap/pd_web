@@ -22,7 +22,7 @@ from django.db import transaction
 from logs.models import Log, LogOperation
 from burials.models import Cemetery, Burial, Area, Place, Grave, AreaPurpose
 
-@transaction.commit_on_success
+@transaction.atomic
 def main():
     
     cemetery_source = Cemetery.objects.get(ugh__pk=UGH_PK, pk=CEMETERY_SOURCE_PK)

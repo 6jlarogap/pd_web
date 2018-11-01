@@ -566,7 +566,7 @@ class Oauth(BaseModel):
                " ".join((self.first_name, self.last_name, )).strip()
 
     @classmethod
-    @transaction.commit_on_success
+    @transaction.atomic
     def check_token(cls, oauth_dict, signup_dict=None, bind_dict=None):
         """
         Проверить token у провайдера Oauth. Token & provider в входном oauth_dict
@@ -1451,7 +1451,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
             user_email=self.user_email,
         )
     
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self):
         self.safe_delete('org_address', self)
         try:

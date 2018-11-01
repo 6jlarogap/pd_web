@@ -7,6 +7,13 @@ TEMPLATE_DEBUG = DEBUG
 
 ALLOWED_HOSTS = ['*']
 
+# После django 1.5 сессии хранятся по умолчанию в json формате по умолчанию,
+# но переход к этому формату означает потерю всех сессий, что наверняка
+# приведет к необходимости вводить имя/пароль и следовательно,
+# организационные проблемы.
+#
+SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
+
 ADMINS = ()
 
 MANAGERS = ADMINS
@@ -19,9 +26,6 @@ DATABASES = {
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
-        'OPTIONS': {
-            'autocommit': True,
-        },
     },
 }
 

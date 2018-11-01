@@ -342,7 +342,7 @@ class ApiThankMixin(object):
 
 class ApiCabinetGetcodeView(ApiThankMixin, APIView):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         status_code = 200
         data = {}
@@ -402,7 +402,7 @@ api_cabinet_getcode = ApiCabinetGetcodeView.as_view()
 
 class ApiCabinetTokensView(ApiThankMixin, APIView):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         """
         Авторизация пользователя с кодом, полученным на телефон
@@ -771,7 +771,7 @@ class ApiSettings(APIView):
             data['oauthProviders'].append(info)
         return Response(data=data, status=200)
         
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request):
         """
         Поменять данные пользователя
@@ -904,7 +904,7 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
         status_code = 200
         return Response(data=data, status=status_code)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request, pk):
         """
         Поменять данные пользователя и поблагодарить
@@ -2181,7 +2181,7 @@ registrant_delete = RegistrantDelete.as_view()
 
 class RegistrantApprove(SupervisorRequiredMixin, View):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def get(self, request, *args, **kwargs):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
         if registrant.status == RegisterProfile.STATUS_APPROVED:
@@ -3003,7 +3003,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
     """
     parser_classes = (MultiPartParser,)
     
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         try:
             recaptcha_data = request.DATA.get('captchaData')
@@ -3888,7 +3888,7 @@ videos = VideoListView.as_view()
 
 class ApiVideoDetailView(APIView):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def get(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
 
@@ -3922,7 +3922,7 @@ class ApiVideoDetailView(APIView):
 
         return Response(data=YoutubeVideoSerializer(youtubevideo).data, status=200)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self, request, yid):
         if not is_supervisor(request.user):
             raise PermissionDenied
@@ -4007,7 +4007,7 @@ thanks = ThanksListView.as_view()
 class ApiThankDetailView(APIView):
     permission_classes = (PermitIfSupervisor,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self, request, pk):
         thank = get_object_or_404(Thank, pk=pk)
         thank.delete()

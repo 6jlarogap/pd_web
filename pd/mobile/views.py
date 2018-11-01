@@ -2,13 +2,11 @@
 
 from django.conf import settings
 
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render, render_to_response, get_object_or_404
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response
-from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.http import HttpResponse
 
@@ -93,7 +91,7 @@ class ApiCemeteryUpload(APIView):
     def get(self, request) :
         return render_to_response('mobile_upload_cemetery.html', {'message': _(u"Загрузите название кладбища:")})
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request) :
         org = request.user.profile.org
         listInsertedCemetery = []
@@ -374,7 +372,7 @@ class ApiAreaUpload(APIView):
     def get(self, request) : 
         return render_to_response('mobile_upload_area.html', {'message': _(u"Задайте название участка:")})
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request) : 
         listInsertedArea = []
         listGPS = []
@@ -562,7 +560,7 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             data += DeleteLog.get_deleted(argSyncDate, Place, [ area.cemetery.pk ])
         return Response(data=data, status=200)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, area_id):
         area = get_object_or_404(Area, pk=area_id)
         cemetery = area.cemetery
@@ -630,7 +628,7 @@ class ApiMobilePlace(PlaceUploadMixin, APIView):
             cemetery__ugh=request.user.profile.org)
         return Response(status=200, data=PlaceSerializer(place).data)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request, place_id):
         place = get_object_or_404(
             Place,
@@ -731,7 +729,7 @@ class ApiGraveUpload(APIView):
     def get(self, request) :
         return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request) :
         grave_number = request.POST['grave_number']
         graveId = int(request.POST['graveId'])
@@ -848,7 +846,7 @@ burial_list = ApiBurialList.as_view()
 class ApiMobileBurialsView(CheckLifeDatesMixin, APIView):
     permission_classes = (PermitIfUgh,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         grave_pk = request.DATA.get('graveId')
         grave = get_object_or_404(Grave, pk=grave_pk)

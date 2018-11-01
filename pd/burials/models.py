@@ -729,7 +729,7 @@ class Grave(GeoPointModel, BaseModelManualDtCreated):
             place=self.place, grave_number=self.grave_number
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self, using=None, request=None):
         result = super(Grave, self).delete(using=using)
         arr = [_(u'Могила №%d удалена') % self.grave_number,]

@@ -246,7 +246,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u"Кладбище по умолчанию не из доступных для пользователя"))
         return self.cleaned_data
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def save(self):
         if self.instance.pk:
             self.collect_log_data()

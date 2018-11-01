@@ -34,7 +34,7 @@ class Command(BaseCommand):
 
     # Главная функция
     #
-    @transaction.commit_on_success
+    @transaction.atomic
     def handle(self, *args, **options):
         if len(args) < 2:
             print "ERROR! PLease give me a parm. Type --help to get help"

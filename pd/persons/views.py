@@ -695,7 +695,7 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
             status=200,
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, pk):
         return self.make_object(pk)
 
@@ -715,7 +715,7 @@ class ApiCustompersonMemoryGalleryDetail(ApiCustompersonMixin, ApiMemoryGalleryM
             status=200,
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request, pk, memory_pk):
         return self.make_object(pk, memory_pk)
 
@@ -969,7 +969,7 @@ class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
             context=dict(request=request),
         )
         if serializer.is_valid():
-            with transaction.commit_on_success():
+            with transaction.atomic():
                 deadman = serializer.save()
                 grave, grave_created = Grave.objects.get_or_create(place=place, grave_number=1)
                 burial = Burial.objects.create(

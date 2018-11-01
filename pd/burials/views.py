@@ -20,7 +20,7 @@ from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 from django.utils.formats import localize
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic.edit import UpdateView
 from django.views.generic.list import ListView
 
 from django.contrib.contenttypes.models import ContentType
@@ -49,7 +49,6 @@ from restthumbnails.files import ThumbnailContentFile
 from rest_framework import generics, viewsets
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
@@ -1200,7 +1199,7 @@ class BurialEditComments(UGHRequiredMixin, View):
             'formset': self.get_formset(),
         }
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         self.request = request
 
@@ -1443,7 +1442,7 @@ class ApiOmsPhotoPlaces(APIView):
         place = None
         cemeteries = Cemetery.editable_ugh_cemeteries(user=request.user)
         # Показать место, с которым работал ранее
-        with transaction.commit_on_success():
+        with transaction.atomic():
             try:
                 place = Place.objects.select_for_update().filter(
                             cemetery__ugh=request.user.profile.org,
@@ -1592,7 +1591,7 @@ class ApiOmsPhotoPlacesChange(ApiOmsPhotoPlacesDetail):
                 place.is_inprocess = False
                 log_messages.append(_(u'Фотографии места могут быть обработаны повторно'))
 
-        with transaction.commit_on_success():
+        with transaction.atomic():
             if do_save:
                 place.save()
             for o in log_operations:
@@ -2359,7 +2358,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
             put_controls=put_controls,
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
 
         b_dest = b_dest_pk = None

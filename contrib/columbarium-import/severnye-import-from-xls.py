@@ -39,7 +39,7 @@ from burials.models import Burial, Place, Cemetery, Area, AreaPurpose, Grave, Bu
 from persons.models import DeadPerson
 from users.models import Profile
 
-@transaction.commit_on_success
+@transaction.atomic
 def main():
     profile = Profile.objects.get(pk=PROFILE_ID)
     ugh = profile.org

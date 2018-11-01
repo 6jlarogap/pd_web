@@ -6,7 +6,7 @@ from django.db import models, transaction
 
 class Migration(DataMigration):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."

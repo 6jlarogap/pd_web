@@ -19,6 +19,7 @@ class ValidDataMixin:
 class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = DeadPerson
+        fields = '__all__'
 
     def __init__(self, request, *args, **kwargs):
         death_date = None
@@ -169,6 +170,7 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
 class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = AlivePerson
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super(AlivePersonForm, self).__init__(*args, **kwargs)

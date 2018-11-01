@@ -291,6 +291,7 @@ OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm, f
 class CatafalqueForm(forms.ModelForm):
     class Meta:
         model = CatafalqueData
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super(CatafalqueForm, self).__init__(*args, **kwargs)
@@ -299,12 +300,14 @@ class CatafalqueForm(forms.ModelForm):
 class AddInfoForm(forms.ModelForm):
     class Meta:
         model = AddInfoData
+        fields = '__all__'
 
 class CoffinForm(forms.ModelForm):
     size = forms.CharField(label=_(u'Размер'))
 
     class Meta:
         model = CoffinData
+        fields = '__all__'
 
 class OrderSearchForm(forms.Form):
     """
