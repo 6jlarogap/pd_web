@@ -1,4 +1,5 @@
 AxmlParserPY
+cssmin
 Django==1.6
 django-assets==0.11
 django-autoslug
@@ -21,5 +22,6 @@ python-geohash
 python-magic
 pytils
 raven
+rjsmin
 South
 webassets==0.11
