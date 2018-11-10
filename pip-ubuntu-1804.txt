@@ -13,7 +13,6 @@ django-registration==0.8
 django-wkhtmltopdf==1.2.2
 djangorestframework==2.3.6
 djangorestframework-jsonp==1.0.2
-git+https://github.com/ottoyiu/django-cors-headers.git
 docutils==0.13.1
 Fabric==1.5.2
 LatLon==1.0.2
