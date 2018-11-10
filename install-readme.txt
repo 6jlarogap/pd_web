@@ -51,7 +51,7 @@ install-readme.txt, utf8 code page
             ubuntu 18.4:
                 sudo apt install nodejs
                 sudo apt install npm
-                sudo npm install bower
+                sudo npm install -g bower
 
         - программы:
             * wkhtmltopdf (конвертация в pdf, от Google):
@@ -101,6 +101,8 @@ install-readme.txt, utf8 code page
     * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
     * cd ~/projects/pd_web
     * bower install
+        Там выбрать пункт 1:
+            1) angular#1.0.8 which resolved to 1.0.8 and is required by angular-cookies#1.0.8, angular-resource#1.0.8, PD
     * source ~/venv/pdweb/bin/activate
     * pip install --no-cache-dir -r pip.txt
         ! --no-cache-dir :  избегает проблему с локалью, когда стандартные
