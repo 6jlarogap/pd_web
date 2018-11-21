@@ -18,7 +18,7 @@ from pd.forms import ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin, 
 from nocaptcha_recaptcha.fields import NoReCaptchaField
 
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code, EmailMessage
+from pd.utils import host_country_code, EmailMessage, reorder_form_fields
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
@@ -373,7 +373,7 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
                                                    initial = self.instance.get_type_display(),
                                                    required = False)
             self.fields['type_'].label = u'Тип'
-            self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
+            self.fields = reorder_form_fields(self.fields, old_pos=-1, new_pos=0)
         else:
             choices = []
             for profile_type in Org.PROFILE_TYPES:

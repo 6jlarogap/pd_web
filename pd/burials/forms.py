@@ -30,7 +30,7 @@ from users.forms import BaseOrgForm
 from users.models import Org, Profile, Dover
 from logs.models import write_log
 from pd.models import SafeDeleteMixin
-from pd.utils import rus_to_lat
+from pd.utils import rus_to_lat, reorder_form_fields
 from pd.forms import AppOrgFormMixin
 
 OPF_CHOICES = list(Org.OPF_CHOICES)[1:]
@@ -169,10 +169,10 @@ class ResponsibleForm(AlivePersonForm):
         elif self.instance.login_phone:
             self.initial['login_phone_'] = self.instance.login_phone
         else:
-            self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-4))
+            self.fields = reorder_form_fields(self.fields, old_pos=-4, new_pos=0)
         if self.instance.pk:
             self.initial['is_inbook_'] = self.instance.is_inbook
-        self.fields.keyOrder.insert(-3, self.fields.keyOrder.pop(-1))
+        self.fields = reorder_form_fields(self.fields, old_pos=-1, new_pos=-3)
 
         self.initial.setdefault('take_from', self.WHERE_NEW)
 
@@ -357,7 +357,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
         self.fields['agent'].queryset = Profile.objects.filter(is_agent=True).select_related('user')
         self.fields['dover'].queryset = self.fields['dover'].queryset.select_related('agent', 'agent__user')
 
-        self.fields.keyOrder.insert(self.fields.keyOrder.index('applicant_organization'), self.fields.keyOrder.pop(-1))
+        self.fields = reorder_form_fields(self.fields, old_pos=-1, new_pos='applicant_organization')
 
         if self.instance.can_personal_data(self.request):
             if self.instance.pk:

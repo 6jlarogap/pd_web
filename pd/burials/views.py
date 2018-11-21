@@ -1157,9 +1157,9 @@ class GetGravesNumberView(View):
             except Place.MultipleObjectsReturned:
                 return HttpResponse('')
             else:
-                return HttpResponse('{"place_pk": %s, "graves_count": %s}' % (p.pk, p.get_graves_count()), mimetype='application/json')
+                return HttpResponse('{"place_pk": %s, "graves_count": %s}' % (p.pk, p.get_graves_count()), content_type='application/json')
 
-        return HttpResponse('{"graves_count": %s}' % desired_graves_count, mimetype='application/json')
+        return HttpResponse('{"graves_count": %s}' % desired_graves_count, content_type='application/json')
 
 get_graves_number = GetGravesNumberView.as_view()
 
