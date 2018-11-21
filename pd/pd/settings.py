@@ -114,7 +114,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
 
-    'south',
     'pytils',
     'debug_toolbar',
     'raven.contrib.django',
@@ -175,8 +174,6 @@ LOGGING = {
         },
     }
 }
-
-SOUTH_TESTS_MIGRATE = False
 
 INTERNAL_IPS = ['127.0.0.1',]
 
@@ -470,6 +467,11 @@ MOBILEKEEPER_MEDIA_PATH = "support/download/mobilekeeper.apk"
 # Покажем статистику операций как козырь, когда придет время
 SHOW_OPER_STATS = True
 
+# Это убирает предупреждение, что появилась новая
+# система тестирования
+#
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+
 try:
     from local_settings import *
 except ImportError:
@@ -496,7 +498,7 @@ except NameError:
     SUPPORT_EMAILS = (DEFAULT_FROM_EMAIL, )
 
 
-
-import sys
-if len(sys.argv) > 1 and sys.argv[1] == 'test':
-    from test_settings import *
+# Test system is to be revised.
+#import sys
+#if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    #from test_settings import *

@@ -13,7 +13,6 @@ from django.db.models.loading import get_model
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
-from south.modelsinspector import add_introspection_rules
 from logs.models import Log
 from pd.views import ServiceException
 
@@ -629,8 +628,6 @@ class  GetLogsMixin(object):
     def get_logs(self):
         ct = ContentType.objects.get_for_model(self)
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-dt')
-
-add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])
 
 class CheckLifeDatesMixin(object):
 

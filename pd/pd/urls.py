@@ -6,7 +6,7 @@ from django.conf import settings
 
 
 from django.contrib import admin
-admin.autodiscover()
+# - django 1.7 no need - admin.autodiscover()
 
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter(trailing_slash=False)

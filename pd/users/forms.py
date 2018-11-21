@@ -70,7 +70,7 @@ class BaseLoruFormset(BaseInlineFormSet):
 
 LoruFormset = inlineformset_factory(Org, ProfileLORU, form=LoruItemForm, fk_name='ugh', formset=BaseLoruFormset)
 
-BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
+BankAccountFormset = inlineformset_factory(Org, BankAccount, fields='__all__', formset=BaseLoruFormset, extra=2)
 
 class UserPhotoForm(CustomUploadModelForm):
     class Meta:
@@ -421,8 +421,8 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u"Есть уже такая организация"))
         return name
 
-PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
-ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, can_delete=True, extra=2)
+PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, fields='__all__', formset=BaseInlineFormSet, can_delete=True, extra=2)
+ReasonFormset = inlineformset_factory(Org, Reason, fields='__all__', formset=BaseInlineFormSet, can_delete=True, extra=2)
 
 class OrgCertificateForm(CustomUploadModelForm):
     class Meta:
