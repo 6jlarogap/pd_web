@@ -108,6 +108,17 @@ install-readme.txt, utf8 code page
         ! --no-cache-dir :  избегает проблему с локалью, когда стандартные
                             сообщения django (например, "пароль")
                             вдруг печатаются по английски (password)
+        !!! У нас заложено в базе данных, что не может быть одного email
+            у двух и более пользователей, а если email не задан, то user.email == None.
+            Чтоб не плодилась лишняя миграция в
+                ~/projects/pd_web/lib64/python2.7/site-packages/django/contrib/auth/migrations/
+            Django 1.7:
+                ~/projects/.../django/contrib/auth/migrations/0001_initial.py:
+                вместо:
+                    ('email', models.EmailField(max_length=75, verbose_name='email address', blank=True)),
+                поставить:
+                    ('email', models.EmailField(max_length=75, unique=True, null=True, verbose_name='email address', blank=True)),
+                                                               ----------------------
  
     * cd ~/projects/pd_web/pd/pd
     * cp local_settings.py.example local_settings.py

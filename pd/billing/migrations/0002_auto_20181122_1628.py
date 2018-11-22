@@ -7,7 +7,7 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0002_auto_20181121_1830'),
+        ('orders', '0002_auto_20181122_1628'),
         ('users', '0001_initial'),
         ('billing', '0001_initial'),
         ('contenttypes', '0001_initial'),
@@ -43,13 +43,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='payment',
             name='wallet_from',
-            field=models.ForeignKey(related_name=b'payment_from', verbose_name='\u041a\u043e\u0448\u0435\u043b\u0435\u043a \u043e\u0442\u043a\u0443\u0434\u0430', to='billing.Wallet', null=True),
+            field=models.ForeignKey(related_name='payment_from', verbose_name='\u041a\u043e\u0448\u0435\u043b\u0435\u043a \u043e\u0442\u043a\u0443\u0434\u0430', to='billing.Wallet', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='payment',
             name='wallet_to',
-            field=models.ForeignKey(related_name=b'payment_to', verbose_name='\u041a\u043e\u0448\u0435\u043b\u0435\u043a \u043a\u0443\u0434\u0430', to='billing.Wallet', null=True),
+            field=models.ForeignKey(related_name='payment_to', verbose_name='\u041a\u043e\u0448\u0435\u043b\u0435\u043a \u043a\u0443\u0434\u0430', to='billing.Wallet', null=True),
             preserve_default=True,
         ),
         migrations.AddField(

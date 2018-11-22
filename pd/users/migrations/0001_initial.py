@@ -278,7 +278,7 @@ class Migration(migrations.Migration):
                 ('lat', models.DecimalField(null=True, max_digits=30, decimal_places=27, blank=True)),
                 ('lng', models.DecimalField(null=True, max_digits=30, decimal_places=27, blank=True)),
                 ('area', models.ForeignKey(verbose_name='\u0423\u0447\u0430\u0441\u0442\u043e\u043a', blank=True, to='burials.Area', null=True)),
-                ('cemeteries', models.ManyToManyField(related_name=b'rw_profiles', verbose_name='\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u043a\u043b\u0430\u0434\u0431\u0438\u0449\u0430', to='burials.Cemetery', blank=True)),
+                ('cemeteries', models.ManyToManyField(related_name='rw_profiles', verbose_name='\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u043a\u043b\u0430\u0434\u0431\u0438\u0449\u0430', to='burials.Cemetery', blank=True)),
                 ('cemetery', models.ForeignKey(verbose_name='\u041a\u043b\u0430\u0434\u0431\u0438\u0449\u0435', blank=True, to='burials.Cemetery', null=True)),
                 ('org', models.ForeignKey(to='users.Org', null=True)),
             ],
@@ -292,8 +292,8 @@ class Migration(migrations.Migration):
             name='ProfileLORU',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('loru', models.ForeignKey(related_name=b'ugh_list', verbose_name='\u041b\u041e\u0420\u0423', to='users.Org')),
-                ('ugh', models.ForeignKey(related_name=b'loru_list', verbose_name='\u041e\u041c\u0421', to='users.Org')),
+                ('loru', models.ForeignKey(related_name='ugh_list', verbose_name='\u041b\u041e\u0420\u0423', to='users.Org')),
+                ('ugh', models.ForeignKey(related_name='loru_list', verbose_name='\u041e\u041c\u0421', to='users.Org')),
             ],
             options={
                 'verbose_name': '\u041b\u041e\u0420\u0423 \u0443 \u041e\u041c\u0421',
@@ -438,7 +438,7 @@ class Migration(migrations.Migration):
                 ('original_name', models.CharField(max_length=255, editable=False)),
                 ('date_of_creation', models.DateTimeField(auto_now_add=True)),
                 ('creator', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u0421\u043e\u0437\u0434\u0430\u0442\u0435\u043b\u044c')),
-                ('user', models.OneToOneField(related_name=b'user_photo_list', to=settings.AUTH_USER_MODEL)),
+                ('user', models.OneToOneField(related_name='user_photo_list', to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'abstract': False,
@@ -567,13 +567,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='favoritesupplier',
             name='loru',
-            field=models.ForeignKey(related_name=b'favorite_loru', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u041b\u041e\u0420\u0423', to='users.Org'),
+            field=models.ForeignKey(related_name='favorite_loru', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u041b\u041e\u0420\u0423', to='users.Org'),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='favoritesupplier',
             name='supplier',
-            field=models.ForeignKey(related_name=b'favorite_supplier_list', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u041b\u041e\u0420\u0423', to='users.Org'),
+            field=models.ForeignKey(related_name='favorite_supplier_list', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u041b\u041e\u0420\u0423', to='users.Org'),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(

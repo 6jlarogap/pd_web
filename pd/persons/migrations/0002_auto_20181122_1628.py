@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
         ('geo', '0001_initial'),
         ('users', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('burials', '0002_auto_20181121_1830'),
+        ('burials', '0002_auto_20181122_1628'),
         ('persons', '0001_initial'),
     ]
 

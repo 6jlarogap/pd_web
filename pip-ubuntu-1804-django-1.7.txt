@@ -17,6 +17,11 @@ odfpy
 piexif
 Pillow
 psycopg2-binary
+
+# Полезно для сервера разработчика
+#
+pyinotify
+
 python-dateutil
 python-geohash
 python-magic

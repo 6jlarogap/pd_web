@@ -83,7 +83,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='place',
             name='caretaker',
-            field=models.ForeignKey(related_name=b'caretaker_places', on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0441\u043c\u043e\u0442\u0440\u0438\u0442\u0435\u043b\u044c'),
+            field=models.ForeignKey(related_name='caretaker_places', on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0441\u043c\u043e\u0442\u0440\u0438\u0442\u0435\u043b\u044c'),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -199,7 +199,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='cemeterycoordinates',
             name='cemetery',
-            field=models.ForeignKey(related_name=b'coordinates', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u041a\u043b\u0430\u0434\u0431\u0438\u0449\u0435', to='burials.Cemetery'),
+            field=models.ForeignKey(related_name='coordinates', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u041a\u043b\u0430\u0434\u0431\u0438\u0449\u0435', to='burials.Cemetery'),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
@@ -215,7 +215,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='cemetery',
             name='caretaker',
-            field=models.ForeignKey(related_name=b'caretaker_cemeteries', on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0441\u043c\u043e\u0442\u0440\u0438\u0442\u0435\u043b\u044c'),
+            field=models.ForeignKey(related_name='caretaker_cemeteries', on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0441\u043c\u043e\u0442\u0440\u0438\u0442\u0435\u043b\u044c'),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -261,25 +261,25 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='burialcomment',
             name='modifier',
-            field=models.ForeignKey(related_name=b'modified_by', verbose_name='\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u0438\u0437\u043c\u0435\u043d\u0438\u0432\u0448\u0438\u0439', to=settings.AUTH_USER_MODEL, null=True),
+            field=models.ForeignKey(related_name='modified_by', verbose_name='\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u0438\u0437\u043c\u0435\u043d\u0438\u0432\u0448\u0438\u0439', to=settings.AUTH_USER_MODEL, null=True),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='burial',
             name='agent',
-            field=models.ForeignKey(related_name=b'agent_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0410\u0433\u0435\u043d\u0442', blank=True, to='users.Profile', null=True),
+            field=models.ForeignKey(related_name='agent_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0410\u0433\u0435\u043d\u0442', blank=True, to='users.Profile', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='burial',
             name='applicant',
-            field=models.ForeignKey(related_name=b'applied_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0417\u0430\u044f\u0432\u0438\u0442\u0435\u043b\u044c', blank=True, to='persons.AlivePerson', null=True),
+            field=models.ForeignKey(related_name='applied_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0417\u0430\u044f\u0432\u0438\u0442\u0435\u043b\u044c', blank=True, to='persons.AlivePerson', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='burial',
             name='applicant_organization',
-            field=models.ForeignKey(related_name=b'applicant_organization_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0417\u0430\u044f\u0432\u0438\u0442\u0435\u043b\u044c-\u042e\u041b', blank=True, to='users.Org', null=True),
+            field=models.ForeignKey(related_name='applicant_organization_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0417\u0430\u044f\u0432\u0438\u0442\u0435\u043b\u044c-\u042e\u041b', blank=True, to='users.Org', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -297,7 +297,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='burial',
             name='changed_by',
-            field=models.ForeignKey(related_name=b'changed_by_burials', on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True),
+            field=models.ForeignKey(related_name='changed_by_burials', on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -309,7 +309,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='burial',
             name='dover',
-            field=models.ForeignKey(related_name=b'dover_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0414\u043e\u0432\u0435\u0440\u0435\u043d\u043d\u043e\u0441\u0442\u044c', blank=True, to='users.Dover', null=True),
+            field=models.ForeignKey(related_name='dover_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0414\u043e\u0432\u0435\u0440\u0435\u043d\u043d\u043e\u0441\u0442\u044c', blank=True, to='users.Dover', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -327,13 +327,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='burial',
             name='loru_agent',
-            field=models.ForeignKey(related_name=b'loru_agent_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0410\u0433\u0435\u043d\u0442', blank=True, to='users.Profile', null=True),
+            field=models.ForeignKey(related_name='loru_agent_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0410\u0433\u0435\u043d\u0442', blank=True, to='users.Profile', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='burial',
             name='loru_dover',
-            field=models.ForeignKey(related_name=b'loru_dover_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0414\u043e\u0432\u0435\u0440\u0435\u043d\u043d\u043e\u0441\u0442\u044c', blank=True, to='users.Dover', null=True),
+            field=models.ForeignKey(related_name='loru_dover_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0414\u043e\u0432\u0435\u0440\u0435\u043d\u043d\u043e\u0441\u0442\u044c', blank=True, to='users.Dover', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -345,13 +345,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='burial',
             name='responsible',
-            field=models.ForeignKey(related_name=b'responsible_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439', blank=True, to='persons.AlivePerson', null=True),
+            field=models.ForeignKey(related_name='responsible_burials', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439', blank=True, to='persons.AlivePerson', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='burial',
             name='ugh',
-            field=models.ForeignKey(related_name=b'ugh_created', on_delete=django.db.models.deletion.PROTECT, editable=False, to='users.Org', null=True, verbose_name='\u0423\u0413\u0425'),
+            field=models.ForeignKey(related_name='ugh_created', on_delete=django.db.models.deletion.PROTECT, editable=False, to='users.Org', null=True, verbose_name='\u0423\u0413\u0425'),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -369,7 +369,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='areacoordinates',
             name='area',
-            field=models.ForeignKey(related_name=b'coordinates', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0423\u0447\u0430\u0441\u0442\u043e\u043a', to='burials.Area'),
+            field=models.ForeignKey(related_name='coordinates', on_delete=django.db.models.deletion.PROTECT, verbose_name='\u0423\u0447\u0430\u0441\u0442\u043e\u043a', to='burials.Area'),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
@@ -379,7 +379,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='area',
             name='caretaker',
-            field=models.ForeignKey(related_name=b'caretaker_areas', on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0441\u043c\u043e\u0442\u0440\u0438\u0442\u0435\u043b\u044c'),
+            field=models.ForeignKey(related_name='caretaker_areas', on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0441\u043c\u043e\u0442\u0440\u0438\u0442\u0435\u043b\u044c'),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -397,16 +397,5 @@ class Migration(migrations.Migration):
         migrations.AlterUniqueTogether(
             name='area',
             unique_together=set([('cemetery', 'name')]),
-        ),
-        migrations.CreateModel(
-            name='Burial1',
-            fields=[
-            ],
-            options={
-                'verbose_name': '\u0417\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u0435',
-                'managed': False,
-                'verbose_name_plural': '\u0417\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u0435',
-            },
-            bases=(models.Model,),
         ),
     ]

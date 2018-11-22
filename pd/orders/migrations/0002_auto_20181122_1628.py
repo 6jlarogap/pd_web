@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         ('orders', '0001_initial'),
         ('persons', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('burials', '0002_auto_20181121_1830'),
+        ('burials', '0002_auto_20181122_1628'),
     ]
 
     operations = [
@@ -147,13 +147,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='order',
             name='applicant_organization',
-            field=models.ForeignKey(related_name=b'org_orders', verbose_name='\u0417\u0430\u043a\u0430\u0437\u0447\u0438\u043a-\u042e\u041b', blank=True, to='users.Org', null=True),
+            field=models.ForeignKey(related_name='org_orders', verbose_name='\u0417\u0430\u043a\u0430\u0437\u0447\u0438\u043a-\u042e\u041b', blank=True, to='users.Org', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='order',
             name='burial',
-            field=models.ForeignKey(related_name=b'burial_orders', editable=False, to='burials.Burial', null=True),
+            field=models.ForeignKey(related_name='burial_orders', editable=False, to='burials.Burial', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
