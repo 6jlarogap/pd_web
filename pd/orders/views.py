@@ -523,7 +523,7 @@ class AjaxProductPrice(LORURequiredMixin, View):
             price = product.price
         else:
             price = 0
-        return HttpResponse(json.dumps({'price': float(price)}), mimetype='application/json')
+        return HttpResponse(json.dumps({'price': float(price)}), content_type='application/json')
 
 ajax_product_price = AjaxProductPrice.as_view()
 

@@ -91,7 +91,7 @@ class AutocompleteFIO(View):
                 q &= Q(burial__cemetery__name=cemetery)
 
         persons = DeadPerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
-        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), content_type='application/json')
 
 autocomplete_fio = AutocompleteFIO.as_view()
 
@@ -128,7 +128,7 @@ class AutocompleteFIOorder(View):
             persons.sort()
             perrsons = persons[:self.NUM_RESULTS]
 
-        return HttpResponse(json.dumps([{'value': c} for c in persons]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': c} for c in persons]), content_type='application/json')
 
 autocomplete_fio_order = AutocompleteFIOorder.as_view()
 
@@ -177,7 +177,7 @@ class AutocompleteName(AutocompleteNamesMixin, View):
     def get(self, request, what, *args, **kwargs):
         query = request.GET.get('query')
         names = [ {'value': name} for name in self.get_names(what, query, request.user, limit=20) ]
-        return HttpResponse(json.dumps(names), mimetype='text/javascript')
+        return HttpResponse(json.dumps(names), content_type='application/json')
 
 autocomplete_name = AutocompleteName.as_view()
 
@@ -211,7 +211,7 @@ class AutocompleteAlive(View):
             q &= Q(last_name__istartswith=fio[0])
 
         persons = AlivePerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
-        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), content_type='application/json')
 
 autocomplete_alive = AutocompleteAlive.as_view()
 
@@ -219,7 +219,7 @@ class AutocompleteDocSources(View):
     def get(self, request, *args, **kwargs):
         query = request.GET['query']
         dcs = DocumentSource.objects.filter(name__icontains=query)
-        return HttpResponse(json.dumps([{'value': unicode(c)} for c in dcs[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': unicode(c)} for c in dcs[:20]]), content_type='application/json')
 
 autocomplete_docsources = AutocompleteDocSources.as_view()
 

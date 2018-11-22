@@ -1832,7 +1832,7 @@ class ExhumationForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.
         self.burial = burial
         self.init_app_org_label()
 
-        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
+        reorder_form_fields(self.fields, old_pos=-1, new_pos=0)
 
         if self.instance.applicant:
             self.initial['opf'] = Org.OPF_PERSON

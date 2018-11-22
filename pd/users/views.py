@@ -1576,7 +1576,7 @@ class AutocompleteOrg(View):
                                                                                                     else "")} \
                                             for c in orgs[:20]
             ]),
-            mimetype='text/javascript'
+            content_type='application/json'
         )
 
 autocomplete_org = AutocompleteOrg.as_view()
@@ -1592,7 +1592,7 @@ class AutocompleteLoruInBurials(View):
 
         return HttpResponse(
             json.dumps([{'value': loru['loru__name']} for loru in lorus[:20]]),
-            mimetype='text/javascript',
+            content_type='application/json',
         )
 
 autocomplete_loru_in_burials = AutocompleteLoruInBurials.as_view()

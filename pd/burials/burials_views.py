@@ -1320,14 +1320,14 @@ class GetCemeteryTimes(View):
         try:
             c = Cemetery.objects.get(pk=request.GET.get('cem'))
         except (ValueError, Cemetery.DoesNotExist, ):
-            return HttpResponse(json.dumps({}), mimetype='application/json')
+            return HttpResponse(json.dumps({}), content_type='application/json')
         try:
             date = datetime.datetime.strptime(request.GET.get('date'), '%d.%m.%Y').date
         except ValueError:
             # Есть таки возможность пользователю ввести плановую дату типа 30 февраля:
-            return HttpResponse(json.dumps({c.pk: []}), mimetype='application/json')
+            return HttpResponse(json.dumps({c.pk: []}), content_type='application/json')
         data = c.get_time_choices(date=date, request=request)
-        return HttpResponse(json.dumps({c.pk: data}), mimetype='application/json')
+        return HttpResponse(json.dumps({c.pk: data}), content_type='application/json')
 
 cemetery_times = GetCemeteryTimes.as_view()
 
@@ -1348,7 +1348,7 @@ class GetCemeteryPersonalData(View):
                 result = request.user.profile.org.can_personal_data()
             except (AttributeError, Profile.DoesNotExist,):
                 pass
-        return HttpResponse(json.dumps({'result': result}), mimetype='application/json')
+        return HttpResponse(json.dumps({'result': result}), content_type='application/json')
 
 cemetery_personal_data = GetCemeteryPersonalData.as_view()
 

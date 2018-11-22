@@ -23,7 +23,7 @@ from rest_framework.permissions import IsAuthenticated
 def autocomplete_countries(request):
     query = request.GET['query']
     countries = Country.objects.filter(name__icontains=query)
-    return HttpResponse(json.dumps([{'value': c.name} for c in countries[:20]]), mimetype='text/javascript')
+    return HttpResponse(json.dumps([{'value': c.name} for c in countries[:20]]), content_type='application/json')
 
 def autocomplete_regions(request):
     query = request.GET['query']
@@ -34,7 +34,7 @@ def autocomplete_regions(request):
     regions = Region.objects.filter(q)[:20]
     return HttpResponse(json.dumps([{
         'value': r.name + '/' + r.country.name, 'real_value': r.name, 'country': r.country.name
-    } for r in regions]), mimetype='text/javascript')
+    } for r in regions]), content_type='application/json')
 
 def autocomplete_cities(request):
     query = request.GET['query']
@@ -51,7 +51,7 @@ def autocomplete_cities(request):
         'real_value': c.name,
         'region': c.region.name,
         'country': c.region.country.name
-    } for c in cities]), mimetype='text/javascript')
+    } for c in cities]), content_type='application/json')
 
 def autocomplete_streets(request):
     query = request.GET['query']
@@ -72,7 +72,7 @@ def autocomplete_streets(request):
         'city': s.city.name,
         'region': s.city.region.name,
         'country': s.city.region.country.name
-    } for s in streets]), mimetype='text/javascript')
+    } for s in streets]), content_type='application/json')
 
 # REST API
 
