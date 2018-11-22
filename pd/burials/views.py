@@ -2242,9 +2242,9 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
                 ugh_pk=ugh_pk,
             )
 
-        cursor = connection.cursor()
-        cursor.execute(req_str)
-        doubles = dictfetchall(cursor)
+        with connection.cursor() as cursor:
+            cursor.execute(req_str)
+            doubles = dictfetchall(cursor)
         for d in doubles:
             d['search_str'] = "&".join([
                 "%s=%s" % (key, d[key],) for key in d if key not in ('cemetery_name', )

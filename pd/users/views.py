@@ -3664,9 +3664,9 @@ class ApiVideoVotesView(ApiVideoMixin, APIView):
                 offset_str='OFFSET %s' % offset if offset else '',
                 limit_str='LIMIT %s' % count if count else '',
         )
-        cursor = connection.cursor()
-        cursor.execute(req_str)
-        data = dictfetchall(cursor)
+        with connection.cursor() as cursor:
+            cursor.execute(req_str)
+            data = dictfetchall(cursor)
         return Response(data=data)
 
     def post(self, request, yid):
