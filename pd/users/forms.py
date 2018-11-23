@@ -28,9 +28,6 @@ from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
 from persons.models import CustomPerson
 
-User._meta.get_field_by_name('email')[0]._unique = True
-User._meta.get_field_by_name('email')[0].null=True
-
 class LoruItemForm(forms.ModelForm):
 
     class Meta:

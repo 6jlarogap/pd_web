@@ -91,9 +91,6 @@ from users.serializers import StoreSerializer, Store2Serializer, \
 
 from sms_service.utils import send_sms
 
-User._meta.get_field_by_name('email')[0]._unique = True
-User._meta.get_field_by_name('email')[0].null=True
-
 class SupervisorRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
         if is_supervisor(request.user):

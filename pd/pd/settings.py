@@ -143,6 +143,8 @@ INSTALLED_APPS = [
     'django.conf',
 ]
 
+MIGRATION_MODULES = {'auth' : 'pd.auth_migrations'}
+
 from pd.logging import skip_ioerror_post
 LOGGING = {
     'version': 1,
@@ -174,6 +176,8 @@ LOGGING = {
         },
     }
 }
+
+
 
 INTERNAL_IPS = ['127.0.0.1',]
 
