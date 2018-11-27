@@ -6,7 +6,7 @@
     <h1>{% trans "Новый заказ" %}</h1>
     <form action="" method="POST" class="order_form">
         {% csrf_token %}
-        <input type="hidden" name="burial" value="{{ requestGET.burial }}" />
+        <input type="hidden" name="burial" value="{{ request.GET.burial }}" />
         <p>
             <input type="submit" class="btn" value="{% trans "Создать" %}"/>
         </p>
