@@ -40,16 +40,17 @@ class BurialGetOrderMixin:
     """
     def get_order(self):
         order = None
-        if self.request.REQUEST.get('order'):
+        order_pk = self.request.GET.get('order') or self.request.POST.get('order')
+        if order_pk:
             try:
-                order = Order.objects.get(pk=self.request.REQUEST.get('order'), loru=self.request.user.profile.org)
+                order = Order.objects.get(pk=order_pk, loru=self.request.user.profile.org)
             except Order.DoesNotExist:
                 pass
         return order
 
     def get_funeral_order(self):
         order = None
-        funeral_order_pk = self.request.REQUEST.get('funeral_order')
+        funeral_order_pk = self.request.GET.get('funeral_order') or self.request.POST.get('funeral_order')
         if funeral_order_pk and self.request.user.profile.is_ugh():
             try:
                 order = Order.objects.filter(
@@ -876,25 +877,26 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
 
     def get_form_kwargs(self, *args, **kwargs):
         data = super(CreateBurial, self).get_form_kwargs(*args, **kwargs)
-        if self.request.REQUEST.get('place_id') and not data.get('instance'):
+        place_id = self.request.GET.get('place_id')
+        if place_id and not data.get('instance'):
             try:
-                place = Place.objects.get(pk=self.request.REQUEST.get('place_id'))
+                place = Place.objects.get(pk=place_id)
                 grave_number_max = place.get_graves_count()
                 grave_number = 1
-                if self.request.REQUEST.get('grave_number') and \
+                if self.request.GET.get('grave_number') and \
                    not place.area.is_columbarium():
                     try:
-                        grave_number = int(self.request.REQUEST['grave_number'])
+                        grave_number = int(self.request.GET.get('grave_number'))
                     except ValueError:
                         pass
-                elif self.request.REQUEST.get('burial_add'):
+                elif self.request.GET.get('burial_add'):
                     grave_number = grave_number_max or 1
 
                 burial_type = Burial._meta.get_field('burial_type').default
                 burial_container = Burial._meta.get_field('burial_container').default
                 if place.is_columbarium():
                     burial_container = Burial.CONTAINER_URN
-                if self.request.REQUEST.get('burial_add'):
+                if self.request.GET.get('burial_add'):
                     if place.is_columbarium():
                         burial_type = Burial.BURIAL_OVER
                     else:
@@ -1107,24 +1109,24 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                 if b.is_edit():
                     return redirect(reverse('edit_burial', args=[b.pk]) + order_parm)
                 else:
-                    redirect(reverse('view_burial', args=[b.pk]) + order_parm)
+                    return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
             return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
 
     def get_action(self):
-        action = self.request.REQUEST.get('action')
-        if self.request.REQUEST.get('approve'):
+        action = self.request.GET.get('action')
+        if self.request.POST.get('approve'):
             action = 'approve'
-        if self.request.REQUEST.get('disapprove'):
+        if self.request.POST.get('disapprove'):
             action = 'disapprove'
-        if self.request.REQUEST.get('ready'):
+        if self.request.POST.get('ready'):
             action = 'ready'
-        if self.request.REQUEST.get('complete'):
+        if self.request.POST.get('complete'):
             action = 'complete'
-        if self.request.REQUEST.get('annulate'):
+        if self.request.POST.get('annulate'):
             action = 'annulate'
-        if self.request.REQUEST.get('deannulate'):
+        if self.request.POST.get('deannulate'):
             action = 'deannulate'
-        if self.request.REQUEST.get('unbind'):
+        if self.request.POST.get('unbind'):
             action = 'unbind'
         return action
 

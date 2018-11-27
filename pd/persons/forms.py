@@ -97,7 +97,7 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
                 pass
         if settings.DEATH_CERTIFICATE_REQUIRED and \
            (not instance or not instance.person) and \
-            not request.REQUEST.get('archive'):
+            not request.GET.get('archive'):
             kwargs['initial'].update({
                 'release_date': datetime.date.today(),
             })

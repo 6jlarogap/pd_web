@@ -415,7 +415,7 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
         self.request = request
         self.burial = None
         if self.is_loru(request):
-            burial_pk = self.request.REQUEST.get('burial')
+            burial_pk = self.request.GET.get('burial') or self.request.POST.get('burial')
             if burial_pk:
                 try:
                     self.burial = Burial.objects.get(pk=burial_pk)
