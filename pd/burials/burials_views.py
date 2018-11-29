@@ -422,7 +422,6 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
            or \
            request.user.profile.is_loru() and b.can_loru_deannulate()) \
            :
-            print 'here1'
             if b.place:
                 b.grave = b.place.get_or_create_graves(b.grave_number)
             b.annulated = False
