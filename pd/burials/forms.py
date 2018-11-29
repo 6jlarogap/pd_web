@@ -1381,7 +1381,7 @@ class BurialCommitForm(BurialForm):
             death_certificate_zags_msg = _(u"Не указан ЗАГС/мед. учреждение, выдавшее документ о смерти")
 
             if not (not settings.DEATH_CERTIFICATE_REQUIRED or \
-                    self.instance.archived_burial or \
+                    self.archived_burial or \
                     self.instance.is_transferred() or \
                     self.request.user.profile.is_loru() or \
                     burial_container == Burial.CONTAINER_BIO or \
