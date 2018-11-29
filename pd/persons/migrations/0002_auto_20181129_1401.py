@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
         ('geo', '0001_initial'),
         ('users', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('burials', '0002_auto_20181122_1628'),
+        ('burials', '0002_auto_20181129_1401'),
         ('persons', '0001_initial'),
     ]
 
@@ -38,13 +38,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='customplace',
             name='place',
-            field=models.ForeignKey(verbose_name='\u0423\u0447\u0430\u0441\u0442\u043e\u043a', to='burials.Place', null=True),
+            field=models.ForeignKey(verbose_name='\u041c\u0435\u0441\u0442\u043e', to='burials.Place', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='customplace',
             name='user',
-            field=models.ForeignKey(verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0437\u0430 \u0443\u0447\u0430\u0441\u0442\u043e\u043a \u0434\u043b\u044f \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u044f \u0438\u043b\u0438 \u0443\u043a\u0430\u0437\u0430\u0432\u0448\u0438\u0439 \u0443\u0447\u0430\u0441\u0442\u043e\u043a', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0437\u0430 \u043c\u0435\u0441\u0442\u043e \u0438\u043b\u0438 \u0443\u043a\u0430\u0437\u0430\u0432\u0448\u0438\u0439 \u043c\u0435\u0441\u0442\u043e', to=settings.AUTH_USER_MODEL),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='customperson',
             name='customplace',
-            field=models.ForeignKey(verbose_name='\u0423\u0447\u0430\u0441\u0442\u043e\u043a \u0434\u043b\u044f \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u044f', blank=True, to='persons.CustomPlace', null=True),
+            field=models.ForeignKey(verbose_name='\u041c\u0435\u0441\u0442\u043e \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u044f', blank=True, to='persons.CustomPlace', null=True),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -84,7 +84,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='aliveperson',
             name='user',
-            field=models.ForeignKey(editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0437\u0430 \u0443\u0447\u0430\u0441\u0442\u043e\u043a \u0434\u043b\u044f \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u044f \u0438\u043b\u0438 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c- \u0444\u0438\u0437. \u043b\u0438\u0446\u043e'),
+            field=models.ForeignKey(editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0437\u0430 \u043c\u0435\u0441\u0442\u043e \u0438\u043b\u0438 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c- \u0444\u0438\u0437. \u043b\u0438\u0446\u043e'),
             preserve_default=True,
         ),
     ]

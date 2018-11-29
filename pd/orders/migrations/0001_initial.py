@@ -192,7 +192,7 @@ class Migration(migrations.Migration):
                 ('sku', models.CharField(default=b'', max_length=255, verbose_name='\u0410\u0440\u0442\u0438\u043a\u0443\u043b', blank=True)),
                 ('is_public_catalog', models.BooleanField(default=False, verbose_name='\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0432 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u043c \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435')),
                 ('is_wholesale', models.BooleanField(default=False, verbose_name='\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0432 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435 \u043e\u043f\u0442\u043e\u0432\u0438\u043a\u0430\u043c')),
-                ('is_for_visit', models.BooleanField(default=False, verbose_name='\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0434\u043b\u044f \u043f\u043e\u0441\u0435\u0449\u0435\u043d\u0438\u044f \u0443\u0447\u0430\u0441\u0442\u043a\u0430 \u0434\u043b\u044f \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u044f')),
+                ('is_for_visit', models.BooleanField(default=False, verbose_name='\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0434\u043b\u044f \u043f\u043e\u0441\u0435\u0449\u0435\u043d\u0438\u044f \u043c\u0435\u0441\u0442\u0430 \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u044f')),
                 ('is_archived', models.BooleanField(default=False, verbose_name='\u0410\u0440\u0445\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u043d')),
             ],
             options={

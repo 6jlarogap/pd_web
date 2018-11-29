@@ -1,5 +1,5 @@
 # coding=utf-8
-import re
+import sys, re
 
 from django.conf import settings
 from django import forms
@@ -27,6 +27,10 @@ from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
                          get_mail_footer, is_cabinet_user, is_trade_user
 
 from persons.models import CustomPerson
+
+if not ('makemigrations' in sys.argv or 'migrate' in sys.argv):
+    User._meta.get_field_by_name('email')[0]._unique = True
+    User._meta.get_field_by_name('email')[0].null=True
 
 class LoruItemForm(forms.ModelForm):
 

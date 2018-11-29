@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         ('orders', '0001_initial'),
         ('persons', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('burials', '0002_auto_20181122_1628'),
+        ('burials', '0002_auto_20181129_1401'),
     ]
 
     operations = [
@@ -159,7 +159,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='order',
             name='customplace',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, editable=False, to='persons.CustomPlace', null=True, verbose_name='\u0423\u0447\u0430\u0441\u0442\u043e\u043a \u0434\u043b\u044f \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u044f'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, editable=False, to='persons.CustomPlace', null=True, verbose_name='\u041c\u0435\u0441\u0442\u043e \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u044f'),
             preserve_default=True,
         ),
         migrations.AddField(

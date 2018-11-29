@@ -5,7 +5,7 @@ import random
 import string
 import decimal
 import hashlib
-import os
+import os, sys
 import csv
 import copy
 import re
@@ -90,6 +90,10 @@ from users.serializers import StoreSerializer, Store2Serializer, \
                               SocialUserSerializer
 
 from sms_service.utils import send_sms
+
+if not ('makemigrations' in sys.argv or 'migrate' in sys.argv):
+    User._meta.get_field_by_name('email')[0]._unique = True
+    User._meta.get_field_by_name('email')[0].null=True
 
 class SupervisorRequiredMixin:
     def dispatch(self, request, *args, **kwargs):

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-import os, datetime
+import sys, os, datetime
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
@@ -142,8 +142,6 @@ INSTALLED_APPS = [
     #
     'django.conf',
 ]
-
-MIGRATION_MODULES = {'auth' : 'pd.auth_migrations'}
 
 from pd.logging import skip_ioerror_post
 LOGGING = {
@@ -480,6 +478,14 @@ try:
     from local_settings import *
 except ImportError:
     pass
+
+# Миграции, начиная с Django 1.7, вносят verbose_name
+# поля, а это меняется для разных локалей
+#
+if 'makemigrations' in sys.argv or 'migrate' in sys.argv:
+    USE_I18N = False
+    USE_L10N = False
+    SPECIFIC_RU_LOCALE = ''
 
 if SPECIFIC_RU_LOCALE:
     SPECIFIC_RU_LOCALE_APP = 'locale_%s' % SPECIFIC_RU_LOCALE

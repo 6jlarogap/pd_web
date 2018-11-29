@@ -82,7 +82,7 @@ class Migration(migrations.Migration):
             name='CustomPersonPermission',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('email', models.EmailField(max_length=75, null=True, verbose_name='\u0410\u0434\u0440\u0435\u0441 \u044d\u043b\u0435\u043a\u0442\u0440\u043e\u043d\u043d\u043e\u0439 \u043f\u043e\u0447\u0442\u044b')),
+                ('email', models.EmailField(max_length=75, null=True, verbose_name='Email')),
                 ('login_phone', models.DecimalField(null=True, verbose_name='\u041c\u043e\u0431\u0438\u043b\u044c\u043d\u044b\u0439 \u0442\u0435\u043b\u0435\u0444\u043e\u043d \u0434\u043b\u044f \u0432\u0445\u043e\u0434\u0430 \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442', max_digits=15, decimal_places=0)),
             ],
             options={
@@ -198,7 +198,7 @@ class Migration(migrations.Migration):
             name='MemoryGalleryPermission',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('email', models.EmailField(max_length=75, null=True, verbose_name='\u0410\u0434\u0440\u0435\u0441 \u044d\u043b\u0435\u043a\u0442\u0440\u043e\u043d\u043d\u043e\u0439 \u043f\u043e\u0447\u0442\u044b')),
+                ('email', models.EmailField(max_length=75, null=True, verbose_name='Email')),
                 ('login_phone', models.DecimalField(null=True, verbose_name='\u041c\u043e\u0431\u0438\u043b\u044c\u043d\u044b\u0439 \u0442\u0435\u043b\u0435\u0444\u043e\u043d \u0434\u043b\u044f \u0432\u0445\u043e\u0434\u0430 \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442', max_digits=15, decimal_places=0)),
                 ('memorygallery', models.ForeignKey(to='persons.MemoryGallery')),
             ],
