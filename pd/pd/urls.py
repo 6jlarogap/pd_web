@@ -4,12 +4,9 @@ from django.conf.urls import patterns, include, url
 from django.views.generic.base import RedirectView
 from django.conf import settings
 
-#from django.views.generic import TemplateView # Django v1.5
-from django.views.generic.simple import direct_to_template 
- 
 
 from django.contrib import admin
-admin.autodiscover()
+# - django 1.7 no need - admin.autodiscover()
 
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter(trailing_slash=False)

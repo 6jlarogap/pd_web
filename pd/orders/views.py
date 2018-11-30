@@ -415,7 +415,7 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
         self.request = request
         self.burial = None
         if self.is_loru(request):
-            burial_pk = self.request.REQUEST.get('burial')
+            burial_pk = self.request.GET.get('burial') or self.request.POST.get('burial')
             if burial_pk:
                 try:
                     self.burial = Burial.objects.get(pk=burial_pk)
@@ -438,7 +438,7 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
         })
         return data
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.loru = self.request.user.profile.org
@@ -523,7 +523,7 @@ class AjaxProductPrice(LORURequiredMixin, View):
             price = product.price
         else:
             price = 0
-        return HttpResponse(json.dumps({'price': float(price)}), mimetype='application/json')
+        return HttpResponse(json.dumps({'price': float(price)}), content_type='application/json')
 
 ajax_product_price = AjaxProductPrice.as_view()
 
@@ -564,7 +564,7 @@ class OrderEditProducts(LORURequiredMixin, View):
             'formset': self.get_formset(),
         }
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
             
         formset = self.get_formset()
@@ -705,7 +705,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
     def get_queryset(self):
         return Order.objects.filter(loru=self.request.user.profile.org).distinct()
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def render_to_response(self, context, **response_kwargs):
         order = self.get_object()
         customerprofile = password = responsible = deadman = None
@@ -1090,7 +1090,7 @@ class ApiLoruProductPlaces(APIView):
     
     permission_classes = (PermitIfTrade,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, format=None):
         # Соответствие входных данных с константами в поле Rate.action
         rate_action = {
@@ -1288,7 +1288,7 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
     """
     permission_classes = (PermitIfTrade,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         status_code=200
         data = dict(status='success')
@@ -1396,7 +1396,7 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
             )).data,
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request, pk):
         order, response = self.instance_permitted(request, pk)
         if response:
@@ -1633,7 +1633,7 @@ class ApiOrgServicesView(ApiOrgServicesMixin, APIView):
             status=200
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, org_id):
         """
         Активизировать сервис у организации org_id
@@ -1660,7 +1660,7 @@ api_org_services = ApiOrgServicesView.as_view()
 class ApiOrgServicesEditView(ApiOrgServicesMixin, APIView):
     permission_classes = (PermitIfTrade,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request, org_id, service_name):
         """
         Править сервис service_name у организации org_id
@@ -1996,7 +1996,7 @@ api_shops_places = ApiShopPlacesView.as_view()
 class ApiClientOrdersView(ApiServicePriceMixin, APIView):
     permission_classes = (PermitIfCabinet,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         """
         Принять предложение о создании заказа
@@ -2146,7 +2146,7 @@ class ApiOrderCommentsView(ApiOrderMixin, APIView):
         ]
         return Response(data=data, status=200)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, pk):
         order = self.get_order(pk=pk)
         comment = request.DATA.get('comment')
@@ -2208,7 +2208,7 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
                         for resultfile in ResultFile.objects.filter(order=order).order_by('date_of_creation')],
                     status=200)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, pk):
         try:
             order = self.get_order(pk=pk)
@@ -2300,7 +2300,7 @@ api_orders_detail = ApiServiceOrderDetailView.as_view()
 class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
     permission_classes = (PermitIfTradeOrCabinet,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request, pk):
         try:
             order = self.get_order(pk=pk)
@@ -2463,7 +2463,7 @@ class ApiWebPayNotifyView(APIView):
     parser_classes = (FormParser,)
     renderer_classes = (StaticHTMLRenderer, )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, pk):
         try:
             order = Order.objects.get(pk=pk)
@@ -2508,7 +2508,7 @@ api_orders_webpay_notify = ApiWebPayNotifyView.as_view()
 class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
     permission_classes = (PermitIfCabinet,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, pk):
         """
         Отметка заказа как оплаченного
@@ -2589,7 +2589,7 @@ class ApiLoruOrdersView(
 ):
     permission_classes = (PermitIfTrade,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         msg_invalid_dt_due = _(u"Неверная дата похорон")
         msg_invalid_dt = _(u"Неверная дата создания заказа")
@@ -2802,7 +2802,7 @@ class ApiLoruOrdersDetailView(
             status=200,
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request, pk):
         order = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
         msg_invalid_dt_due = _(u"Неверная дата похорон")

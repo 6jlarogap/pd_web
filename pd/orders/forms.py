@@ -17,6 +17,7 @@ from persons.models import AlivePerson, PersonID
 from users.models import Org, Profile
 from pd.models import SafeDeleteMixin
 from pd.forms import AppOrgFormMixin, CustomClearableFileInput
+from pd.utils import reorder_form_fields
 
 class ProductForm(StrippedStringsMixin, forms.ModelForm):
 
@@ -106,7 +107,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.Model
         self.request = request
         super(OrderForm, self).__init__(*args, **kwargs)
         self.init_app_org_label()
-        self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
+        reorder_form_fields(self.fields, old_pos=-1, new_pos=0)
 
         remove_opf_empty = request.user.profile.org.opf_order_customer_mandatory
         if self.instance.pk:
@@ -291,6 +292,7 @@ OrderItemFormset = inlineformset_factory(Order, OrderItem, form=OrderItemForm, f
 class CatafalqueForm(forms.ModelForm):
     class Meta:
         model = CatafalqueData
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super(CatafalqueForm, self).__init__(*args, **kwargs)
@@ -299,12 +301,14 @@ class CatafalqueForm(forms.ModelForm):
 class AddInfoForm(forms.ModelForm):
     class Meta:
         model = AddInfoData
+        fields = '__all__'
 
 class CoffinForm(forms.ModelForm):
     size = forms.CharField(label=_(u'Размер'))
 
     class Meta:
         model = CoffinData
+        fields = '__all__'
 
 class OrderSearchForm(forms.Form):
     """

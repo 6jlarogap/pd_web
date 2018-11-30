@@ -6,7 +6,7 @@
     {% block form_title %}<h1>{% trans "Импорт" %}</h1>{% endblock form_title %}
 
     <h1>{% trans "Организации" %}</h1>
-    <form action="{% url import_orgs %}" method="POST" class="burial-form" enctype="multipart/form-data">
+    <form action="{% url 'import_orgs' %}" method="POST" class="burial-form" enctype="multipart/form-data">
         {% csrf_token %}
 
         {{ orgs_form.as_p }}
@@ -17,7 +17,7 @@
     </form>
 
     <h1>{% trans "Захоронения" %}</h1>
-    <form action="{% url import_burials %}" method="POST" class="burial-form" enctype="multipart/form-data">
+    <form action="{% url 'import_burials' %}" method="POST" class="burial-form" enctype="multipart/form-data">
         {% csrf_token %}
 
         {{ burials_form.as_p }}

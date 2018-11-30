@@ -729,7 +729,7 @@ class Grave(GeoPointModel, BaseModelManualDtCreated):
             place=self.place, grave_number=self.grave_number
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self, using=None, request=None):
         result = super(Grave, self).delete(using=using)
         arr = [_(u'Могила №%d удалена') % self.grave_number,]
@@ -1208,10 +1208,10 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
 
             if self.pk:
                 query += ' and id!=%s' % self.pk
-                
-            cursor = connection.cursor()
-            cursor.execute(query)
-            result = cursor.fetchone()
+
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                result = cursor.fetchone()
             num = result and result[0] or 0
             self.account_number = year + month + ('%03d' if month else '%04d') % (num + 1, )
 

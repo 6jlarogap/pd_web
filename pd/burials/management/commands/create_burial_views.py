@@ -108,10 +108,10 @@ class Command(BaseCommand):
         if len(args) < 1 or args[0].decode("utf-8").lower() != u'yes':
             print "Give 'yes' as a single parameter if you mean to create/replace burial view(s)"
             quit()
-        cursor = connection.cursor()
-        for view in VIEWS:
-            try:
-                cursor.execute(view['create_or_replace'])
-            except DatabaseError:
-                cursor.execute(view['drop'])
-                cursor.execute(view['create_or_replace'])
+        with connection.cursor() as cursor:
+            for view in VIEWS:
+                try:
+                    cursor.execute(view['create_or_replace'])
+                except DatabaseError:
+                    cursor.execute(view['drop'])
+                    cursor.execute(view['create_or_replace'])

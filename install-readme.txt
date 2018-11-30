@@ -42,7 +42,7 @@ install-readme.txt, utf8 code page
             с перезагрузкой postgresql (service postgresql restart)
 
          - библиотеки для графики, включая jpeg, в Ubuntu: libjpeg-dev
-    
+
         - bower
             ubuntu 16.4 и ниже:
                 * скачать NodeJS: http://nodejs.org/
@@ -91,11 +91,11 @@ install-readme.txt, utf8 code page
 
          - web сервер apache2:
             (ubuntu: sudo apt-get install apache2  apache2-utils)
-            
+
          -git (ubuntu: sudo apt-get install git)
- 
+
     * Д.б. запущен postgresql сервер
- 
+
     * mkdir ~/venv; cd ~/venv; virtualenv --no-site-packages pdweb
     * mkdir ~/projects; cd ~/projects
     * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
@@ -108,22 +108,24 @@ install-readme.txt, utf8 code page
         ! --no-cache-dir :  избегает проблему с локалью, когда стандартные
                             сообщения django (например, "пароль")
                             вдруг печатаются по английски (password)
- 
+        !!! У нас заложено в базе данных, что не может быть одного email
+            у двух и более пользователей, а если email не задан, то user.email == None.
+
     * cd ~/projects/pd_web/pd/pd
     * cp local_settings.py.example local_settings.py
     * внести правки в local_settings.py, но если почти без правок, то:
- 
+
         - получить у руководителя проекта dump базы данных pd
           (пусть это: pd.psql.gz)
             createdb pd
             zcat pd.psql.gz | psql -U postgres pd
 
            (create database '<database>' encoding 'UTF-8' owned by '<user>';)
-            
+
         - MEDIA_ROOT:
             это дело вкуса, но в соответствии с local_settings.py.example:
             mkdir -p ~/projects/MEDIA/pd_web
- 
+
     * cd ~/projects/pd_web
       ln -s /home/sev/venv/pdweb ENV
             : virtual env, запускаемое из ./manage.py
@@ -131,7 +133,7 @@ install-readme.txt, utf8 code page
     !!! Можно запускать и отлаживать:
         cd ~/projects/pd_web/pd
         ./manage.py runserver <параметры>
- 
+
 Настройка сервера Apache:
 
     * Должен быть установлен Apache mod_wsgi и mod_xsendfile.
@@ -140,7 +142,7 @@ install-readme.txt, utf8 code page
 
     * При использовании ssl: sudo a2enmod ssl
     * sudo a2enmod rewrite
-    
+
     * пример настройки виртуального хоста Apache
         (имя сервера, каталоги могут отличаться)
 
@@ -151,7 +153,7 @@ install-readme.txt, utf8 code page
             XSendFile On
             # Каталог media должен быть доступен пользователю,
             # исполняющему Apache, по чтению-записи.
-            
+
             # Для свежих версий mod_xsendfile:
             XSendFilePath /home/www-data/media/pd_web
             # Для версий ниже 1.0 (на "старом" Debian):
@@ -183,7 +185,7 @@ install-readme.txt, utf8 code page
 
     * Добавить в конфигурацию (/etc/apache2/conf-enabled, Ubuntu 14.04) .conf-файл, например,
       с именем reqtimeout.conf следующего содержания:
-    
+
         # Minimize IOError request data read exeptions when posting data
         #
         # http://stackoverflow.com/questions/3823280/ioerror-request-data-read-error
@@ -231,15 +233,15 @@ install-readme.txt, utf8 code page
               тот может обнаружить, что письмо получено с сервера, не авторизованного
               для отправки с него google- почты. Дабы это не случилось, нужна запись
               в DNS:
-              
+
               pohoronnoedelo.ru TXT     v=spf1 include:_spf.google.com ip4:46.182.24.67 ~all
-              
+
               Где 46.182.24.67 - адрес сервера pohoronnoedelo.ru
 
        - Отправитель почты.
          Тот, кто будет фигурировать по умолчанию в поле "От кого" писем от системы
          надо заменить параметр DEFAULT_FROM_EMAIL в local_settings.py
-       
+
        - Получатель скрытых копий отправленных писем.
          ОСОБЕННО на производственном сервере, откуда письма отправляются с локального
          почтового сервера.

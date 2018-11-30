@@ -1,6 +1,5 @@
 # coding=utf-8
 from django.contrib import messages
-from django.db import transaction
 from django.shortcuts import redirect
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
@@ -28,11 +27,10 @@ class ImportBurialsMinskView(View):
         messages.success(request, _(u"Импорт успешен, %s записей") % total)
         return redirect('import_minsk')
 
-import_burials_minsk = transaction.commit_on_success(ImportBurialsMinskView.as_view())
+import_burials_minsk = ImportBurialsMinskView.as_view()
 
 class ImportFormsView(TemplateView):
     template_name = 'import_forms.html'
-
     def get_context_data(self, **kwargs):
         return {
             'orgs_form': ImportCsvForm(prefix='orgs'),
@@ -42,12 +40,13 @@ class ImportFormsView(TemplateView):
 import_forms = ImportFormsView.as_view()
 
 class ImportOrgsView(View):
+
     def post(self, request, *args, **kwargs):
         do_import_orgs(request.FILES['orgs-csv'])
         messages.success(request, _(u"Импорт успешен"))
         return redirect('import_forms')
 
-import_orgs = transaction.commit_on_success(ImportOrgsView.as_view())
+import_orgs = ImportOrgsView.as_view()
 
 class ImportBurialsView(View):
     def post(self, request, *args, **kwargs):
@@ -59,7 +58,7 @@ class ImportBurialsView(View):
         ))
         return redirect('import_forms')
 
-import_burials = transaction.commit_on_success(ImportBurialsView.as_view())
+import_burials = ImportBurialsView.as_view()
 
 class ImportKalugaView(TemplateView):
     template_name = 'import_kaluga.html'
@@ -81,7 +80,7 @@ class ImportBanksView(View):
         messages.success(request, _(u"Импорт успешен"))
         return redirect('import_kaluga')
 
-import_banks = transaction.commit_on_success(ImportBanksView.as_view())
+import_banks = ImportBanksView.as_view()
 
 class ImportServicesView(View):
     def post(self, request, *args, **kwargs):
@@ -89,7 +88,7 @@ class ImportServicesView(View):
         messages.success(request, _(u"Импорт успешен"))
         return redirect('import_kaluga')
 
-import_services = transaction.commit_on_success(ImportServicesView.as_view())
+import_services = ImportServicesView.as_view()
 
 class ImportOrdersView(View):
     def post(self, request, *args, **kwargs):
@@ -101,7 +100,7 @@ class ImportOrdersView(View):
         ))
         return redirect('import_kaluga')
 
-import_orders = transaction.commit_on_success(ImportOrdersView.as_view())
+import_orders = ImportOrdersView.as_view()
 
 class ImportPersonDocsView(View):
     def post(self, request, *args, **kwargs):
@@ -109,7 +108,7 @@ class ImportPersonDocsView(View):
         messages.success(request, _(u"Импорт успешен"))
         return redirect('import_kaluga')
 
-import_docs = transaction.commit_on_success(ImportPersonDocsView.as_view())
+import_docs = ImportPersonDocsView.as_view()
 
 class ImportDeathCertsView(View):
     def post(self, request, *args, **kwargs):
@@ -121,5 +120,5 @@ class ImportDeathCertsView(View):
         ))
         return redirect('import_kaluga')
 
-import_dcs = transaction.commit_on_success(ImportDeathCertsView.as_view())
+import_dcs = ImportDeathCertsView.as_view()
 
