@@ -149,7 +149,7 @@
         <h3>{% trans "Удостоверение личности" %}</h3>
         <div class="form_block">
             {{ form.applicant_id_form.id_type.errors }}
-            {% if 'burial' in request.path and not request.REQUEST.archive and not form.instance.is_archive %}    
+            {% if 'burial' in request.path and not request.GET.archive and not request.POST.archive and not form.instance.is_archive %}
                 <p>
                     {{ form.applicant_id_form.flag_no_applicant_doc_required.label_tag }} {{ form.applicant_id_form.flag_no_applicant_doc_required }}
                     <span class="helptext">{{ form.applicant_id_form.flag_no_applicant_doc_required.help_text }}</span>
@@ -163,7 +163,7 @@
                 {% if user.profile.is_supervisor %}
                     <a href="#add_doctype" role="button" class="btn" data-toggle="modal">
                 {% else %}
-                    <a href="{% url support %}?request=add_doctype{% if "burials" in request.path and "edit" in request.path %}&burial_path={{ request.get_full_path }}{% endif %}" role="button" class="btn" target="_blank">
+                    <a href="{% url 'support' %}?request=add_doctype{% if "burials" in request.path and "edit" in request.path %}&burial_path={{ request.get_full_path }}{% endif %}" role="button" class="btn" target="_blank">
                 {% endif %}
                     {% trans "добавить тип" %}
                 </a>

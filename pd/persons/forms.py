@@ -19,6 +19,7 @@ class ValidDataMixin:
 class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = DeadPerson
+        fields = '__all__'
 
     def __init__(self, request, *args, **kwargs):
         death_date = None
@@ -96,7 +97,7 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
                 pass
         if settings.DEATH_CERTIFICATE_REQUIRED and \
            (not instance or not instance.person) and \
-            not request.REQUEST.get('archive'):
+            not request.GET.get('archive'):
             kwargs['initial'].update({
                 'release_date': datetime.date.today(),
             })
@@ -169,6 +170,7 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
 class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
     class Meta:
         model = AlivePerson
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super(AlivePersonForm, self).__init__(*args, **kwargs)

@@ -368,14 +368,14 @@
                     <td>{{ c.dt|date:"d.m.Y" }}</td>
                     <td class="no-print">
                         {% if c.is_type_burial %}
-                            <a href="{% url order_edit c.pk %}" class="btn">{% trans "править" %}</a>
+                            <a href="{% url 'order_edit' c.pk %}" class="btn">{% trans "править" %}</a>
                             {% if not c.annulated %}
-                                <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "счет-заказ" %}</a>
-                                <a href="{% url order_contract c.pk %}" class="btn" target="_blank">{% trans "контракт" %}</a>
+                                <a href="{% url 'order_print' c.pk %}" class="btn" target="_blank">{% trans "счет-заказ" %}</a>
+                                <a href="{% url 'order_contract' c.pk %}" class="btn" target="_blank">{% trans "контракт" %}</a>
                             {% endif %}
                         {% elif c.is_type_trade %}
                             <a href="{{ global_context_FRONT_END_URL }}order/{{c.pk}}" class="btn">{% trans "править" %}</a>
-                            <a href="{% url order_receipt_print c.pk %}" class="btn" target="_blank">{% trans "квитанция" %}</a>
+                            <a href="{% url 'order_receipt_print' c.pk %}" class="btn" target="_blank">{% trans "квитанция" %}</a>
                         {% elif c.is_type_customer %}
                             <i>{% trans "Заказ<br />пользователя" %}</i></br >
                             <a href="{{ global_context_FRONT_END_URL }}orders/{{c.pk}}" class="btn">{% trans "просмотр" %}</a>
@@ -383,7 +383,7 @@
                             <i>{% trans "Заказ похорон" %}</i>
                             {% if c.annulated %}
                                 <b><span style="color:red">{% trans "АННУЛИРОВАН" %}</span></b>
-                                <form action="{% url order_annulate_from_list c.pk %}?recover=1" method="POST">
+                                <form action="{% url 'order_annulate_from_list' c.pk %}?recover=1" method="POST">
                                     {% csrf_token %}
                                     <input type="submit" class="btn" value="{% trans "де-аннулировать" %}" />
                                 </form>
@@ -399,7 +399,7 @@
                                             <a href="{{ global_context_FRONT_END_URL }}loru/own-orders/{{c.pk}}" class="btn">{% trans "править" %}</a>
                                         </td>
                                         <td style="border:0;">
-                                            <a href="{% url order_print c.pk %}" class="btn" target="_blank">{% trans "печать" %}</a>
+                                            <a href="{% url 'order_print' c.pk %}" class="btn" target="_blank">{% trans "печать" %}</a>
                                         </td>
                                     </tr>
                                     <tr>
@@ -412,7 +412,7 @@
                                     </tr>
                                     <tr>
                                         <td style="border:0;" colspan=2>
-                                            <form action="{% url order_annulate_from_list c.pk %}" method="POST" style="margin-bottom:0;" >
+                                            <form action="{% url 'order_annulate_from_list' c.pk %}" method="POST" style="margin-bottom:0;" >
                                                 {% csrf_token %}
                                                 <input type="submit" class="btn" value="{% trans "аннулировать" %}" onclick="return confirm('{% trans "Вы уверены?" %}');" />
                                             </form>

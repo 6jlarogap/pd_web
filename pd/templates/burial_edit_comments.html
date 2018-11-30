@@ -115,7 +115,7 @@
                 <input type="submit" class="btn" value="{% trans "сохранить" %}" class="btn"/>
                 &nbsp; &nbsp; &nbsp; &nbsp;
             {% endif %}
-            <a href="{% url view_burial burial.pk %}">{% trans "назад к захоронению" %}</a>
+            <a href="{% url 'view_burial' burial.pk %}">{% trans "назад к захоронению" %}</a>
         </p>
     </form>
 

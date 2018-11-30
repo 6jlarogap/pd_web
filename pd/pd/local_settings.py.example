@@ -34,12 +34,6 @@ DATABASES = {
 
 SENTRY_DSN = ''
 
-TEMPLATE_DIRS = (
-    '/home/LINUX_USERNAME/projects/pd_web/pd/templates/',
-)
-
-MEDIA_ROOT = '/home/LINUX_USERNAME/projects/MEDIA/pd_web/'
-
 # Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
 
 NORECAPTCHA_SITE_KEY = 'public-norecaptcha-key'

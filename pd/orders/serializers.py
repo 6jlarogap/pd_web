@@ -281,7 +281,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
             valid = False
         return valid
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def save_object(self, obj, **kwargs):
         new_obj = obj.pk is None
         obj.save(**kwargs)

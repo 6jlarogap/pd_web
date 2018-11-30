@@ -74,7 +74,7 @@ from persons.models import DeadPerson
  C_PLACE_TYPE
 ) = range(9)
 
-@transaction.commit_on_success
+@transaction.atomic
 def main():
     # Получим пользователя из этой организации, первого по списку
     ugh = Org.objects.get(name=UGH_NAME)

@@ -71,7 +71,7 @@ C_PRIM = 10
 C_N_ZAKAZA = 11
 C_FACT_DATE = 12
 
-@transaction.commit_on_success
+@transaction.atomic
 def main():
     
     profile = Profile.objects.get(pk=PROFILE_ID)

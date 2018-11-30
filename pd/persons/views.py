@@ -91,7 +91,7 @@ class AutocompleteFIO(View):
                 q &= Q(burial__cemetery__name=cemetery)
 
         persons = DeadPerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
-        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), content_type='application/json')
 
 autocomplete_fio = AutocompleteFIO.as_view()
 
@@ -128,7 +128,7 @@ class AutocompleteFIOorder(View):
             persons.sort()
             perrsons = persons[:self.NUM_RESULTS]
 
-        return HttpResponse(json.dumps([{'value': c} for c in persons]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': c} for c in persons]), content_type='application/json')
 
 autocomplete_fio_order = AutocompleteFIOorder.as_view()
 
@@ -177,7 +177,7 @@ class AutocompleteName(AutocompleteNamesMixin, View):
     def get(self, request, what, *args, **kwargs):
         query = request.GET.get('query')
         names = [ {'value': name} for name in self.get_names(what, query, request.user, limit=20) ]
-        return HttpResponse(json.dumps(names), mimetype='text/javascript')
+        return HttpResponse(json.dumps(names), content_type='application/json')
 
 autocomplete_name = AutocompleteName.as_view()
 
@@ -211,7 +211,7 @@ class AutocompleteAlive(View):
             q &= Q(last_name__istartswith=fio[0])
 
         persons = AlivePerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
-        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), content_type='application/json')
 
 autocomplete_alive = AutocompleteAlive.as_view()
 
@@ -219,7 +219,7 @@ class AutocompleteDocSources(View):
     def get(self, request, *args, **kwargs):
         query = request.GET['query']
         dcs = DocumentSource.objects.filter(name__icontains=query)
-        return HttpResponse(json.dumps([{'value': unicode(c)} for c in dcs[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': unicode(c)} for c in dcs[:20]]), content_type='application/json')
 
 autocomplete_docsources = AutocompleteDocSources.as_view()
 
@@ -588,7 +588,7 @@ class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
                (not fields['text'] or not fields['text'].strip()):
                 raise ServiceException(_(u'Тип (type) %s требует непустой текст') % fields['type'])
             if fields['type'] == MemoryGallery.TYPE_LINK:
-                validate = URLValidator(verify_exists=False)
+                validate = URLValidator()
                 if not re.search(r'^\w+\://', fields['text'], flags=re.I):
                     fields['text'] = u"http://%s" % fields['text']
                 try:
@@ -695,7 +695,7 @@ class ApiCustompersonMemoryGalleryView(ApiCustompersonMixin, ApiMemoryGalleryMix
             status=200,
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, pk):
         return self.make_object(pk)
 
@@ -715,7 +715,7 @@ class ApiCustompersonMemoryGalleryDetail(ApiCustompersonMixin, ApiMemoryGalleryM
             status=200,
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request, pk, memory_pk):
         return self.make_object(pk, memory_pk)
 
@@ -969,7 +969,7 @@ class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
             context=dict(request=request),
         )
         if serializer.is_valid():
-            with transaction.commit_on_success():
+            with transaction.atomic():
                 deadman = serializer.save()
                 grave, grave_created = Grave.objects.get_or_create(place=place, grave_number=1)
                 burial = Burial.objects.create(

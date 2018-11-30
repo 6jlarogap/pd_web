@@ -1,5 +1,5 @@
 # coding=utf-8
-import re
+import sys, re
 
 from django.conf import settings
 from django import forms
@@ -18,7 +18,7 @@ from pd.forms import ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin, 
 from nocaptcha_recaptcha.fields import NoReCaptchaField
 
 from pd.models import validate_phone_as_number, validate_username
-from pd.utils import host_country_code, EmailMessage
+from pd.utils import host_country_code, EmailMessage, reorder_form_fields
 from burials.models import Cemetery, PlaceSize, Reason, Burial
 from logs.models import write_log
 
@@ -28,8 +28,9 @@ from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 
 from persons.models import CustomPerson
 
-User._meta.get_field_by_name('email')[0]._unique = True
-User._meta.get_field_by_name('email')[0].null=True
+if not ('makemigrations' in sys.argv or 'migrate' in sys.argv):
+    User._meta.get_field_by_name('email')[0]._unique = True
+    User._meta.get_field_by_name('email')[0].null=True
 
 class LoruItemForm(forms.ModelForm):
 
@@ -70,7 +71,7 @@ class BaseLoruFormset(BaseInlineFormSet):
 
 LoruFormset = inlineformset_factory(Org, ProfileLORU, form=LoruItemForm, fk_name='ugh', formset=BaseLoruFormset)
 
-BankAccountFormset = inlineformset_factory(Org, BankAccount, formset=BaseLoruFormset, extra=2)
+BankAccountFormset = inlineformset_factory(Org, BankAccount, fields='__all__', formset=BaseLoruFormset, extra=2)
 
 class UserPhotoForm(CustomUploadModelForm):
     class Meta:
@@ -246,7 +247,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u"Кладбище по умолчанию не из доступных для пользователя"))
         return self.cleaned_data
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def save(self):
         if self.instance.pk:
             self.collect_log_data()
@@ -373,7 +374,7 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
                                                    initial = self.instance.get_type_display(),
                                                    required = False)
             self.fields['type_'].label = u'Тип'
-            self.fields.keyOrder.insert(0, self.fields.keyOrder.pop(-1))
+            self.fields = reorder_form_fields(self.fields, old_pos=-1, new_pos=0)
         else:
             choices = []
             for profile_type in Org.PROFILE_TYPES:
@@ -421,8 +422,8 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
                 raise forms.ValidationError(_(u"Есть уже такая организация"))
         return name
 
-PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, formset=BaseInlineFormSet, can_delete=True, extra=2)
-ReasonFormset = inlineformset_factory(Org, Reason, formset=BaseInlineFormSet, can_delete=True, extra=2)
+PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, fields='__all__', formset=BaseInlineFormSet, can_delete=True, extra=2)
+ReasonFormset = inlineformset_factory(Org, Reason, fields='__all__', formset=BaseInlineFormSet, can_delete=True, extra=2)
 
 class OrgCertificateForm(CustomUploadModelForm):
     class Meta:

@@ -5,7 +5,7 @@ import random
 import string
 import decimal
 import hashlib
-import os
+import os, sys
 import csv
 import copy
 import re
@@ -91,8 +91,9 @@ from users.serializers import StoreSerializer, Store2Serializer, \
 
 from sms_service.utils import send_sms
 
-User._meta.get_field_by_name('email')[0]._unique = True
-User._meta.get_field_by_name('email')[0].null=True
+if not ('makemigrations' in sys.argv or 'migrate' in sys.argv):
+    User._meta.get_field_by_name('email')[0]._unique = True
+    User._meta.get_field_by_name('email')[0].null=True
 
 class SupervisorRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
@@ -342,7 +343,7 @@ class ApiThankMixin(object):
 
 class ApiCabinetGetcodeView(ApiThankMixin, APIView):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         status_code = 200
         data = {}
@@ -402,7 +403,7 @@ api_cabinet_getcode = ApiCabinetGetcodeView.as_view()
 
 class ApiCabinetTokensView(ApiThankMixin, APIView):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         """
         Авторизация пользователя с кодом, полученным на телефон
@@ -771,7 +772,7 @@ class ApiSettings(APIView):
             data['oauthProviders'].append(info)
         return Response(data=data, status=200)
         
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request):
         """
         Поменять данные пользователя
@@ -904,7 +905,7 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
         status_code = 200
         return Response(data=data, status=status_code)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request, pk):
         """
         Поменять данные пользователя и поблагодарить
@@ -1576,7 +1577,7 @@ class AutocompleteOrg(View):
                                                                                                     else "")} \
                                             for c in orgs[:20]
             ]),
-            mimetype='text/javascript'
+            content_type='application/json'
         )
 
 autocomplete_org = AutocompleteOrg.as_view()
@@ -1592,7 +1593,7 @@ class AutocompleteLoruInBurials(View):
 
         return HttpResponse(
             json.dumps([{'value': loru['loru__name']} for loru in lorus[:20]]),
-            mimetype='text/javascript',
+            content_type='application/json',
         )
 
 autocomplete_loru_in_burials = AutocompleteLoruInBurials.as_view()
@@ -2181,7 +2182,7 @@ registrant_delete = RegistrantDelete.as_view()
 
 class RegistrantApprove(SupervisorRequiredMixin, View):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def get(self, request, *args, **kwargs):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
         if registrant.status == RegisterProfile.STATUS_APPROVED:
@@ -3003,7 +3004,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
     """
     parser_classes = (MultiPartParser,)
     
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         try:
             recaptcha_data = request.DATA.get('captchaData')
@@ -3664,9 +3665,9 @@ class ApiVideoVotesView(ApiVideoMixin, APIView):
                 offset_str='OFFSET %s' % offset if offset else '',
                 limit_str='LIMIT %s' % count if count else '',
         )
-        cursor = connection.cursor()
-        cursor.execute(req_str)
-        data = dictfetchall(cursor)
+        with connection.cursor() as cursor:
+            cursor.execute(req_str)
+            data = dictfetchall(cursor)
         return Response(data=data)
 
     def post(self, request, yid):
@@ -3888,7 +3889,7 @@ videos = VideoListView.as_view()
 
 class ApiVideoDetailView(APIView):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def get(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
 
@@ -3922,7 +3923,7 @@ class ApiVideoDetailView(APIView):
 
         return Response(data=YoutubeVideoSerializer(youtubevideo).data, status=200)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self, request, yid):
         if not is_supervisor(request.user):
             raise PermissionDenied
@@ -4007,7 +4008,7 @@ thanks = ThanksListView.as_view()
 class ApiThankDetailView(APIView):
     permission_classes = (PermitIfSupervisor,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self, request, pk):
         thank = get_object_or_404(Thank, pk=pk)
         thank.delete()

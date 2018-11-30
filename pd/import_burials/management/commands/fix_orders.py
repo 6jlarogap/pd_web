@@ -9,7 +9,7 @@ from orders.models import Order
 
 
 class Command(BaseCommand):
-    @transaction.commit_on_success
+    @transaction.atomic
     def handle(self, *args, **options):
         no_applicant_orders = Order.objects.filter(applicant=None, applicant_organization=None)
         cnt = no_applicant_orders.count()

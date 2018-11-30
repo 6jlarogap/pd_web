@@ -6,7 +6,7 @@
     {% block form_title %}<h1>{% trans "Импорт" %}</h1>{% endblock form_title %}
 
     <h1>{% trans "Услуги" %}</h1>
-    <form action="{% url import_services %}" method="POST" class="burial-form" enctype="multipart/form-data">
+    <form action="{% url 'import_services' %}" method="POST" class="burial-form" enctype="multipart/form-data">
         {% csrf_token %}
 
         {{ services_form.as_p }}
@@ -17,7 +17,7 @@
     </form>
 
     <h1>{% trans "Банковские данные" %}</h1>
-    <form action="{% url import_banks %}" method="POST" class="burial-form" enctype="multipart/form-data">
+    <form action="{% url 'import_banks' %}" method="POST" class="burial-form" enctype="multipart/form-data">
         {% csrf_token %}
 
         {{ banks_form.as_p }}
@@ -28,7 +28,7 @@
     </form>
 
     <h1>{% trans "Удостоверения личности" %}</h1>
-    <form action="{% url import_docs %}" method="POST" class="burial-form" enctype="multipart/form-data">
+    <form action="{% url 'import_docs' %}" method="POST" class="burial-form" enctype="multipart/form-data">
         {% csrf_token %}
 
         {{ docs_form.as_p }}
@@ -39,7 +39,7 @@
     </form>
 
     <h1>{% trans "Свидетельства о смерти" %}</h1>
-    <form action="{% url import_dcs %}" method="POST" class="burial-form" enctype="multipart/form-data">
+    <form action="{% url 'import_dcs' %}" method="POST" class="burial-form" enctype="multipart/form-data">
         {% csrf_token %}
 
         {{ dcs_form.as_p }}
@@ -50,7 +50,7 @@
     </form>
 
     <h1>{% trans "Заказы" %}</h1>
-    <form action="{% url import_orders %}" method="POST" class="burial-form" enctype="multipart/form-data">
+    <form action="{% url 'import_orders' %}" method="POST" class="burial-form" enctype="multipart/form-data">
         {% csrf_token %}
 
         {{ orders_form.as_p }}
