@@ -27,7 +27,7 @@ CEMETERY_NAME = u'Бекетово-Парковое'
 #
 UGH_PK = -394
 
-@transaction.commit_on_success
+@transaction.atomic
 def main():
     
     cemetery = Cemetery.objects.get(ugh__pk=UGH_PK, name=CEMETERY_NAME)

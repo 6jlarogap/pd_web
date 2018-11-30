@@ -4,16 +4,16 @@
 {% if order.annulated %}<h3><span style="color:red">{% trans "АННУЛИРОВАН" %}</span></h3>{% endif %}
 <p class="inline">
     {% if not order.annulated  %}
-        <a href="{% url order_print order.pk %}" class="btn" target="_blank">{% trans "распечатать" %}</a>
+        <a href="{% url 'order_print' order.pk %}" class="btn" target="_blank">{% trans "распечатать" %}</a>
     {% endif %}
 </p>
 {% if order.annulated %}
-    <form action="{% url order_annulate order.pk %}?recover=1" method="POST" class="inline">
+    <form action="{% url 'order_annulate' order.pk %}?recover=1" method="POST" class="inline">
         {% csrf_token %}
         <input type="submit" class="btn btn-success" value="{% trans "восстановить" %}" />
     </form>
 {% else %}
-    <form action="{% url order_annulate order.pk %}" method="POST" class="inline">
+    <form action="{% url 'order_annulate' order.pk %}" method="POST" class="inline">
         {% csrf_token %}
         <!-- <input type="submit" class="btn btn-danger"
                 == if order.burial.is_approved ==

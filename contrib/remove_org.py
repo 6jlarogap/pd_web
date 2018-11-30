@@ -20,7 +20,7 @@ from users.models import Org, BankAccount, Profile, OrgCertificate, OrgContract,
                          Store
 from logs.models import Log
 
-@transaction.commit_on_success
+@transaction.atomic
 def main(pk=ORG_PK):
     
     def rec_deleted(n):

@@ -32,7 +32,7 @@ from geo.models import Location, Country, Region, City, Street
 
 csv.register_dialect("4minsk", escapechar="\\", quoting=csv.QUOTE_ALL, doublequote=False)
 
-@transaction.commit_on_success
+@transaction.atomic
 def main():
 
     def check_if_put(burial):

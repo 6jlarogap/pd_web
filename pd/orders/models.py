@@ -306,7 +306,7 @@ class Order(GetLogsMixin, BaseModel):
                     self.number = 1
         return super(Order, self).save(*args, **kwargs)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self):
         for app, model in (
             ('orders', 'OrderComment'),

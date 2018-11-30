@@ -28,7 +28,7 @@ from persons.models import DeadPerson, AlivePerson, CustomPlace
 #
 CURRENCY_CODE = '---RUR---'
 
-@transaction.commit_on_success
+@transaction.atomic
 def main():
     
     ugh_qs = Q(type=Org.PROFILE_UGH, currency__code=CURRENCY_CODE)

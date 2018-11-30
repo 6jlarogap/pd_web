@@ -4,23 +4,23 @@
 
 <ul class="nav nav-tabs">
     <li {% if tab == 'applicant' %}class="active"{% endif %}>
-        <a href="{% url order_edit order.pk %}">{% trans "Заказчик" %}</a>
+        <a href="{% url 'order_edit' order.pk %}">{% trans "Заказчик" %}</a>
     </li>
     <li {% if tab == 'products' %}class="active"{% endif %}>
-        <a href="{% url order_products order.pk %}">{% trans "Товары" %}</a>
+        <a href="{% url 'order_products' order.pk %}">{% trans "Товары" %}</a>
     </li>
     <li {% if tab == 'burial' %}class="active"{% endif %}>
-        <a href="{% url order_burial order.pk %}">
+        <a href="{% url 'order_burial' order.pk %}">
             {% trans "Захоронение" %}{% if order.burial %}: {{ order.burial.get_status_display }}{% endif %}
             {% if order.burial.annulated %}<br />{% trans "Аннулировано" %}{% endif %}
         </a>
     </li>
     {% if order.has_services %}
         <li {% if tab == 'services' %}class="active"{% endif %}>
-            <a href="{% url order_services order.pk %}">{% trans "Доп. услуги" %}</a>
+            <a href="{% url 'order_services' order.pk %}">{% trans "Доп. услуги" %}</a>
         </li>
     {% endif %}
     <li {% if tab == 'info' %}class="active"{% endif %}>
-        <a href="{% url order_info order.pk %}">{% trans "Информация" %}</a>
+        <a href="{% url 'order_info' order.pk %}">{% trans "Информация" %}</a>
     </li>
 </ul>

@@ -16,7 +16,7 @@ try:
 except ImportError:
     import random
 
-@transaction.commit_on_success
+@transaction.atomic
 def shuffle_fields(model, fields, tries=10):
     """ Перетасовать поля fields в модели model
 
@@ -121,7 +121,7 @@ def shuffle_fields(model, fields, tries=10):
             m.objects.filter(pk=rec.pk).update(**kwargs_update)
         print message.format(i, query_count, failed_tries_count)
 
-@transaction.commit_on_success
+@transaction.atomic
 def set_pwds_as_names():
     """Установить у всех пользователей пароли, как имена регистрации"""
 

@@ -32,7 +32,7 @@ from django.core.files.base import ContentFile
 from users.models import Org
 from orders.models import Product, ProductCategory
 
-@transaction.commit_on_success
+@transaction.atomic
 def main():
     loru = Org.objects.get(name=LORU_NAME)
     ods = load(TO_IMPORT_ODS).spreadsheet

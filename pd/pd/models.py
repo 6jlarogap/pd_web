@@ -13,7 +13,6 @@ from django.db.models.loading import get_model
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
-from south.modelsinspector import add_introspection_rules
 from logs.models import Log
 from pd.views import ServiceException
 
@@ -360,18 +359,20 @@ class UnclearDateModelField(models.DateField):
         super(UnclearDateModelField, self).contribute_to_class(cls, name)
         setattr(cls, self.name, UnclearDateCreator(self))
 
-    def get_db_prep_save(self, value, **kwargs):
+    def get_db_prep_save(self, value, connection):
         if isinstance(value, UnclearDate):
             value = value.d
-        return super(UnclearDateModelField, self).get_db_prep_save(value, **kwargs)
+        return super(UnclearDateModelField, self).get_db_prep_save(value, connection)
 
-    def get_db_prep_lookup(self, lookup_type, value, **kwargs):
-        if lookup_type == 'exact':
-            return [self.get_db_prep_save(value, **kwargs)]
-        elif lookup_type == 'in':
-            return [self.get_db_prep_save(v, **kwargs) for v in value]
-        else:
-            return super(UnclearDateModelField, self).get_db_prep_lookup(lookup_type, value, **kwargs)
+    # В Django 1.7 это только мешает. Там другой формат этой функции для поля
+    #
+    #def get_db_prep_lookup(self, lookup_type, value, **kwargs):
+        #if lookup_type == 'exact':
+            #return [self.get_db_prep_save(value, **kwargs)]
+        #elif lookup_type == 'in':
+            #return [self.get_db_prep_save(v, **kwargs) for v in value]
+        #else:
+            #return super(UnclearDateModelField, self).get_db_prep_lookup(lookup_type, value, **kwargs)
 
     def to_python(self, value):
         if isinstance(value, UnclearDate):
@@ -629,8 +630,6 @@ class  GetLogsMixin(object):
     def get_logs(self):
         ct = ContentType.objects.get_for_model(self)
         return Log.objects.filter(ct=ct, obj_id=self.pk).order_by('-dt')
-
-add_introspection_rules([], ['^pd\.models\.UnclearDateModelField'])
 
 class CheckLifeDatesMixin(object):
 

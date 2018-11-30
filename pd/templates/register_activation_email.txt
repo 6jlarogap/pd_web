@@ -5,7 +5,7 @@
 
 {% trans "Пожалуйста, перейдите по следующей ссылке для подтверждения заявки" %}:
 
-{{ host }}{% url register_activation activation_key %}?confirm=1
+{{ host }}{% url 'register_activation' activation_key %}?confirm=1
 
 {% trans "После этого Ваша заявка поcтупит на рассмотрение администратора системы" %}.
 

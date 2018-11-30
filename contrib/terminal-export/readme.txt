@@ -50,7 +50,6 @@ sftp операции только в своем домашнем каталог
 Или в Ubuntu 18.04:
 
     chown root:root /usr/local/ssh_chroot/terminal
-    chmod o-rwx /usr/local/ssh_chroot/terminal
 
 Для доступа к экспортным файлам терминалов на ПК с Windows на кладбище ставится
 PuTTY Installer, http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html
