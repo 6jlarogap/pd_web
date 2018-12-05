@@ -1347,7 +1347,7 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             status_code=400
             data['status'] = 'error'
             data['message'] = excpt.message
@@ -1432,7 +1432,7 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
             # В любом случае сохранить, чтоб подправилась dt_modified
             order.save()
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             status_code=400
             data['status'] = 'error'
             data['message'] = excpt.message
@@ -2246,7 +2246,7 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
             # отметим изменение в order.dt_modified:
             order.save()
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(data=OrderResultsSerializer(resultfile, context=dict(request=request)).data, status=200)
 
@@ -2361,7 +2361,7 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
             )
 
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
     def delete(self, request, pk):
@@ -2453,7 +2453,6 @@ class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                     wsb_order_num=data['wsb_order_num'],
                 )
         except ServiceException as excpt:
-            transaction.rollback()
             return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(data=data, status=200)
 
@@ -2543,7 +2542,7 @@ class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                 order.status = Order.STATUS_PAID
                 order.save()
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             return Response(data=dict(status='error', message=excpt.message), status=400)
         return Response(data={}, status=201)
 
@@ -2756,7 +2755,7 @@ class ApiLoruOrdersView(
                             user=request.user,
                         )
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             return Response(data=dict(status='error', message=excpt.message), status=400)
         write_log(request, order, _(u'Заказ создан'))
         data = LoruOrderSerializer(order, context=dict(request=request)).data
@@ -3031,7 +3030,7 @@ class ApiLoruOrdersDetailView(
             if order_save:
                 order.save()
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             return Response(data=dict(status='error', message=excpt.message), status=400)
         write_log(request, order, _(u'Заказ изменен'))
         return Response(

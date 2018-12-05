@@ -394,7 +394,7 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
                 thankuser.password = password
                 thankuser.save()
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             data = dict(message=excpt.message)
             status_code = 400
         return Response(data=data, status=status_code)
@@ -458,15 +458,16 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
                             user = customerprofile.user
                         except CustomerProfile.DoesNotExist:
                             try:
-                                user = User.objects.create(
-                                    username=login_phone,
-                                    password=thankuser.password,
-                                )
-                                CustomerProfile.objects.create(
-                                    user=user,
-                                    login_phone=login_phone,
-                                    tc_confirmed=datetime.datetime.now(), 
-                                )
+                                with transaction.atomic():
+                                    user = User.objects.create(
+                                        username=login_phone,
+                                        password=thankuser.password,
+                                    )
+                                    CustomerProfile.objects.create(
+                                        user=user,
+                                        login_phone=login_phone,
+                                        tc_confirmed=datetime.datetime.now(), 
+                                    )
                             except IntegrityError:
                                 # Такое возможно, но маловероятно.
                                 # Если был username = login_phone1,
@@ -523,7 +524,7 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
             )
             status_code = 200
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             data = excpt.message
             if isinstance(data, basestring):
                 data = dict(message=data)
@@ -615,13 +616,14 @@ class ApiAuthSignupView(CheckRecaptcha2Mixin, ApiAuthSigninView):
                 if not self.check_recaptcha(request, recaptcha_data):
                     raise ServiceException(_(u'Введена неверная captcha'))
                 try:
-                    email = profile and profile.get('email') or ''
-                    user, created = User.objects.get_or_create(
-                        username=username,
-                        defaults = {
-                            'email': email,
-                        }
-                    )
+                    with transaction.atomic():
+                        email = profile and profile.get('email') or ''
+                        user, created = User.objects.get_or_create(
+                            username=username,
+                            defaults = {
+                                'email': email,
+                            }
+                        )
                 except IntegrityError:
                     raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
                 if not created:
@@ -813,10 +815,11 @@ class ApiSettings(APIView):
                 old_login_phone = profile.login_phone
                 if new_login_phone != old_login_phone:
                     try:
-                        profile.login_phone = new_login_phone
-                        change_profile = True
-                        AlivePerson.objects.filter(user=user).update(login_phone=new_login_phone)
-                        Place.log_login_phone_change(request, old_login_phone)
+                        with transaction.atomic():
+                            profile.login_phone = new_login_phone
+                            change_profile = True
+                            AlivePerson.objects.filter(user=user).update(login_phone=new_login_phone)
+                            Place.log_login_phone_change(request, old_login_phone)
                     except IntegrityError:
                         raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
 
@@ -838,7 +841,8 @@ class ApiSettings(APIView):
 
             if new_password or new_username or email:
                 try:
-                    user.save()
+                    with transaction.atomic():
+                        user.save()
                 except IntegrityError:
                     raise ServiceException(_(u'Пользователь с таким именем для входа в систему уже имеется'))
 
@@ -881,7 +885,7 @@ class ApiSettings(APIView):
             if change_profile:
                 profile.save()
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             data = { 'status': 'error',
                      'message': excpt.message,
                    }
@@ -979,7 +983,7 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
             data = UserSettings2Serializer(user,context=dict(request=request)).data
             status_code = 200
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             data = dict(message=excpt.message)
             status_code = 400
         return Response(data=data, status=status_code)
@@ -2196,17 +2200,18 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                 registrant.status = RegisterProfile.STATUS_APPROVED
                 registrant.save()
                 try:
-                    user, created = User.objects.get_or_create(
-                                username=registrant.user_name,
-                                defaults=dict(
-                                    password=registrant.user_password,
-                                    email=registrant.user_email or None,
-                                )
-                    )
-                    if not created:
-                        raise ServiceException(_(u"Пользователь уже в системе"))
+                    with transaction.atomic():
+                        user, created = User.objects.get_or_create(
+                                    username=registrant.user_name,
+                                    defaults=dict(
+                                        password=registrant.user_password,
+                                        email=registrant.user_email or None,
+                                    )
+                        )
                 except IntegrityError:
                     raise ServiceException(_(u"Такой email уже имеется у кого-то из пользователей системы"))
+                if not created:
+                    raise ServiceException(_(u"Пользователь уже в системе"))
                 if registrant.org_address:
                     off_address = copy.deepcopy(registrant.org_address)
                     off_address.pk = None
@@ -2215,22 +2220,23 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     off_address = None
                 death_date_offer = True if registrant.org_type == Org.PROFILE_LORU else False
                 try:
-                    org=Org.objects.create(
-                                type=registrant.org_type,
-                                name=registrant.org_name,
-                                full_name=registrant.org_full_name,
-                                inn=registrant.org_inn,
-                                director=registrant.org_director,
-                                basis=registrant.org_basis,
-                                email=registrant.user_email,
-                                phones=registrant.org_phones,
-                                fax=registrant.org_fax,
-                                ogrn=registrant.org_ogrn,
-                                off_address=off_address,
-                                currency=registrant.org_currency,
-                                subdomain=registrant.org_subdomain,
-                                death_date_offer=death_date_offer,
-                    )
+                    with transaction.atomic():
+                        org=Org.objects.create(
+                                    type=registrant.org_type,
+                                    name=registrant.org_name,
+                                    full_name=registrant.org_full_name,
+                                    inn=registrant.org_inn,
+                                    director=registrant.org_director,
+                                    basis=registrant.org_basis,
+                                    email=registrant.user_email,
+                                    phones=registrant.org_phones,
+                                    fax=registrant.org_fax,
+                                    ogrn=registrant.org_ogrn,
+                                    off_address=off_address,
+                                    currency=registrant.org_currency,
+                                    subdomain=registrant.org_subdomain,
+                                    death_date_offer=death_date_offer,
+                        )
                 except IntegrityError:
                     raise ServiceException(_(u"Такой поддомен уже используется в системе"))
                 if org.type == Org.PROFILE_UGH:
@@ -2290,7 +2296,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                 )
                 transaction.commit()
             except ServiceException as excpt:
-                transaction.rollback()
+                transaction.set_rollback(True)
                 messages.error(request, excpt.message)
             else:
                 host = get_front_end_url(request)
@@ -3241,7 +3247,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
             })
 
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             return Response(dict(status='error', message=excpt.message), status=400)
 
 api_org_signup = ApiOrgSignupView.as_view()
