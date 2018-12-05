@@ -431,15 +431,16 @@ class ApiAreaUpload(APIView):
                         area.save()
             else:
                 try:
-                    area = Area.objects.create(
-                        cemetery=cemetery,
-                        name=areaName,
-                        square=square,
-                        dt_created=dtCreated,
-                    )
-                    write_log(request, area, msg_created)
+                    with transaction.atomic():
+                        area = Area.objects.create(
+                            cemetery=cemetery,
+                            name=areaName,
+                            square=square,
+                            dt_created=dtCreated,
+                        )
+                        write_log(request, area, msg_created)
                 except IntegrityError:
-                    transaction.rollback()
+                    transaction.set_rollback(True)
                     return Response(
                         status=400,
                         data=dict(status='error', message=_(u"Такой участок уже существует")),
@@ -628,7 +629,6 @@ class ApiMobilePlace(PlaceUploadMixin, APIView):
             cemetery__ugh=request.user.profile.org)
         return Response(status=200, data=PlaceSerializer(place).data)
 
-    @transaction.atomic
     def put(self, request, place_id):
         place = get_object_or_404(
             Place,
@@ -643,34 +643,34 @@ class ApiMobilePlace(PlaceUploadMixin, APIView):
                 do_save = True
         if do_save:
             try:
-                place.save()
-                for b in Burial.objects.filter(place=place). \
-                        filter(~Q(row=place.row) | ~Q(place_number=place.place)):
-                    write_log(
-                        self.request,
-                        b,
-                        _(
-                            u"Изменение ряда и/или номера места при правке места\n"
-                            u"Ряд: '%(old_row)s' -> '%(new_row)s'\n"
-                            u"Номер места: '%(old_place)s' -> '%(new_place)s'\n"
-                        ) % dict(
-                            old_row=b.row,
-                            new_row=place.row,
-                            old_place=b.place_number,
-                            new_place=place.place,
-                    ))
-                    b.row = place.row
-                    b.place_number = place.place
-                    b.save()
-                log_object(
-                    request=self.request,
-                    reason=_(u"Место изменено через мобильное приложение"),
-                    obj=place,
-                    old=old_place,
-                    new=place,
-                )
+                with transaction.atomic():
+                    place.save()
+                    for b in Burial.objects.filter(place=place). \
+                            filter(~Q(row=place.row) | ~Q(place_number=place.place)):
+                        write_log(
+                            self.request,
+                            b,
+                            _(
+                                u"Изменение ряда и/или номера места при правке места\n"
+                                u"Ряд: '%(old_row)s' -> '%(new_row)s'\n"
+                                u"Номер места: '%(old_place)s' -> '%(new_place)s'\n"
+                            ) % dict(
+                                old_row=b.row,
+                                new_row=place.row,
+                                old_place=b.place_number,
+                                new_place=place.place,
+                        ))
+                        b.row = place.row
+                        b.place_number = place.place
+                        b.save()
+                    log_object(
+                        request=self.request,
+                        reason=_(u"Место изменено через мобильное приложение"),
+                        obj=place,
+                        old=old_place,
+                        new=place,
+                    )
             except IntegrityError:
-                transaction.rollback()
                 return self.response_already_exists()
 
         return Response(status=200, data=PlaceSerializer(place).data)

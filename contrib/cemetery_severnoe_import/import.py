@@ -71,7 +71,6 @@ C_PRIM = 10
 C_N_ZAKAZA = 11
 C_FACT_DATE = 12
 
-@transaction.atomic
 def main():
     
     profile = Profile.objects.get(pk=PROFILE_ID)
@@ -248,5 +247,9 @@ def make_unc_date(d):
         return UnclearDate(*pd_bits)
     return d
 
-
-main()
+transaction.set_autocommit(False)
+try:
+    main()
+finally:
+    transaction.commit()
+    transaction.set_autocommit(True)

@@ -39,7 +39,6 @@ from burials.models import Burial, Place, Cemetery, Area, AreaPurpose, Grave, Bu
 from persons.models import DeadPerson
 from users.models import Profile
 
-@transaction.atomic
 def main():
     profile = Profile.objects.get(pk=PROFILE_ID)
     ugh = profile.org
@@ -192,4 +191,9 @@ def capitalize(s):
     dash_char = lambda m: u"-%s" % m.group(1).upper()
     return s and re.sub(r'\-(\S)', dash_char, string.capwords(s)) or ''
 
-main()
+transaction.set_autocommit(False)
+try:
+    main()
+finally:
+    transaction.commit()
+    transaction.set_autocommit(True)
