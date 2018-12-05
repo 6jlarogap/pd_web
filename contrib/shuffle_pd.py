@@ -16,7 +16,6 @@ try:
 except ImportError:
     import random
 
-@transaction.atomic
 def shuffle_fields(model, fields, tries=10):
     """ Перетасовать поля fields в модели model
 
@@ -121,7 +120,6 @@ def shuffle_fields(model, fields, tries=10):
             m.objects.filter(pk=rec.pk).update(**kwargs_update)
         print message.format(i, query_count, failed_tries_count)
 
-@transaction.atomic
 def set_pwds_as_names():
     """Установить у всех пользователей пароли, как имена регистрации"""
 
@@ -143,31 +141,36 @@ def set_pwds_as_names():
 
 # --------------------------------------------------------------------
 
-set_pwds_as_names()
+transaction.set_autocommit(False)
+try:
+    set_pwds_as_names()
 
-shuffle_fields('auth.User',
-               ('first_name:clear', 'last_name:clear',
-                'email:clear', )
-)
-shuffle_fields('burials.Cemetery',
-               (u'name:index:Кладбище ', 'address:null', )
-)
-shuffle_fields('users.Profile',
-               ('user_first_name', 'user_middle_name',
-                'user_last_name',
-               )
-)
-shuffle_fields('users.Org',
-               (u'name:index:Организация ',
-                u'full_name:index:Организация ',
-                'inn:index:00000', 
-                'director', 'email:clear', 'phones:clear',
-                'off_address:null',
-               )
-)
-shuffle_fields('persons.BasePerson',
-               ('last_name', 'first_name', 'middle_name', )
-)
-shuffle_fields('persons.PersonId',
-               ('source', 'series', 'number', )
-)
+    shuffle_fields('auth.User',
+                ('first_name:clear', 'last_name:clear',
+                    'email:clear', )
+    )
+    shuffle_fields('burials.Cemetery',
+                (u'name:index:Кладбище ', 'address:null', )
+    )
+    shuffle_fields('users.Profile',
+                ('user_first_name', 'user_middle_name',
+                    'user_last_name',
+                )
+    )
+    shuffle_fields('users.Org',
+                (u'name:index:Организация ',
+                    u'full_name:index:Организация ',
+                    'inn:index:00000', 
+                    'director', 'email:clear', 'phones:clear',
+                    'off_address:null',
+                )
+    )
+    shuffle_fields('persons.BasePerson',
+                ('last_name', 'first_name', 'middle_name', )
+    )
+    shuffle_fields('persons.PersonId',
+                ('source', 'series', 'number', )
+    )
+finally:
+    transaction.commit()
+    transaction.set_autocommit(True)

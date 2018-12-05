@@ -74,7 +74,6 @@ from persons.models import DeadPerson
  C_PLACE_TYPE
 ) = range(9)
 
-@transaction.atomic
 def main():
     # Получим пользователя из этой организации, первого по списку
     ugh = Org.objects.get(name=UGH_NAME)
@@ -258,4 +257,9 @@ def cell_value(cell):
     else:
         return unicode(cell_value).strip()
 
-main()
+transaction.set_autocommit(False)
+try:
+    main()
+finally:
+    transaction.commit()
+    transaction.set_autocommit(True)
