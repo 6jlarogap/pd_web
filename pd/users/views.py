@@ -2294,7 +2294,6 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             org=org,
                             phones=registrant.org_phones,
                 )
-                transaction.commit()
             except ServiceException as excpt:
                 transaction.set_rollback(True)
                 messages.error(request, excpt.message)
