@@ -28,7 +28,6 @@ from persons.models import DeadPerson, AlivePerson, CustomPlace
 #
 CURRENCY_CODE = '---RUR---'
 
-@transaction.atomic
 def main():
     
     ugh_qs = Q(type=Org.PROFILE_UGH, currency__code=CURRENCY_CODE)
@@ -208,4 +207,9 @@ def remove_org(org):
         
     org.delete()
     
-main()
+transaction.set_autocommit(False)
+try:
+    main()
+finally:
+    transaction.commit()
+    transaction.set_autocommit(True)

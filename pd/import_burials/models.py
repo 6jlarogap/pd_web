@@ -92,7 +92,6 @@ def import_location(location_data):
     location.save()
     return location
 
-@transaction.atomic
 def do_import_orgs(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     for i, row in enumerate(csvreader):
@@ -213,7 +212,6 @@ def make_date(s):
 
 COMMENT_URN_RE = re.compile(ur'kombinat\:\d+.*\s+(?:урна|урнов)')
 
-@transaction.atomic
 def do_import_burials_minsk(csv_fileobj, cemetery, user):
     
     ugh=user.profile.org
@@ -512,7 +510,6 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     os.remove(tmp_file)
     return total
     
-@transaction.atomic
 def do_import_burials(csv_fileobj, user):
     csvreader = UnicodeReader(csv_fileobj)
     try:
@@ -697,7 +694,6 @@ def do_import_burials(csv_fileobj, user):
 
     return real_i, dupes_i
 
-@transaction.atomic
 def do_import_services(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     try:
@@ -719,7 +715,6 @@ def do_import_services(csv_fileobj):
                     default=row[1] == 'True',
                 )
 
-@transaction.atomic
 def do_import_orders(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     try:
@@ -835,7 +830,6 @@ def do_import_orders(csv_fileobj):
                     )
     return real_i, dupes_i
 
-@transaction.atomic
 def do_import_banks(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     for i, row in enumerate(csvreader):
@@ -849,7 +843,6 @@ def do_import_banks(csv_fileobj):
                     rs=row[2],ks=row[3],bik=row[4],bankname=row[5],ls=row[6]
                 )
 
-@transaction.atomic
 def do_import_docs(csv_fileobj):
     """Ф,И,О,Тип,Серия,Номер,Кем выдан,Когда выдан"""
     csvreader = UnicodeReader(csv_fileobj)
@@ -866,7 +859,6 @@ def do_import_docs(csv_fileobj):
                     id_type=id_type, series=row[4], number=row[5], source=source, date=row[7] or None
                 )
 
-@transaction.atomic
 def do_import_dcs(csv_fileobj):
     """Ф,И,О,Серия,Номер,Когда выдан,ЗАГС"""
     real_i = 0
