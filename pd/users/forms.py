@@ -264,9 +264,10 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 save_user = True
             if save_user:
                 try:
-                    profile.user.save()
+                    with transaction.atomic():
+                        profile.user.save()
                 except IntegrityError:
-                    transaction.rollback()
+                    transaction.set_rollback(True)
                     # метод form_valid из view покажет message.error
                     return None
             self.put_log_data(
@@ -291,14 +292,15 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 ))
         else:
             try:
-                user = User.objects.create(
-                    username=self.cleaned_data['username'],
-                    email=self.cleaned_data['email'],
-                    is_active=self.cleaned_data['is_active'],
-                    password=make_password(self.cleaned_data['password1'])
-                )
+                with transaction.atomic():
+                    user = User.objects.create(
+                        username=self.cleaned_data['username'],
+                        email=self.cleaned_data['email'],
+                        is_active=self.cleaned_data['is_active'],
+                        password=make_password(self.cleaned_data['password1'])
+                    )
             except IntegrityError:
-                transaction.rollback()
+                transaction.set_rollback(True)
                 # метод form_valid из view покажет message.error
                 return None
             profile = super(ProfileDataForm, self).save(commit=False)
