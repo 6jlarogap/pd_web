@@ -98,7 +98,7 @@
     
     {% if is_my_org %}
         <br />
-        <a href="{% url org_log_org %}" target="_blank">{% trans "Журнал по организации и пользователям" %}</a>
+        <a href="{% url 'org_log_org' %}" target="_blank">{% trans "Журнал по организации и пользователям" %}</a>
         <br /><br />
         <h2>{% trans "Пользователи" %}</h2>
         <p><input type="checkbox" id="cb_show_only_active_users" class="always_enabled" checked>&nbsp;&nbsp;{% trans "Показать только активных пользователей" %}</p>
@@ -146,7 +146,7 @@
                     <td>{{ p.user.is_active|yesno }}</td>
                     {% if user.profile.is_loru or user.profile.is_ugh and user.profile.is_admin %}
                         <td style="text-align:center;">
-                            <a href="{% url edit_profile p.user.profile.pk %}" class="btn">править</a>
+                            <a href="{% url 'edit_profile' p.user.profile.pk %}" class="btn">править</a>
                         </td>
                     {% endif %}
                 </tr>
@@ -155,13 +155,13 @@
 
         {% if request.user.profile.is_loru or request.user.profile.is_admin %}
             <p>
-                <a href="{% url create_profile %}" class="btn">{% trans "новый пользователь" %}</a>
+                <a href="{% url 'create_profile' %}" class="btn">{% trans "новый пользователь" %}</a>
             </p>
         {% endif %}
     {% endif %}
 </form>
 
 {% if is_my_org and object.get_logs %}
-    <a href="{% url org_log_org %}" target="_blank">{% trans "Журнал по организации и пользователям" %}</a>
+    <a href="{% url 'org_log_org' %}" target="_blank">{% trans "Журнал по организации и пользователям" %}</a>
 {% endif %}
 {% endblock %}

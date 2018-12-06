@@ -1,3 +1,8 @@
+# Для pip install -r <этот_файл>
+# ОС: Ubuntu 16.04
+# Python: 2.7
+# Django 1.7
+#
 Django==1.4
 Fabric==1.5.2
 Pillow

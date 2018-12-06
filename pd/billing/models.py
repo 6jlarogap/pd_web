@@ -1,5 +1,5 @@
 # coding: utf-8
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 from django.utils.translation import ugettext as _
 
@@ -81,4 +81,4 @@ class Commission(models.Model):
     share = models.FloatField(_(u"Процент"))
     source_ct = models.ForeignKey('contenttypes.ContentType', verbose_name=_(u"Вид платежа, за что комиссия"))
     source_id = models.PositiveIntegerField(verbose_name=_(u"ID платежа, за что комиссия"), db_index=True)
-    source = generic.GenericForeignKey('source_ct', 'source_id')
+    source = GenericForeignKey('source_ct', 'source_id')

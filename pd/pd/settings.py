@@ -1,9 +1,18 @@
 # coding: utf-8
 
-import os, datetime
+import sys, os, datetime
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
+
+ALLOWED_HOSTS = ['*']
+
+# После django 1.5 сессии хранятся по умолчанию в json формате по умолчанию,
+# но переход к этому формату означает потерю всех сессий, что наверняка
+# приведет к необходимости вводить имя/пароль и следовательно,
+# организационные проблемы.
+#
+SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
 
 ADMINS = ()
 
@@ -17,9 +26,6 @@ DATABASES = {
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
-        'OPTIONS': {
-            'autocommit': True,
-        },
     },
 }
 
@@ -108,7 +114,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
 
-    'south',
     'pytils',
     'debug_toolbar',
     'raven.contrib.django',
@@ -170,7 +175,7 @@ LOGGING = {
     }
 }
 
-SOUTH_TESTS_MIGRATE = False
+
 
 INTERNAL_IPS = ['127.0.0.1',]
 
@@ -464,10 +469,23 @@ MOBILEKEEPER_MEDIA_PATH = "support/download/mobilekeeper.apk"
 # Покажем статистику операций как козырь, когда придет время
 SHOW_OPER_STATS = True
 
+# Это убирает предупреждение, что появилась новая
+# система тестирования
+#
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+
 try:
     from local_settings import *
 except ImportError:
     pass
+
+# Миграции, начиная с Django 1.7, вносят verbose_name
+# поля, а это меняется для разных локалей
+#
+if 'makemigrations' in sys.argv or 'migrate' in sys.argv:
+    USE_I18N = False
+    USE_L10N = False
+    SPECIFIC_RU_LOCALE = ''
 
 if SPECIFIC_RU_LOCALE:
     SPECIFIC_RU_LOCALE_APP = 'locale_%s' % SPECIFIC_RU_LOCALE
@@ -490,7 +508,7 @@ except NameError:
     SUPPORT_EMAILS = (DEFAULT_FROM_EMAIL, )
 
 
-
-import sys
-if len(sys.argv) > 1 and sys.argv[1] == 'test':
-    from test_settings import *
+# Test system is to be revised.
+#import sys
+#if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    #from test_settings import *

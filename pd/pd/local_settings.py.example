@@ -34,12 +34,6 @@ DATABASES = {
 
 SENTRY_DSN = ''
 
-TEMPLATE_DIRS = (
-    '/home/LINUX_USERNAME/projects/pd_web/pd/templates/',
-)
-
-MEDIA_ROOT = '/home/LINUX_USERNAME/projects/MEDIA/pd_web/'
-
 # Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
 
 NORECAPTCHA_SITE_KEY = 'public-norecaptcha-key'
@@ -60,13 +54,24 @@ NORECAPTCHA_SECRET_KEY = 'secret-norecaptcha-key'
 # EMAIL_PORT = 587
 # EMAIL_HOST_USER = 'EMAIL-HOST-USER@gmail.com'
 # EMAIL_HOST_PASSWORD = 'SECRET'
-# EMAIL_USE_TLS = True
-# EMAIL_USE_SSL = False
 
 # Этот адрес применяется как "От кого" в письмах,
-# отправляемых с этого сервера
+# отправляемых с этого сервера из функции
+# send_mail().
+# ВНИМАНИЕ! Часто необходимо задавать его
+# равным EMAIL_HOST_USER из-за ограничений,
+# накладываемых почтовым сервером EMAIL_HOST
 #
 DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
+
+# Этот адрес применяется как "От кого" в письмах,
+# отправляемых с этого сервера при ошибочных ситуациях.
+# ВНИМАНИЕ! Часто необходимо задавать его
+# равным EMAIL_HOST_USER из-за ограничений,
+# накладываемых почтовым сервером EMAIL_HOST
+#
+#
+SERVER_EMAIL =  = 'EMAIL-HOST-USER@gmail.com'
 
 # На этот адрес доставляются скрытые копии всех писем, отправленных
 # с этого сервера. Если не задан (None), то такие копии не

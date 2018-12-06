@@ -11,7 +11,7 @@ from pytz import timezone, utc
 import re
 import string
 import math
-from collections import Sequence
+from collections import Sequence, OrderedDict
 
 from PIL import Image
 import magic
@@ -349,3 +349,14 @@ def rus_to_lat(s):
     else:
         result = s
     return result
+
+def reorder_form_fields(fields, old_pos, new_pos):
+    """
+    Поместить поле из form fields из позиции old_pos перед new_pos, вернуть fields
+    """
+    field_keys = fields.keys()
+    if isinstance(new_pos, basestring):
+        new_pos = field_keys.index(new_pos)
+    field_keys.insert(new_pos, field_keys.pop(old_pos))
+    fields = OrderedDict((k, fields[k]) for k in field_keys)
+    return fields

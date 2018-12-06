@@ -20,7 +20,7 @@ from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 from django.utils.formats import localize
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic.edit import UpdateView
 from django.views.generic.list import ListView
 
 from django.contrib.contenttypes.models import ContentType
@@ -49,7 +49,6 @@ from restthumbnails.files import ThumbnailContentFile
 from rest_framework import generics, viewsets
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
@@ -962,21 +961,21 @@ class AddDoverView(UghOrLoruRequiredMixin, View):
         try:
             agent = Profile.objects.get(pk=request.GET['agent'], is_agent=True)
         except Profile.DoesNotExist:
-            return HttpResponse(_(u'Агент не существует'), mimetype='text/plain')
+            return HttpResponse(_(u'Агент не существует'), content_type='text/plain')
         except KeyError:
-            return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
+            return HttpResponse(_(u'Ошибка'), content_type='text/plain')
         if f.is_valid():
             dover = f.save(commit=False)
             dover.target_org = request.user.profile.org
             dover.agent = agent
             dover.save()
-            return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), mimetype='application/json')
+            return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), content_type='application/json')
         else:
             err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v for v in f.non_field_errors()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
-            return HttpResponse(err_str % errors, mimetype='text/plain')
+            return HttpResponse(err_str % errors, content_type='text/plain')
 
 add_dover = AddDoverView.as_view()
 
@@ -990,13 +989,13 @@ class AddAgentView(UghOrLoruRequiredMixin, View):
         elif request.GET.get('org_name'):
             q = Q(name=request.GET['org_name'])
         else:
-            return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
+            return HttpResponse(_(u'Ошибка'), content_type='text/plain')
         try:
             org = Org.objects.get(q)
         except KeyError:
-            return HttpResponse(_(u'Ошибка'), mimetype='text/plain')
+            return HttpResponse(_(u'Ошибка'), content_type='text/plain')
         except Org.DoesNotExist:
-            return HttpResponse(_(u'Нет такой организации'), mimetype='text/plain')
+            return HttpResponse(_(u'Нет такой организации'), content_type='text/plain')
         if fa.is_valid() and fd.is_valid():
             agent = fa.save(org=org)
             dover = fd.save(commit=False)
@@ -1007,14 +1006,14 @@ class AddAgentView(UghOrLoruRequiredMixin, View):
                 'org_pk': org.pk,
                 'pk': agent.pk, 'label': u'%s' % agent,
                 'dover_pk': dover.pk, 'dover_label': u'%s' % dover
-            }), mimetype='application/json')
+            }), content_type='application/json')
         else:
             err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v for v in fa.non_field_errors()] + \
                                [u'%s' % v for v in fd.non_field_errors()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
-            return HttpResponse(err_str % errors, mimetype='text/plain')
+            return HttpResponse(err_str % errors, content_type='text/plain')
 
 add_agent = AddAgentView.as_view()
 
@@ -1034,7 +1033,7 @@ class AddOrgView(UghOrLoruRequiredMixin, View):
                 f.put_log_data(msg=_(u'Данные сохранены'))
                 if request.user.profile.is_ugh() and new_org.type == Org.PROFILE_LORU:
                     new_org.ugh_list.create(ugh=request.user.profile.org)
-                return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), mimetype='application/json')
+                return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), content_type='application/json')
             else:
                 # Случай, который не удалось воспроизвести: duplicate auto-slug field
                 f_errors = dict(error=_(u"Есть такая организация"))
@@ -1044,7 +1043,7 @@ class AddOrgView(UghOrLoruRequiredMixin, View):
         errors = '\n'.join([u'%s' % v[0] for k,v in f_errors.items()])
         if "\n" in errors:
             err_str = _(u'Ошибки:\n%s')
-        return HttpResponse(err_str % errors, mimetype='text/plain')
+        return HttpResponse(err_str % errors, content_type='text/plain')
 
 add_org = AddOrgView.as_view()
 
@@ -1053,13 +1052,13 @@ class AddDocTypeView(SupervisorRequiredMixin, View):
         f = AddDocTypeForm(data=request.POST, prefix='doctype')
         if f.is_valid():
             dt = f.save()
-            return HttpResponse(json.dumps({'pk': dt.pk, 'label': u'%s' % dt}), mimetype='application/json')
+            return HttpResponse(json.dumps({'pk': dt.pk, 'label': u'%s' % dt}), content_type='application/json')
         else:
             err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
-            return HttpResponse(err_str % errors, mimetype='text/plain')
+            return HttpResponse(err_str % errors, content_type='text/plain')
 
 add_doctype = AddDocTypeView.as_view()
 
@@ -1085,13 +1084,13 @@ class AddGravesView(UGHRequiredMixin, View):
                     grave, created_ = Grave.objects.get_or_create(place=place, grave_number=i)
                     if created_:
                         write_log(request, place, _(u"Создана могила %s") % i)
-            return HttpResponse(json.dumps({'place_grave_choice': graves_number}), mimetype='application/json')
+            return HttpResponse(json.dumps({'place_grave_choice': graves_number}), content_type='application/json')
         else:
             err_str = _(u'Ошибка:\n%s')
             errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
             if "\n" in errors:
                 err_str = _(u'Ошибки:\n%s')
-            return HttpResponse(err_str % errors, mimetype='text/plain')
+            return HttpResponse(err_str % errors, content_type='text/plain')
 
 add_graves = AddGravesView.as_view()
 
@@ -1158,9 +1157,9 @@ class GetGravesNumberView(View):
             except Place.MultipleObjectsReturned:
                 return HttpResponse('')
             else:
-                return HttpResponse('{"place_pk": %s, "graves_count": %s}' % (p.pk, p.get_graves_count()), mimetype='application/json')
+                return HttpResponse('{"place_pk": %s, "graves_count": %s}' % (p.pk, p.get_graves_count()), content_type='application/json')
 
-        return HttpResponse('{"graves_count": %s}' % desired_graves_count, mimetype='application/json')
+        return HttpResponse('{"graves_count": %s}' % desired_graves_count, content_type='application/json')
 
 get_graves_number = GetGravesNumberView.as_view()
 
@@ -1200,7 +1199,7 @@ class BurialEditComments(UGHRequiredMixin, View):
             'formset': self.get_formset(),
         }
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         self.request = request
 
@@ -1258,7 +1257,7 @@ class AutocompleteCemeteries(View):
             cemeteries = cemeteries.filter(ugh=request.user.profile.org)
         else:
             cemeteries = Cemetery.objects.none()
-        return HttpResponse(json.dumps([{'value': c.name} for c in cemeteries[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': c.name} for c in cemeteries[:20]]), content_type='application/json')
 
 autocomplete_cemeteries = AutocompleteCemeteries.as_view()
 
@@ -1273,7 +1272,7 @@ class AutocompleteAreas(View):
             areas = areas.filter(cemetery__ugh=request.user.profile.org)
         else:
             areas = Area.objects.none()
-        return HttpResponse(json.dumps([{'value': c.name} for c in areas[:20]]), mimetype='text/javascript')
+        return HttpResponse(json.dumps([{'value': c.name} for c in areas[:20]]), content_type='application/json')
 
 autocomplete_areas = AutocompleteAreas.as_view()
 
@@ -1443,7 +1442,7 @@ class ApiOmsPhotoPlaces(APIView):
         place = None
         cemeteries = Cemetery.editable_ugh_cemeteries(user=request.user)
         # Показать место, с которым работал ранее
-        with transaction.commit_on_success():
+        with transaction.atomic():
             try:
                 place = Place.objects.select_for_update().filter(
                             cemetery__ugh=request.user.profile.org,
@@ -1592,7 +1591,7 @@ class ApiOmsPhotoPlacesChange(ApiOmsPhotoPlacesDetail):
                 place.is_inprocess = False
                 log_messages.append(_(u'Фотографии места могут быть обработаны повторно'))
 
-        with transaction.commit_on_success():
+        with transaction.atomic():
             if do_save:
                 place.save()
             for o in log_operations:
@@ -2243,9 +2242,9 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
                 ugh_pk=ugh_pk,
             )
 
-        cursor = connection.cursor()
-        cursor.execute(req_str)
-        doubles = dictfetchall(cursor)
+        with connection.cursor() as cursor:
+            cursor.execute(req_str)
+            doubles = dictfetchall(cursor)
         for d in doubles:
             d['search_str'] = "&".join([
                 "%s=%s" % (key, d[key],) for key in d if key not in ('cemetery_name', )
@@ -2359,7 +2358,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
             put_controls=put_controls,
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
 
         b_dest = b_dest_pk = None

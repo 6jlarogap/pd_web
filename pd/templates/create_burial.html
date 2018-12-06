@@ -9,7 +9,7 @@
         {% endwith %}
     {% endif %}
     {% block form_title %}<h1>
-        {% if request.REQUEST.archive %}
+        {% if request.GET.archive or request.POST.archive %}
             {% trans "Архивное захоронение" %}
         {% else %}
             {% trans "Новое захоронение" %}
@@ -17,10 +17,9 @@
     </h1>{% endblock form_title %}
     <form action="{{ request.path }}" method="POST" enctype="multipart/form-data" class="burial-form main-form">
         {% csrf_token %}
-        <input type="hidden" name="order"  value="{{ request.REQUEST.order }}" />
-        <input type="hidden" name="funeral_order"  value="{{ request.REQUEST.funeral_order }}" />
-        <input type="hidden" name="archive"  value="{{ request.REQUEST.archive }}" />
-        <input type="hidden" name="place_id"  value="{{ request.REQUEST.place_id }}" />
+        <input type="hidden" name="order"  value="{{ request.GET.order }}{{ request.POST.order }}" />
+        <input type="hidden" name="funeral_order"  value="{{ request.GET.funeral_order }}{{ request.POST.funeral_order }}" />
+        <input type="hidden" name="archive"  value="{{ request.GET.archive }}{{ request.POST.archive }}" />
 
         {% if form.instance.annulated %}
             <h3>{% if b.annulated %} <span style="color:red">{% trans "АННУЛИРОВАНО" %}</span> {% endif %}</h3>
@@ -44,7 +43,7 @@
                 {% if not b.annulated %}
                     {% if user.profile.is_ugh %}
                         {% if b.is_draft or not b.pk %}
-                            {% if not request.REQUEST.archive and not form.instance.is_archive %}
+                            {% if not request.GET.archive and not request.POST.archive and not form.instance.is_archive %}
                                 <input type="submit" class="btn btn-commit-burial" name="approve" value="{% trans "cохранить и согласовать" %}"/>
                             {% endif %}
                         {% endif %}
@@ -74,9 +73,11 @@
                             <input type="submit" class="btn btn-commit-burial" name="annulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}"/>
                         {% endif %}
                         {% if b.order %}
-                            <a href="{% url order_services b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
-                        {% elif self.request.REQUEST.order %}
-                            <a href="{% url order_services self.request.REQUEST.order %}" class="btn btn-next">{% trans "далее" %}</a>
+                            <a href="{% url 'order_services' b.order.pk %}" class="btn btn-next">{% trans "далее" %}</a>
+                        {% elif self.request.GET.order %}
+                            <a href="{% url 'order_services' self.request.GET.order %}" class="btn btn-next">{% trans "далее" %}</a>
+                        {% elif self.request.POST.order %}
+                            <a href="{% url 'order_services' self.request.POST.order %}" class="btn btn-next">{% trans "далее" %}</a>
                         {% endif %}
                     {% endif %}
                 {% else %}

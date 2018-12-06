@@ -177,7 +177,7 @@
             <td>
                 {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
                 {% if b.get_place %}
-                    <br /><a class="no-print" href="{% url burial_list %}?cemetery={{ b.cemetery.name }}&area={{ b.area.name }}&row={{ b.row|default_if_none:"" }}&place={{ b.place_number }}&per_page={{ paginator.per_page|default_if_none:"" }}">{% trans "Поиск по участку (месту)" %}</a>
+                    <br /><a class="no-print" href="{% url 'burial_list' %}?cemetery={{ b.cemetery.name }}&area={{ b.area.name }}&row={{ b.row|default_if_none:"" }}&place={{ b.place_number }}&per_page={{ paginator.per_page|default_if_none:"" }}">{% trans "Поиск по участку (месту)" %}</a>
                 {% endif %}
             </td>
             <td><b>{{ b.deadman_or_bio }}</b>
@@ -223,18 +223,18 @@
                     {# Планируется, что лору будет видеть и зх других лору, а также зх от угх, #}
                     {# но редактировать может только свои зх #}
                     {% if b.is_full and b.is_edit and b.loru and b.loru == user.profile.org and not b.is_annulated %}
-                        <a class="btn" href="{% url edit_burial b.pk %}" target="_blank">{% trans "правка" %}</a>
+                        <a class="btn" href="{% url 'edit_burial' b.pk %}" target="_blank">{% trans "правка" %}</a>
                     {% else %}
-                        <a class="btn" href="{% url view_burial b.pk %}" target="_blank">{% trans "просмотр" %}</a>
+                        <a class="btn" href="{% url 'view_burial' b.pk %}" target="_blank">{% trans "просмотр" %}</a>
                     {% endif %}
                 {% elif user.profile.is_ugh %}
-                    <a class="btn" href="{% url view_burial b.pk %}" target="_blank">{% trans "просмотр" %}</a>
+                    <a class="btn" href="{% url 'view_burial' b.pk %}" target="_blank">{% trans "просмотр" %}</a>
                     {# (Ручные, архивные), перенесенные, закрытые: #}
                     {% if b.is_ugh or b.is_transferred or b.is_closed %}
                         {% if not b.cemetery or b.cemetery in editable_ugh_cemeteries %}
                             {% if user.profile.is_caretaker_only and b.is_closed %}
                             {% else %}
-                                <br /><a class="btn" href="{% url edit_burial b.pk %}" target="_blank">{% trans "правка" %}</a>
+                                <br /><a class="btn" href="{% url 'edit_burial' b.pk %}" target="_blank">{% trans "правка" %}</a>
                             {% endif %}
                         {% endif %}
                     {% endif %}
@@ -243,7 +243,7 @@
                         <br />
                         <a class="btn" href="{{ b.get_place.url }}" target="_blank">{{ b.place_name }}</a>
                         {% if b.cemetery and b.cemetery in editable_ugh_cemeteries %}
-                            <a class="btn" href="{% url create_burial %}?place_id={{ b.get_place.pk }}&burial_add=1" target="_blank" title="{% trans "Подзахоронение в то же место" %}">+</a>
+                            <a class="btn" href="{% url 'create_burial' %}?place_id={{ b.get_place.pk }}&burial_add=1" target="_blank" title="{% trans "Подзахоронение в то же место" %}">+</a>
                         {% endif %}
                     {% endif %}
                 {% endif %}

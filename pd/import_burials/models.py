@@ -212,7 +212,6 @@ def make_date(s):
 
 COMMENT_URN_RE = re.compile(ur'kombinat\:\d+.*\s+(?:урна|урнов)')
 
-@transaction.commit_on_success
 def do_import_burials_minsk(csv_fileobj, cemetery, user):
     
     ugh=user.profile.org
@@ -511,7 +510,6 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     os.remove(tmp_file)
     return total
     
-@transaction.commit_on_success
 def do_import_burials(csv_fileobj, user):
     csvreader = UnicodeReader(csv_fileobj)
     try:
@@ -717,7 +715,6 @@ def do_import_services(csv_fileobj):
                     default=row[1] == 'True',
                 )
 
-@transaction.commit_on_success
 def do_import_orders(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     try:

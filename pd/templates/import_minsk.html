@@ -6,7 +6,7 @@
     {% block form_title %}<h1>{% trans "Импорт (Минск)" %}</h1>{% endblock form_title %}
 
     <h2>{% trans "Захоронения" %}</h2>
-    <form id="importform" action="{% url import_burials_minsk %}" method="POST" class="burial-form" enctype="multipart/form-data">
+    <form id="importform" action="{% url 'import_burials_minsk' %}" method="POST" class="burial-form" enctype="multipart/form-data">
         {% csrf_token %}
 
         {{ burials_form.as_p }}

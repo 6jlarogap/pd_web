@@ -5,7 +5,7 @@ import random
 import string
 import decimal
 import hashlib
-import os
+import os, sys
 import csv
 import copy
 import re
@@ -91,8 +91,9 @@ from users.serializers import StoreSerializer, Store2Serializer, \
 
 from sms_service.utils import send_sms
 
-User._meta.get_field_by_name('email')[0]._unique = True
-User._meta.get_field_by_name('email')[0].null=True
+if not ('makemigrations' in sys.argv or 'migrate' in sys.argv):
+    User._meta.get_field_by_name('email')[0]._unique = True
+    User._meta.get_field_by_name('email')[0].null=True
 
 class SupervisorRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
@@ -342,7 +343,7 @@ class ApiThankMixin(object):
 
 class ApiCabinetGetcodeView(ApiThankMixin, APIView):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         status_code = 200
         data = {}
@@ -393,7 +394,7 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
                 thankuser.password = password
                 thankuser.save()
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             data = dict(message=excpt.message)
             status_code = 400
         return Response(data=data, status=status_code)
@@ -402,7 +403,7 @@ api_cabinet_getcode = ApiCabinetGetcodeView.as_view()
 
 class ApiCabinetTokensView(ApiThankMixin, APIView):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         """
         Авторизация пользователя с кодом, полученным на телефон
@@ -457,15 +458,16 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
                             user = customerprofile.user
                         except CustomerProfile.DoesNotExist:
                             try:
-                                user = User.objects.create(
-                                    username=login_phone,
-                                    password=thankuser.password,
-                                )
-                                CustomerProfile.objects.create(
-                                    user=user,
-                                    login_phone=login_phone,
-                                    tc_confirmed=datetime.datetime.now(), 
-                                )
+                                with transaction.atomic():
+                                    user = User.objects.create(
+                                        username=login_phone,
+                                        password=thankuser.password,
+                                    )
+                                    CustomerProfile.objects.create(
+                                        user=user,
+                                        login_phone=login_phone,
+                                        tc_confirmed=datetime.datetime.now(), 
+                                    )
                             except IntegrityError:
                                 # Такое возможно, но маловероятно.
                                 # Если был username = login_phone1,
@@ -522,7 +524,7 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
             )
             status_code = 200
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             data = excpt.message
             if isinstance(data, basestring):
                 data = dict(message=data)
@@ -614,13 +616,14 @@ class ApiAuthSignupView(CheckRecaptcha2Mixin, ApiAuthSigninView):
                 if not self.check_recaptcha(request, recaptcha_data):
                     raise ServiceException(_(u'Введена неверная captcha'))
                 try:
-                    email = profile and profile.get('email') or ''
-                    user, created = User.objects.get_or_create(
-                        username=username,
-                        defaults = {
-                            'email': email,
-                        }
-                    )
+                    with transaction.atomic():
+                        email = profile and profile.get('email') or ''
+                        user, created = User.objects.get_or_create(
+                            username=username,
+                            defaults = {
+                                'email': email,
+                            }
+                        )
                 except IntegrityError:
                     raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
                 if not created:
@@ -771,7 +774,7 @@ class ApiSettings(APIView):
             data['oauthProviders'].append(info)
         return Response(data=data, status=200)
         
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request):
         """
         Поменять данные пользователя
@@ -812,10 +815,11 @@ class ApiSettings(APIView):
                 old_login_phone = profile.login_phone
                 if new_login_phone != old_login_phone:
                     try:
-                        profile.login_phone = new_login_phone
-                        change_profile = True
-                        AlivePerson.objects.filter(user=user).update(login_phone=new_login_phone)
-                        Place.log_login_phone_change(request, old_login_phone)
+                        with transaction.atomic():
+                            profile.login_phone = new_login_phone
+                            change_profile = True
+                            AlivePerson.objects.filter(user=user).update(login_phone=new_login_phone)
+                            Place.log_login_phone_change(request, old_login_phone)
                     except IntegrityError:
                         raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
 
@@ -837,7 +841,8 @@ class ApiSettings(APIView):
 
             if new_password or new_username or email:
                 try:
-                    user.save()
+                    with transaction.atomic():
+                        user.save()
                 except IntegrityError:
                     raise ServiceException(_(u'Пользователь с таким именем для входа в систему уже имеется'))
 
@@ -880,7 +885,7 @@ class ApiSettings(APIView):
             if change_profile:
                 profile.save()
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             data = { 'status': 'error',
                      'message': excpt.message,
                    }
@@ -904,7 +909,7 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
         status_code = 200
         return Response(data=data, status=status_code)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self, request, pk):
         """
         Поменять данные пользователя и поблагодарить
@@ -978,7 +983,7 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
             data = UserSettings2Serializer(user,context=dict(request=request)).data
             status_code = 200
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             data = dict(message=excpt.message)
             status_code = 400
         return Response(data=data, status=status_code)
@@ -1576,7 +1581,7 @@ class AutocompleteOrg(View):
                                                                                                     else "")} \
                                             for c in orgs[:20]
             ]),
-            mimetype='text/javascript'
+            content_type='application/json'
         )
 
 autocomplete_org = AutocompleteOrg.as_view()
@@ -1592,7 +1597,7 @@ class AutocompleteLoruInBurials(View):
 
         return HttpResponse(
             json.dumps([{'value': loru['loru__name']} for loru in lorus[:20]]),
-            mimetype='text/javascript',
+            content_type='application/json',
         )
 
 autocomplete_loru_in_burials = AutocompleteLoruInBurials.as_view()
@@ -2181,7 +2186,7 @@ registrant_delete = RegistrantDelete.as_view()
 
 class RegistrantApprove(SupervisorRequiredMixin, View):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def get(self, request, *args, **kwargs):
         registrant = get_object_or_404(RegisterProfile, pk=self.kwargs['pk'])
         if registrant.status == RegisterProfile.STATUS_APPROVED:
@@ -2195,17 +2200,18 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                 registrant.status = RegisterProfile.STATUS_APPROVED
                 registrant.save()
                 try:
-                    user, created = User.objects.get_or_create(
-                                username=registrant.user_name,
-                                defaults=dict(
-                                    password=registrant.user_password,
-                                    email=registrant.user_email or None,
-                                )
-                    )
-                    if not created:
-                        raise ServiceException(_(u"Пользователь уже в системе"))
+                    with transaction.atomic():
+                        user, created = User.objects.get_or_create(
+                                    username=registrant.user_name,
+                                    defaults=dict(
+                                        password=registrant.user_password,
+                                        email=registrant.user_email or None,
+                                    )
+                        )
                 except IntegrityError:
                     raise ServiceException(_(u"Такой email уже имеется у кого-то из пользователей системы"))
+                if not created:
+                    raise ServiceException(_(u"Пользователь уже в системе"))
                 if registrant.org_address:
                     off_address = copy.deepcopy(registrant.org_address)
                     off_address.pk = None
@@ -2214,22 +2220,23 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     off_address = None
                 death_date_offer = True if registrant.org_type == Org.PROFILE_LORU else False
                 try:
-                    org=Org.objects.create(
-                                type=registrant.org_type,
-                                name=registrant.org_name,
-                                full_name=registrant.org_full_name,
-                                inn=registrant.org_inn,
-                                director=registrant.org_director,
-                                basis=registrant.org_basis,
-                                email=registrant.user_email,
-                                phones=registrant.org_phones,
-                                fax=registrant.org_fax,
-                                ogrn=registrant.org_ogrn,
-                                off_address=off_address,
-                                currency=registrant.org_currency,
-                                subdomain=registrant.org_subdomain,
-                                death_date_offer=death_date_offer,
-                    )
+                    with transaction.atomic():
+                        org=Org.objects.create(
+                                    type=registrant.org_type,
+                                    name=registrant.org_name,
+                                    full_name=registrant.org_full_name,
+                                    inn=registrant.org_inn,
+                                    director=registrant.org_director,
+                                    basis=registrant.org_basis,
+                                    email=registrant.user_email,
+                                    phones=registrant.org_phones,
+                                    fax=registrant.org_fax,
+                                    ogrn=registrant.org_ogrn,
+                                    off_address=off_address,
+                                    currency=registrant.org_currency,
+                                    subdomain=registrant.org_subdomain,
+                                    death_date_offer=death_date_offer,
+                        )
                 except IntegrityError:
                     raise ServiceException(_(u"Такой поддомен уже используется в системе"))
                 if org.type == Org.PROFILE_UGH:
@@ -2287,9 +2294,8 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             org=org,
                             phones=registrant.org_phones,
                 )
-                transaction.commit()
             except ServiceException as excpt:
-                transaction.rollback()
+                transaction.set_rollback(True)
                 messages.error(request, excpt.message)
             else:
                 host = get_front_end_url(request)
@@ -3003,7 +3009,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
     """
     parser_classes = (MultiPartParser,)
     
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self, request):
         try:
             recaptcha_data = request.DATA.get('captchaData')
@@ -3240,7 +3246,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
             })
 
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             return Response(dict(status='error', message=excpt.message), status=400)
 
 api_org_signup = ApiOrgSignupView.as_view()
@@ -3664,9 +3670,9 @@ class ApiVideoVotesView(ApiVideoMixin, APIView):
                 offset_str='OFFSET %s' % offset if offset else '',
                 limit_str='LIMIT %s' % count if count else '',
         )
-        cursor = connection.cursor()
-        cursor.execute(req_str)
-        data = dictfetchall(cursor)
+        with connection.cursor() as cursor:
+            cursor.execute(req_str)
+            data = dictfetchall(cursor)
         return Response(data=data)
 
     def post(self, request, yid):
@@ -3888,7 +3894,7 @@ videos = VideoListView.as_view()
 
 class ApiVideoDetailView(APIView):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def get(self, request, yid):
         youtubevideo = get_object_or_404(YoutubeVideo, yid=yid)
 
@@ -3922,7 +3928,7 @@ class ApiVideoDetailView(APIView):
 
         return Response(data=YoutubeVideoSerializer(youtubevideo).data, status=200)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self, request, yid):
         if not is_supervisor(request.user):
             raise PermissionDenied
@@ -4007,7 +4013,7 @@ thanks = ThanksListView.as_view()
 class ApiThankDetailView(APIView):
     permission_classes = (PermitIfSupervisor,)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self, request, pk):
         thank = get_object_or_404(Thank, pk=pk)
         thank.delete()

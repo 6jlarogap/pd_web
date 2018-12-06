@@ -1,5 +1,5 @@
 # coding=utf-8
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
@@ -8,7 +8,7 @@ from django.db import models
 class Report(models.Model):
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField()
-    content_object = generic.GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey('content_type', 'object_id')
 
     user = models.ForeignKey('auth.User', editable=False)
     dt = models.DateTimeField(auto_now_add=True)

@@ -5,7 +5,7 @@ from django.db import models, IntegrityError
 from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
 from django.db.models.loading import get_model
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 
@@ -357,7 +357,7 @@ class Phone(BaseModel):
 
     ct = models.ForeignKey('contenttypes.ContentType', null=True, blank=True, editable=False, verbose_name=_(u"Тип"))
     obj_id = models.PositiveIntegerField(null=True, blank=True, editable=False, verbose_name=_(u"ID объекта"), db_index=True)
-    obj = generic.GenericForeignKey(ct_field='ct', fk_field='obj_id')
+    obj = GenericForeignKey(ct_field='ct', fk_field='obj_id')
     number = models.CharField(_(u"Номер"), max_length=50, blank=True)
     phonetype = models.SmallIntegerField(_(u"Тип телефона"), choices=PHONE_TYPE_CHOICES, default=PHONE_TYPE_CITY)
 
