@@ -249,7 +249,7 @@ class Migration(migrations.Migration):
                 ('wsb_storeid', models.CharField(max_length=255, verbose_name='\u0418\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438 \u0432 \u0441\u0438\u0441\u0442\u0435\u043c\u0435 WebPay')),
                 ('secret', models.CharField(max_length=255, verbose_name='\u0421\u0435\u043a\u0440\u0435\u0442\u043d\u044b\u0439 \u043a\u043b\u044e\u0447')),
                 ('wsb_store', models.CharField(max_length=255, verbose_name='\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u0438 \u043d\u0430 \u0444\u043e\u0440\u043c\u0435 \u043e\u043f\u043b\u0430\u0442\u044b WebPay')),
-                ('wsb_currency_id', models.CharField(default=b'BYR', max_length=255, verbose_name='\u041a\u043e\u0434 \u0432\u0430\u043b\u044e\u0442\u044b \u0441\u043e\u0433\u043b\u0430\u0441\u043d\u043e ISO4271')),
+                ('wsb_currency_id', models.CharField(default=b'BYN', max_length=255, verbose_name='\u041a\u043e\u0434 \u0432\u0430\u043b\u044e\u0442\u044b \u0441\u043e\u0433\u043b\u0430\u0441\u043d\u043e ISO4271')),
                 ('wsb_version', models.CharField(max_length=255, verbose_name='\u0412\u0435\u0440\u0441\u0438\u044f \u0444\u043e\u0440\u043c\u044b \u043e\u043f\u043b\u0430\u0442\u044b')),
                 ('wsb_test', models.BooleanField(default=True, verbose_name='\u0422\u0435\u0441\u0442\u043e\u0432\u0430\u044f \u0441\u0440\u0435\u0434\u0430')),
                 ('org', models.OneToOneField(to='users.Org')),
