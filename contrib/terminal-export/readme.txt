@@ -22,7 +22,20 @@
 в /etc/ssh/sshd_config:
 
     Match User terminal
-        ChrootDirectory %h
+        ChrootDirectory /home/terminal
+        ForceCommand internal-sftp
+        AllowTcpForwarding no
+        PermitTunnel no
+        X11Forwarding no
+
+В Ubuntu 18.04:
+    Не найден способ, как в Ubuntu 18.04 у пользователя terminal сделать chroot
+    на его домашний каталог в настройке /etc/ssh/sshd_config, но можно выполнить
+    chroot на какую-то другую папку, например на /usr/local/ssh_chroot/terminal.
+    В /etc/ssh/sshd_config:
+
+    Match User terminal
+        ChrootDirectory /usr/local/ssh_chroot/terminal
         ForceCommand internal-sftp
         AllowTcpForwarding no
         PermitTunnel no
@@ -33,6 +46,10 @@ sftp операции только в своем домашнем каталог
 ибо еще настраивается:
 
     chown root:root /home/terminal
+
+Или в Ubuntu 18.04:
+
+    chown root:root /usr/local/ssh_chroot/terminal
 
 Для доступа к экспортным файлам терминалов на ПК с Windows на кладбище ставится
 PuTTY Installer, http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html

@@ -149,7 +149,7 @@
                 {% trans "могила" %} {{ b.grave_number }}
                 <br/>
                 {{ b.get_burial_type_display|default:"" }}<br />{{ b.get_burial_container_display|default:"" }}
-                <br /><a href="{% url burial_list %}?cemetery={{ b.cemetery.name }}&area={{ b.area.name }}&row={{ b.row|default_if_none:"" }}&place={{ b.place_number }}&per_page=10" target="_blank" >{% trans "Поиск по месту" %}</a>
+                <br /><a href="{% url 'burial_list' %}?cemetery={{ b.cemetery.name }}&area={{ b.area.name }}&row={{ b.row|default_if_none:"" }}&place={{ b.place_number }}&per_page=10" target="_blank" >{% trans "Поиск по месту" %}</a>
             </td>
             <td>
                 {% if b.get_responsible %}
@@ -189,8 +189,8 @@
                 {% endfor %}
             </td>
             <td>
-                <a class="btn" href="{% url view_burial b.pk %}" target="_blank">{% trans "просмотр" %}</a>
-                <br /><a class="btn" href="{% url edit_burial b.pk %}" target="_blank">{% trans "правка" %}</a>
+                <a class="btn" href="{% url 'view_burial' b.pk %}" target="_blank">{% trans "просмотр" %}</a>
+                <br /><a class="btn" href="{% url 'edit_burial' b.pk %}" target="_blank">{% trans "правка" %}</a>
                 {% if b.get_place %}
                     <br /><a class="btn" href="{{ b.get_place.url }}" target="_blank">{% trans "место" %}</a>
                 {% endif %}

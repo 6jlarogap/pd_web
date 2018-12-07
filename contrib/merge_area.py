@@ -11,7 +11,7 @@ from users.models import Org, Profile
 from logs.models import Log
 from burials.models import Burial, Cemetery, Area, Place
 
-@transaction.commit_on_success
+@transaction.atomic
 def main():
     ugh = Org.objects.get(pk=394)
     print u"OMS: %s" % ugh

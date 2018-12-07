@@ -8,7 +8,7 @@
 # Запуск из ./manage.py shell :
 # execfile('/path/to/remove_org.py')
 
-ORG_PK=259
+ORG_PK=-259
 
 from django.db import transaction
 from django.contrib.contenttypes.models import ContentType
@@ -20,7 +20,6 @@ from users.models import Org, BankAccount, Profile, OrgCertificate, OrgContract,
                          Store
 from logs.models import Log
 
-@transaction.commit_on_success
 def main(pk=ORG_PK):
     
     def rec_deleted(n):
@@ -119,4 +118,9 @@ def main(pk=ORG_PK):
     org.delete()
     transaction.commit()
 
-main()
+transaction.set_autocommit(False)
+try:
+    main()
+finally:
+    transaction.commit()
+    transaction.set_autocommit(True)

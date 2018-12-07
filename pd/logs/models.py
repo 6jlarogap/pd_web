@@ -4,7 +4,7 @@ import datetime
 from pytz import timezone
 
 from django.conf import settings
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -56,7 +56,7 @@ class Log(models.Model):
     user = models.ForeignKey('auth.User', null=True, editable=False, verbose_name=_(u"Пользователь"))
     ct = models.ForeignKey('contenttypes.ContentType', null=True, editable=False, verbose_name=_(u"Тип"))
     obj_id = models.PositiveIntegerField(null=True, editable=False, verbose_name=_(u"ID объекта"), db_index=True)
-    obj = generic.GenericForeignKey(ct_field='ct', fk_field='obj_id')
+    obj = GenericForeignKey(ct_field='ct', fk_field='obj_id')
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"), db_index=True)
     msg = models.TextField(editable=False, verbose_name=_(u"Описание"))
     code = models.CharField(max_length=255, default='', editable=False, verbose_name=_(u"Спец. код"))
@@ -360,7 +360,7 @@ class DeleteLog(models.Model):
     """
     ct = models.ForeignKey('contenttypes.ContentType', editable=False, verbose_name=_(u"Тип"))
     obj_id = models.PositiveIntegerField(editable=False, verbose_name=_(u"ID объекта"))
-    obj = generic.GenericForeignKey(ct_field='ct', fk_field='obj_id')
+    obj = GenericForeignKey(ct_field='ct', fk_field='obj_id')
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_(u"Время"), db_index=True)
     # ID родителя. Для разных моделей, если удаление из них сюда записывается,
     # может быть разным. Чтобы ограничить список удаленных объектов, передаваемых

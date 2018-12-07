@@ -14,7 +14,7 @@
             <td>{{ doc.dt }}</td>
             <td>{{ doc.user.profile }} / {{ doc.user.profile.org }}</td>
             <td>{{ doc.description }}</td>
-            <td><a class="btn" href="{% url report_view doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
+            <td><a class="btn" href="{% url 'report_view' doc.pk %}" target="_blank">{% trans "просмотр" %}</a></td>
         </tr>
     {% endfor %}
 </table>

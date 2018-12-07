@@ -566,7 +566,7 @@ class Oauth(BaseModel):
                " ".join((self.first_name, self.last_name, )).strip()
 
     @classmethod
-    @transaction.commit_on_success
+    @transaction.atomic
     def check_token(cls, oauth_dict, signup_dict=None, bind_dict=None):
         """
         Проверить token у провайдера Oauth. Token & provider в входном oauth_dict
@@ -641,8 +641,9 @@ class Oauth(BaseModel):
             if email and (user.email != email) and \
                not User.objects.filter(email=email).exclude(pk=user.pk).exists():
                 try:
-                    user.email = email
-                    user.save()
+                    with transaction.atomic():
+                        user.email = email
+                        user.save()
                 except IntegrityError:
                     raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
 
@@ -771,7 +772,7 @@ class Oauth(BaseModel):
                         elif key == 'site':
                             if not re.search(r'^\w+\://', user_details[key]):
                                 user_details[key] = u"http://%s" % user_details[key]
-                            validate = URLValidator(verify_exists=False)
+                            validate = URLValidator()
                             try:
                                 validate(user_details[key])
                             except ValidationError:
@@ -804,14 +805,15 @@ class Oauth(BaseModel):
                 email = profile.get('email') or user_details.get('email') or None
                 if username:
                     try:
-                        user, created = User.objects.get_or_create(
-                            username=username,
-                            defaults = {
-                                'email': email,
-                            }
-                        )
-                        if not created:
-                            raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                        with transaction.atomic():
+                            user, created = User.objects.get_or_create(
+                                username=username,
+                                defaults = {
+                                    'email': email,
+                                }
+                            )
+                            if not created:
+                                raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
                     except IntegrityError:
                         raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
                 else:
@@ -819,10 +821,11 @@ class Oauth(BaseModel):
                     while True:
                         username  = ''.join(random.choice(chars) for x in range(8))
                         try:
-                            user = User.objects.create(
-                                username=username,
-                                email=None,
-                            )
+                            with transaction.atomic():
+                                user = User.objects.create(
+                                    username=username,
+                                    email=None,
+                                )
                         except IntegrityError:
                             pass
                         else:
@@ -842,18 +845,20 @@ class Oauth(BaseModel):
                                 # так как там такая почта уже есть
                         else:
                             try:
-                                user.email = email
-                                user.save()
+                                with transaction.atomic():
+                                    user.email = email
+                                    user.save()
                             except IntegrityError:
                                 raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
                     password = CommonProfile.generate_password()
                 try:
-                    oauth = cls.objects.create(
-                        user=user,
-                        provider=provider,
-                        uid=uid,
-                        **user_details
-                    )
+                    with transaction.atomic():
+                        oauth = cls.objects.create(
+                            user=user,
+                            provider=provider,
+                            uid=uid,
+                            **user_details
+                        )
                 except IntegrityError:
                     error_code = err_intergrity_error
                     raise ServiceException(msg_intergrity_error)
@@ -893,12 +898,13 @@ class Oauth(BaseModel):
                         oauth.save()
                 except cls.DoesNotExist:
                     try:
-                        cls.objects.create(
-                            user=user,
-                            provider=provider,
-                            uid=uid,
-                            **user_details
-                        )
+                        with transaction.atomic():
+                            cls.objects.create(
+                                user=user,
+                                provider=provider,
+                                uid=uid,
+                                **user_details
+                            )
                     except IntegrityError:
                         # Почти невозможная ситуация
                         error_code = err_intergrity_error
@@ -913,7 +919,7 @@ class Oauth(BaseModel):
                     error_code = u"oauth_provider_not_attached"
                     raise ServiceException(_(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
         except ServiceException as excpt:
-            transaction.rollback()
+            transaction.set_rollback(True)
             message['message'] = excpt.message
             if error_code:
                 message['errorCode'] = error_code
@@ -1451,7 +1457,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
             user_email=self.user_email,
         )
     
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete(self):
         self.safe_delete('org_address', self)
         try:

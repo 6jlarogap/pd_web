@@ -39,7 +39,6 @@ from burials.models import Burial, Place, Cemetery, Area, AreaPurpose, Grave, Bu
 from persons.models import DeadPerson
 from users.models import Profile
 
-@transaction.commit_on_success
 def main():
     profile = Profile.objects.get(pk=PROFILE_ID)
     ugh = profile.org
@@ -165,5 +164,9 @@ def to_date(cell, book):
         result = datetime.datetime(*xlrd.xldate_as_tuple(cell.value, book.datemode))
     return result
 
-
-main()
+transaction.set_autocommit(False)
+try:
+    main()
+finally:
+    transaction.commit()
+    transaction.set_autocommit(True)

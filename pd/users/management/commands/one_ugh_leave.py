@@ -34,164 +34,170 @@ class Command(BaseCommand):
 
     # Главная функция
     #
-    @transaction.commit_on_success
     def handle(self, *args, **options):
-        if len(args) < 2:
-            print "ERROR! PLease give me a parm. Type --help to get help"
-            quit()
-        ugh_pk = args[0]
+
+        transaction.set_autocommit(False)
         try:
-            ugh_one = Org.objects.get(type=Org.PROFILE_UGH, pk=ugh_pk)
-        except Org.DoesNotExist:
-            print "ERROR! Failed to gind OMS with pk=%s" % ugh_pk
-            quit()
-        media_list = args[1]
-        print 'Forming the list of media of the OMS, %s' % media_list
+            if len(args) < 2:
+                print "ERROR! PLease give me a parm. Type --help to get help"
+                quit()
+            ugh_pk = args[0]
+            try:
+                ugh_one = Org.objects.get(type=Org.PROFILE_UGH, pk=ugh_pk)
+            except Org.DoesNotExist:
+                print "ERROR! Failed to gind OMS with pk=%s" % ugh_pk
+                quit()
+            media_list = args[1]
+            print 'Forming the list of media of the OMS, %s' % media_list
 
-        try:
-            self.media_file = open(media_list, 'w')
-        except IOError:
-            print "ERROR! Failed to open '%s' for write" % media_list
-            quit()
+            try:
+                self.media_file = open(media_list, 'w')
+            except IOError:
+                print "ERROR! Failed to open '%s' for write" % media_list
+                quit()
 
-        for model in (OrgCertificate, OrgGallery, OrgContract,):
-            self.collect_media(model, Q(org=ugh_one))
-        self.collect_media(UserPhoto, Q(user__profile__org=ugh_one))
-        self.collect_media(
-            DeathCertificateScan,
-            Q(deathcertificate__person__burial__ugh=ugh_one)
-        )
-        self.collect_media(CemeteryPhoto, Q(cemetery__ugh=ugh_one))
-        self.collect_media(AreaPhoto, Q(area__cemetery__ugh=ugh_one))
-        self.collect_media(PlacePhoto, Q(place__cemetery__ugh=ugh_one))
-        self.collect_media(
-            PlaceStatusFiles,
-            Q(placestatus__place__cemetery__ugh=ugh_one)
-        )
-        self.collect_media(BurialFiles, Q(burial__ugh=ugh_one))
-        
-        self.media_file.close()
-        print '\n%s total media recs written\n' % self.count_media
-        
-        ugh_qs = Q(type=Org.PROFILE_UGH) & ~Q(pk=ugh_pk)
+            for model in (OrgCertificate, OrgGallery, OrgContract,):
+                self.collect_media(model, Q(org=ugh_one))
+            self.collect_media(UserPhoto, Q(user__profile__org=ugh_one))
+            self.collect_media(
+                DeathCertificateScan,
+                Q(deathcertificate__person__burial__ugh=ugh_one)
+            )
+            self.collect_media(CemeteryPhoto, Q(cemetery__ugh=ugh_one))
+            self.collect_media(AreaPhoto, Q(area__cemetery__ugh=ugh_one))
+            self.collect_media(PlacePhoto, Q(place__cemetery__ugh=ugh_one))
+            self.collect_media(
+                PlaceStatusFiles,
+                Q(placestatus__place__cemetery__ugh=ugh_one)
+            )
+            self.collect_media(BurialFiles, Q(burial__ugh=ugh_one))
+            
+            self.media_file.close()
+            print '\n%s total media recs written\n' % self.count_media
+            
+            ugh_qs = Q(type=Org.PROFILE_UGH) & ~Q(pk=ugh_pk)
 
-        print 'Looking for UGHs to be removed'
-        for ugh in Org.objects.filter(ugh_qs):
-            print ugh
-            print 'removing deadmen in burial'
-            i = 0
-            for deadperson in DeadPerson.objects.filter(burial__ugh=ugh).iterator():
-                i += 1 
-                Burial.objects.filter(deadman=deadperson).update(deadman=None)
-                deadperson.delete()
-                if i % 1000 == 0:
-                    print "%d deadmen removed" % i
-            print 'removing burial applicants- alivepersons'
-            transaction.commit()
-            i = 0
-            for aliveperson in AlivePerson.objects.filter(applied_burials__ugh=ugh).iterator():
-                i += 1 
-                Burial.objects.filter(applicant=aliveperson).update(applicant=None)
-                aliveperson.delete()
-                if i % 1000 == 0:
-                    print "%d burial applicants removed" % i
-            print 'removing non-closed burial responsibles- alivepersons'
-            transaction.commit()
-            for aliveperson in AlivePerson.objects.filter(responsible_burials__ugh=ugh).iterator():
-                Burial.objects.filter(responsible=aliveperson).update(applicant=None)
-                aliveperson.delete()
-            print 'removing exhumationrequest applicants- alivepersons'
-            for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__ugh=ugh).iterator():
-                ExhumationRequest.objects.filter(applicant=aliveperson).update(applicant=None)
-                aliveperson.delete()
-            transaction.commit()
-
-            print 'removing orderItems'
-            OrderItem.objects.filter(order__burial__ugh=ugh).delete()
-            ServiceItem.objects.filter(order__burial__ugh=ugh).delete()
-
-            print 'removing orders'
-            Order.objects.filter(burial__ugh=ugh).delete()
-            transaction.commit()
-
-            print 'Marking dependent fields in Burials as None'
-            Burial.objects.filter(Q(applicant_organization=ugh) & ~Q(ugh=ugh_one)). \
-                update(applicant_organization=None)
-            Burial.objects.filter(Q(agent__org=ugh) & ~Q(ugh=ugh_one)). \
-                update(agent=None)
-            Burial.objects.filter((Q(dover__agent__org=ugh) | Q(dover__target_org=ugh)) & ~Q(ugh=ugh_one)). \
-                update(dover=None)
-            ExhumationRequest.objects.filter(Q(applicant_organization=ugh)  & ~Q(burial__ugh=ugh_one)). \
-                update(applicant_organization=None)
-            ExhumationRequest.objects.filter(Q(agent__org=ugh) & ~Q(burial__ugh=ugh_one)). \
-                update(agent=None)
-            ExhumationRequest.objects.filter((Q(dover__agent__org=ugh) | Q(dover__target_org=ugh))  & ~Q(burial__ugh=ugh_one)). \
-                update(dover=None)
-            Burial.objects.filter(Q(loru=ugh)  & ~Q(ugh=ugh_one)). \
-                update(loru=None)
-            Burial.objects.filter(Q(loru_agent__org=ugh) & ~Q(ugh=ugh_one)). \
-                update(loru_agent=None)
-            Burial.objects.filter((Q(loru_dover__agent__org=ugh) | Q(loru_dover__target_org=ugh)) & ~Q(ugh=ugh_one)). \
-                update(loru_dover=None)
-            transaction.commit()
-
-            print 'removing burials'
-            ExhumationRequest.objects.filter(burial__ugh=ugh).delete()
-            BurialFiles.objects.filter(burial__ugh=ugh).delete()
-            BurialComment.objects.filter(burial__ugh=ugh).delete()
-            Burial.objects.filter(ugh=ugh).delete()
-            transaction.commit()
-            print 'removing graves'
-            Grave.objects.filter(place__cemetery__ugh=ugh).delete()
-            transaction.commit()
-
-            print 'removing place responsibles- alivepersons'
-            i = 0
-            for aliveperson in AlivePerson.objects.filter(place__cemetery__ugh=ugh).iterator():
-                i += 1
-                Place.objects.filter(responsible=aliveperson).update(responsible=None)
-                try:
-                    user = aliveperson.user
-                except (AttributeError, User.DoesNotExist,):
+            print 'Looking for UGHs to be removed'
+            for ugh in Org.objects.filter(ugh_qs):
+                print ugh
+                print 'removing deadmen in burial'
+                i = 0
+                for deadperson in DeadPerson.objects.filter(burial__ugh=ugh).iterator():
+                    i += 1 
+                    Burial.objects.filter(deadman=deadperson).update(deadman=None)
+                    deadperson.delete()
+                    if i % 1000 == 0:
+                        transaction.commit()
+                        print "%d deadmen removed" % i
+                print 'removing burial applicants- alivepersons'
+                i = 0
+                for aliveperson in AlivePerson.objects.filter(applied_burials__ugh=ugh).iterator():
+                    i += 1 
+                    Burial.objects.filter(applicant=aliveperson).update(applicant=None)
                     aliveperson.delete()
                     if i % 1000 == 0:
-                        print "%d place responsibles removed" % i
                         transaction.commit()
+                        print "%d burial applicants removed" % i
+                print 'removing non-closed burial responsibles- alivepersons'
+                for aliveperson in AlivePerson.objects.filter(responsible_burials__ugh=ugh).iterator():
+                    Burial.objects.filter(responsible=aliveperson).update(applicant=None)
+                    aliveperson.delete()
+                print 'removing exhumationrequest applicants- alivepersons'
+                for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__ugh=ugh).iterator():
+                    ExhumationRequest.objects.filter(applicant=aliveperson).update(applicant=None)
+                    aliveperson.delete()
+                transaction.commit()
 
-            print 'removing places'
-            PlaceSize.objects.filter(org=ugh).delete()
-            PlacePhoto.objects.filter(place__cemetery__ugh=ugh).delete()
-            PlaceStatusFiles.objects.filter(placestatus__place__cemetery__ugh=ugh).delete()
-            PlaceStatus.objects.filter(place__cemetery__ugh=ugh).delete()
-            Place.objects.filter(cemetery__ugh=ugh).delete()
+                print 'removing orderItems'
+                OrderItem.objects.filter(order__burial__ugh=ugh).delete()
+                ServiceItem.objects.filter(order__burial__ugh=ugh).delete()
+
+                print 'removing orders'
+                Order.objects.filter(burial__ugh=ugh).delete()
+                transaction.commit()
+
+                print 'Marking dependent fields in Burials as None'
+                Burial.objects.filter(Q(applicant_organization=ugh) & ~Q(ugh=ugh_one)). \
+                    update(applicant_organization=None)
+                Burial.objects.filter(Q(agent__org=ugh) & ~Q(ugh=ugh_one)). \
+                    update(agent=None)
+                Burial.objects.filter((Q(dover__agent__org=ugh) | Q(dover__target_org=ugh)) & ~Q(ugh=ugh_one)). \
+                    update(dover=None)
+                ExhumationRequest.objects.filter(Q(applicant_organization=ugh)  & ~Q(burial__ugh=ugh_one)). \
+                    update(applicant_organization=None)
+                ExhumationRequest.objects.filter(Q(agent__org=ugh) & ~Q(burial__ugh=ugh_one)). \
+                    update(agent=None)
+                ExhumationRequest.objects.filter((Q(dover__agent__org=ugh) | Q(dover__target_org=ugh))  & ~Q(burial__ugh=ugh_one)). \
+                    update(dover=None)
+                Burial.objects.filter(Q(loru=ugh)  & ~Q(ugh=ugh_one)). \
+                    update(loru=None)
+                Burial.objects.filter(Q(loru_agent__org=ugh) & ~Q(ugh=ugh_one)). \
+                    update(loru_agent=None)
+                Burial.objects.filter((Q(loru_dover__agent__org=ugh) | Q(loru_dover__target_org=ugh)) & ~Q(ugh=ugh_one)). \
+                    update(loru_dover=None)
+                transaction.commit()
+
+                print 'removing burials'
+                ExhumationRequest.objects.filter(burial__ugh=ugh).delete()
+                BurialFiles.objects.filter(burial__ugh=ugh).delete()
+                BurialComment.objects.filter(burial__ugh=ugh).delete()
+                Burial.objects.filter(ugh=ugh).delete()
+                transaction.commit()
+                print 'removing graves'
+                Grave.objects.filter(place__cemetery__ugh=ugh).delete()
+                transaction.commit()
+
+                print 'removing place responsibles- alivepersons'
+                i = 0
+                for aliveperson in AlivePerson.objects.filter(place__cemetery__ugh=ugh).iterator():
+                    i += 1
+                    Place.objects.filter(responsible=aliveperson).update(responsible=None)
+                    try:
+                        user = aliveperson.user
+                    except (AttributeError, User.DoesNotExist,):
+                        aliveperson.delete()
+                        if i % 1000 == 0:
+                            transaction.commit()
+                            print "%d place responsibles removed" % i
+
+                print 'removing places'
+                PlaceSize.objects.filter(org=ugh).delete()
+                PlacePhoto.objects.filter(place__cemetery__ugh=ugh).delete()
+                PlaceStatusFiles.objects.filter(placestatus__place__cemetery__ugh=ugh).delete()
+                PlaceStatus.objects.filter(place__cemetery__ugh=ugh).delete()
+                Place.objects.filter(cemetery__ugh=ugh).delete()
+                transaction.commit()
+
+                print 'removing areas'
+                AreaPhoto.objects.filter(area__cemetery__ugh=ugh).delete()
+                AreaCoordinates.objects.filter(area__cemetery__ugh=ugh).delete()
+                Area.objects.filter(cemetery__ugh=ugh).delete()
+
+                print 'removing cemeteries'
+                CemeteryPhoto.objects.filter(cemetery__ugh=ugh).delete()
+                CemeteryCoordinates.objects.filter(cemetery__ugh=ugh).delete()
+                Cemetery.objects.filter(ugh=ugh).delete()
+                Reason.objects.filter(org=ugh).delete()
+                transaction.commit()
+                
+                self.remove_org(ugh)
+                print 'UGH deleted'
+                transaction.commit()
+
+            print 'Current Stats'
+            print 'Burials total: %s' % Burial.objects.all().count()
+            print 'DeadPerson total: %s' % DeadPerson.objects.all().count()
+            print 'Places total: %s' % Place.objects.all().count()
+
+            print 'DeathCertificateScans total: %s' % DeathCertificateScan.objects.all().count()
+            print 'PlacePhoto total: %s' % PlacePhoto.objects.all().count()
+            print 'AreaPhoto total: %s' % AreaPhoto.objects.all().count()
+            print 'CemeteryPhoto total: %s' % CemeteryPhoto.objects.all().count()
+            print 'Burial Files total: %s' % BurialFiles.objects.all().count()
+
+        finally:
             transaction.commit()
-
-            print 'removing areas'
-            AreaPhoto.objects.filter(area__cemetery__ugh=ugh).delete()
-            AreaCoordinates.objects.filter(area__cemetery__ugh=ugh).delete()
-            Area.objects.filter(cemetery__ugh=ugh).delete()
-
-            print 'removing cemeteries'
-            CemeteryPhoto.objects.filter(cemetery__ugh=ugh).delete()
-            CemeteryCoordinates.objects.filter(cemetery__ugh=ugh).delete()
-            Cemetery.objects.filter(ugh=ugh).delete()
-            Reason.objects.filter(org=ugh).delete()
-            transaction.commit()
-            
-            self.remove_org(ugh)
-            print 'UGH deleted'
-            transaction.commit()
-
-        print 'Current Stats'
-        print 'Burials total: %s' % Burial.objects.all().count()
-        print 'DeadPerson total: %s' % DeadPerson.objects.all().count()
-        print 'Places total: %s' % Place.objects.all().count()
-
-        print 'DeathCertificateScans total: %s' % DeathCertificateScan.objects.all().count()
-        print 'PlacePhoto total: %s' % PlacePhoto.objects.all().count()
-        print 'AreaPhoto total: %s' % AreaPhoto.objects.all().count()
-        print 'CemeteryPhoto total: %s' % CemeteryPhoto.objects.all().count()
-        print 'Burial Files total: %s' % BurialFiles.objects.all().count()
+            transaction.set_autocommit(True)
 
     def remove_org(self, org):
         org.store_set.all().delete()

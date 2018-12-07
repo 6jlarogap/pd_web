@@ -112,9 +112,9 @@
                 </span>
                 </big></b>
                 {% if r.is_confirmed %}
-                    <br />{% if r.same_username or r.same_email or r.same_subdomain %}<s>{% trans "одобрить" %}</s>{% else %}<a href="{% url registrant_approve r.pk %}">{% trans "одобрить" %}</a>{% endif %}
+                    <br />{% if r.same_username or r.same_email or r.same_subdomain %}<s>{% trans "одобрить" %}</s>{% else %}<a href="{% url 'registrant_approve' r.pk %}">{% trans "одобрить" %}</a>{% endif %}
                     <br />
-                        <a href="{% url registrant_decline r.pk %}"
+                        <a href="{% url 'registrant_decline' r.pk %}"
                         {% if r.is_confirmed or r.is_to_confirm %}
                             onclick="return confirm('{% trans "Вы уверены?" %}');"
                         {% endif %}>
@@ -122,7 +122,7 @@
                     </a>
                 {% endif %}
                  <br />
-                 <a href="{% url registrant_delete r.pk %}"
+                 <a href="{% url 'registrant_delete' r.pk %}"
                     {% if r.is_confirmed or r.is_to_confirm %}
                         onclick="return confirm('{% trans "Вы уверены?" %}');"
                     {% endif %}>

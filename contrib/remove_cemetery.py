@@ -21,15 +21,14 @@ from burials.models import Cemetery, Burial, ExhumationRequest, BurialFiles, \
                            Grave
 from persons.models import AlivePerson, DeadPerson
 
-CEMETERY_NAME = u'Бекетово-Парковое'
+CEMETERY_NAME = u'Западное'
 #
 # Искажение во избежание случайного запуска процедуры
 #
-UGH_PK = -394
+UGH_PK = -2
 
-@transaction.commit_on_success
 def main():
-    
+
     cemetery = Cemetery.objects.get(ugh__pk=UGH_PK, name=CEMETERY_NAME)
     
     print '\nremove deadmen'
@@ -163,15 +162,18 @@ def main():
     Area.objects.filter(cemetery=cemetery).delete()
     transaction.commit()
     gc.collect()
-
     print '\nremove cemetery log recs'
     ct = ContentType.objects.get(app_label="burials", model="cemetery")
     Log.objects.filter(ct=ct, obj_id=cemetery.pk).delete()
-
     print '\nremove cemetery'
     cemetery.delete()
 
 def print_removed(i):
     print "%7d removed" % (i or 0)
 
-main()
+transaction.set_autocommit(False)
+try:
+    main()
+finally:
+    transaction.commit()
+    transaction.set_autocommit(True)
