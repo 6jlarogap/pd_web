@@ -768,12 +768,7 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
                 if self.applicant_id_form.is_valid_data():
                     pid = self.applicant_id_form.save(commit=False)
                     pid.person = applicant
-
-                    # Иногда возникает ошибка дублирования OneToOne ключа PersonID.person
-                    # Смоделировать ее не могу (Е.С.)
-                    # Посмотрим, поможет ли force_update= в pid.save()
-                    #
-                    pid.save(force_update=bool(pid.pk))
+                    pid.save()
         else:
             self.safe_delete('applicant', self.instance)
             self.instance.flag_no_applicant_doc_required = False
