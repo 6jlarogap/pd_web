@@ -15,7 +15,7 @@
             {% trans "Новое захоронение" %}
         {% endif %}
     </h1>{% endblock form_title %}
-    <form action="{{ request.path }}" method="POST" enctype="multipart/form-data" class="burial-form main-form">
+    <form action="{{ request.path }}" method="POST" enctype="multipart/form-data" class="burial-form main-form form_dbl_click_prevent">
         {% csrf_token %}
         <input type="hidden" name="order"  value="{{ request.GET.order }}{{ request.POST.order }}" />
         <input type="hidden" name="funeral_order"  value="{{ request.GET.funeral_order }}{{ request.POST.funeral_order }}" />

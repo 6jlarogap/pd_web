@@ -485,6 +485,14 @@ $(function() {
     if (!window.PLACE_TYPES) { PLACE_TYPES = {} }
     if (!window.PLACE_SIZE) { PLACE_SIZE = {} }
     
+    $(".form_dbl_click_prevent").submit(function() {
+        // prevent multiple submits, e.g. because of a bad mouse
+        $(this).submit(function() {
+            return false;
+        });
+        return true;
+    });
+
     $('input[id$=fias_address]').live('keypress', function(e) {
         if (e.keyCode == 13) {
             e.preventDefault();
