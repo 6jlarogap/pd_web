@@ -42,14 +42,14 @@
                 <dd>{% trans "Телефон(ы):" %} {{ b.applicant.phones|default_if_none:"" }}</dd>
                 <dd>
                     {% with pid=b.applicant.personid %}
-                        {% if pid and pid.id_type and pid.series and pid.number %}
+                        {% if pid and pid.id_type and pid.number and pid.source.name %}
                             {% trans "Документ" %}
                             {% if b.flag_no_applicant_doc_required %}
                                 ({% trans "не обязателен" %})
                             {% endif %}
                             :
                             {{ pid }}
-                        {% elif b.is_archive %}
+                        {% elif b.is_archive or b.is_transferred %}
                             {% trans "Документ не заполнен" %}
                         {% else %}
                             <big><b><span style="color:red">
