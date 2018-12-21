@@ -91,7 +91,7 @@ class Country(models.Model):
 
         DOMAINS = dict(
             ru=dict(name=u'Россия', currency='RUR',),
-            by=dict(name=u'Беларусь', currency='BYR',),
+            by=dict(name=u'Беларусь', currency='BYN',),
         )
 
         data = cls.get_yandex_address_info(latitude, longitude)
