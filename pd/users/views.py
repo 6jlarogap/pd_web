@@ -2294,6 +2294,11 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                             org=org,
                             phones=registrant.org_phones,
                 )
+                if org.is_ugh():
+                    role = Role.objects.get(name='admin')
+                    profile.role.add(role)
+                    role = Role.objects.get(name='registrator')
+                    profile.role.add(role)
             except ServiceException as excpt:
                 transaction.set_rollback(True)
                 messages.error(request, excpt.message)
