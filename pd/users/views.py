@@ -92,8 +92,8 @@ from users.serializers import StoreSerializer, Store2Serializer, \
 from sms_service.utils import send_sms
 
 if not ('makemigrations' in sys.argv or 'migrate' in sys.argv):
-    User._meta.get_field_by_name('email')[0]._unique = True
-    User._meta.get_field_by_name('email')[0].null=True
+    User._meta.get_field('email')._unique = True
+    User._meta.get_field('email').null=True
 
 class SupervisorRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
@@ -3215,9 +3215,10 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
             # и для договора с организацией, а там разные имена полей. "Приведем" эти имена
             # к тому, что есть в модели Org
             #
-            for f in registerprofile._meta.get_all_field_names():
+            for f in registerprofile._meta.get_fields():
+                field_name = f.name
                 if f.startswith('org_'):
-                    setattr(registerprofile, f[4:], getattr(registerprofile, f))
+                    setattr(registerprofile, field_name[4:], getattr(registerprofile, field_name))
             setattr(registerprofile, 'off_address', getattr(registerprofile, 'org_address'))
 
             try:

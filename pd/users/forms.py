@@ -29,8 +29,8 @@ from users.models import Profile, ProfileLORU, Org, BankAccount, RegisterProfile
 from persons.models import CustomPerson
 
 if not ('makemigrations' in sys.argv or 'migrate' in sys.argv):
-    User._meta.get_field_by_name('email')[0]._unique = True
-    User._meta.get_field_by_name('email')[0].null=True
+    User._meta.get_field('email')._unique = True
+    User._meta.get_field('email').null=True
 
 class LoruItemForm(forms.ModelForm):
 
