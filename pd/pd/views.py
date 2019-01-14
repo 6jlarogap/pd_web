@@ -7,7 +7,8 @@ from django.http import Http404, HttpResponse, UnreadablePostError
 from django.views.generic.list import ListView
 from django.views.generic.edit import BaseFormView
 from django.shortcuts import get_object_or_404
-from django.db.models.loading import get_model
+from django.apps import apps
+get_model = apps.get_model
 from django.utils.translation import ugettext as _
 from django.contrib import messages
 
