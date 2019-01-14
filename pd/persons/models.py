@@ -4,7 +4,8 @@ import copy
 from django.db import models, IntegrityError
 from django.utils.translation import ugettext as _
 from django.db.models.deletion import ProtectedError
-from django.db.models.loading import get_model
+from django.apps import apps
+get_model = apps.get_model
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User

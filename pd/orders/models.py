@@ -7,7 +7,8 @@ from autoslug import AutoSlugField
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction, IntegrityError
-from django.db.models.loading import get_model
+from django.apps import apps
+get_model = apps.get_model
 from django.utils.translation import ugettext as _
 from django.db.models import Sum, F
 from django.db.models.query_utils import Q
