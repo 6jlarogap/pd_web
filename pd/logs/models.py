@@ -9,7 +9,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
-from django.db.models.loading import get_model
+from django.apps import apps
+get_model = apps.get_model
 
 class LogOperation(object):
 
