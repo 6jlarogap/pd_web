@@ -9,7 +9,8 @@ import re
 from django.conf import settings
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
-from django.db.models.loading import get_model
+from django.apps import apps
+get_model = apps.get_model
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ValidationError
