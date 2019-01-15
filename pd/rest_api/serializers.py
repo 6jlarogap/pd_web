@@ -3,18 +3,6 @@
 from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 
-
-from burials.models import Cemetery, Place, Area, BurialFiles
-
- 
-
-class CemeterySerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = Cemetery
-        fields = ('id', 'name', 'time_begin', 'time_end', ) #'ugh'
-
-
-
 import copy
 import json
 from django import forms
