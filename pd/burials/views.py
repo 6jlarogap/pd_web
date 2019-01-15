@@ -246,7 +246,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
                 "responsible_address" : {}
                 }
         phone_set = cemetery.phone_set.all()
-        data["phones"] = PhoneSerializer(phone_set).data
+        data["phones"] = PhoneSerializer(phone_set, many=True).data
         data["cemetery"]["max_graves_count"] = request.user.profile.org.max_graves_count
         if cemetery.address:
             data["address"] = LocationStaticSerializer(cemetery.address).data
@@ -689,7 +689,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
         data["place"]["available_count"] = place.available_count
         if place.responsible:
             phone_set = place.responsible.phone_set.all()
-            data["responsible_phones"] = PhoneSerializer(phone_set).data
+            data["responsible_phones"] = PhoneSerializer(phone_set, many=True).data
             data["responsible"] = AlivePersonSerializer(place.responsible).data 
             if place.responsible.address:
                 data["responsible_address"] = LocationStaticSerializer(place.responsible.address).data

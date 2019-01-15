@@ -133,7 +133,7 @@ class CemeterySerializer(CemeteryPhotoMixin, serializers.ModelSerializer):
                   'address', 'time_slots', 'caretaker', 'photoUrl', 'schemaUrl', )
     
     def get_phones(self, obj):
-        return PhoneSerializer(obj.phone_set.all()).data
+        return PhoneSerializer(obj.phone_set.all(), many=True).data
 
 
 class CemeteryBriefSerializer(serializers.ModelSerializer):

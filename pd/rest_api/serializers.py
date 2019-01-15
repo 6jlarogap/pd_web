@@ -25,7 +25,7 @@ from django.test.client import encode_multipart
 from django.utils.xmlutils import SimplerXMLGenerator
 from rest_framework.compat import StringIO
 from rest_framework.compat import six
-from rest_framework.compat import smart_text
+from django.utils.encoding import smart_text
 from rest_framework.compat import yaml
 from rest_framework.settings import api_settings
 from rest_framework.request import clone_request

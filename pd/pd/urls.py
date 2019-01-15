@@ -64,7 +64,7 @@ urlpatterns = patterns('',
 
 urlpatterns += patterns('pd.views',
     url(r'^favicon\.ico$',
-        RedirectView.as_view(url='{0}img/favicon16x16.ico'.format(settings.STATIC_URL))),
+        RedirectView.as_view(url='{0}img/favicon16x16.ico'.format(settings.STATIC_URL), permanent=True)),
     url(r'^', include('users.urls')),
     url(r'^', include('burials.urls')),
     url(r'^', include('persons.urls')),
