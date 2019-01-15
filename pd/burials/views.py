@@ -658,7 +658,7 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
             page = paginator.page(page)
         except:
             page = paginator.page(1)
-        log_data = PlaceLogSerializer(page,many=True).data
+        log_data = PlaceLogSerializer(page, many=True).data
         
         paginator = Paginator(place.grave_set.all(), 10)
         grave_page = request.GET.get('grave_page')

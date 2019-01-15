@@ -1039,7 +1039,8 @@ class ProductsOptViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
                 request=self.request,
                 view=self,
                 is_wholesale_with_vat=is_wholesale_with_vat,
-            )
+            ),
+            many=True,
         )
 
 class ProductInfoView(APIView):
@@ -1361,7 +1362,7 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
         opt_orders = Order.objects.filter(qs & Q(type=Order.TYPE_TRADE)).order_by('-dt_created').distinct()
         return Response(
             status=200,
-            data=OptOrdersSerializer(opt_orders, context=dict(
+            data=OptOrdersSerializer(opt_orders, many=True, context=dict(
                 request=request,
             )).data,
         )
