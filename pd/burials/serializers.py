@@ -37,7 +37,7 @@ class SubCemeterySerializer(serializers.ModelSerializer):
         fields = ('id', 'name')
 
 class CemeteryTitleSerializer(serializers.ModelSerializer):
-    title = serializers.Field('name')
+    title = serializers.Field(source='name')
 
     class Meta:
         model = Cemetery
@@ -89,14 +89,14 @@ class CemeteryClientSiteSerializer(AddressLatLonMixin, CemeteryPhotoMixin, seria
             return None
 
 class AreaTitleSerializer(serializers.ModelSerializer):
-    title = serializers.Field('name')
+    title = serializers.Field(source='name')
 
     class Meta:
         model = Area
         fields = ('id', 'title')
 
 class PlaceTitleSerializer(serializers.ModelSerializer):
-    title = serializers.Field('place')
+    title = serializers.Field(source='place')
 
     class Meta:
         model = Place
@@ -233,7 +233,7 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     dt_unindentified = serializers.DateTimeField(required=False)
     caretaker = serializers.PrimaryKeyRelatedField(required=False)
     create_cabinet = serializers.SerializerMethodField('create_cabinet_func')
-    location = serializers.Field('location')
+    location = serializers.Field(source='location')
 
     class Meta:
         model = Place
@@ -359,10 +359,10 @@ class PlaceSizeSerializer(serializers.ModelSerializer):
         fields = ('graves_count', 'place_length', 'place_width')
       
 class OrderPlaceSerializer(serializers.ModelSerializer):
-    cemeteryId = serializers.Field('cemetery.id')
+    cemeteryId = serializers.Field(source='cemetery.id')
     cemeteryText = serializers.Field('cemetery_text')
-    areaId = serializers.Field('area.id')
-    placeNumber = serializers.Field('place')
+    areaId = serializers.Field(source='area.id')
+    placeNumber = serializers.Field(source='place')
 
     class Meta:
         model = OrderPlace
