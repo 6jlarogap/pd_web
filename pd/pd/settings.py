@@ -507,6 +507,14 @@ except NameError:
     # Нет, не задали, да и DEFAULT_FROM_EMAIL наверняка там изменится
     SUPPORT_EMAILS = (DEFAULT_FROM_EMAIL, )
 
+# Django 1.8:
+# Seconds have been removed from any locales that had them in
+# TIME_FORMAT, DATETIME_FORMAT, or SHORT_DATETIME_FORMAT.
+#
+from django.conf.locale.ru import formats as ru_formats
+ru_formats.TIME_FORMAT += ":s"
+ru_formats.DATETIME_FORMAT += ":s"
+ru_formats.SHORT_DATETIME_FORMAT = ":s"
 
 # Test system is to be revised.
 #import sys
