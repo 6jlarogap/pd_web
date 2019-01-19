@@ -69,8 +69,7 @@ urlpatterns = [
     url(r'', include('reports.urls')),
     url(r'', include('mobile.urls')),
     url(r'', include('geo.urls')),
-
-    url(r'^import/', include('import_burials.urls')),
+    url(r'', include('import_burials.urls')),
     
     url(r'', include(router.urls)),
 ]

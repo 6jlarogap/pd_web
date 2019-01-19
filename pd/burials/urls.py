@@ -1,13 +1,10 @@
 # coding: utf-8
 
 from django.conf.urls import url
-from django.conf import settings
-
-from django.views.generic import TemplateView # Django v1.5
+from django.views.generic import TemplateView
 
 from burials import views
 from users.models import Org
-
 
 urlpatterns = [
     url(r'^$', views.dashboard, name='dashboard'),

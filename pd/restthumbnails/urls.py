@@ -1,9 +1,7 @@
-from django.conf import settings
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 
 from restthumbnails.defaults import URL_REGEX
 from restthumbnails.views import ThumbnailView
-
 
 urlpatterns = [
     url(regex=URL_REGEX,

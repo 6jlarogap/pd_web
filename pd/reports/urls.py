@@ -1,8 +1,8 @@
 # coding: utf-8
 
-from django.conf.urls import patterns, include, url
-from django.conf import settings
+from django.conf.urls import url
+from reports import views
 
-urlpatterns = patterns('reports.views',
-    url(r'^reports/(?P<pk>\d+)/$', 'report_view', name='report_view'),
-)
+urlpatterns = [
+    url(r'^reports/(?P<pk>\d+)/$', views.report_view, name='report_view'),
+]
