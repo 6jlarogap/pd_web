@@ -12,7 +12,8 @@ from django.contrib.auth.models import User
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 from django.db import models, transaction, IntegrityError
-from django.db.models.loading import get_model
+from django.apps import apps
+get_model = apps.get_model
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
@@ -391,7 +392,7 @@ def get_mail_footer(user):
     return footer
 
 def get_default_currency():
-    Currency = models.get_model('billing', 'Currency')
+    Currency = get_model('billing', 'Currency')
     return Currency.objects.only('pk').get(code=settings.CURRENCY_DEFAULT_CODE)
 
 class YoutubeVideo(BaseModel):
@@ -1124,13 +1125,13 @@ class Org(GetLogsMixin, BaseModel):
         """
         if not currency:
             currency = self.currency
-        Wallet = models.get_model('billing', 'Wallet')
+        Wallet = get_model('billing', 'Wallet')
         wallet, created = Wallet.objects.get_or_create(
             org=self,
             currency=currency,
         )
         if self.type == self.PROFILE_UGH:
-            Rate = models.get_model('billing', 'Rate')
+            Rate = get_model('billing', 'Rate')
             for action in (Rate.RATE_ACTION_PUBLISH, Rate.RATE_ACTION_UPDATE, ):
                 rate, created = Rate.objects.get_or_create(
                     wallet=wallet,
@@ -1242,14 +1243,14 @@ class OrgWebPay(BaseModel):
     #
     wsb_store = models.CharField(_(u"Название организации на форме оплаты WebPay"), max_length=255)
 
-    # WebPay сейчас работает только с BYR; кроме того, валюта есть свойство организации,
+    # WebPay сейчас работает только с BYN; кроме того, валюта есть свойство организации,
     # так что поле wsb_currency_id может оказаться избыточным.
     # Но не исключается, что
     # - WebPay будет работать с другими валютами, в т.ч. с конвертацией,
     # - при возможности конвертации валюта организации может отличаться от WebPay
     # Посему, несмотря на избыточность поля, храним его в этой таблице
     #
-    wsb_currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255, default='BYR')
+    wsb_currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255, default='BYN')
 
     #  Версия формы оплаты, сейчас "2", но могут появляться новые
     #

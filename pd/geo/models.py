@@ -2,7 +2,8 @@
 
 from django.db import models
 from django.db.models.query_utils import Q
-from django.db.models.loading import get_model
+from django.apps import apps
+get_model = apps.get_model
 from django.utils.translation import ugettext as _
 
 from pd.models import BaseModel 
@@ -91,7 +92,7 @@ class Country(models.Model):
 
         DOMAINS = dict(
             ru=dict(name=u'Россия', currency='RUR',),
-            by=dict(name=u'Беларусь', currency='BYR',),
+            by=dict(name=u'Беларусь', currency='BYN',),
         )
 
         data = cls.get_yandex_address_info(latitude, longitude)
@@ -104,7 +105,7 @@ class Country(models.Model):
                 country_name = country_parms['name']
                 currency_code = country_parms['currency']
                 country, created_country = cls.objects.get_or_create(name=country_name)
-                Currency = models.get_model('billing', 'Currency')
+                Currency = get_model('billing', 'Currency')
                 currency, created_currency = Currency.objects.get_or_create(code=currency_code)
                 result = country, currency
             except (KeyError, IndexError):
