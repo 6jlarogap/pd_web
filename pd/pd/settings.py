@@ -3,7 +3,6 @@
 import sys, os, datetime
 
 DEBUG = False
-TEMPLATE_DEBUG = DEBUG
 
 ALLOWED_HOSTS = ['*']
 
@@ -478,6 +477,8 @@ try:
     from local_settings import *
 except ImportError:
     pass
+TEMPLATE_DEBUG = DEBUG
+ASSETS_DEBUG = DEBUG
 
 # Миграции, начиная с Django 1.7, вносят verbose_name
 # поля, а это меняется для разных локалей
