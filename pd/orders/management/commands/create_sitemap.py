@@ -106,11 +106,11 @@ class Command(BaseCommand):
             suppliers = Org.objects.filter(q_suppliers & q_domain_suppliers).order_by('slug').distinct()
             
             t = loader.get_template('sitemap.xml')
-            xml = unicode(t.render(Context({
+            xml = unicode(t.render({
                 'products': products,
                 'suppliers': suppliers,
                 'url': u"%s.%s/" % (url, domain),
-            })))
+            }))
             
             sitemap = os.path.join(settings.MEDIA_ROOT, 'sitemap_%s.xml' % domain)
             with codecs.open(sitemap, 'w', encoding='utf-8') as f:
