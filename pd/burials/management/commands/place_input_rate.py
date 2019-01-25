@@ -23,15 +23,18 @@ from burials.models import Place
 from logs.models import Log, LogOperation
 
 TEMPLATE_DATE_TIME = '%Y-%m-%dT%H:%M'
+TEMPLATE_DATE_TIME_HELP = TEMPLATE_DATE_TIME.replace('%', '%%')
 
 OUTPUT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class Command(BaseCommand):
-    args = 'username, from_time (%s), to_time (%s), output_file' % (
-        TEMPLATE_DATE_TIME,
-        TEMPLATE_DATE_TIME
-    )
     help = "print user burial input rate from from_time to to_time to output_file"
+
+    def add_arguments(self, parser):
+        parser.add_argument('username', type=str, help='username')
+        parser.add_argument('from_time', type=str, help='from_time (%s)' % TEMPLATE_DATE_TIME_HELP)
+        parser.add_argument('to_time', type=str, help='to_time (%s)' % TEMPLATE_DATE_TIME_HELP)
+        parser.add_argument('output_file', type=str, help='output_time')
 
     def trunc_msec(self, d):
         """
@@ -45,18 +48,16 @@ class Command(BaseCommand):
             dt += datetime.timedelta(seconds=1)
         return dt
 
-    def handle(self, *args, **options):
-        if len(args) < 4:
-            print "ERROR! Not all the parms given. Type --help to get help"
-            quit()
-        username = args[0].decode("utf-8")
+    def handle(self, *args, **kwargs):
+        username = kwargs['username']
+        from_time = kwargs['from_time']
+        to_time = kwargs['to_time']
+        output_file = kwargs['output_file']
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             print u"ERROR! User %s not found" % username
             quit()
-        from_time = args[1].decode("utf-8")
-        to_time = args[2].decode("utf-8")
         try:
             from_time = datetime.datetime.strptime(from_time, TEMPLATE_DATE_TIME)
             to_time = datetime.datetime.strptime(to_time, TEMPLATE_DATE_TIME)
@@ -66,7 +67,6 @@ class Command(BaseCommand):
         if from_time > to_time:
             print 'ERROR! From_time > to_time. Type --help to get help'
             quit()
-        output_file = args[3].decode("utf-8")
         f = open(output_file, 'w')
 
         ct = ContentType.objects.get(app_label="burials", model="place")

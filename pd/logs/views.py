@@ -38,11 +38,11 @@ def getLogQuerySet(log_type=None, place=None):
             place_number=place.place,
         )]
 
-        qs = Log.objects.select_related()
-        qs = qs.filter( Q(Q(obj_id = place.id) & Q(ct=ct_place)) | \
-                        Q(Q(obj_id__in = grave_ids) & Q(ct=ct_grave)) | \
-                        Q(Q(obj_id__in = burial_ids) & Q(ct=ct_burial)) | \
-                        Q(Q(obj_id__in = responsible_ids) & Q(ct=ct_fl))
+        qs = Log.objects.filter(
+            Q(obj_id = place.id) & Q(ct=ct_place) | \
+            Q(obj_id__in = grave_ids) & Q(ct=ct_grave) | \
+            Q(obj_id__in = burial_ids) & Q(ct=ct_burial) | \
+            Q(obj_id__in = responsible_ids) & Q(ct=ct_fl)
         )
     else:
         raise Http404()

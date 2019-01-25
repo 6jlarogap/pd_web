@@ -2,13 +2,13 @@
 
 import sys
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 from burials.models import Place, Grave, Burial
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     help = ""
 
-    def handle_noargs(self, **options):
+    def handle(self, *args, **kwargs):
         """
         Fill place with grave available count
         """
@@ -20,7 +20,7 @@ class Command(NoArgsCommand):
             place.available_count = max(0, place.get_graves_count() - place.burial_count())
             place.save()
             
-            row = row+1
+            row += 1
             if row % 500 == 0:
                 sys.stdout.write("\r%d%%" % int(row*100/cnt))
                 sys.stdout.flush()

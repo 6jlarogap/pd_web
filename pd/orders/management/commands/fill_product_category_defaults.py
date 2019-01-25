@@ -2,15 +2,15 @@
 
 import sys
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 from django.utils.translation import ugettext as _
 
 from orders.models import ProductCategory
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     help = ""
 
-    def handle_noargs(self, **options):
+    def handle(self, *args, **kwargs):
         """
         Заполнить категории продуктов по умолчанию
         """

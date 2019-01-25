@@ -80,7 +80,7 @@ class ApiCemeteryList(APIView):
             pk__in=[c.pk for c in Cemetery.editable_ugh_cemeteries(request.user)],
         )
         listCemetery = Cemetery.objects.filter(queryCemetery).distinct().order_by('id')
-        serializer = CemeteryWithNestedObjectSerializer(listCemetery, context=dict(request=request))
+        serializer = CemeteryWithNestedObjectSerializer(listCemetery, context=dict(request=request), many=True)
         return Response(serializer.data)
         
 cemetery_list = ApiCemeteryList.as_view()
@@ -111,7 +111,7 @@ class ApiCemeteryUpload(APIView):
             isGPSChange = True
             stream = StringIO(gpsJSON)
             data = JSONParser().parse(stream)
-            serializer = CoordinatesSerializer(data=data)
+            serializer = CoordinatesSerializer(data=data, many=True)
             isValid = serializer.is_valid()            
             for obj in serializer.object:
                 listGPS.append(obj)
@@ -165,7 +165,8 @@ class ApiCemeteryUpload(APIView):
                 cemeteryCoordinates.save()                 
         serializer = CemeteryWithNestedObjectSerializer(
             listInsertedCemetery,
-            context=dict(request=request)
+            context=dict(request=request),
+            many=True
         )
         if log_recs:
             write_log(request, cem, "\n".join(log_recs))
@@ -359,7 +360,7 @@ class ApiAreaList(APIView):
                 cemetery_ids = [ argCemeteryId ]
 
         listArea = Area.objects.filter(queryArea).order_by('cemetery', 'id')
-        data = AreaWithNestedObjectSerializer(listArea).data
+        data = AreaWithNestedObjectSerializer(listArea, many=True).data
         if argSyncDateUnix:
             data += DeleteLog.get_deleted(argSyncDate, Area, cemetery_ids)
         return Response(data)
@@ -396,7 +397,7 @@ class ApiAreaUpload(APIView):
             isGPSChange = True
             stream = StringIO(gpsJSON)
             data = JSONParser().parse(stream)
-            serializer = CoordinatesSerializer(data=data)
+            serializer = CoordinatesSerializer(data=data, many=True)
             isValid = serializer.is_valid()            
             for obj in serializer.object:
                 listGPS.append(obj)
@@ -456,7 +457,7 @@ class ApiAreaUpload(APIView):
                 areaCoordinates.lng = gps.lng
                 areaCoordinates.angle_number = gps.angle_number
                 areaCoordinates.save()                 
-        serializer = AreaWithNestedObjectSerializer(listInsertedArea)
+        serializer = AreaWithNestedObjectSerializer(listInsertedArea, many=True)
         return Response(serializer.data)
 
 area_upload = ApiAreaUpload.as_view()
@@ -490,7 +491,7 @@ class ApiPlaceList(APIView):
                 cemetery_ids = [ argCemeteryId ]
 
         listPlace = Place.objects.filter(queryPlace).order_by('cemetery', 'area', 'id')
-        data = PlaceWithNestedObjectSerializer(listPlace).data
+        data = PlaceWithNestedObjectSerializer(listPlace, many=True).data
         if argSyncDateUnix:
             data += DeleteLog.get_deleted(argSyncDate, Place, cemetery_ids)
         return Response(data)
@@ -556,7 +557,7 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             argSyncDate = datetime.fromtimestamp(int(argSyncDateUnix))
             q &= Q(dt_modified__gte = argSyncDate)
         listPlace = Place.objects.filter(q).order_by('cemetery', 'area', 'id')
-        data = PlaceSerializer(listPlace).data
+        data = PlaceSerializer(listPlace, many=True).data
         if argSyncDateUnix:
             data += DeleteLog.get_deleted(argSyncDate, Place, [ area.cemetery.pk ])
         return Response(data=data, status=200)
@@ -716,7 +717,7 @@ class ApiMobileGrave(APIView):
             #else:
                 # cemetery_ids уже рассчитаны
         listGrave = Grave.objects.filter(queryGrave).order_by('id')
-        data = GraveSerializer(listGrave).data
+        data = GraveSerializer(listGrave, many=True).data
         if argSyncDateUnix:
             data += DeleteLog.get_deleted(argSyncDate, Grave, cemetery_ids)
         return Response(data)
@@ -785,7 +786,7 @@ class ApiGraveUpload(APIView):
             grave.save()
             write_log(request, place, _(u"Могила '%s' создана через мобильное приложение") % grave.grave_number )
             listInsertedGrave.append(grave)            
-        serializer = GraveSerializer(listInsertedGrave)
+        serializer = GraveSerializer(listInsertedGrave, many=True)
         return Response(serializer.data)
     
 grave_upload = ApiGraveUpload.as_view()
@@ -836,7 +837,7 @@ class ApiBurialList(APIView):
             queryBurial &= Q(status = argStatus)
 
         listBurial = Burial.objects.filter(queryBurial).order_by('id')
-        data = BurialSerializer(listBurial).data
+        data = BurialSerializer(listBurial, many=True).data
         if argSyncDateUnix:
             data += DeleteLog.get_deleted(argSyncDate, Burial, cemetery_ids)
         return Response(data)
@@ -975,7 +976,7 @@ class ApiPlacePhotoList(APIView):
             #else:
                 # cemetery_ids уже рассчитаны
         listPlacePhoto = PlacePhoto.objects.filter(queryPlacePhoto).order_by('id')
-        data = PlacePhotoSerializer(listPlacePhoto, context=dict(request=request)).data
+        data = PlacePhotoSerializer(listPlacePhoto, context=dict(request=request), many=True).data
         if argSyncDateUnix:
             data += DeleteLog.get_deleted(argSyncDate, PlacePhoto, cemetery_ids)
         return Response(data)
@@ -1056,7 +1057,7 @@ class ApiPlacePhotoUpload(APIView):
             if dtCreated:
                 Log.objects.filter(pk=logrec.pk).update(dt=dtCreated)
             listPhoto.append(photo)
-            serializer = PlacePhotoSerializer(listPhoto, context=dict(request=request))
+            serializer = PlacePhotoSerializer(listPhoto, context=dict(request=request), many=True)
             return Response(serializer.data)
         except Place.DoesNotExist:
             place = None

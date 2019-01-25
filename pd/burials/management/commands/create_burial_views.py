@@ -100,12 +100,14 @@ from django.core.management.base import BaseCommand
 from django.db.utils import DatabaseError
 
 class Command(BaseCommand):
-    args = 'yes, if you mean to execute this command'
     help = "Create or replace database view(s) for Burial application"
 
-    def handle(self, *args, **options):
-        yes_msg = "Give 'yes' as a single parameter if you mean to create/replace burial view(s)"
-        if len(args) < 1 or args[0].decode("utf-8").lower() != u'yes':
+    def add_arguments(self, parser):
+        parser.add_argument('yes_word', type=str, help='Give yes parameter')
+
+    def handle(self, *args, **kwargs):
+        yes_word = kwargs['yes_word']
+        if yes_word.lower() != 'yes':
             print "Give 'yes' as a single parameter if you mean to create/replace burial view(s)"
             quit()
         with connection.cursor() as cursor:

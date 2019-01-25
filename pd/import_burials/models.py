@@ -10,7 +10,7 @@ import codecs
 import re
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db import transaction, connection
+from django.db import transaction, connection, reset_queries
 from django.db.models import Count
 from django.http import HttpRequest
 from django.core.exceptions import ValidationError
@@ -529,7 +529,7 @@ def do_import_burials(csv_fileobj, user):
             if i % 400 == 0:
                 transaction.commit()
                 gc.collect()
-                connection.queries = []
+                reset_queries()
                 print 'Processed', i
 
             row = map(lambda c: '' if c == 'None' else c, row)
@@ -728,7 +728,7 @@ def do_import_orders(csv_fileobj):
             if i % 100 == 0:
                 transaction.commit()
                 gc.collect()
-                connection.queries = []
+                reset_queries()
                 print 'Processed', i
 
             row = map(lambda c: '' if c == 'None' else c, row)
