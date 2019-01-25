@@ -32,33 +32,24 @@ DOMAINS_ = dict(
     ru=dict(name=u'Россия', obj_country=None,),
     by=dict(name=u'Беларусь', obj_country=None,),
 )
-DEFAULT_DOMAIN = 'ru'
-
 YANDEX_GEOCODE_URL = "http://geocode-maps.yandex.ru/1.x/?geocode=%s,%s&format=json&results=1"
     
 class Command(BaseCommand):
-    args = "<front-end url-WITHOUT-DOMAIN>(default: https://pohoronnoedelo) <domain|default>(if present, all products/suppriers are from that)>"
     help = "Create sitemap.xml for domains"
     
-    def handle(self, *args, **options):
-        try:
-            url = args[0]
-        except IndexError:
-            url = 'https://pohoronnoedelo'
+    def add_arguments(self, parser):
+        parser.add_argument('url', type=str, help='front-end url-WITHOUT-DOMAIN>, e.g. https://pohoronnoedelo')
+        parser.add_argument('domain', type=str, help='domain: ru, by, or all (ru and by)')
 
-        default_domain = DEFAULT_DOMAIN
-        DOMAINS = DOMAINS_
-        try:
-            domain = args[1].lower()
-            if domain:
-                if domain == 'default':
-                    domain = default_domain
-                if domain not in DOMAINS:
-                    raise Exception("Domain '%s' is not in supported domains" % domain)
-                default_domain = domain
-                DOMAINS = { default_domain: DOMAINS_[default_domain] }
-        except IndexError:
-            pass
+    def handle(self, *args, **kwargs):
+        url = kwargs['url'].lower()
+        domain_ = kwargs['domain'].lower()
+        if domain_ == 'all':
+            DOMAINS = DOMAINS_
+        else:
+            if domain_ not in DOMAINS_:
+                raise Exception("Domain '%s' is not in supported domains" % domain)
+            DOMAINS = { domain_ : DOMAINS_[domain_] }
 
         q_published = Q(is_public_catalog=True)
         q_suppliers = Q(
@@ -99,6 +90,7 @@ class Command(BaseCommand):
                 continue
 
         all_countries = [DOMAINS[d]['name'] for d in DOMAINS]
+        default_domain = 'ru'
         for domain in DOMAINS:
             if len(DOMAINS) > 1:
                 q_domain_products = Q(loru__off_address__country__name=DOMAINS[domain]['name'])
@@ -114,11 +106,11 @@ class Command(BaseCommand):
             suppliers = Org.objects.filter(q_suppliers & q_domain_suppliers).order_by('slug').distinct()
             
             t = loader.get_template('sitemap.xml')
-            xml = unicode(t.render(Context({
+            xml = unicode(t.render({
                 'products': products,
                 'suppliers': suppliers,
                 'url': u"%s.%s/" % (url, domain),
-            })))
+            }))
             
             sitemap = os.path.join(settings.MEDIA_ROOT, 'sitemap_%s.xml' % domain)
             with codecs.open(sitemap, 'w', encoding='utf-8') as f:

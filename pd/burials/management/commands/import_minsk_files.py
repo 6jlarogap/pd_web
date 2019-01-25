@@ -25,17 +25,15 @@ from users.models import Org
 from burials.models import Cemetery, Burial, BurialFiles
 
 class Command(BaseCommand):
-    args = 'ofiles_folder oms_pk cemetery_name_1 cemetery_name_2 ...'
     help = "Fill media/bfiles with files from Minsk bunch of cemeteries"
 
-    def handle(self, *args, **options):
+    def add_arguments(self, parser):
+        parser.add_argument('ofiles_path', type=str)
+
+    def handle(self, *args, **kwargs):
         error = u'!!! Error'
         warning = u'*** Warining'
-        try:
-            ofiles=args[0]
-        except IndexError:
-            print u"%s. No ofiles folder" % error
-            quit()
+        ofiles=kwargs['ofiles_path']
         media_root = re.sub(r'/+$', '', settings.MEDIA_ROOT)
         ofiles = re.sub(r'/+$', '', os.path.join(media_root, ofiles))
         if not os.path.isdir(ofiles):

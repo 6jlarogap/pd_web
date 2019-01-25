@@ -2,7 +2,7 @@ import datetime
 import gc
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction, connection
+from django.db import transaction, connection, reset_queries
 
 from burials.models import Burial
 from orders.models import Order
@@ -25,7 +25,7 @@ class Command(BaseCommand):
                 if i % 400 == 0:
                     transaction.commit()
                     gc.collect()
-                    connection.queries = []
+                    reset_queries()
                     print 'Processed', i, 'of', cnt
             print 'Processed', cnt, 'with broken applicants'
 
@@ -42,7 +42,7 @@ class Command(BaseCommand):
                 if i % 400 == 0:
                     transaction.commit()
                     gc.collect()
-                    connection.queries = []
+                    reset_queries()
                     print 'Processed', i, 'of', cnt
             print 'Processed', cnt, 'with broken datetime'
         finally:
