@@ -3,18 +3,6 @@
 from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 
-
-from burials.models import Cemetery, Place, Area, BurialFiles
-
- 
-
-class CemeterySerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = Cemetery
-        fields = ('id', 'name', 'time_begin', 'time_end', ) #'ugh'
-
-
-
 import copy
 import json
 from django import forms
@@ -25,7 +13,7 @@ from django.test.client import encode_multipart
 from django.utils.xmlutils import SimplerXMLGenerator
 from rest_framework.compat import StringIO
 from rest_framework.compat import six
-from rest_framework.compat import smart_text
+from django.utils.encoding import smart_text
 from rest_framework.compat import yaml
 from rest_framework.settings import api_settings
 from rest_framework.request import clone_request

@@ -63,11 +63,6 @@ STATICFILES_FINDERS = (
 
 SECRET_KEY = 'r9ux__e!=awmsi7x%(&amp;-fd*#sob2u4*ks-h@1id=ldn0^f=11('
 
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-)
-
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -79,26 +74,31 @@ MIDDLEWARE_CLASSES = (
     'corsheaders.middleware.CorsMiddleware',
 )
 
-
-TEMPLATE_CONTEXT_PROCESSORS = (
-    "django.contrib.auth.context_processors.auth",
-    "django.core.context_processors.request",
-    "django.core.context_processors.debug",
-    "django.core.context_processors.i18n",
-    "django.core.context_processors.media",
-    "django.core.context_processors.static",
-    "django.core.context_processors.tz",
-    "django.contrib.messages.context_processors.messages",
-    "pd.context_processors.context_processor",
-)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(ROOT_DIR, 'templates'), ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'debug': False,
+            'context_processors': [
+                "django.contrib.auth.context_processors.auth",
+                "django.template.context_processors.request",
+                "django.template.context_processors.debug",
+                "django.template.context_processors.i18n",
+                "django.template.context_processors.media",
+                "django.template.context_processors.static",
+                "django.template.context_processors.tz",
+                "django.contrib.messages.context_processors.messages",
+                "pd.context_processors.context_processor",
+            ],
+        },
+    },
+]
 
 ROOT_URLCONF = 'pd.urls'
 
 WSGI_APPLICATION = 'pd.wsgi.application'
-
-TEMPLATE_DIRS = (
-    os.path.join(ROOT_DIR, 'templates/'),
-)
 
 INSTALLED_APPS = [
     'django.contrib.auth',
@@ -477,7 +477,9 @@ try:
     from local_settings import *
 except ImportError:
     pass
-TEMPLATE_DEBUG = DEBUG
+
+for t in TEMPLATES:
+    t['OPTIONS']['debug'] = DEBUG
 ASSETS_DEBUG = DEBUG
 
 # Миграции, начиная с Django 1.7, вносят verbose_name
@@ -508,6 +510,14 @@ except NameError:
     # Нет, не задали, да и DEFAULT_FROM_EMAIL наверняка там изменится
     SUPPORT_EMAILS = (DEFAULT_FROM_EMAIL, )
 
+# Django 1.8:
+# Seconds have been removed from any locales that had them in
+# TIME_FORMAT, DATETIME_FORMAT, or SHORT_DATETIME_FORMAT.
+#
+from django.conf.locale.ru import formats as ru_formats
+ru_formats.TIME_FORMAT += ":s"
+ru_formats.DATETIME_FORMAT += ":s"
+ru_formats.SHORT_DATETIME_FORMAT = ":s"
 
 # Test system is to be revised.
 #import sys
