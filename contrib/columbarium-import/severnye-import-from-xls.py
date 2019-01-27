@@ -32,7 +32,7 @@ PLACE_NAME = u'-'
 
 import datetime, xlrd, gc, re, string
 
-from django.db import transaction, connection
+from django.db import transaction, connection, reset_queries
 
 from logs.models import write_log, LogOperation
 from burials.models import Burial, Place, Cemetery, Area, AreaPurpose, Grave, BurialComment
@@ -152,7 +152,7 @@ def main():
         if n > 0 and n % 500 == 0:
             transaction.commit()
             gc.collect()
-            connection.queries = []
+            reset_queries()
             print 'Processed', n, 'of', sheet.nrows - 1
         n += 1
 

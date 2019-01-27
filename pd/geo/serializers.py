@@ -9,7 +9,7 @@ from burials.models import Cemetery, Place, Area, BurialFiles
 from geo.models import Location, Country, Region, City, Street
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from rest_framework.compat import smart_text
+from django.utils.encoding import smart_text
 
 
 class AddressLatLonMixin(serializers.ModelSerializer):

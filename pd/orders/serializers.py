@@ -67,7 +67,7 @@ class ProductsSerializer(serializers.HyperlinkedModelSerializer):
         return price
 
 class ProductShortSerializer(serializers.ModelSerializer):
-    imageUrl = HyperlinkedFileField('photo')
+    imageUrl = HyperlinkedFileField(source='photo')
 
     class Meta:
         model = Product

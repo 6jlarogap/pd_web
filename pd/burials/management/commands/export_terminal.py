@@ -65,17 +65,16 @@ BAD_CHAR_RE = r'\\|\"|\''
 # --------- ----------------------------------------------
 
 class Command(BaseCommand):
-    args = 'output_folder'
     help = "Form export csv files for terminal at some cemeteries"
 
-    def handle(self, *args, **options):
+    def add_arguments(self, parser):
+        parser.add_argument('export_path', type=str)
+
+    def handle(self, *args, **kwargs):
+        export_path = kwargs['export_path']
+
         translation.activate('ru')
 
-        try:
-            export_path=args[0]
-        except IndexError:
-            print "No export path specified as the parameter"
-            quit()
         for cemetery_parms in CEMETERIES:
             print "Processing bundle of cemeteries for %s.csv" % cemetery_parms['export']
             cemeteries = []
@@ -110,7 +109,11 @@ class Command(BaseCommand):
             burials = Burial.objects.filter(q).order_by(
                 "deadman__last_name",
                 "deadman__first_name",
-                "deadman__middle_name"
+                "deadman__middle_name",
+                # pk добавлен, чтобы те, у которых совпадают ФИО,
+                # при разных запусках сценария шли в одном порядке
+                "pk",
+
             )
             for burial in burials.iterator():
                 deadman = burial.deadman

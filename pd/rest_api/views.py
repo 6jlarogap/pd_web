@@ -12,10 +12,6 @@ from rest_framework.permissions import IsAuthenticated
 from django.http import Http404
 
 from django.conf import settings
-from serializers import CemeterySerializer
-
-from burials.models import Cemetery, Place, Area, BurialFiles
-
 
 def isObjectOwnerCheck(qs, field_name, pk):
     filter = {field_name:pk}
