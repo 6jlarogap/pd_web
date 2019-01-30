@@ -6,7 +6,7 @@ import re, decimal
 from django.core.files.base import ContentFile
 from django.core.validators import validate_email, URLValidator
 from django.core.exceptions import ValidationError
-from django.db import transaction, IntegrityError
+from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
 from django.views.generic.base import View
@@ -301,7 +301,7 @@ class ApiClientPlacesView(APIView):
         )
 
     def post(self, request):
-        place_id = request.DATA.get('placeId')
+        place_id = request.data.get('placeId')
         if place_id:
             try:
                 place = Place.objects.get(pk=place_id)
@@ -319,7 +319,7 @@ class ApiClientPlacesView(APIView):
                 raise Http404
         else:
             serializer = CustomPlaceEditSerializer(
-                data=request.DATA,
+                data=request.data,
                 context=dict(request=request),
             )
             if serializer.is_valid():
@@ -344,8 +344,8 @@ class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
             raise PermissionDenied
         customplace = self.get_customplace(pk)
         context = dict(request=request)
-        if 'performerId' in request.DATA:
-            favorite_performer_id = request.DATA['performerId']
+        if 'performerId' in request.data:
+            favorite_performer_id = request.data['performerId']
             if favorite_performer_id:
                 message = None
                 try:
@@ -361,7 +361,7 @@ class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
                 context['favorite_performer'] = None
         serializer = CustomPlaceEditSerializer(
             customplace,
-            data=request.DATA,
+            data=request.data,
             context=context,
         )
         if serializer.is_valid():
@@ -381,7 +381,7 @@ api_client_places_detail = ApiClientPlacesDetailView.as_view()
 class ApiSelectedPermissionsMixin(object):
 
     def get_permissions_(self, request):
-        selected = request.DATA.get('selected')
+        selected = request.data.get('selected')
         selected_perms = []
         if selected:
             if isinstance(selected, basestring):
@@ -494,8 +494,8 @@ class ApiCustompersonDetailView(
         try:
             customperson = self.get_customperson(pk, owner_only=True)
             context = dict(request=request)
-            if 'placeId' in request.DATA:
-                customplace_id = request.DATA['placeId']
+            if 'placeId' in request.data:
+                customplace_id = request.data['placeId']
                 if isinstance(customplace_id, basestring) and customplace_id == 'null':
                     customplace_id = None
                 if customplace_id:
@@ -506,11 +506,11 @@ class ApiCustompersonDetailView(
             message = self.check_life_dates(instance=customperson)
             if message:
                 raise ServiceException(message)
-            is_dead = str_to_bool_or_None(request.DATA.get('isDead'))
+            is_dead = str_to_bool_or_None(request.data.get('isDead'))
             if is_dead == False:
-                if UnclearDate.from_str_safe(request.DATA.get('dod')):
+                if UnclearDate.from_str_safe(request.data.get('dod')):
                     raise ServiceException(u'Нельзя задавать дату смерти для живого человека')
-                if request.DATA.get('placeId'):
+                if request.data.get('placeId'):
                     raise ServiceException(u'Живой человек не может иметь место захоронения')
             photo = request.FILES.get('photo')
             if photo:
@@ -520,7 +520,7 @@ class ApiCustompersonDetailView(
                     raise ServiceException(_(u"Загруженное фото не является изображением"))
             serializer = CustomPerson3Serializer(
                 customperson,
-                data=request.DATA,
+                data=request.data,
                 context=context,
             )
             if serializer.is_valid():
@@ -557,10 +557,10 @@ class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
 
             fields = {
                 'customperson': customperson,
-                'type': request.DATA.get('type'),
-                'text': request.DATA.get('text'),
-                'permission': request.DATA.get('permissions'),
-                'event_date': UnclearDate.from_str_safe(request.DATA.get('eventDate')),
+                'type': request.data.get('type'),
+                'text': request.data.get('text'),
+                'permission': request.data.get('permissions'),
+                'event_date': UnclearDate.from_str_safe(request.data.get('eventDate')),
                 'creator': request.user,
             }
 
@@ -570,7 +570,7 @@ class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
                 # зарос {"text": Null} и отсутствие 'text' в запросе,
                 # это не одно и то же при редактировании
                 for f in ('event_date', 'text'):
-                    if f not in request.DATA:
+                    if f not in request.data:
                         del fields[f]
 
             file_ = request.FILES.get('mediaContent')
@@ -749,7 +749,7 @@ class ApiClientPlacesDeadmansView(ApiClientPlacesMixin, APIView):
         if message:
             return Response({"status": "error", "message": message}, 400)
         serializer = CustomPersonSerializer(
-            data=request.DATA,
+            data=request.data,
             context=dict(
                 request=request,
                 customplace=customplace,
@@ -775,7 +775,7 @@ class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMix
             return Response({"status": "error", "message": message}, 400)
         serializer = CustomPersonSerializer(
             customperson,
-            data=request.DATA,
+            data=request.data,
             context=dict(request=request),
         )
         if serializer.is_valid():
@@ -826,7 +826,7 @@ class ApiClientPersonsView(ApiClientPlacesMixin, ApiSelectedPermissionsMixin, AP
 
     def post(self, request):
         try:
-            customplace_id = request.DATA.get('placeId')
+            customplace_id = request.data.get('placeId')
             if customplace_id:
                 customplace = self.get_customplace(customplace_id)
             else:
@@ -835,7 +835,7 @@ class ApiClientPersonsView(ApiClientPlacesMixin, ApiSelectedPermissionsMixin, AP
             if message:
                 raise ServiceException(message)
             serializer = CustomPerson4Serializer(
-                data=request.DATA,
+                data=request.data,
                 context=dict(request=request, customplace=customplace),
             )
             if serializer.is_valid():
@@ -871,8 +871,8 @@ class ApiClientPersonsDetailView(
         try:
             customperson = self.get_customperson(pk, owner_only=True)
             context = dict(request=request)
-            if 'placeId' in request.DATA:
-                customplace_id = request.DATA['placeId']
+            if 'placeId' in request.data:
+                customplace_id = request.data['placeId']
                 if customplace_id:
                     customplace = self.get_customplace(customplace_id)
                 else:
@@ -883,7 +883,7 @@ class ApiClientPersonsDetailView(
                 raise ServiceException(message)
             serializer = CustomPerson4Serializer(
                 customperson,
-                data=request.DATA,
+                data=request.data,
                 context=context,
             )
             if serializer.is_valid():
@@ -957,7 +957,7 @@ class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
     permission_classes = (PermitIfUgh,)
 
     def post(self, request):
-        place_pk = request.DATA.get('placeId')
+        place_pk = request.data.get('placeId')
         place, status, message = Place.check_invent_place(request, place_pk)
         if not message:
             status = 400
@@ -965,7 +965,7 @@ class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
         if message:
             return Response(data=dict(status='error', message=message), status=status)
         serializer = DeadPerson2Serializer(
-            data=request.DATA,
+            data=request.data,
             context=dict(request=request),
         )
         if serializer.is_valid():
@@ -1024,7 +1024,7 @@ class ApiOmsBurialsDetailView(CheckLifeDatesMixin, APIView):
             return Response(data=dict(status='error', message=message), status=status)
         serializer = DeadPerson2Serializer(
             deadman,
-            data=request.DATA,
+            data=request.data,
             context=dict(request=request),
         )
         if serializer.is_valid():

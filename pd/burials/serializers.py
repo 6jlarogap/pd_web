@@ -1,10 +1,10 @@
 # coding=utf-8
 
 from django.conf import settings
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
 from rest_framework import serializers
-from rest_framework.fields import Field, TimeField
+from rest_framework.fields import Field, TimeField, ReadOnlyField
 
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
@@ -69,7 +69,7 @@ class CemeteryPhotoMixin(object):
 
 class CemeteryClientSiteSerializer(AddressLatLonMixin, CemeteryPhotoMixin, serializers.ModelSerializer):
     phones = Field(source='phone_list')
-    address = serializers.RelatedField()
+    address = serializers.RelatedField(read_only=True)
     location = serializers.SerializerMethodField('location_func')
     workTimes = Field(source='worktimes')
     executive = serializers.SerializerMethodField('executive_func')
@@ -115,13 +115,14 @@ class SubPlaceItemSerializer(serializers.ModelSerializer):
 
 
 class CemeterySerializer(CemeteryPhotoMixin, serializers.ModelSerializer):
-    area_cnt = Field(source='area_cnt')
-    work_time = Field(source='work_time')
-    address = Field(source='address_id')
+    address = ReadOnlyField(source='address_id')
     time_begin = TimeField()
     time_end = TimeField()
-    caretaker = serializers.PrimaryKeyRelatedField(required=False)
-    #phones = serializers.SerializerMethodField('get_phones')
+    caretaker = serializers.PrimaryKeyRelatedField(
+        required=False,
+        queryset=User.objects.filter(is_active=True),
+        allow_null=True,
+    )
     photoUrl = serializers.SerializerMethodField('photoUrl_func')
     schemaUrl = serializers.SerializerMethodField('schemaUrl_func')
 
@@ -138,23 +139,27 @@ class CemeterySerializer(CemeteryPhotoMixin, serializers.ModelSerializer):
 
 class CemeteryBriefSerializer(serializers.ModelSerializer):
     phones = Field(source='phone_list')
-    address = serializers.RelatedField()
+    address = serializers.RelatedField(read_only=True)
 
     class Meta:
         model = Cemetery
         fields = ('id', 'address', 'phones', )
 
 class AreaSerializer(serializers.ModelSerializer):
-    purpose = serializers.PrimaryKeyRelatedField()
-    cemetery = serializers.PrimaryKeyRelatedField()
+    purpose = serializers.PrimaryKeyRelatedField(queryset=AreaPurpose.objects.all())
+    cemetery = serializers.PrimaryKeyRelatedField(read_only=True)
     places_count = serializers.IntegerField(required=True)
-    caretaker = serializers.PrimaryKeyRelatedField(required=False)
+    caretaker = serializers.PrimaryKeyRelatedField(
+        required=False,
+        queryset=User.objects.filter(is_active=True),
+        allow_null=True,
+    )
 
     class Meta:
         model = Area
         fields = ('id', 'cemetery', 'name', 'availability', 'kind', 'places_count', 'purpose', 'caretaker')
 
-    def is_valid(self):
+    def is_valid_delete_it(self):
         valid = not self.errors
         if not self.many and self.object:
             max_graves_count = self.context['request'].user.profile.org.max_graves_count
@@ -171,8 +176,8 @@ class ApiPlacesSerializer(serializers.ModelSerializer):
 
 
 class ApiOmsPlacesSerializer(ApiPlacesSerializer):
-    cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery')
-    areaId = serializers.PrimaryKeyRelatedField(source='area')
+    cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery', read_only=True)
+    areaId = serializers.PrimaryKeyRelatedField(source='area', read_only=True)
 
     class Meta:
         model = Place
@@ -219,9 +224,9 @@ class ApiClientSitePlacesSerializer(PlaceDeadmenMixin, ApiPlacesSerializer):
         return self.hasResponsible_func(place) and place.responsible.full_name() or ''
 
 class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
-    cemetery = serializers.PrimaryKeyRelatedField()
-    area = serializers.PrimaryKeyRelatedField()
-    responsible = serializers.PrimaryKeyRelatedField(required=False)
+    cemetery = serializers.PrimaryKeyRelatedField(read_only=True)
+    area = serializers.PrimaryKeyRelatedField(read_only=True)
+    responsible = serializers.PrimaryKeyRelatedField(required=False, read_only=True)
     #available_count = Field(source='available_count')
     responsible_txt = serializers.SerializerMethodField('responsible_str')
     gallery = serializers.SerializerMethodField('gallery_func')
@@ -231,9 +236,12 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     dt_size_violated = serializers.DateTimeField(required=False)
     dt_unowned = serializers.DateTimeField(required=False)
     dt_unindentified = serializers.DateTimeField(required=False)
-    caretaker = serializers.PrimaryKeyRelatedField(required=False)
+    caretaker = serializers.PrimaryKeyRelatedField(
+        required=False,
+        queryset=User.objects.filter(is_active=True),
+        allow_null=True,
+    )
     create_cabinet = serializers.SerializerMethodField('create_cabinet_func')
-    location = serializers.Field(source='location')
 
     class Meta:
         model = Place
@@ -284,7 +292,7 @@ class PlaceLockSerializer(PlaceDeadmenMixin, serializers.ModelSerializer):
         return obj.get_photos(request) if request else []
 
 class GraveSerializer(serializers.ModelSerializer):
-    place = serializers.PrimaryKeyRelatedField()
+    place = serializers.PrimaryKeyRelatedField(read_only=True)
     dt_free = serializers.DateTimeField(required=False)
 
     class Meta:
@@ -294,7 +302,7 @@ class GraveSerializer(serializers.ModelSerializer):
 
 
 class BurialListSerializer(serializers.ModelSerializer):
-    grave = serializers.PrimaryKeyRelatedField()
+    grave = serializers.PrimaryKeyRelatedField(read_only=True)
     deadman = DeadPersonSerializer()
     plan_date = serializers.DateField(format=u"%d.%m.%Y")
     fact_date = UnclearDateFieldSerializer()
@@ -307,13 +315,13 @@ class BurialListSerializer(serializers.ModelSerializer):
 
 class BurialSerializer(serializers.ModelSerializer):
     #place = Field(source='place_id')
-    cemetery = serializers.PrimaryKeyRelatedField()
-    area = serializers.PrimaryKeyRelatedField()
-    place = serializers.PrimaryKeyRelatedField()
+    cemetery = serializers.PrimaryKeyRelatedField(read_only=True)
+    area = serializers.PrimaryKeyRelatedField(read_only=True)
+    place = serializers.PrimaryKeyRelatedField(read_only=True)
     deadman = DeadPersonSerializer()
-    grave = serializers.PrimaryKeyRelatedField()
-    responsible = AlivePersonSerializer(source='responsible')
-    applicant = AlivePersonSerializer(source='applicant')  
+    grave = serializers.PrimaryKeyRelatedField(read_only=True)
+    responsible = AlivePersonSerializer()
+    applicant = AlivePersonSerializer()
     # applicant_organization dover agent_director
     fact_date = UnclearDateFieldSerializer()
     plan_date = serializers.DateField(format=u"%d.%m.%Y")
@@ -334,7 +342,7 @@ class BurialPutGraveSerializer(serializers.ModelSerializer):
 
 
 class AreaPhotoSerializer(serializers.ModelSerializer):
-    area = serializers.PrimaryKeyRelatedField()
+    area = serializers.PrimaryKeyRelatedField(read_only=True)
     date_of_creation = serializers.DateField(format=u"%d.%m.%Y")
     class Meta:
         model = AreaPhoto
@@ -342,8 +350,8 @@ class AreaPhotoSerializer(serializers.ModelSerializer):
 
 
 class ExhumationRequestSerializer(serializers.ModelSerializer):
-    burial = serializers.PrimaryKeyRelatedField()
-    place = serializers.PrimaryKeyRelatedField()
+    burial = serializers.PrimaryKeyRelatedField(read_only=True)
+    place = serializers.PrimaryKeyRelatedField(read_only=True)
     applicant = AlivePersonSerializer(source='responsible')
     #applicant_organization = serializers.PrimaryKeyRelatedField()
     class Meta:
@@ -360,7 +368,7 @@ class PlaceSizeSerializer(serializers.ModelSerializer):
       
 class OrderPlaceSerializer(serializers.ModelSerializer):
     cemeteryId = serializers.Field(source='cemetery.id')
-    cemeteryText = serializers.Field('cemetery_text')
+    cemeteryText = serializers.Field(source='cemetery_text')
     areaId = serializers.Field(source='area.id')
     placeNumber = serializers.Field(source='place')
 

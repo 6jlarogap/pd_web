@@ -2,12 +2,13 @@
 import json
 import datetime
 import re
+from collections import OrderedDict
 
 import django
 from django import forms
 from django.conf import settings
 from django.db.models.fields.files import FieldFile
-from django.forms.extras.widgets import SelectDateWidget, RE_DATE, _parse_date_fmt
+from django.forms.widgets import SelectDateWidget
 from django.utils.dates import MONTHS
 from django.utils.formats import get_format
 from django.utils.html import escape, conditional_escape
@@ -15,7 +16,6 @@ from django.utils.safestring import mark_safe
 from django.forms.widgets import ClearableFileInput, CheckboxInput
 
 from django.utils.translation import ugettext as _
-from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
 from burials.models import Burial, Area, PlaceSize
@@ -24,6 +24,7 @@ from pd.models import UnclearDate
 from pd.utils import host_country_code, get_image
 from users.models import Profile, Dover
 
+RE_DATE = re.compile(r'(\d{4})-(\d\d?)-(\d\d?)$')
 
 class ChildrenJSONMixin:
     def universal_children_json(self, parent, ch_model, ch_rel, filter_kw=None, related=None, add_field=None):
@@ -267,7 +268,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
         day_html = self.create_select(name, self.day_field, value, day_val,  choices, {'class': 'date-day'})
 
         output = []
-        for field in _parse_date_fmt():
+        for field in SelectDateWidget._parse_date_fmt():
             if field == 'year':
                 output.append(year_html)
             elif field == 'month':
@@ -277,7 +278,6 @@ class UnclearSelectDateWidget(SelectDateWidget):
         return mark_safe(u'\n'.join(output))
 
     def value_from_datadict(self, data, files, name):
-        from django.forms.extras.widgets import get_format, datetime_safe
 
         y = data.get(self.year_field % name)
         m = data.get(self.month_field % name)

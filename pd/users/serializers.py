@@ -144,7 +144,7 @@ class StoreShortSerializer(serializers.ModelSerializer):
 
 class OrgSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSerializer):
     fullname = Field(source='full_name')
-    address = serializers.RelatedField(source='off_address')
+    address = serializers.RelatedField(source='off_address', read_only=True)
     stores = StoreSerializer(many=True, source='store_set')
     phones = serializers.SerializerMethodField('phones_func')
     categories = serializers.SerializerMethodField('categories_func')
@@ -169,7 +169,7 @@ class OrgSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSe
         ]
 
 class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
-    address = serializers.RelatedField(source='off_address')
+    address = serializers.RelatedField(source='off_address', read_only=True)
     phones = serializers.SerializerMethodField('phones_func')
 
     class Meta:
@@ -223,7 +223,7 @@ class OrgShort6Serializer(serializers.ModelSerializer):
 
 class OrgClientSiteSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSerializer):
     fullName = Field(source='full_name')
-    address = serializers.RelatedField(source='off_address')
+    address = serializers.RelatedField(source='off_address', read_only=True)
     phones = serializers.SerializerMethodField('phones_func')
     location = serializers.SerializerMethodField('location_func')
     shopSite = Field(source='shop_site')

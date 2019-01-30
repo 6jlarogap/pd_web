@@ -4,6 +4,7 @@ import re
 from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 from rest_framework.fields import Field, TimeField, DecimalField, BooleanField
+from django.contrib.contenttypes.models import ContentType
 
 from geo.models import Location
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson, \
@@ -19,7 +20,7 @@ from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None, capitali
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
     #person = serializers.PrimaryKeyRelatedField()
-    ct = serializers.PrimaryKeyRelatedField()
+    ct = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
     class Meta:
         model = Phone
         fields = ('id', 'phonetype', 'number', 'ct', 'obj_id')
@@ -27,13 +28,12 @@ class PhoneSerializer(serializers.HyperlinkedModelSerializer):
 
 class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
     #address = Field(source='address_id')
-    address = serializers.PrimaryKeyRelatedField()
-    phones = Field(source='phones')
+    address = serializers.PrimaryKeyRelatedField(read_only=True)
     address_str = Field(source='address')
     # login_phone объявлен editable=False для django форм,
     # посему здесь прописываем явно, чтоб можно было изменить
-    login_phone = DecimalField(source='login_phone')
-    is_inbook = BooleanField(source='is_inbook')
+    login_phone = DecimalField(15,0, source='login_phone')
+    is_inbook = BooleanField()
 
     class Meta:
         model = AlivePerson
@@ -44,7 +44,7 @@ class AlivePerson2Serializer(serializers.HyperlinkedModelSerializer):
     lastName = Field(source='last_name')
     firstName = Field(source='first_name')
     middleName = Field(source='middle_name')
-    address = serializers.RelatedField(source='address')
+    address = serializers.RelatedField(read_only=True)
     phoneNumber = Field(source='phones')
 
     class Meta:
@@ -87,7 +87,6 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSeri
         )]
 
 class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
-    address = Field(source='address')
     location = Field(source='location_dict')
     performerId = Field(source='favorite_performer.id')
 
@@ -398,7 +397,7 @@ class CustomPerson3Serializer(
 
 class CustomPerson4Serializer(BaseCustomPersonSerializer):
     titlePhoto = HyperlinkedFileField(source='photo', required=False)
-    placeId = serializers.Field('customplace.id')
+    placeId = serializers.Field(source='customplace.id')
 
     class Meta:
         model = CustomPerson
@@ -406,23 +405,3 @@ class CustomPerson4Serializer(BaseCustomPersonSerializer):
                   'birthDate', 'deathDate', 'titlePhoto', 'placeId',
                   'permissions', 'selected',
         )
-
-class ArchIDDocumentTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IDDocumentType
-        fields = ('id', 'name', )
-
-class ArchDocumentSourceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DocumentSource
-        fields = ('id', 'name', )
-
-class ArchPersonIDSerializer(serializers.ModelSerializer):
-    person_id = serializers.Field('person.id')
-    id_type_id = serializers.Field('id_type.id')
-    source_id = serializers.Field('source.id')
-
-    class Meta:
-        model = PersonID
-        fields = ('id', 'person_id', 'id_type_id', 'series', 'number', 'source_id', 'date')
-

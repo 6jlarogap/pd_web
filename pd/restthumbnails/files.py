@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from django.utils.log import getLogger
+from logging import getLogger
 
 from restthumbnails import processors, exceptions
 from restthumbnails.base import ThumbnailBase

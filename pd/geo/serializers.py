@@ -24,33 +24,31 @@ class AddressLatLonMixin(serializers.ModelSerializer):
             return None
 
 class CountrySerializer(serializers.ModelSerializer):
-    text = serializers.Field(source='name')
+    text = serializers.ReadOnlyField(source='name')
     class Meta:
         model = Country
         fields = ('id','name', 'text') 
 
 
 class RegionSerializer(serializers.ModelSerializer):
-    text = serializers.Field(source='name')
+    text = serializers.ReadOnlyField(source='name')
     class Meta:
         model = Region
         fields = ('id','name', 'text') # 'country',
 
 
 class CitySerializer(serializers.ModelSerializer):
-    text = serializers.Field(source='name')
+    text = serializers.ReadOnlyField(source='name')
     class Meta:
         model = City
         fields = ('id','name', 'text') # 'region',
 
 
 class StreetSerializer(serializers.ModelSerializer):
-    text = serializers.Field(source='name')
+    text = serializers.ReadOnlyField(source='name')
     class Meta:
         model = Street
         fields = ('id','name', 'text') #'city',
-
-
 
 
 # Nested tables fields serializer
@@ -138,10 +136,10 @@ class StreetSlugRelatedField(serializers.SlugRelatedField):
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    country = CountrySlugRelatedField(many=False, required=False, read_only=False, slug_field='name')
-    region  = RegionSlugRelatedField(many=False, required=False,read_only=False, slug_field='name')
-    city    = CitySlugRelatedField(many=False, required=False, read_only=False, slug_field='name')
-    street  = StreetSlugRelatedField(many=False, required=False, read_only=False, slug_field='name')
+    country = CountrySlugRelatedField(many=False, required=False, read_only=True, slug_field='name')
+    region  = RegionSlugRelatedField(many=False, required=False,read_only=True, slug_field='name')
+    city    = CitySlugRelatedField(many=False, required=False, read_only=True, slug_field='name')
+    street  = StreetSlugRelatedField(many=False, required=False, read_only=True, slug_field='name')
     class Meta:
         model = Location
         fields = ('id','country', 'region', 'city', 'street', \

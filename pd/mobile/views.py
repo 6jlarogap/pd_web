@@ -524,8 +524,8 @@ class PlaceUploadMixin(object):
             ))
         result = dict()
         for k in parms:
-            if k in request.DATA:
-                result[parms[k]] = request.DATA[k]
+            if k in request.data:
+                result[parms[k]] = request.data[k]
                 if parms[k] in ('row', 'place') and result[parms[k]] is None:
                     result[parms[k]] = ''
         ps = PlaceSerializer(Place(**result))
@@ -568,7 +568,7 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
         cemetery = area.cemetery
         if cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
             raise PermissionDenied
-        placeName = request.DATA.get('placeName') or ''
+        placeName = request.data.get('placeName') or ''
         if not placeName and cemetery.places_algo in (
             Cemetery.PLACE_BURIAL_ACCOUNT_NUMBER,
             Cemetery.PLACE_MANUAL
@@ -582,7 +582,7 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
         place_key_parms = dict(
             cemetery=cemetery,
             area=area,
-            row=request.DATA.get('rowName') or '',
+            row=request.data.get('rowName') or '',
             place=placeName, 
         )
         place_defaults = self.get_place_parms(request)
@@ -849,7 +849,7 @@ class ApiMobileBurialsView(CheckLifeDatesMixin, APIView):
 
     @transaction.atomic
     def post(self, request):
-        grave_pk = request.DATA.get('graveId')
+        grave_pk = request.data.get('graveId')
         grave = get_object_or_404(Grave, pk=grave_pk)
         place = grave.place
         if place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
@@ -858,7 +858,7 @@ class ApiMobileBurialsView(CheckLifeDatesMixin, APIView):
         if message:
             raise CustomException(detail=message, status=400)
         serializer = DeadPerson2Serializer(
-            data=request.DATA,
+            data=request.data,
             context=dict(request=request),
         )
         if serializer.is_valid():
@@ -871,7 +871,7 @@ class ApiMobileBurialsView(CheckLifeDatesMixin, APIView):
                 deadman = None
             else:
                 deadman = serializer.save()
-            fact_date = request.DATA.get('factDate')
+            fact_date = request.data.get('factDate')
             fact_date  = UnclearDate.from_str_safe(fact_date, format='d.m.y')
             burial = Burial.objects.create(
                 burial_type=Burial.BURIAL_NEW if grave.grave_number == 1 else Burial.BURIAL_ADD,

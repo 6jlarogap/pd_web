@@ -13,7 +13,7 @@ class HyperlinkedFileField(serializers.FileField):
     """
     Show full URL of o file field
     """
-    def to_native(self, value):
+    def to_representation(self, value):
         request = self.context.get('request', None)
         return request.build_absolute_uri(value.url) if request and value else ''
 
@@ -23,7 +23,7 @@ class UnclearDateFieldSerializer(serializers.Field):
     --
     next step: serializers.WritebleField
     """
-    def to_native(self, obj):
+    def to_representation(self, obj):
         try:
             return obj.str_safe(format='d.m.y')
         except:
@@ -31,7 +31,7 @@ class UnclearDateFieldSerializer(serializers.Field):
 
 
 class UnclearDateFieldSafeSerializer(serializers.Field):
-    def to_native(self, obj):
+    def to_representation(self, obj):
         if obj is not None:
             return obj.str_safe()
         else:
@@ -42,7 +42,7 @@ class ThumbnailFieldSerializer(serializers.Field):
     """
     Field to frontend conversion
     """
-    def to_native(self, obj, width=None, height=None, method=None):
+    def to_representation(self, obj, width=None, height=None, method=None):
         if obj:
             try:
                 return '%s%s/%dx%d~%s~12.jpg'.format(settings.THUMBNAILS_STORAGE_BASE_PATH, 
@@ -83,11 +83,11 @@ class DateTimeUtcField(DateTimeField):
             dt = utc2local(dt)
         return dt
 
-    def to_native(self, value):
+    def to_representation(self, value):
         # value: DateTime
         # результат: Строка
         if isinstance(value, datetime.datetime):
             value = local2utc(value)
         elif isinstance(value, basestring):
             return value
-        return super(DateTimeUtcField, self).to_native(value)
+        return super(DateTimeUtcField, self).to_representation(value)
