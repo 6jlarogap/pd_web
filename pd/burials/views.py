@@ -72,36 +72,44 @@ from logs.views import getLogQuerySet
 
 from sms_service.utils import send_sms
 
-def getCemetery(request):
-    try:
-        # PUT request issue
-        cemetery_id = int(request.GET.get('cemetery_id'))
-        assert cemetery_id>0, u'Wrong id'
-    except:
-        raise Http404()
-    else:
-        return get_object_or_404(Cemetery, id=cemetery_id, ugh=request.user.profile.org)
+class EditCemeteryObjectsMixin(object):
 
+    def getCemetery(self, request):
+        try:
+            # PUT request issue
+            cemetery_id = int(request.GET.get('cemetery_id'))
+            assert cemetery_id>0, u'Wrong id'
+        except:
+            raise Http404()
+        else:
+            return get_object_or_404(Cemetery, id=cemetery_id, ugh=request.user.profile.org)
 
-def getArea(request):
-    try:
-        # PUT request issue
-        area_id = int(request.GET.get('area_id'))
-        assert area_id>0, u'Wrong id'
-    except:
-        raise Http404()
-    else:
-        return get_object_or_404(Area, id=area_id, cemetery__ugh=request.user.profile.org)
+    def getArea(self, request):
+        try:
+            # PUT request issue
+            area_id = int(request.GET.get('area_id'))
+            assert area_id>0, u'Wrong id'
+        except:
+            raise Http404()
+        else:
+            return get_object_or_404(Area, id=area_id, cemetery__ugh=request.user.profile.org)
 
-def getPlace(request):
-    try:
-        # PUT request issue
-        place_id = int(request.GET.get('place_id'))
-        assert place_id>0, u'Wrong id'
-    except:
-        raise Http404()
-    else:
-        return get_object_or_404(Place, id=place_id, cemetery__ugh=request.user.profile.org)
+    def getPlace(self, request):
+        try:
+            # PUT request issue
+            place_id = int(request.GET.get('place_id'))
+            assert place_id>0, u'Wrong id'
+        except:
+            raise Http404()
+        else:
+            return get_object_or_404(Place, id=place_id, cemetery__ugh=request.user.profile.org)
+
+    def make_error_data(self, messages):
+        if isinstance(messages, basestring):
+            errors = (messages,)
+        else:
+            errors = messages
+        return {"__all__": errors}
 
 class CaretakerMixin(object):
 
@@ -132,7 +140,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
     permission_classes = (PermitIfUgh,)
     paginate_by = None
 
-    MSG_ALREADY_EXISTS = u"Кладбище с таким названием уже существует"
+    MSG_ALREADY_EXISTS = _(u"Кладбище с таким названием уже существует")
 
     def get_queryset(self):
         return  Cemetery.objects.filter(ugh=self.request.user.profile.org).all()
@@ -148,7 +156,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
             with transaction.atomic():
                 obj.save(force_insert=True)
         except IntegrityError:
-            return Response(status=400, data={"__all__": [self.MSG_ALREADY_EXISTS,]})
+            return Response(status=400, data=self.make_error_data(self.MSG_ALREADY_EXISTS))
         write_log(self.request, obj, _(u"Кладбище создано"))
         write_log(self.request, self.request.user.profile.org,
                     _(u"Создано кладбище '%s'") % obj.name)
@@ -173,7 +181,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         try:
             result = super(CemeteryViewSet, self).update(request, *args, **kwargs)
         except ServiceException as excpt:
-            result = Response(status=400, data={"__all__": [excpt.message]})
+            result = Response(status=400, data=self.make_error_data(excpt.message))
         return result
 
     def pre_update(self, obj):
@@ -188,7 +196,7 @@ class CemeteryViewSet(CaretakerMixin, viewsets.ModelViewSet):
         obj.address = address_serializer.save()
         obj.address.set_related_addr(data=address)
         coords_by_address = False
-        if obj.address and \
+        if obj.address and settings.YANDEX_API_KEYS and \
            (obj.address.gps_y is None or obj.address.gps_x is None):
             location = obj.address.get_yandex_coords()
             if location:
@@ -354,42 +362,59 @@ class CemeteryEditorsView(APIView):
 
 api_cemeteries_editors = CemeteryEditorsView.as_view()
 
-class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
+class AreaViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSet):
     model = Area
     serializer_class = AreaSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
     paginate_by = None
 
+    MSG_ALREADY_EXISTS = _(u"Участок с таким названием уже существует на кладбище")
+
     def get_queryset(self):
-        item = getCemetery(self.request)
+        item = self.getCemetery(self.request)
         return self.model.objects.filter(cemetery=item)
 
-    def update(self, request, *args, **kwargs):
-        area = self.get_object()
-        kind = request.data.get('kind')
-        if area and kind and kind != Area.KIND_GRAVES and \
-           Place.objects.filter(area=area, kind_crypt=True).exists():
-            data = {"__all__":[_(u"Здесь есть склеп(ы): нельзя в колумбарии"),]}
-            return Response(status=400, data=data)
-        return super(AreaViewSet, self).update(request, *args, **kwargs)
+    def pre_save(self, request):
+        data = request.data
+        max_graves_count = request.user.profile.org.max_graves_count
+        if data['places_count'] > max_graves_count:
+            raise ServiceException(_(u"Количество могил должно быть от 1 до %d") % max_graves_count)
 
-    def pre_save(self, object):
-        item = getCemetery(self.request)
-        object.cemetery = item
-        if object.kind != Area.KIND_GRAVES:
-            object.places_count = 1
-
+    def create(self, request, *args, **kwargs):
         try:
-            old = self.model.objects.get(pk=object.pk)
-        except self.model.DoesNotExist:
-            old = None
-        except AttributeError:
-            old = None
-        if old:
-            log_object(self.request, obj=object, old=old, new=object, reason=_(u'Участок изменен'))
-        else:
-            write_log(self.request, object.cemetery, _(u'Создан участок: %s') % object)
+            self.pre_save(request)
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            area = self.model(**serializer.validated_data)
+            area.cemetery = self.getCemetery(self.request)
+            area.save(force_insert=True)
+            serializer = self.get_serializer(area)
+            #TODO : area.kind != Area.KIND_GRAVES and area.places_count > 1
+            write_log(request, area.cemetery, _(u'Создан участок: %s') % area)
+            return Response(serializer.data, status=201)
+        except ServiceException as excpt:
+            return Response(status=400, data=self.make_error_data(excpt.message))
 
+    def update(self, request, *args, **kwargs):
+        try:
+            self.pre_save(request)
+            area = self.get_object()
+            kind = request.data.get('kind')
+            if area and kind and kind != Area.KIND_GRAVES and \
+            Place.objects.filter(area=area, kind_crypt=True).exists():
+                data = self.make_error_data(_(u"Здесь есть склеп(ы): нельзя в колумбарии"))
+                return Response(status=400, data=data)
+            serializer = self.get_serializer(area, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            if area.kind != Area.KIND_GRAVES and area.places_count > 1:
+                area.places_count = 1
+                area.save()
+                serializer = self.get_serializer(area)
+            write_log(request, area, _(u'Участок изменен'))
+            return Response(serializer.data)
+        except ServiceException as excpt:
+            return Response(status=400, data=self.make_error_data(excpt.message))
 
     def retrieve(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -398,7 +423,6 @@ class AreaViewSet(CaretakerMixin, viewsets.ModelViewSet):
         data["max_graves_count"] = request.user.profile.org.max_graves_count
         data['caretakers'] = self.get_caretakers(self.object)
         return Response(data)
-
 
 class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
     model = Place
@@ -439,132 +463,118 @@ class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
         return Place.objects.filter(q).distinct()
 
 
-class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
+class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer
     permission_classes = (IsAuthenticated,)
     paginate_by = None
 
     def get_queryset(self):
-        item = getCemetery(self.request)
+        item = self.getCemetery(self.request)
         qs = self.model.objects.filter(cemetery=item)
         if self.request.GET.get('area_id'):
-            area  = getArea(self.request)
+            area  = self.getArea(self.request)
             qs = qs.filter(area=area)
-        return  qs.all()
+        return qs
 
-    def pre_save(self, object):
-        
-        item = getArea(self.request)
-        object.area = item
-        self.new_msg = []
-        self.old_responsible = object.responsible
-        self.old_object = None
-        
-        max_graves_count = self.request.user.profile.org.max_graves_count or 10
-        try:
-            self.places_count = int(self.request.data.get('places_count',1))
-            assert self.places_count>0 and self.places_count<=max_graves_count
-        except:
-            data = {"__all__":[_(u"Количество могил должно быть от 1 до %d") % max_graves_count,]}
-            return Response(status=400, data=data)
+    def pre_save(self, request, is_created):
+        data = request.data
+        max_graves_count = request.user.profile.org.max_graves_count
+        if data['places_count'] > max_graves_count:
+            raise ServiceException(_(u"Количество могил должно быть от 1 до %d") % max_graves_count)
 
-        responsible = self.request.data.get('obj_responsible')
-        if responsible and responsible.get('login_phone'):
-            try:
-                validate_phone_as_number(responsible['login_phone'])
-            except (TypeError, ValidationError, ):
-                return Response(status=400, data={"__all__":[_(u'Неверный формат телефона'),]})
+        if not is_created:
+            place = self.get_object()
+            self.old_place = place
+            self.old_responsible = place.responsible
 
-        if object.pk and responsible:
-            
-            responsible_serializer =  AlivePersonSerializer(object.responsible, data=responsible, partial=True)
-            if not responsible_serializer.is_valid():
-                return Response(status=400, data=responsible_serializer.errors) 
-            
-            try:
-                self.old_responsible = AlivePerson.objects.get(pk=object.responsible.pk)
-            except AlivePerson.DoesNotExist:
-                self.old_responsible = None
-            except AttributeError:
-                self.old_responsible = None
-            object.responsible = responsible_serializer.save()
+            self.new_msg = []
 
-            if object.responsible.login_phone and \
-               (not self.old_responsible or not self.old_responsible.login_phone):
+            responsible = data.get('obj_responsible')
+            if responsible and responsible.get('login_phone'):
                 try:
-                    customerprofile = CustomerProfile.objects.get(login_phone=object.responsible.login_phone)
-                    user = customerprofile.user
-                    text=_(u'Место %s прикреплено.') % object.pk
-                    email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
-                                        (customerprofile.user.username, object.responsible.login_phone, object.pk,))
-                except CustomerProfile.DoesNotExist:
-                    user, password = CustomerProfile.create_cabinet(object.responsible, self.request)
-                    text=_(u'%s login: %s parol: %s') % (
-                        get_front_end_url(self.request).rstrip('/'),
-                        object.responsible.login_phone,
-                        password,
-                    )
-                    email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
-                                        (object.responsible.login_phone,))
-                customplace, created_ = CustomPlace.get_or_create_from_place(user=user, place=object)
-                if not object.responsible.user:
-                    object.responsible.user = user
-                if created_:
-                    customplace.fill_custom_deadmen()
-                if not settings.DEBUG:
-                    sent, message = send_sms(
-                        phone_number=object.responsible.login_phone,
-                        text=text,
-                        email_error_text=email_error_text,
-                        user=self.request.user,
-                    )
+                    validate_phone_as_number(responsible['login_phone'])
+                except (TypeError, ValidationError, ):
+                    raise ServiceException(_(u"Неверный формат телефона ответственного"))
 
-        try:
-            self.old_object = self.model.objects.get(pk=object.pk)
-        except self.model.DoesNotExist:
-            self.old_object = None
-        except AttributeError:
-            self.old_object = None
-        
-        # Update grave point coords
-        items = Grave.objects.filter(place=object).all()
-        for item in items:
-            item.lng = object.lng
-            item.lat = object.lat
-            item.save()
+            if responsible:
+                responsible_serializer =  AlivePersonSerializer(place.responsible, data=responsible, partial=True)
+                if not responsible_serializer.is_valid():
+                    return Response(status=400, data=responsible_serializer.errors) 
+                
+                try:
+                    self.old_responsible = AlivePerson.objects.get(pk=place.responsible.pk)
+                except AlivePerson.DoesNotExist:
+                    self.old_responsible = None
+                except AttributeError:
+                    self.old_responsible = None
+                place.responsible = responsible_serializer.save()
 
-        if object.lat is not None and object.lng is not None:
-            # Если у места есть CustomPlace, а координаты в CustomPlace
-            # не заданы, задаем
-            for customplace in CustomPlace.objects.filter(
-                place=object,
-                address__gps_x__isnull=True,
-                address__gps_y__isnull=True,
-               ):
-                if customplace.address:
-                    address = customplace.address
-                else:
-                    address = Location()
-                address.gps_x = customplace.place.lng
-                address.gps_y = customplace.place.lat
-                address.save()
-                if not customplace.address:
-                    customplace.address = address
-                    customplace.save()
+                if place.responsible.login_phone and \
+                (not self.old_responsible or not self.old_responsible.login_phone):
+                    try:
+                        customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
+                        user = customerprofile.user
+                        text=_(u'Место %s прикреплено.') % place.pk
+                        email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
+                                            (customerprofile.user.username, place.responsible.login_phone, place.pk,))
+                    except CustomerProfile.DoesNotExist:
+                        user, password = CustomerProfile.create_cabinet(place.responsible, self.request)
+                        text=_(u'%s login: %s parol: %s') % (
+                            get_front_end_url(self.request).rstrip('/'),
+                            place.responsible.login_phone,
+                            password,
+                        )
+                        email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
+                                            (place.responsible.login_phone,))
+                    customplace, created_ = CustomPlace.get_or_create_from_place(user=user, place=place)
+                    if not place.responsible.user:
+                        place.responsible.user = user
+                    if created_:
+                        customplace.fill_custom_deadmen()
+                    if not settings.DEBUG:
+                        sent, message = send_sms(
+                            phone_number=place.responsible.login_phone,
+                            text=text,
+                            email_error_text=email_error_text,
+                            user=self.request.user,
+                        )
+            # Update grave point coords
+            items = Grave.objects.filter(place=place).all()
+            for item in items:
+                item.lng = place.lng
+                item.lat = place.lat
+                item.save()
 
-        return object
+            if place.lat is not None and place.lng is not None:
+                # Если у места есть CustomPlace, а координаты в CustomPlace
+                # не заданы, задаем
+                for customplace in CustomPlace.objects.filter(
+                    place=place,
+                    address__gps_x__isnull=True,
+                    address__gps_y__isnull=True,
+                ):
+                    if customplace.address:
+                        address = customplace.address
+                    else:
+                        address = Location()
+                    address.gps_x = customplace.place.lng
+                    address.gps_y = customplace.place.lat
+                    address.save()
+                    if not customplace.address:
+                        customplace.address = address
+                        customplace.save()
 
-    def post_save(self, object, created=False):
+    def post_save(self, place, created=False):
         if created: 
-            #    write_log(self.request, object, _(u'Место №%s создано')% object.place)
+            #    write_log(self.request, place, _(u'Место №%s создано')% place.place)
             for i in xrange(1,self.places_count+1):
-                item = Grave(place=object, grave_number=i)
+                item = Grave(place=place, grave_number=i)
                 item.save()
 
         if not created:
-            for b in Burial.objects.filter(place=object). \
-                        filter(~Q(row=object.row) | ~Q(place_number=object.place)):
+            for b in Burial.objects.filter(place=place). \
+                        filter(~Q(row=place.row) | ~Q(place_number=place.place)):
                 write_log(
                     self.request,
                     b,
@@ -574,54 +584,54 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
                         u"Номер места: '%(old_place)s' -> '%(new_place)s'\n"
                         ) % dict(
                             old_row=b.row,
-                            new_row=object.row,
+                            new_row=place.row,
                             old_place=b.place_number,
-                            new_place=object.place,
+                            new_place=place.place,
                 ))
-                b.row = object.row
-                b.place_number = object.place
+                b.row = place.row
+                b.place_number = place.place
                 if b.is_valid_for_register():
                     # есть изменения, существенные для регистра
                     b.dt_register = datetime.datetime.now()
                 b.save()
 
-        if object.responsible:
-            address = self.request.data.get('obj_responsible_address')
-            address_serializer = LocationDataSerializer(object.responsible.address, data=address, partial=True)
+        if place.responsible:
+            address = data.get('obj_responsible_address')
+            address_serializer = LocationDataSerializer(place.responsible.address, data=address, partial=True)
             if address_serializer.is_valid():
-                object.responsible.address = address_serializer.save()
-                object.responsible.address.set_related_addr(data=address)
+                place.responsible.address = address_serializer.save()
+                place.responsible.address.set_related_addr(data=address)
 
-            old_phones = [i for i in object.responsible.phone_set.all()]
+            old_phones = [i for i in place.responsible.phone_set.all()]
             
-            phone = self.request.data.get('obj_responsible_phones', [])
+            phone = data.get('obj_responsible_phones', [])
             id_binds = {}
             ct = ContentType.objects.get_for_model(object.responsible)
 
             for i in phone:
                 i["ct"] = ct.pk
                 try:
-                    phone_obj = object.responsible.phone_set.get(pk=i['id'])
+                    phone_obj = place.responsible.phone_set.get(pk=i['id'])
                 except:
                     phone_obj = None
                 phone_serializer = PhoneSerializer(phone_obj, data=i)
                 if phone_serializer.is_valid():
                     res = phone_serializer.save()
-                    res.obj_id = object.responsible.pk
+                    res.obj_id = place.responsible.pk
                     res.save()                
                     id_binds[res.id] = 1
-            object.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
+            place.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
         
-            phone_set = object.responsible.phone_set.all()
+            phone_set = place.responsible.phone_set.all()
             self.new_msg += prepare_m2m_log(_(u'Телефон'), old_phones,  phone_set)
             
         try:
-            old_address = self.old_object.responsible.address
+            old_address = self.old_place.responsible.address
         except AttributeError:
             old_address = None
 
         try:   
-            new_address = object.responsible.address
+            new_address = place.responsible.address
         except AttributeError:
             new_address = None
         
@@ -629,24 +639,24 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
             self.new_msg += [compare_obj(_(u'Адрес'), old_address, new_address)]
         
         responsible_changed = False
-        if self.old_responsible and unicode(self.old_responsible) != unicode(object.responsible):
-            self.new_msg += [compare_obj(_(u'Ответственный'), self.old_responsible, object.responsible)]
+        if self.old_responsible and unicode(self.old_responsible) != unicode(place.responsible):
+            self.new_msg += [compare_obj(_(u'Ответственный'), self.old_responsible, place.responsible)]
             responsible_changed = True
 
-        log_object(self.request, obj=object, old=self.old_object, new=object, reason=_(u'Место %s изменено') % object.place, new_msg=self.new_msg)
+        log_object(self.request, obj=place, old=self.old_place, new=place, reason=_(u'Место %s изменено') % place.place, new_msg=self.new_msg)
 
-        if not self.old_responsible and object.responsible or responsible_changed:
-            write_log(self.request, object, operation=LogOperation.PLACE_PASSPORT_ISSUED)
+        if not self.old_responsible and place.responsible or responsible_changed:
+            write_log(self.request, place, operation=LogOperation.PLACE_PASSPORT_ISSUED)
 
-        if object.responsible:
-            object.responsible.save()
+        if place.responsible:
+            place.responsible.save()
 
 
     @detail_route(methods=['GET',])
     def getform(self, request, pk=None):
-        cemetery = getCemetery(self.request)
+        cemetery = self.getCemetery(self.request)
         if self.request.GET.get('area_id'):
-            area  = getArea(self.request)
+            area  = self.getArea(self.request)
         place = get_object_or_404(self.model, pk=pk, cemetery=cemetery, area=area)
         
         # Log set
@@ -697,9 +707,9 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
 
     @detail_route(methods=['GET',])
     def getgraves(self, request, pk=None):
-        cemetery = getCemetery(self.request)
+        cemetery = self.getCemetery(self.request)
         if self.request.GET.get('area_id'):
-            area  = getArea(self.request)
+            area  = self.getArea(self.request)
         place = get_object_or_404(Place, pk=pk, cemetery=cemetery, area=area)
 
         page = request.GET.get('grave_page')
@@ -742,9 +752,9 @@ class PlaceViewSet(CaretakerMixin, viewsets.ModelViewSet):
         
     @detail_route(methods=['GET',])
     def cancel_exhumation(self, request, pk=None):
-        cemetery = getCemetery(self.request)
+        cemetery = self.getCemetery(self.request)
         if self.request.GET.get('area_id'):
-            area  = getArea(self.request)
+            area  = self.getArea(self.request)
         place = get_object_or_404(Place, pk=pk, cemetery=cemetery, area=area)
 
         burial_id = request.GET.get('burial_id')
@@ -776,7 +786,7 @@ class GraveViewSet(viewsets.ModelViewSet):
       #  return super(GraveViewSet, self).delete(request, *args, **kwargs)
 
     def get_queryset(self):
-        place = getPlace(self.request)
+        place = self.getPlace(self.request)
         return self.model.objects.filter(place=place).order_by('grave_number').all()
 
     def pre_save(self, object):
@@ -863,7 +873,7 @@ class GraveViewSet(viewsets.ModelViewSet):
         return Response(status=200)
 
 
-class BurialViewSet(viewsets.ModelViewSet):
+class BurialViewSet(EditCemeteryObjectsMixin, viewsets.ModelViewSet):
     model = Burial
     serializer_class = BurialSerializer
     serializer_list_class = BurialListSerializer
@@ -877,7 +887,7 @@ class BurialViewSet(viewsets.ModelViewSet):
     def filter_queryset(self, queryset):
         # place_id filter removed. Exhumation issue
 
-        item = getCemetery(self.request)
+        item = self.getCemetery(self.request)
         queryset = queryset.filter(cemetery=item)
         
         id = self.request.GET.get('area_id')
@@ -911,7 +921,7 @@ class BurialViewSet(viewsets.ModelViewSet):
         return object
 
 
-class AreaPhotoViewSet(viewsets.ModelViewSet):
+class AreaPhotoViewSet(EditCemeteryObjectsMixin, viewsets.ModelViewSet):
     model = AreaPhoto
     serializer_class = AreaPhotoSerializer
     permission_classes = (IsAuthenticated,)
@@ -919,7 +929,7 @@ class AreaPhotoViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         qs = self.model.objects.filter(area__cemetery__ugh=self.request.user.profile.org)
-        item = getArea(self.request)
+        item = self.getArea(self.request)
         qs = qs.filter(area=item)
         return  qs.all()
 
@@ -1495,7 +1505,7 @@ class ApiOmsPhotoPlaces(APIView):
 
 api_oms_photo_places = ApiOmsPhotoPlaces.as_view()
 
-class ApiPlacePhotoUpload(APIView):
+class ApiPlacePhotoUpload(EditCemeteryObjectsMixin, APIView):
     permission_classes = (PermitIfUgh,)
 
     def post(self, request, pk):
@@ -1530,7 +1540,7 @@ class ApiPlacePhotoUpload(APIView):
                 msg=msg,
             )
         else:
-            data = {"__all__" : [_(u"Загружаемый файл не является изображением")],}
+            data = self.make_error_data(_(u"Загружаемый файл не является изображением"))
             status = 400
         return Response(status=status, data=data)
 

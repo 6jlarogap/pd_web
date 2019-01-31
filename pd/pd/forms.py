@@ -304,7 +304,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
         return data.get(name, None)
 
     def create_select(self, name, field, value, val, choices, attrs):
-        from django.forms.extras.widgets import Select
+        from django.forms.widgets import Select
         if 'id' in self.attrs:
             id_ = self.attrs['id']
         else:

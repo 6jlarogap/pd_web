@@ -147,8 +147,7 @@ class CemeteryBriefSerializer(serializers.ModelSerializer):
 
 class AreaSerializer(serializers.ModelSerializer):
     purpose = serializers.PrimaryKeyRelatedField(queryset=AreaPurpose.objects.all())
-    cemetery = serializers.PrimaryKeyRelatedField(read_only=True)
-    places_count = serializers.IntegerField(required=True)
+    cemetery = serializers.PrimaryKeyRelatedField(queryset=Cemetery.objects.all(), required=False)
     caretaker = serializers.PrimaryKeyRelatedField(
         required=False,
         queryset=User.objects.filter(is_active=True),
@@ -158,16 +157,6 @@ class AreaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Area
         fields = ('id', 'cemetery', 'name', 'availability', 'kind', 'places_count', 'purpose', 'caretaker')
-
-    def is_valid_delete_it(self):
-        valid = not self.errors
-        if not self.many and self.object:
-            max_graves_count = self.context['request'].user.profile.org.max_graves_count
-            if self.object.places_count<=0 or self.object.places_count>max_graves_count:
-                self._errors = self._errors or {}
-                self._errors["__all__"] = [_(u"Количество могил должно быть от 1 до %d") % max_graves_count,]
-                valid = False
-        return valid
 
 
 class ApiPlacesSerializer(serializers.ModelSerializer):
@@ -224,18 +213,18 @@ class ApiClientSitePlacesSerializer(PlaceDeadmenMixin, ApiPlacesSerializer):
         return self.hasResponsible_func(place) and place.responsible.full_name() or ''
 
 class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
-    cemetery = serializers.PrimaryKeyRelatedField(read_only=True)
-    area = serializers.PrimaryKeyRelatedField(read_only=True)
+    cemetery = serializers.PrimaryKeyRelatedField(queryset=Cemetery.objects.all(), required=False)
+    area = serializers.PrimaryKeyRelatedField(queryset=Area.objects.all(), required=False)
     responsible = serializers.PrimaryKeyRelatedField(required=False, read_only=True)
     #available_count = Field(source='available_count')
     responsible_txt = serializers.SerializerMethodField('responsible_str')
     gallery = serializers.SerializerMethodField('gallery_func')
-    dt_free = serializers.DateTimeField(required=False)
-    dt_wrong_fio = serializers.DateTimeField(required=False)
-    dt_military = serializers.DateTimeField(required=False)
-    dt_size_violated = serializers.DateTimeField(required=False)
-    dt_unowned = serializers.DateTimeField(required=False)
-    dt_unindentified = serializers.DateTimeField(required=False)
+    dt_free = serializers.DateTimeField(allow_null=True, required=False)
+    dt_wrong_fio = serializers.DateTimeField(allow_null=True, required=False)
+    dt_military = serializers.DateTimeField(allow_null=True, required=False)
+    dt_size_violated = serializers.DateTimeField(allow_null=True, required=False)
+    dt_unowned = serializers.DateTimeField(allow_null=True, required=False)
+    dt_unindentified = serializers.DateTimeField(allow_null=True, required=False)
     caretaker = serializers.PrimaryKeyRelatedField(
         required=False,
         queryset=User.objects.filter(is_active=True),
@@ -260,19 +249,6 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
         if obj.responsible:
             return "%s %s %s" % (obj.responsible.first_name, obj.responsible.middle_name, obj.responsible.last_name)
 
-    def is_valid(self):
-        valid = not self.errors
-        if not self.many and self.object:
-            max_graves_count = self.context['request'].user.profile.org.max_graves_count or 10
-            try:
-                places_count = int(self.context['request'].DATA.get('places_count',1))
-                assert places_count>0 and places_count<=max_graves_count
-            except:
-                self._errors = self._errors or {}
-                self._errors["__all__"] = [_(u"Количество могил должно быть от 1 до %d") % max_graves_count,]
-                valid = False
-        return valid
-        
 class PlaceLockSerializer(PlaceDeadmenMixin, serializers.ModelSerializer):
     cemetery = CemeteryTitleSerializer('cemetery')
     area = AreaTitleSerializer('area')

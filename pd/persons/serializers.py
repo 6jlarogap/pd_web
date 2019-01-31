@@ -3,7 +3,7 @@ import re
 
 from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
-from rest_framework.fields import Field, TimeField, DecimalField, BooleanField
+from rest_framework.fields import Field, TimeField
 from django.contrib.contenttypes.models import ContentType
 
 from geo.models import Location
@@ -29,11 +29,11 @@ class PhoneSerializer(serializers.HyperlinkedModelSerializer):
 class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
     #address = Field(source='address_id')
     address = serializers.PrimaryKeyRelatedField(read_only=True)
-    address_str = Field(source='address')
+    address_str = serializers.StringRelatedField(source='address', read_only=True)
     # login_phone объявлен editable=False для django форм,
     # посему здесь прописываем явно, чтоб можно было изменить
-    login_phone = DecimalField(15,0, source='login_phone')
-    is_inbook = BooleanField()
+    login_phone = serializers.DecimalField(15, 0)
+    is_inbook = serializers.BooleanField()
 
     class Meta:
         model = AlivePerson
