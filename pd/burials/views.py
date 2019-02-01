@@ -374,35 +374,31 @@ class AreaViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSe
         serializer = self.get_serializer(area)
         return serializer
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
-        try:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            area = self.model(**serializer.validated_data)
-            area.cemetery = self.getCemetery(self.request)
-            area.save(force_insert=True)
-            serializer = self.check_new_area(self, area)
-            write_log(request, area.cemetery, _(u'Создан участок: %s') % area)
-            return Response(serializer.data, status=201)
-        except ServiceException as excpt:
-            return Response(status=400, data=self.make_error_data(excpt.message))
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        area = self.model(**serializer.validated_data)
+        area.cemetery = self.getCemetery(self.request)
+        area.save(force_insert=True)
+        serializer = self.check_new_area(area)
+        write_log(request, area.cemetery, _(u'Создан участок: %s') % area)
+        return Response(serializer.data, status=201)
 
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
-        try:
-            area = self.get_object()
-            kind = request.data.get('kind')
-            if area and kind and kind != Area.KIND_GRAVES and \
-            Place.objects.filter(area=area, kind_crypt=True).exists():
-                data = self.make_error_data(_(u"Здесь есть склеп(ы): нельзя в колумбарии"))
-                return Response(status=400, data=data)
-            serializer = self.get_serializer(area, data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            serializer = self.check_new_area(self, area)
-            write_log(request, area, _(u'Участок изменен'))
-            return Response(serializer.data)
-        except ServiceException as excpt:
-            return Response(status=400, data=self.make_error_data(excpt.message))
+        area = self.get_object()
+        kind = request.data.get('kind')
+        if area and kind and kind != Area.KIND_GRAVES and \
+        Place.objects.filter(area=area, kind_crypt=True).exists():
+            data = self.make_error_data(_(u"Здесь есть склеп(ы): нельзя в колумбарии"))
+            return Response(status=400, data=data)
+        serializer = self.get_serializer(area, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        serializer = self.check_new_area(area)
+        write_log(request, area, _(u'Участок изменен'))
+        return Response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
         area = self.get_object()
