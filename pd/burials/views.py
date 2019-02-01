@@ -53,6 +53,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_jsonp.renderers import JSONPRenderer
+from rest_framework.parsers import MultiPartParser, JSONParser
 
 from django.db import transaction
 
@@ -745,7 +746,6 @@ class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewS
         return Response(status=200)
 
 
-
 class AreaPurposeViewSet(viewsets.ModelViewSet):
     model = AreaPurpose
     serializer_class = AreaPurposeSerializer
@@ -1420,6 +1420,7 @@ api_oms_photo_places = ApiOmsPhotoPlaces.as_view()
 
 class ApiPlacePhotoUpload(EditCemeteryObjectsMixin, APIView):
     permission_classes = (PermitIfUgh,)
+    parser_classes = (MultiPartParser, JSONParser,)
 
     def post(self, request, pk):
         place = get_object_or_404(Place, pk=pk)
@@ -1435,7 +1436,7 @@ class ApiPlacePhotoUpload(EditCemeteryObjectsMixin, APIView):
         # В любом случае результатом будет ContentFile
         #
         photo_content = ThumbnailContentFile(
-            request.FILES['file'],
+            request.data['file'],
             quality=30,
             minsize=1600*1200,
         ).generate()
@@ -1444,7 +1445,7 @@ class ApiPlacePhotoUpload(EditCemeteryObjectsMixin, APIView):
             status = 200
             photo = PlacePhoto(place=place)
             photo.save()
-            photo.bfile.save(request.FILES['file'].name, photo_content)
+            photo.bfile.save(request.data['file'].name, photo_content)
             msg = request.build_absolute_uri(photo.bfile.url)
             write_log(
                 request,

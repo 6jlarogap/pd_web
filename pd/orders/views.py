@@ -2223,9 +2223,9 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
                     break
             else:
                 raise ServiceException(_(u"Тип %s файла результата выполнения заказа не предусмотрен") % type_)
-            if 'file' not in request.FILES:
+            if 'file' not in request.data:
                 raise ServiceException(_(u"Не получен загружаемый файл 'file'"))
-            uploaded_file = request.FILES['file']
+            uploaded_file = request.data['file']
             if type_ == ResultFile.TYPE_IMAGE:
                 if uploaded_file.size > ResultFile.MAX_IMAGE_SIZE * 1024 * 1024:
                     raise ServiceException(_(u"Размер изображения превышает %d Мб") % ResultFile.MAX_IMAGE_SIZE)

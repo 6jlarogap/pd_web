@@ -512,7 +512,7 @@ class ApiCustompersonDetailView(
                     raise ServiceException(u'Нельзя задавать дату смерти для живого человека')
                 if request.data.get('placeId'):
                     raise ServiceException(u'Живой человек не может иметь место захоронения')
-            photo = request.FILES.get('photo')
+            photo = request.data.get('photo')
             if photo:
                 if photo.size > CustomPerson.MAX_PHOTO_SIZE * 1024 * 1024:
                     raise ServiceException(_(u"Размер фото превышает %d Мб") % CustomPerson.MAX_PHOTO_SIZE)
@@ -573,7 +573,7 @@ class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
                     if f not in request.data:
                         del fields[f]
 
-            file_ = request.FILES.get('mediaContent')
+            file_ = request.data.get('mediaContent')
             if not fields['type']:
                 raise ServiceException(_(u'Не задан тип (type)'))
             if fields['type'] not in [type_[0] for type_ in MemoryGallery.TYPE_CHOICES]:

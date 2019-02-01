@@ -200,7 +200,7 @@ class CemeteryPhotoSchemaMixin(object):
             filefield = 'schema'
 
         cemetery = self.get_cemetery(pk)
-        photo = request.FILES.get(filefield)
+        photo = request.data.get(filefield)
         if photo:
             if photo.size > CemeteryPhoto.MAX_PHOTO_SIZE * 1024 * 1024:
                 raise CustomException(
@@ -986,6 +986,8 @@ placephoto_list = ApiPlacePhotoList.as_view()
 
 class ApiPlacePhotoUpload(APIView):
     permission_classes = (PermitIfUgh,)
+    parser_classes = (MultiPartParser, JSONParser,)
+
     def get(self, request) :
         return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту")})
 
@@ -1016,7 +1018,7 @@ class ApiPlacePhotoUpload(APIView):
             # В любом случае результатом будет ContentFile
             #
             photo_content = ThumbnailContentFile(
-                request.FILES['photo'],
+                request.data['photo'],
                 quality=30,
                 minsize=1600*1200,
             ).generate()
@@ -1026,11 +1028,11 @@ class ApiPlacePhotoUpload(APIView):
                     status=400,
                 )
             # -------------------
-            # photo_content = ContentFile(request.FILES['photo'].read())
+            # photo_content = ContentFile(request.data['photo'].read())
             # -------------------
             photo = PlacePhoto(place=place, lat = lat, lng = lng, comment = '', creator = request.user, dt_created = dtCreated)
             photo.save()
-            photo.bfile.save(request.FILES['photo'].name, photo_content)
+            photo.bfile.save(request.data['photo'].name, photo_content)
             msg = request.build_absolute_uri(photo.bfile.url)
             if lat is not None and lng is not None:
                 msg = _(

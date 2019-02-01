@@ -783,7 +783,7 @@ class ApiSettings(APIView):
         {
            "avatar",
                 - None в json-input, тогда удаляем картинку
-                - request.FILES['avatar'], в multipart-input,
+                - request.data['avatar'] и это файловый объект, в multipart-input,
                   тогда устанавляваем фото
            "username": "somebody",
            "loginPhone": "375297542270",
@@ -858,30 +858,30 @@ class ApiSettings(APIView):
             if user_middle_name is not None:
                 change_profile = True
                 profile.user_middle_name = user_middle_name
-            avatar = request.FILES.get('avatar')
-            if avatar:
-                if avatar.size > UserPhoto.MAX_SIZE * 1024 * 1024:
-                    raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
-                image = get_image(avatar)
-                if not image:
-                    raise ServiceException(_(u"Прикрепленный файл не является изображением"))
-                if image.size[0] <= UserPhoto.MIN_SIZE_X:
-                    raise ServiceException(_(u"Ширина картинки должна быть больше %s px") % UserPhoto.MIN_SIZE_X)
-                userphoto, created_ = UserPhoto.objects.get_or_create(
-                    user=user,
-                    defaults=dict(
-                        creator=user,
-                        bfile=avatar,
-                ))
-                if not created_:
-                    userphoto.delete_from_media()
-                    userphoto.bfile.save(avatar.name, avatar)
-                change_profile = True
-            elif 'avatar' in request.data and request.data['avatar'] is None:
-                for photo in UserPhoto.objects.filter(user=user):
-                    photo.delete()
+            if 'avatar' in request.data:
+                avatar = request.data['avatar']
+                if request.data['avatar'] is None:
+                    for photo in UserPhoto.objects.filter(user=user):
+                        photo.delete()
+                        change_profile = True
+                else:
+                    if avatar.size > UserPhoto.MAX_SIZE * 1024 * 1024:
+                        raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
+                    image = get_image(avatar)
+                    if not image:
+                        raise ServiceException(_(u"Прикрепленный файл не является изображением"))
+                    if image.size[0] <= UserPhoto.MIN_SIZE_X:
+                        raise ServiceException(_(u"Ширина картинки должна быть больше %s px") % UserPhoto.MIN_SIZE_X)
+                    userphoto, created_ = UserPhoto.objects.get_or_create(
+                        user=user,
+                        defaults=dict(
+                            creator=user,
+                            bfile=avatar,
+                    ))
+                    if not created_:
+                        userphoto.delete_from_media()
+                        userphoto.bfile.save(avatar.name, avatar)
                     change_profile = True
-
             if change_profile:
                 profile.save()
         except ServiceException as excpt:
@@ -918,7 +918,7 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
         {
            "photo",
                 - None в json-input, тогда удаляем картинку
-                - request.FILES['photo'], в multipart-input,
+                - request.data['photo'], и это файловый объект, в multipart-input,
                   тогда устанавляваем фото
            "lastName": "Моя-новая-фамилия",
            "firstName": "Мое-новое-имя",
@@ -940,27 +940,28 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
             for f in profile_map:
                 if f in request.data:
                     profile_fields[profile_map[f]] = request.data[f] or ''
-            photo_changed = True
-            photo = request.FILES.get('photo')
-            if photo:
-                if photo.size > UserPhoto.MAX_SIZE * 1024 * 1024:
-                    raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
-                image = get_image(photo)
-                if not image:
-                    raise ServiceException(_(u"Прикрепленный файл не является изображением"))
-                userphoto, created_ = UserPhoto.objects.get_or_create(
-                    user=user,
-                    defaults=dict(
-                        creator=user,
-                        bfile=photo,
-                ))
-                if not created_:
-                    userphoto.delete_from_media()
-                    userphoto.bfile.save(photo.name, photo)
-            elif 'photo' in request.data and request.data['photo'] is None:
-                UserPhoto.objects.filter(user=user).delete()
-            else:
-                photo_changed = False
+            photo_changed = False
+            if 'photo' in request.data:
+                photo = request.data['photo']
+                if photo is None:
+                    UserPhoto.objects.filter(user=user).delete()
+                    photo_changed = True
+                else:
+                    if photo.size > UserPhoto.MAX_SIZE * 1024 * 1024:
+                        raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
+                    image = get_image(photo)
+                    if not image:
+                        raise ServiceException(_(u"Прикрепленный файл не является изображением"))
+                    userphoto, created_ = UserPhoto.objects.get_or_create(
+                        user=user,
+                        defaults=dict(
+                            creator=user,
+                            bfile=photo,
+                    ))
+                    if not created_:
+                        userphoto.delete_from_media()
+                        userphoto.bfile.save(photo.name, photo)
+                    photo_changed = True
 
             if profile_fields:
                 profile = get_profile(user)
@@ -3020,7 +3021,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
     """
     Регистрация ЛОРУ (нового поставщика)
     """
-    parser_classes = (MultiPartParser,)
+    parser_classes = (MultiPartParser, JSONParser, )
     
     @transaction.atomic
     def post(self, request):
@@ -3217,7 +3218,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
                         off_address=bank_address,
                     )
 
-            cert = request.FILES.get('certificatePhoto')
+            cert = request.data.get('certificatePhoto')
             if cert:
                 RegisterProfileScan.objects.create(
                     bfile=cert,
@@ -3382,7 +3383,7 @@ class ApiShopsMixin(object):
             raise Http404
 
 class ApiShopsGalleryView(ApiShopsMixin, APIView):
-    parser_classes = (MultiPartParser,)
+    parser_classes = (MultiPartParser, JSONParser, )
     
     def get(self, request, pk):
         shop = self.get_shop(pk, authorized_only=False)
@@ -3397,7 +3398,7 @@ class ApiShopsGalleryView(ApiShopsMixin, APIView):
     def post(self, request, pk):
         try:
             shop = self.get_shop(pk, authorized_only=True)
-            photo = request.FILES.get('photo')
+            photo = request.data.get('photo')
             if photo:
                 if photo.size > OrgGallery.MAX_IMAGE_SIZE * 1024 * 1024:
                     raise ServiceException(_(u"Размер фото превышает %d Мб") % OrgGallery.MAX_IMAGE_SIZE)
