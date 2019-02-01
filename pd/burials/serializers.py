@@ -268,12 +268,12 @@ class PlaceLockSerializer(PlaceDeadmenMixin, serializers.ModelSerializer):
         return obj.get_photos(request) if request else []
 
 class GraveSerializer(serializers.ModelSerializer):
-    place = serializers.PrimaryKeyRelatedField(read_only=True)
-    dt_free = serializers.DateTimeField(required=False)
+    place = serializers.PrimaryKeyRelatedField(queryset=Place.objects.all())
+    dt_free = serializers.DateTimeField(required=False, allow_null=True)
 
     class Meta:
         model = Grave
-        fields = ('id', 'place', 'grave_number', 'lat', 'lng',
+        fields = ('id', 'place', 'grave_number',
                   'is_wrong_fio', 'is_military', 'dt_free')
 
 

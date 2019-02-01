@@ -760,94 +760,26 @@ class GraveViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     paginate_by = 1
 
-    #def delete(self, request, *args, **kwargs):
-    #    write_log(self.request, self.get_object(), _(u'Могила №%d удалена') % object.grave_number)
-      #  return super(GraveViewSet, self).delete(request, *args, **kwargs)
-
     def get_queryset(self):
         place = self.getPlace(self.request)
-        return self.model.objects.filter(place=place).order_by('grave_number').all()
+        return self.model.objects.filter(place=place).order_by('grave_number')
 
-    def pre_save(self, object):
-        # Update placer point coords
-        res = Grave.objects.filter(place=object.place, lng__isnull=False, lat__isnull=False).\
-            aggregate(lng=Avg('lng'), lat=Avg('lat')) #, cnt=Count('id')
-        object.place.lat = res["lat"]
-        object.place.lng = res["lng"]  
-        object.place.save()
-        
-        """
-        TODO: Newd review this. Replacement for "def move(self, request, pk=None):"
-        current_qs = Grave.objects.filter(place__cemetery__ugh=self.request.user.profile.org)
-        if current.filter(pk=pk).count():
-            current = current_qs.get(pk=pk)
-            if current.grave_number != object.grave_number:
-                 current_qs = current_qs.filter(grave_number__gte=current.grave_number).all()
-                 ind = object.grave_number
-                 for row in current_qs:
-                     ind += 1
-                     row.grave_number = ind
-                     row.save()
-        """
-        
-        footer = ''
-        try:
-            old = self.model.objects.get(pk=object.pk)
-        except self.model.DoesNotExist:
-            footer = []
-            old = None
-            if object.is_wrong_fio:
-                footer.append(u"Неверное ФИО")
-            if object.is_military:
-                footer.append(u"Воинская могила")
-            if len(footer):
-                footer = ", ".join(footer)
-        except AttributeError:
-            old = None
-        log_object(self.request, obj=object.place, old=old, footer=footer, \
-                   new=object, reason="", \
-                   create_text=_(u"Могила %d создана") % object.grave_number)        
-        return object
-
-
-    """
-    #@detail_route(methods=['GET',])
-    def move(self, request, pk=None):
-        direction = request.GET.get('direction','forward')
-        try:
-            current = Grave.objects.filter(place__cemetery__ugh=self.request.user.profile.org).get(pk=pk)
-            if direction==u'forward':
-                direction = 1
-                direction_text = _(u'вправо')
-                assert current.grave_number+direction<=current.place.grave_set.count()
-            else:
-                direction = -1
-                direction_text = _(u'влево')
-                assert current.grave_number+direction>0
-
-            swapped = Grave.objects.get(place=current.place, grave_number = current.grave_number+direction)
-            t = current.grave_number
-            t1 = swapped.grave_number
-            write_log(self.request, current, _(u'Могила №%d  перемещена %s c №%d на №%d' % (t1, direction_text, t, t1)))
-            #TODO: Transaction level?
-            current.grave_number = 32767
-            current.save()
-            current.grave_number = t1
-            swapped.grave_number = t
-            swapped.save()
-            current.save()
-        except:
-            pass
-        return Response(status=200)
-    """
-
-
+    @transaction.atomic
+    def perform_create(self, serializer):
+        super(GraveViewSet, self).perform_create(serializer)
+        grave = self.model(**serializer.validated_data)
+        msg = _(u"Могила %d создана") % grave.grave_number
+        if grave.is_wrong_fio:
+            msg = u"%s, %s" % (msg, _(u"Неверное ФИО"),)
+        if grave.is_military:
+            msg = u"%s, %s" % (msg, _(u"Воинская могила"),)
+        write_log(self.request, grave.place, msg)
+    
     def destroy(self, request, pk=None):
         try:
-            object = self.model.objects.get(pk=int(pk))
-            #write_log(self.request, object.place, _(u'Могила №%d удалена') % object.grave_number)
-            object.delete(request=request)
-        except:
+            grave = self.model.objects.get(pk=pk)
+            grave.delete(request=request)
+        except self.model.DoesNotExist:
             raise Http404()
         return Response(status=200)
 
