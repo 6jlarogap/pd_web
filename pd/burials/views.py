@@ -681,6 +681,8 @@ class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewS
             if place.responsible.address:
                 data["responsible_address"] = LocationStaticSerializer(place.responsible.address).data
         data['caretakers'] = self.get_caretakers(cemetery)
+        data['is_yandex_map_enabled'] = bool(settings.YANDEX_API_KEYS)
+        data["max_graves_count"] = request.user.profile.org.max_graves_count
         return Response(status=200, data=data)
 
 
@@ -757,7 +759,7 @@ class AreaPurposeViewSet(viewsets.ModelViewSet):
 class GraveViewSet(viewsets.ModelViewSet):
     model = Grave
     serializer_class = GraveSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
     paginate_by = 1
 
     def get_queryset(self):
