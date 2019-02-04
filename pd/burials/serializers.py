@@ -215,7 +215,7 @@ class ApiClientSitePlacesSerializer(PlaceDeadmenMixin, ApiPlacesSerializer):
 class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField(queryset=Cemetery.objects.all(), required=False)
     area = serializers.PrimaryKeyRelatedField(queryset=Area.objects.all(), required=False)
-    responsible = serializers.PrimaryKeyRelatedField(required=False, read_only=True)
+    # responsible = serializers.PrimaryKeyRelatedField(required=False, read_only=True)
     #available_count = Field(source='available_count')
     responsible_txt = serializers.SerializerMethodField('responsible_str')
     gallery = serializers.SerializerMethodField('gallery_func')
@@ -248,6 +248,8 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     def responsible_str(self, obj):
         if obj.responsible:
             return "%s %s %s" % (obj.responsible.first_name, obj.responsible.middle_name, obj.responsible.last_name)
+        else:
+            return ''
 
 class PlaceLockSerializer(PlaceDeadmenMixin, serializers.ModelSerializer):
     cemetery = CemeteryTitleSerializer('cemetery')

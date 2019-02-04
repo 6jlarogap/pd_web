@@ -32,7 +32,7 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
     address_str = serializers.StringRelatedField(source='address', read_only=True)
     # login_phone объявлен editable=False для django форм,
     # посему здесь прописываем явно, чтоб можно было изменить
-    login_phone = serializers.DecimalField(15, 0)
+    login_phone = serializers.DecimalField(15, 0, allow_null=True)
     is_inbook = serializers.BooleanField()
 
     class Meta:

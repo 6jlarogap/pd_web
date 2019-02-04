@@ -454,6 +454,10 @@ class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewS
     permission_classes = (IsAuthenticated,)
     paginate_by = None
 
+    old_place = None
+    old_responsible = None
+    old_responsible_address = None
+
     def get_queryset(self):
         item = self.getCemetery(self.request)
         qs = self.model.objects.filter(cemetery=item)
@@ -462,13 +466,41 @@ class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewS
             qs = qs.filter(area=area)
         return qs
 
-    def pre_update(self, request):
-        data = request.data
+    @transaction.atomic
+    def perform_create(self, serializer):
+        super(PlaceViewSet, self).perform_create(serializer)
+        data = serializer.data
+        area = Area.objects.get(pk=data['area'])
+        place = Place.objects.get(
+            area=area,
+            row=data['row'],
+            place=data['place']
+        )
+        place.get_or_create_graves(area.places_count)
+
+    @transaction.atomic
+    def perform_update(self, serializer):
+        self.pre_update()
+        super(PlaceViewSet, self).perform_update(serializer)
+        self.post_update()
+
+    def update(self, request, *args, **kwargs):
+        try:
+            result = super(PlaceViewSet, self).update(request, *args, **kwargs)
+        except ServiceException as excpt:
+            result = Response(status=400, data=self.make_error_data(excpt.message))
+        return result
+
+    def pre_update(self):
         place = self.get_object()
         self.old_place = place
         self.old_responsible = place.responsible
+        self.old_responsible_address = place.responsible and place.responsible or None
 
-        self.new_msg = []
+    def post_update(self):
+        request = self.request
+        data = request.data
+        place = self.get_object()
 
         responsible = data.get('obj_responsible')
         if responsible and responsible.get('login_phone'):
@@ -477,21 +509,35 @@ class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewS
             except (TypeError, ValidationError, ):
                 raise ServiceException(_(u"Неверный формат телефона ответственного"))
 
+        if place.lat is not None and place.lng is not None:
+            # Если у места есть CustomPlace, а координаты в CustomPlace
+            # не заданы, задаем
+            for customplace in CustomPlace.objects.filter(
+                place=place,
+                address__gps_x__isnull=True,
+                address__gps_y__isnull=True,
+            ):
+                if customplace.address:
+                    address = customplace.address
+                else:
+                    address = Location()
+                address.gps_x = customplace.place.lng
+                address.gps_y = customplace.place.lat
+                address.save()
+                if not customplace.address:
+                    customplace.address = address
+                    customplace.save()
+
         if responsible:
             responsible_serializer =  AlivePersonSerializer(place.responsible, data=responsible, partial=True)
             if not responsible_serializer.is_valid():
-                return Response(status=400, data=responsible_serializer.errors) 
-            
-            try:
-                self.old_responsible = AlivePerson.objects.get(pk=place.responsible.pk)
-            except AlivePerson.DoesNotExist:
-                self.old_responsible = None
-            except AttributeError:
-                self.old_responsible = None
+                raise ServiceException(_(u"Неверные данные ответственного"))
             place.responsible = responsible_serializer.save()
+            place.responsible.save()
+            place.save()
 
             if place.responsible.login_phone and \
-            (not self.old_responsible or not self.old_responsible.login_phone):
+              (not self.old_responsible or not self.old_responsible.login_phone):
                 try:
                     customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
                     user = customerprofile.user
@@ -519,39 +565,12 @@ class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewS
                         email_error_text=email_error_text,
                         user=self.request.user,
                     )
-        # Update grave point coords
-        items = Grave.objects.filter(place=place).all()
-        for item in items:
-            item.lng = place.lng
-            item.lat = place.lat
-            item.save()
 
-        if place.lat is not None and place.lng is not None:
-            # Если у места есть CustomPlace, а координаты в CustomPlace
-            # не заданы, задаем
-            for customplace in CustomPlace.objects.filter(
-                place=place,
-                address__gps_x__isnull=True,
-                address__gps_y__isnull=True,
-            ):
-                if customplace.address:
-                    address = customplace.address
-                else:
-                    address = Location()
-                address.gps_x = customplace.place.lng
-                address.gps_y = customplace.place.lat
-                address.save()
-                if not customplace.address:
-                    customplace.address = address
-                    customplace.save()
+        elif not responsible and self.old_responsible:
+            #TODO совместить с журналом
+            self.old_responsible.delete()
 
-    def post_save(self, place, created=False):
-        if created: 
-            #    write_log(self.request, place, _(u'Место №%s создано')% place.place)
-            for i in xrange(1,self.places_count+1):
-                item = Grave(place=place, grave_number=i)
-                item.save()
-
+    def post_save_to_delete(self, place, created=False):
         if not created:
             for b in Burial.objects.filter(place=place). \
                         filter(~Q(row=place.row) | ~Q(place_number=place.place)):
