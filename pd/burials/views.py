@@ -28,7 +28,7 @@ from django.contrib.contenttypes.models import ContentType
 from geo.models import Country, Region, Street, City
 
 from pd.views import RequestToFormMixin, FormInvalidMixin, get_front_end_url, ServiceException
-from pd.models import UnclearDate, validate_phone_as_number
+from pd.models import UnclearDate, validate_phone_as_number, SafeDeleteMixin
 from pd.utils import utcisoformat, re_search, dictfetchall
 
 from burials.forms import AreaFormset, AddOrgForm, \
@@ -448,7 +448,7 @@ class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
         return Place.objects.filter(q).distinct()
 
 
-class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSet):
+class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, viewsets.ModelViewSet):
     model = Place
     serializer_class = PlaceSerializer
     permission_classes = (IsAuthenticated,)
@@ -479,28 +479,32 @@ class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewS
         place.get_or_create_graves(area.places_count)
 
     @transaction.atomic
-    def perform_update(self, serializer):
-        self.pre_update()
-        super(PlaceViewSet, self).perform_update(serializer)
-        self.post_update()
-
     def update(self, request, *args, **kwargs):
         try:
-            result = super(PlaceViewSet, self).update(request, *args, **kwargs)
+            place = self.get_object()
+            serializer = self.get_serializer(place, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.pre_update(place)
+            super(PlaceViewSet, self).perform_update(serializer)
+            place = self.post_update()
+            serializer = self.get_serializer(place)
+            return Response(serializer.data)
         except ServiceException as excpt:
             result = Response(status=400, data=self.make_error_data(excpt.message))
         return result
 
-    def pre_update(self):
+    def pre_update(self, place):
         place = self.get_object()
         self.old_place = place
         self.old_responsible = place.responsible
-        self.old_responsible_address = place.responsible and place.responsible or None
+        self.old_responsible_address = place.responsible and place.responsible.address or None
 
     def post_update(self):
         request = self.request
         data = request.data
+        print data
         place = self.get_object()
+        new_msg = []
 
         responsible = data.get('obj_responsible')
         if responsible and responsible.get('login_phone'):
@@ -527,6 +531,28 @@ class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewS
                 if not customplace.address:
                     customplace.address = address
                     customplace.save()
+
+        for b in Burial.objects.filter(place=place). \
+                    filter(~Q(row=place.row) | ~Q(place_number=place.place)):
+            write_log(
+                self.request,
+                b,
+                _(
+                    u"Изменение ряда и/или номера места при правке места\n"
+                    u"Ряд: '%(old_row)s' -> '%(new_row)s'\n"
+                    u"Номер места: '%(old_place)s' -> '%(new_place)s'\n"
+                    ) % dict(
+                        old_row=b.row,
+                        new_row=place.row,
+                        old_place=b.place_number,
+                        new_place=place.place,
+            ))
+            b.row = place.row
+            b.place_number = place.place
+            if b.is_valid_for_register():
+                # есть изменения, существенные для регистра
+                b.dt_register = datetime.datetime.now()
+            b.save()
 
         if responsible:
             responsible_serializer =  AlivePersonSerializer(place.responsible, data=responsible, partial=True)
@@ -565,47 +591,18 @@ class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewS
                         email_error_text=email_error_text,
                         user=self.request.user,
                     )
-
-        elif not responsible and self.old_responsible:
-            #TODO совместить с журналом
-            self.old_responsible.delete()
-
-    def post_save_to_delete(self, place, created=False):
-        if not created:
-            for b in Burial.objects.filter(place=place). \
-                        filter(~Q(row=place.row) | ~Q(place_number=place.place)):
-                write_log(
-                    self.request,
-                    b,
-                    _(
-                        u"Изменение ряда и/или номера места при правке места\n"
-                        u"Ряд: '%(old_row)s' -> '%(new_row)s'\n"
-                        u"Номер места: '%(old_place)s' -> '%(new_place)s'\n"
-                        ) % dict(
-                            old_row=b.row,
-                            new_row=place.row,
-                            old_place=b.place_number,
-                            new_place=place.place,
-                ))
-                b.row = place.row
-                b.place_number = place.place
-                if b.is_valid_for_register():
-                    # есть изменения, существенные для регистра
-                    b.dt_register = datetime.datetime.now()
-                b.save()
-
-        if place.responsible:
             address = data.get('obj_responsible_address')
             address_serializer = LocationDataSerializer(place.responsible.address, data=address, partial=True)
             if address_serializer.is_valid():
                 place.responsible.address = address_serializer.save()
                 place.responsible.address.set_related_addr(data=address)
+            else:
+                raise ServiceException(_(u"Неверные данные адреса ответственного"))
+            place.responsible.save()
 
-            old_phones = [i for i in place.responsible.phone_set.all()]
-            
             phone = data.get('obj_responsible_phones', [])
             id_binds = {}
-            ct = ContentType.objects.get_for_model(object.responsible)
+            ct = ContentType.objects.get_for_model(place.responsible)
 
             for i in phone:
                 i["ct"] = ct.pk
@@ -620,36 +617,30 @@ class PlaceViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewS
                     res.save()                
                     id_binds[res.id] = 1
             place.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
-        
+
+            old_phones = [i for i in self.old_responsible.phone_set.all()] if self.old_responsible else []
             phone_set = place.responsible.phone_set.all()
-            self.new_msg += prepare_m2m_log(_(u'Телефон'), old_phones,  phone_set)
-            
-        try:
-            old_address = self.old_place.responsible.address
-        except AttributeError:
-            old_address = None
+            new_msg += prepare_m2m_log(_(u'Телефон ответственного'), old_phones,  phone_set)
 
-        try:   
-            new_address = place.responsible.address
-        except AttributeError:
-            new_address = None
-        
-        if unicode(old_address)!= unicode(new_address):
-            self.new_msg += [compare_obj(_(u'Адрес'), old_address, new_address)]
-        
+            if unicode(self.old_responsible_address)!= unicode(place.responsible.address):
+                new_msg += [compare_obj(_(u'Адрес ответственного'), self.old_responsible_address, place.responsible.address)]
+
         responsible_changed = False
-        if self.old_responsible and unicode(self.old_responsible) != unicode(place.responsible):
-            self.new_msg += [compare_obj(_(u'Ответственный'), self.old_responsible, place.responsible)]
-            responsible_changed = True
+        if unicode(self.old_responsible) != unicode(place.responsible):
+            new_msg += [compare_obj(_(u'Ответственный'), self.old_responsible, place.responsible)]
+            if self.old_responsible:
+                responsible_changed = True
 
-        log_object(self.request, obj=place, old=self.old_place, new=place, reason=_(u'Место %s изменено') % place.place, new_msg=self.new_msg)
+        log_object(self.request, obj=place, old=self.old_place, new=place, reason=_(u'Изменено'), new_msg=new_msg)
 
-        if not self.old_responsible and place.responsible or responsible_changed:
+        if place.responsible and (not self.old_responsible or responsible_changed):
             write_log(self.request, place, operation=LogOperation.PLACE_PASSPORT_ISSUED)
-
-        if place.responsible:
-            place.responsible.save()
-
+            
+        if data.get('delete_responsible') and self.old_responsible:
+            write_log(self.request, place, _(u'Ответственный %s откреплен') % self.old_responsible.full_name_complete())
+            self.safe_delete('responsible', place)
+        
+        return place
 
     @detail_route(methods=['GET',])
     def getform(self, request, pk=None):

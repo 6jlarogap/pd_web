@@ -467,6 +467,7 @@
     if ($scope.responsible.last_name || $scope.responsible.first_name || $scope.responsible.middle_name) {
       var fio = "{0} {1} {2}".format($scope.responsible.last_name, $scope.responsible.first_name, $scope.responsible.middle_name);
       if (confirm("Открепить " + fio + '?')) {
+        $scope.item.delete_responsible = true;
         delete $scope.item.responsible;
         $scope.loading = true;
         $scope.item.$update({placeID: $routeParams.place_id,
