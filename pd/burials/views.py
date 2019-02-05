@@ -502,7 +502,6 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
     def post_update(self):
         request = self.request
         data = request.data
-        print data
         place = self.get_object()
         new_msg = []
 
@@ -801,7 +800,7 @@ class BurialViewSet(EditCemeteryObjectsMixin, viewsets.ModelViewSet):
     serializer_class = BurialSerializer
     serializer_list_class = BurialListSerializer
     serializer_put_grave_class = BurialPutGraveSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (PermitIfUgh,)
     paginate_by = None
 
     def get_queryset(self):
@@ -813,8 +812,8 @@ class BurialViewSet(EditCemeteryObjectsMixin, viewsets.ModelViewSet):
         item = self.getCemetery(self.request)
         queryset = queryset.filter(cemetery=item)
         
-        id = self.request.GET.get('area_id')
-        item = get_object_or_404(Area, id=id)
+        area_id = self.request.GET.get('area_id')
+        item = get_object_or_404(Area, pk=area_id)
         queryset = queryset.filter(area=item)
         return  queryset
 
@@ -832,16 +831,27 @@ class BurialViewSet(EditCemeteryObjectsMixin, viewsets.ModelViewSet):
         return serializer_class
 
 
-    def pre_save(self, object):
-        try:
-            old = self.model.objects.get(pk=object.pk)
-        except (AttributeError, self.model.DoesNotExist):
-            old = None
-        if old and old.grave_number != object.grave_number:
-            grave = Grave.objects.get(place=object.place, grave_number=object.grave_number)
-            self.object.grave = grave
-        log_object(self.request, obj=object.place, old=old, new=object, reason=_(u'Захоронение изменено'))        
-        return object
+    @transaction.atomic
+    def perform_update(self, serializer):
+        burial = self.get_object()
+        old_grave_number = burial.grave_number
+        super(BurialViewSet, self).perform_update(serializer)
+        burial = self.get_object()
+        if burial.grave_number != 0 and \
+           burial.grave and \
+           burial.place and \
+           burial.grave_number != burial.grave.grave_number:
+            grave = burial.place.get_or_create_graves(burial.grave_number)
+            burial.grave = grave
+            burial.save()
+        if old_grave_number != burial.grave_number:
+            write_log(
+                self.request,
+                burial,
+                _(u'Могила %(old_grave_number)s -> %(new_grave_number)s') % dict(
+                    old_grave_number=old_grave_number,
+                    new_grave_number=burial.grave_number,
+            ))
 
 
 class AreaPhotoViewSet(EditCemeteryObjectsMixin, viewsets.ModelViewSet):
