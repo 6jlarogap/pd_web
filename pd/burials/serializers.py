@@ -160,8 +160,8 @@ class AreaSerializer(serializers.ModelSerializer):
 
 
 class ApiPlacesSerializer(serializers.ModelSerializer):
-    location = serializers.Field(source='location')
-    status = serializers.Field(source='status_list')
+    location = serializers.ReadOnlyField()
+    status = serializers.ReadOnlyField(source='status_list')
 
 
 class ApiOmsPlacesSerializer(ApiPlacesSerializer):
@@ -175,7 +175,7 @@ class ApiOmsPlacesSerializer(ApiPlacesSerializer):
 
 class ApiCatalogPlacesSerializer(GetGalleryMixin, ApiPlacesSerializer):
     photos = serializers.SerializerMethodField('gallery_func')
-    address = serializers.Field(source='full_name')
+    address = serializers.ReadOnlyField(source='full_name')
     cemetery = CemeteryBriefSerializer()
 
     class Meta:
