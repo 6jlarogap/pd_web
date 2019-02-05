@@ -59,7 +59,7 @@ from django.db import transaction
 
 from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
-    AreaPhotoSerializer, ExhumationRequestSerializer, PlaceSizeSerializer, \
+    AreaPhotoSerializer, PlaceSizeSerializer, \
     ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer, \
     CemeteryTitleSerializer, AreaTitleSerializer, PlaceTitleSerializer, \
     CemeteryClientSiteSerializer, ApiClientSitePlacesSerializer
