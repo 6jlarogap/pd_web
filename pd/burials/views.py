@@ -876,23 +876,6 @@ class PlaceSizeViewSet(viewsets.ModelViewSet):
         qs = self.model.objects.filter(org=self.request.user.profile.org)
         return  qs.all()
 
-class ExhumationRequestViewSet(viewsets.ModelViewSet):
-    model = ExhumationRequest
-    serializer_class = ExhumationRequestSerializer
-    permission_classes = (IsAuthenticated,)
-    paginate_by = None
-    def get_queryset(self):
-        qs = self.model.objects.filter(place__cemetery__ugh=self.request.user.profile.org)
-        id = self.request.GET.get('burial_id')
-        if id:
-            item = get_object_or_404(Burial, id=id)
-            qs = qs.filter(burial=item)
-        id = self.request.GET.get('place_id')
-        if id:
-            item = get_object_or_404(Place, id=id)
-            qs = qs.filter(place=item)
-        return  qs.all()
-
 class AddDoverView(UghOrLoruRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         prefix = kwargs.get('prefix') or ''

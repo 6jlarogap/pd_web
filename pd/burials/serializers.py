@@ -138,8 +138,8 @@ class CemeterySerializer(CemeteryPhotoMixin, serializers.ModelSerializer):
 
 
 class CemeteryBriefSerializer(serializers.ModelSerializer):
-    phones = Field(source='phone_list')
-    address = serializers.RelatedField(read_only=True)
+    phones = ReadOnlyField(source='phone_list')
+    address = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Cemetery
@@ -325,18 +325,6 @@ class AreaPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = AreaPhoto
         fields = ('id', 'area', 'bfile', 'comment', 'original_name', 'lat', 'lng', 'date_of_creation') 
-
-
-class ExhumationRequestSerializer(serializers.ModelSerializer):
-    burial = serializers.PrimaryKeyRelatedField(read_only=True)
-    place = serializers.PrimaryKeyRelatedField(read_only=True)
-    applicant = AlivePersonSerializer(source='responsible')
-    #applicant_organization = serializers.PrimaryKeyRelatedField()
-    class Meta:
-        model = ExhumationRequest
-        fields = ('id', 'burial', 'plan_date', 'plan_time', 'fact_date', 'applicant', \
-                  'applicant_organization',)
-        #agent_director, agent, dover
 
 
 class PlaceSizeSerializer(serializers.ModelSerializer):
