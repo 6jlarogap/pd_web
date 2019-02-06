@@ -68,10 +68,10 @@ class CemeteryPhotoMixin(object):
         return photo
 
 class CemeteryClientSiteSerializer(AddressLatLonMixin, CemeteryPhotoMixin, serializers.ModelSerializer):
-    phones = Field(source='phone_list')
-    address = serializers.RelatedField(read_only=True)
+    phones = ReadOnlyField(source='phone_list')
+    address = serializers.StringRelatedField(read_only=True)
     location = serializers.SerializerMethodField('location_func')
-    workTimes = Field(source='worktimes')
+    workTimes = ReadOnlyField(source='worktimes')
     executive = serializers.SerializerMethodField('executive_func')
     photoUrl = serializers.SerializerMethodField('photoUrl_func')
     schemaUrl = serializers.SerializerMethodField('schemaUrl_func')
@@ -193,7 +193,7 @@ class PlaceDeadmenMixin(object):
         return result
 
 class ApiClientSitePlacesSerializer(PlaceDeadmenMixin, ApiPlacesSerializer):
-    address = serializers.Field(source='address_short')
+    address = serializers.ReadOnlyField(source='address_short')
     photo = serializers.SerializerMethodField('photo_func')
     deadmen = serializers.SerializerMethodField('deadmen_func')
     hasResponsible = serializers.SerializerMethodField('hasResponsible_func')
