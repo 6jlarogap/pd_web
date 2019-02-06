@@ -37,7 +37,7 @@ class SubCemeterySerializer(serializers.ModelSerializer):
         fields = ('id', 'name')
 
 class CemeteryTitleSerializer(serializers.ModelSerializer):
-    title = serializers.Field(source='name')
+    title = serializers.ReadOnlyField(source='name')
 
     class Meta:
         model = Cemetery
@@ -89,7 +89,7 @@ class CemeteryClientSiteSerializer(AddressLatLonMixin, CemeteryPhotoMixin, seria
             return None
 
 class AreaTitleSerializer(serializers.ModelSerializer):
-    title = serializers.Field(source='name')
+    title = serializers.ReadOnlyField(source='name')
 
     class Meta:
         model = Area

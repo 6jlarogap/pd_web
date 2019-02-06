@@ -18,7 +18,7 @@ redis==2.10.5
 django-redis==3.8.0
 
 django-wkhtmltopdf
-djangorestframework==3.3.3
+djangorestframework==3.6.4
 djangorestframework-jsonp
 
 LatLon
