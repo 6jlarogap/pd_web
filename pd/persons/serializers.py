@@ -158,8 +158,18 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
         model = DeadPerson
         fields = ('id', 'firstName', 'lastName', 'middleName', 'birthDate', 'deathDate')
 
-    def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+    def create(self, validated_data):
+        deadman = self.restore_object_(instance=None)
+        deadman.save(force_insert=True)
+        return deadman
+
+    def update(self, instance, validated_data):
+        deadman = self.restore_object_(instance=instance)
+        deadman.save()
+        return deadman
+
+    def restore_object_(self, instance=None):
+        data = self.context['request'].data
 
         fields_got = dict(
             last_name=data.get('lastName'),
@@ -209,9 +219,9 @@ class BaseCustomPersonSerializer(
     ):
     birthDate = serializers.SerializerMethodField('birth_date')
     deathDate = serializers.SerializerMethodField('death_date')
-    lastName = serializers.Field(source='last_name')
-    firstName = serializers.Field(source='first_name')
-    middleName = serializers.Field(source='middle_name')
+    lastName = serializers.CharField(source='last_name')
+    firstName = serializers.CharField(source='first_name')
+    middleName = serializers.CharField(source='middle_name')
     permissions = serializers.Field(source='permission')
     selected = serializers.SerializerMethodField('selected_func')
 
@@ -250,7 +260,7 @@ class BaseCustomPersonSerializer(
             return CustomPerson(customplace=customplace, user=self.context['request'].user, **fields)
 
 class CustomPersonSerializer(BaseCustomPersonSerializer):
-    omsData = serializers.Field(source='oms_data')
+    omsData = serializers.ReadOnlyField(source='oms_data')
     titlePhoto = HyperlinkedFileField(source='photo', required=False)
 
     class Meta:
@@ -286,7 +296,7 @@ class MemoryGallerySerializer(CreatedAtMixin, serializers.ModelSerializer):
 
 class MemoryGallery2Serializer(MemoryGallerySerializer, UserProfileMixin):
     createdBy = serializers.SerializerMethodField('createdBy_func')
-    permissions = serializers.Field(source='permission')
+    permissions = serializers.ReadOnlyField(source='permission')
     selected = serializers.SerializerMethodField('selected_func')
 
     class Meta:
@@ -324,17 +334,17 @@ class CustomPerson3Serializer(
         CustomPersonPermissionsMixin,
         serializers.ModelSerializer
     ):
-    lastname = serializers.Field(source='last_name')
-    firstname = serializers.Field(source='first_name')
-    middlename = serializers.Field(source='middle_name')
-    commonText = serializers.Field(source='memory_text')
+    lastname = serializers.CharField(source='last_name')
+    firstname = serializers.CharField(source='first_name')
+    middlename = serializers.CharField(source='middle_name')
+    commonText = serializers.CharField(source='memory_text')
     dob = serializers.SerializerMethodField('birth_date')
     dod = serializers.SerializerMethodField('death_date')
-    photo = HyperlinkedFileField(source='photo', required=False)
+    photo = HyperlinkedFileField(required=False)
     gallery = serializers.SerializerMethodField('gallery_func')
-    isDead = serializers.Field(source='is_dead')
-    placeId = serializers.Field(source='customplace.id')
-    permissions = serializers.Field(source='permission')
+    isDead = serializers.BooleanField(source='is_dead')
+    placeId = serializers.ReadOnlyField(source='customplace.id')
+    permissions = serializers.CharField(source='permission')
     selected = serializers.SerializerMethodField('selected_func')
 
     class Meta:

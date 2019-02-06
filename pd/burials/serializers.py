@@ -96,7 +96,7 @@ class AreaTitleSerializer(serializers.ModelSerializer):
         fields = ('id', 'title')
 
 class PlaceTitleSerializer(serializers.ModelSerializer):
-    title = serializers.Field(source='place')
+    title = serializers.ReadOnlyField(source='place')
 
     class Meta:
         model = Place
@@ -254,16 +254,14 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
 class PlaceLockSerializer(PlaceDeadmenMixin, serializers.ModelSerializer):
     cemetery = CemeteryTitleSerializer('cemetery')
     area = AreaTitleSerializer('area')
-    place = serializers.SerializerMethodField('place_func')
+    # place как PlaceTitleSerializer(place), вынужден подставлять во view
+    # есть "простое" (не foreignKey) поле place, наверняка это мешает.
     gallery = serializers.SerializerMethodField('photos_func')
     burials = serializers.SerializerMethodField('deadmen_func')
 
     class Meta:
         model = Place
-        fields = ('id', 'cemetery', 'area', 'row', 'place', 'gallery', 'burials', )
-
-    def place_func(self, obj):
-        return PlaceTitleSerializer(obj).data
+        fields = ('id', 'cemetery', 'area', 'row', 'gallery', 'burials', )
 
     def photos_func(self, obj):
         request = self.context.get('request')

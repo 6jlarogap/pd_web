@@ -1415,6 +1415,7 @@ class ApiOmsPhotoPlaces(APIView):
         if place:
             serializer = PlaceLockSerializer(place, context=dict(request=request))
             data=serializer.data
+            data['place'] = PlaceTitleSerializer(place).data
         else:
             data = {}
         return Response(status=200, data=data)
@@ -1470,10 +1471,9 @@ class ApiOmsPhotoPlacesDetail(APIView):
         place, status, message = Place.check_invent_place(request, pk)
         if message:
             return Response(data=dict(status='error', message=message), status=status)
-        return Response(
-            status=200,
-            data=PlaceLockSerializer(place, context=dict(request=request)).data
-        )
+        data = PlaceLockSerializer(place, context=dict(request=request)).data
+        data['place'] = PlaceTitleSerializer(place).data
+        return Response(status=200, data=data)
 
 api_oms_photo_places_detail = ApiOmsPhotoPlacesDetail.as_view()
 
