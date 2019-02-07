@@ -3,7 +3,6 @@ Provides various authentication policies.
 """
 
 from rest_framework import exceptions, HTTP_HEADER_ENCODING
-from rest_framework.compat import CsrfViewMiddleware
 from rest_framework.authentication import BaseAuthentication
 
 class SessionAuthentication(BaseAuthentication):

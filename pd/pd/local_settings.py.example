@@ -1,18 +1,13 @@
 # coding=utf-8
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
-ASSETS_DEBUG = DEBUG
 
 ADMIN_ENABLED = True
 SUPERVISOR_ORG_INN = '12345'
 
 ADMINS = (
-
     ('Ivan Ivanov', 'ivan.ivanov@org.com'),
-
 )
-
 MANAGERS = ADMINS
 
 # Настройка на production server (раскомментировать)
@@ -26,9 +21,6 @@ DATABASES = {
         'PASSWORD': '',
         'HOST': '',
         'PORT': '',
-        'OPTIONS': {
-            'autocommit': True,
-            },
         },
 }
 

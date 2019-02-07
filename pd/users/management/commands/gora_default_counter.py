@@ -17,15 +17,15 @@ REGEX = r'^(.+)\<script\>window\.defaultUsersCount\s*=\s*(\d+)\;\<\/script\>(.+)
 LINE = u'<script>window.defaultUsersCount = %s;</script>'
 
 class Command(BaseCommand):
-    args = '<index.html location> <thank token>'
     help = 'Fill index.html with default count of thanked person with token'
     
-    def handle(self, *args, **options):
-        try:
-            index_html=args[0]
-            token = args[1]
-        except IndexError:
-            quit()
+    def add_arguments(self, parser):
+        parser.add_argument('index_html', type=str, help='/path/to/index.html')
+        parser.add_argument('token', type=str, help='thanked person token')
+
+    def handle(self, *args, **kwargs):
+        index_html = kwargs['index_html']
+        token = kwargs['token']
         try:
             with open(index_html, "r") as f:
                 data = f.read().decode('utf-8')
