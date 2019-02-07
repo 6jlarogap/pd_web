@@ -68,19 +68,22 @@ class DateTimeUtcField(DateTimeField):
 
     UTC_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
-    def __init__(self, input_formats=None, format=None, *args, **kwargs):
-        if format is None:
-            format = DateTimeUtcField.UTC_FORMAT
-        if input_formats is None:
-            input_formats = (DateTimeUtcField.UTC_FORMAT, )
-        super(DateTimeUtcField, self).__init__(input_formats, format, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        f1 = self.UTC_FORMAT
+        f2 = self.UTC_FORMAT[:-1]
+        f3 = self.UTC_FORMAT[:-4]
+        f4 = self.UTC_FORMAT[:-3]
+        super(DateTimeUtcField, self).__init__(
+            input_formats = [f1, f2, f3, f4], format=self.UTC_FORMAT, *args, **kwargs
+        )
 
     def to_internal_value(self, value):
         # value: DateTime или строка в UTC
         # результат: dt in localtime, например, для записи в базу
+        if value is None:
+            return value
         dt = super(DateTimeUtcField, self).to_internal_value(value)
-        if dt is not None:
-            dt = utc2local(dt)
+        dt = utc2local(dt)
         return dt
 
     def to_representation(self, value):

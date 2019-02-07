@@ -521,7 +521,7 @@ class PlaceUploadMixin(object):
                     result[parms[k]] = ''
         ps = PlaceSerializer(Place(**result))
         for f in result:
-            if isinstance(ps.fields[f], DateTimeUtcField):
+            if isinstance(ps.fields[f], DateTimeUtcField) and ps.data[f] is not None:
                 result[f] = ps.fields[f].to_internal_value(ps.data[f])
         return result
 
@@ -529,7 +529,7 @@ class PlaceUploadMixin(object):
         return Response(
             status=400,
             data=dict(
-                message=_(u"Такое место уже существует"),
+                message=u"Такое место уже существует",
                 code='place_already_exists'
         ))
 
@@ -978,7 +978,7 @@ placephoto_list = ApiPlacePhotoList.as_view()
 
 class ApiPlacePhotoUpload(APIView):
     permission_classes = (PermitIfUgh,)
-    parser_classes = (MultiPartParser, JSONParser,)
+    parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) :
         return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту")})
