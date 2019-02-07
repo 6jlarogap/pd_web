@@ -75,10 +75,10 @@ class DateTimeUtcField(DateTimeField):
             input_formats = (DateTimeUtcField.UTC_FORMAT, )
         super(DateTimeUtcField, self).__init__(input_formats, format, *args, **kwargs)
 
-    def from_native(self, value):
+    def to_internal_value(self, value):
         # value: DateTime или строка в UTC
         # результат: dt in localtime, например, для записи в базу
-        dt = super(DateTimeUtcField, self).from_native(value)
+        dt = super(DateTimeUtcField, self).to_internal_value(value)
         if dt is not None:
             dt = utc2local(dt)
         return dt

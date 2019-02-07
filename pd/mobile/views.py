@@ -40,7 +40,7 @@ from axmlparserpy import apk
 from StringIO import StringIO
 from rest_framework import serializers
 from rest_framework.renderers import JSONRenderer
-from rest_framework.parsers import JSONParser, MultiPartParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -87,16 +87,17 @@ cemetery_list = ApiCemeteryList.as_view()
 
 class ApiCemeteryUpload(APIView):
     permission_classes = (PermitIfUgh,)
+    parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) :
         return render_to_response('mobile_upload_cemetery.html', {'message': _(u"Загрузите название кладбища:")})
 
     @transaction.atomic
-    def post(self, request) :
+    def post(self, request):
         org = request.user.profile.org
         listInsertedCemetery = []
         listGPS = [] 
-        cemeteryId = int(request.POST['cemeteryId'])
+        cemeteryId = request.POST['cemeteryId']
         cemeteryName = request.POST['cemeteryName']
         gpsJSON = request.POST.get('gps')
         square = None
@@ -112,9 +113,8 @@ class ApiCemeteryUpload(APIView):
             stream = StringIO(gpsJSON)
             data = JSONParser().parse(stream)
             serializer = CoordinatesSerializer(data=data, many=True)
-            isValid = serializer.is_valid()            
-            for obj in serializer.object:
-                listGPS.append(obj)
+            if serializer.is_valid():
+                listGPS = serializer.validated_data
         cem = None
         log_recs = []
         try:
@@ -154,14 +154,10 @@ class ApiCemeteryUpload(APIView):
             listInsertedCemetery.append(cem)
         if isGPSChange == True :
             log_recs.append(_(u"Заданы координаты углов кладбища"))
-            CemeteryCoordinates.objects.filter(cemetery__pk = cem.pk).delete()
+            CemeteryCoordinates.objects.filter(cemetery=cem).delete()
             for gps in listGPS:
-                cemeteryCoordinates = CemeteryCoordinates(gps)
-                cemeteryCoordinates.pk = None
+                cemeteryCoordinates = CemeteryCoordinates(**gps)
                 cemeteryCoordinates.cemetery = cem
-                cemeteryCoordinates.lat = gps.lat
-                cemeteryCoordinates.lng = gps.lng
-                cemeteryCoordinates.angle_number = gps.angle_number
                 cemeteryCoordinates.save()                 
         serializer = CemeteryWithNestedObjectSerializer(
             listInsertedCemetery,
@@ -369,6 +365,7 @@ area_list = ApiAreaList.as_view()
 
 class ApiAreaUpload(APIView):
     permission_classes = (IsAuthenticated,)
+    parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) : 
         return render_to_response('mobile_upload_area.html', {'message': _(u"Задайте название участка:")})
@@ -384,8 +381,8 @@ class ApiAreaUpload(APIView):
         # Т.е. при опции от клиента: грузить в существующий участок,
         # если такой существует
         isOverwrite = int(request.POST.get('isOverwrite', '0'))
-        areaId = int(request.POST['areaId'])
-        cemeteryId = int(request.POST['cemeteryId'])
+        areaId = request.POST['areaId']
+        cemeteryId = request.POST['cemeteryId']
         gpsJSON = request.POST['gps']
         square = request.POST.get('square') or None
         dtCreated = None
@@ -398,9 +395,8 @@ class ApiAreaUpload(APIView):
             stream = StringIO(gpsJSON)
             data = JSONParser().parse(stream)
             serializer = CoordinatesSerializer(data=data, many=True)
-            isValid = serializer.is_valid()            
-            for obj in serializer.object:
-                listGPS.append(obj)
+            if serializer.is_valid():
+                listGPS = serializer.validated_data
         area = None
         try:
             cemetery = Cemetery.objects.get(pk = cemeteryId)
@@ -448,14 +444,9 @@ class ApiAreaUpload(APIView):
                     )
             listInsertedArea.append(area)
         if isGPSChange == True :
-            AreaCoordinates.objects.filter(area__pk = area.pk).delete()
+            AreaCoordinates.objects.filter(area=area).delete()
             for gps in listGPS:
-                areaCoordinates = AreaCoordinates(gps)
-                areaCoordinates.pk = None
-                areaCoordinates.area = area
-                areaCoordinates.lat = gps.lat
-                areaCoordinates.lng = gps.lng
-                areaCoordinates.angle_number = gps.angle_number
+                areaCoordinates = AreaCoordinates(**gps)
                 areaCoordinates.save()                 
         serializer = AreaWithNestedObjectSerializer(listInsertedArea, many=True)
         return Response(serializer.data)
@@ -531,7 +522,7 @@ class PlaceUploadMixin(object):
         ps = PlaceSerializer(Place(**result))
         for f in result:
             if isinstance(ps.fields[f], DateTimeUtcField):
-                result[f] = ps.fields[f].from_native(ps.data[f])
+                result[f] = ps.fields[f].to_internal_value(ps.data[f])
         return result
 
     def response_already_exists(self):
@@ -544,6 +535,7 @@ class PlaceUploadMixin(object):
 
 class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
     permission_classes = (PermitIfUgh,)
+    parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request, area_id):
         area = get_object_or_404(

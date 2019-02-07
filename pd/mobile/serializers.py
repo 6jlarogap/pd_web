@@ -8,28 +8,16 @@ from rest_api.fields import DateTimeUtcField, UnclearDateFieldSerializer, \
 from burials.models import CemeteryPhoto, CemeterySchema
 
 class BaseSerializer(serializers.Serializer):	
-    pk = serializers.Field()    
+    pk = serializers.ReadOnlyField()    
 
 class CoordinatesSerializer(BaseSerializer):
     lat = serializers.CharField(required=True)
     lng = serializers.CharField(required=True)
     angle_number = serializers.CharField(required=True)
     
-    def restore_object(self, attrs, instance=None):
-        if instance is not None:
-            instance.pk = attrs.get('pk', instance.pk)
-            instance.lat = attrs.get('lat', instance.lat)
-            instance.lng = attrs.get('lng', instance.lng)
-            instance.angle_number = attrs.get('angle_number', instance.angle_number)
-            return instance
-        return CoordinatesModel(**attrs)
-        
 class CemeteryPhotoSerializer(BaseSerializer):
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
-    # TODO: obsolete
-    photo = serializers.FileField(max_length=None, allow_empty_file=False)
-    # ----
     photoUrl = HyperlinkedFileField(source='photo', required=False)
     dt_modified = serializers.DateTimeField(required=False)
 
@@ -96,7 +84,7 @@ class LocationSerializer(serializers.Serializer):
     street = StreetSerializer(required=False)
 
 class BasePersonSerializer(serializers.Serializer):
-    pk = serializers.Field()
+    pk = serializers.ReadOnlyField()
     last_name = serializers.CharField(required=False)
     first_name = serializers.CharField(required=False)
     middle_name = serializers.CharField(required=False)    

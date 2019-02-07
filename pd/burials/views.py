@@ -672,7 +672,6 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
                 "place" : PlaceSerializer(place, context={ 'request': request, }).data,
                 "graves" : GraveSerializer(grave_list, many=True).data,
                 "grave_count" : grave_count,
-                #"burials" : BurialSerializer(burial_list, many=True).data,
                 "responsible" : {},
                 "responsible_phones" : [],
                 "responsible_address" : {},
