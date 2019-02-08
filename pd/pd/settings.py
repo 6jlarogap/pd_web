@@ -301,6 +301,15 @@ THUMBNAILS_ALLOWED_SIZE_RANGE = dict(min=20, max=2000)
 
 # REST framework
 REST_FRAMEWORK = {
+
+    # Вместо русской 'a' выводить \u0430, например.
+    # Так было  в Django REST v2 по умолчанию.
+    # Наш мобильный клиент понимает только \u0430,
+    # и некоторые, -- особенно старые, -- браузеры
+    # non ascii json вывод не понимают
+    #
+    'UNICODE_JSON': False,
+
     'PAGINATE_BY': 50,
     'PAGINATE_BY_PARAM': 'page_size',
     'DEFAULT_AUTHENTICATION_CLASSES': (
