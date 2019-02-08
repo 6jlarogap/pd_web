@@ -717,6 +717,7 @@ api_mobile_grave = ApiMobileGrave.as_view()
 
 class ApiGraveUpload(APIView):
     permission_classes = (IsAuthenticated,)
+    parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) :
         return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
@@ -837,6 +838,7 @@ burial_list = ApiBurialList.as_view()
 
 class ApiMobileBurialsView(CheckLifeDatesMixin, APIView):
     permission_classes = (PermitIfUgh,)
+    parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     @transaction.atomic
     def post(self, request):
@@ -888,6 +890,8 @@ class ApiMobileBurialsView(CheckLifeDatesMixin, APIView):
 api_mobile_burials = ApiMobileBurialsView.as_view()
 
 class ApiBindBurialGrave(APIView):
+    parser_classes = (FormParser, MultiPartParser, JSONParser,)
+
     permission_classes = (IsAuthenticated,)
     def get(self, request) :
         return render_to_response('mobile_bind_burial_grave.html', {'message': _(u"Загрузите захоронение:")})
@@ -1059,6 +1063,8 @@ class ApiPlacePhotoUpload(APIView):
 placephoto_upload = ApiPlacePhotoUpload.as_view()
 
 class ApiPlacePhotoDelete(APIView):
+    parser_classes = (FormParser, MultiPartParser, JSONParser,)
+
     permission_classes = (PermitIfUgh,)
     def get(self, request) :
         return render_to_response('mobile_remove_placephoto.html', {'message': _(u"Удалить фотографию места")})
