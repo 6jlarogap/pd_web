@@ -6,7 +6,6 @@ import decimal
 from django.db import transaction
 from django.utils.translation import ugettext as _
 from rest_framework import serializers
-from rest_framework.fields import Field
 
 from rest_api.fields import HyperlinkedFileField
 from orders.models import Order, ProductCategory, Product, Service, Measure, OrgService, OrgServicePrice, \
@@ -18,7 +17,7 @@ from burials.serializers import OrderPlaceSerializer
 from users.models import Org, is_cabinet_user, is_trade_user, UserPhoto
 from users.serializers import OrgSerializer, OrgShortSerializer, OrgShort3Serializer, OrgShort4Serializer, \
                               OrgShort6Serializer, UserFioSerializer
-from pd.utils import utcisoformat, str_to_bool_or_None, CreatedAtMixin
+from pd.utils import utcisoformat, str_to_bool_or_None, CreatedAtMixin, RestoreObjectMixin
 from pd.views import ServiceException
 
 class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
@@ -29,7 +28,7 @@ class ProductCategorySerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'name', 'icon', )
 
 class ProductCategory2Serializer(serializers.ModelSerializer):
-    title = Field(source='name')
+    title = serializers.CharField(source='name')
     products = serializers.SerializerMethodField('products_func')
 
     class Meta:
@@ -47,7 +46,7 @@ class ProductCategory2Serializer(serializers.ModelSerializer):
 
 class ProductsSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
-    currency = serializers.Field(source='loru.currency.code')
+    currency = serializers.CharField(source='loru.currency.code')
     supplier = OrgShortSerializer(source='loru')
     price = serializers.SerializerMethodField('price_func')
 
@@ -75,9 +74,9 @@ class ProductShortSerializer(serializers.ModelSerializer):
 
 class ProductsOptSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
-    currency = serializers.Field(source='loru.currency.code')
+    currency = serializers.CharField(source='loru.currency.code')
     supplier = OrgShortSerializer(source='loru')
-    price = Field(source = 'price_wholesale')
+    price = serializers.DecimalField(20, 2, source = 'price_wholesale')
     category = ProductCategorySerializer(source='productcategory')
     subcategory = serializers.SerializerMethodField('subcategory_func')
     withVAT = serializers.SerializerMethodField('withVAT_func')
@@ -96,7 +95,7 @@ class ProductsOptSerializer(serializers.HyperlinkedModelSerializer):
 
 class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
-    currency = serializers.Field(source='loru.currency.code')
+    currency = serializers.CharField(source='loru.currency.code')
     category = serializers.RelatedField(source='productcategory', read_only=True)
     supplier = OrgSerializer(source='loru')
     priceWholesale = serializers.SerializerMethodField('price_wholesale_func')
@@ -118,11 +117,11 @@ class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
 class OptOrdersSerializer(CreatedAtMixin, serializers.HyperlinkedModelSerializer):
     supplier = OrgShort3Serializer(source='loru')
     customer = OrgShort3Serializer(source='applicant_organization')
-    number = serializers.Field(source='number_verbose')
-    itemsCount = serializers.Field(source='item_count')
-    totalPrice = serializers.Field(source='total_float')
+    number = serializers.ReadOnlyField(source='number_verbose')
+    itemsCount = serializers.ReadOnlyField(source='item_count')
+    totalPrice = serializers.ReadOnlyField(source='total_float')
     createdAt = serializers.SerializerMethodField('createdAt_func')
-    comment = serializers.Field(source='first_comment')
+    comment = serializers.ReadOnlyField(source='first_comment')
 
     class Meta:
         model = Order
@@ -132,31 +131,29 @@ class OptOrdersSerializer(CreatedAtMixin, serializers.HyperlinkedModelSerializer
         )
 
 class OptOrderInfoSerializer(serializers.HyperlinkedModelSerializer):
-    products = serializers.Field(source='products_json')
-    number = serializers.Field(source='number_verbose')
+    products = serializers.ReadOnlyField(source='products_json')
+    number = serializers.ReadOnlyField(source='number_verbose')
     supplier = OrgShort4Serializer(source='loru')
     customer = OrgShort4Serializer(source='applicant_organization')
-    comment = serializers.Field(source='first_comment')
+    comment = serializers.ReadOnlyField(source='first_comment')
 
     class Meta:
         model = Order
         fields = ('products', 'comment', 'number', 'supplier', 'customer', )
 
-class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
-    name = Field(source='name')
-    typeId = Field(source='ptype')
+class ProductEditSerializer(RestoreObjectMixin, serializers.HyperlinkedModelSerializer):
+    typeId = serializers.CharField(source='ptype')
     typeName = serializers.SerializerMethodField('typeName_func')
     categoryId = serializers.SerializerMethodField('categoryId_func')
-    categoryName = serializers.RelatedField(source='productcategory', read_only=True)
-    measurementUnit = Field(source='measure')
-    isDefault = Field(source='default')
-    stockable = Field()
-    isArchived = Field(source='is_archived')
-    retailPrice = Field(source='price')
-    currency = serializers.Field(source='loru.currency.code')
-    tradePrice = Field(source='price_wholesale')
-    isShownInRetailCatalog = Field(source='is_public_catalog')
-    isShownInTradeCatalog = Field(source='is_wholesale')
+    categoryName = serializers.StringRelatedField(source='productcategory', read_only=True)
+    measurementUnit = serializers.CharField(source='measure')
+    isDefault = serializers.BooleanField(source='default')
+    isArchived = serializers.BooleanField(source='is_archived')
+    retailPrice = serializers.DecimalField(20, 2, source='price')
+    currency = serializers.CharField(source='loru.currency.code')
+    tradePrice = serializers.DecimalField(20, 2, source='price_wholesale')
+    isShownInRetailCatalog = serializers.BooleanField(source='is_public_catalog')
+    isShownInTradeCatalog = serializers.BooleanField(source='is_wholesale')
     imageUrl = HyperlinkedFileField(source='photo', required=False)
     
     class Meta:
@@ -195,9 +192,9 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
                 raise ServiceException(_(u'Неверно задана оптовая цена'))
         return is_public_catalog, is_wholesale, price, price_wholesale
 
-    def restore_object(self, attrs, instance=None):
+    def restore_object_(self, instance=None, validated_data=[]):
         data = self.context['request'].data
-        image = self.context['request'].FILES.get('image')
+        image = self.context['request'].data.get('image')
         is_public_catalog, is_wholesale, price, price_wholesale = self.get_catalogs_prices()
 
         # В вызывающем post (добавление продукта) должны быть проверены
@@ -296,7 +293,7 @@ class MeasureSerializer(serializers.ModelSerializer):
         fields = ('name', 'title', )
 
 class ServiceSerializer(serializers.ModelSerializer):
-    type = Field(source='name')
+    type = serializers.CharField(source='name')
     measures = MeasureSerializer(many=True, source='measure_set')
 
     class Meta:
@@ -304,16 +301,16 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = ('type', 'title', 'description', 'measures', )
 
 class OrgServicePriceSerializer(serializers.ModelSerializer):
-    name = serializers.Field(source='measure_name')
-    price = serializers.Field(source='price_float')
+    name = serializers.CharField(source='measure_name')
+    price = serializers.ReadOnlyField(source='price_float')
 
     class Meta:
         model = OrgServicePrice
         fields = ('name', 'price', )
 
 class OrgServiceSerializer(serializers.ModelSerializer):
-    type = serializers.Field(source='service_name')
-    isActive = serializers.Field(source='enabled')
+    type = serializers.CharField(source='service_name')
+    isActive = serializers.BooleanField(source='enabled')
     measures = OrgServicePriceSerializer(many=True, source='orgserviceprice_set')
     
     class Meta:
@@ -321,16 +318,16 @@ class OrgServiceSerializer(serializers.ModelSerializer):
         fields = ('type', 'isActive', 'measures', )
 
 class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
-    type = serializers.Field(source='service_name')
-    location = serializers.Field(source='customer_location')
+    type = serializers.ReadOnlyField(source='service_name')
+    location = serializers.ReadOnlyField(source='customer_location')
     performer = OrgShort3Serializer(source='loru')
     owner = UserFioSerializer(source='customplace.user')
-    number = serializers.Field(source='number_verbose')
-    totalPrice = serializers.Field(source='total_float')
-    currency = serializers.Field(source='loru.currency.code')
+    number = serializers.ReadOnlyField(source='number_verbose')
+    totalPrice = serializers.ReadOnlyField(source='total_float')
+    currency = serializers.CharField(source='loru.currency.code')
     createdAt = serializers.SerializerMethodField('createdAt_func')
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
-    isArchived = serializers.Field(source='archived')
+    isArchived = serializers.BooleanField(source='archived')
     titlePhoto = HyperlinkedFileField(source='title_photo', required=False)
 
     class Meta:
@@ -341,18 +338,18 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
         )
 
 class LoruOrderItemSerializer(serializers.ModelSerializer):
-    id = serializers.Field(source='product.pk')
-    title = serializers.Field(source='product.name')
-    price = serializers.Field(source='product.price')
-    amount = serializers.Field(source='quantity_round')
-    discount = serializers.Field(source='discount_round')
+    id = serializers.ReadOnlyField(source='product.pk')
+    title = serializers.ReadOnlyField(source='product.name')
+    price = serializers.ReadOnlyField(source='product.price')
+    amount = serializers.ReadOnlyField(source='quantity_round')
+    discount = serializers.ReadOnlyField(source='discount_round')
 
     class Meta:
         model = OrderItem
         fields = ('id', 'title', 'price', 'amount', 'discount', )
 
 class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
-    number = serializers.Field(source='number_verbose')
+    number = serializers.ReadOnlyField(source='number_verbose')
     createdDate = serializers.DateField(source='dt', format="%d.%m.%Y")
     dueDate = serializers.DateField(source='dt_due', format="%d.%m.%Y")
     customer = AlivePerson2Serializer(source='applicant')
@@ -360,16 +357,16 @@ class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     place = serializers.SerializerMethodField('place_func')
     createdAt = serializers.SerializerMethodField('createdAt_func')
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
-    totalPrice = serializers.Field(source='total_float')
-    currency = serializers.Field(source='loru.currency.code')
+    totalPrice = serializers.ReadOnlyField(source='total_float')
+    currency = serializers.CharField(source='loru.currency.code')
     products = serializers.SerializerMethodField('products_func')
     burialPlanTime = serializers.TimeField(source='burial_plan_time', format='%H:%M')
     initialTime = serializers.TimeField(source='initial_time', format='%H:%M')
     serviceTime = serializers.TimeField(source='service_time', format='%H:%M')
     repastTime = serializers.TimeField(source='repast_time', format='%H:%M')
-    initialPlace = serializers.Field(source='initial_place')
-    servicePlace = serializers.Field(source='service_place')
-    repastPlace = serializers.Field(source='repast_place')
+    initialPlace = serializers.CharField(source='initial_place')
+    servicePlace = serializers.CharField(source='service_place')
+    repastPlace = serializers.CharField(source='repast_place')
 
     class Meta:
         model = Order
@@ -402,10 +399,10 @@ class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
         ]
 
 class OrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
-    type = serializers.Field(source='service_name')
+    type = serializers.ReadOnlyField(source='service_name')
     createdAt = serializers.SerializerMethodField('createdAt_func')
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
-    number = serializers.Field(source='number_verbose')
+    number = serializers.ReadOnlyField(source='number_verbose')
     performer = OrgShort6Serializer(source='loru')
 
     class Meta:
@@ -449,7 +446,7 @@ class OrderCommentsSerializer(CreatedAtMixin, serializers.ModelSerializer):
 class OrderResultsSerializer(serializers.ModelSerializer):
     fileUrl = HyperlinkedFileField(source='bfile', required=False)
     createdAt = serializers.SerializerMethodField('createdAt_func')
-    isTitle = serializers.Field(source='is_title')
+    isTitle = serializers.BooleanField(source='is_title')
 
     class Meta:
         model = ResultFile
@@ -459,10 +456,10 @@ class OrderResultsSerializer(serializers.ModelSerializer):
         return utcisoformat(instance.date_of_creation)
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    productId = serializers.Field(source='product.pk')
-    price = serializers.Field(source='cost_float')
-    quantity = serializers.Field(source='quantity_float')
-    currency = serializers.Field(source='order.loru.currency.code')
+    productId = serializers.ReadOnlyField(source='product.pk')
+    price = serializers.ReadOnlyField(source='cost_float')
+    quantity = serializers.ReadOnlyField(source='quantity_float')
+    currency = serializers.ReadOnlyField(source='order.loru.currency.code')
     product = serializers.SerializerMethodField('product_func')
 
     class Meta:
@@ -477,22 +474,22 @@ class OrderItemSerializer(serializers.ModelSerializer):
             context=dict(request=request)).data
 
 class ServiceItemSerializer(serializers.ModelSerializer):
-    type = serializers.Field(source='orgservice.service.name')
-    title = serializers.Field(source='orgservice.service.title')
-    price = serializers.Field(source='cost_float')
-    currency = serializers.Field(source='order.loru.currency.code')
+    type = serializers.CharField(source='orgservice.service.name')
+    title = serializers.CharField(source='orgservice.service.title')
+    price = serializers.ReadOnlyField(source='cost_float')
+    currency = serializers.CharField(source='order.loru.currency.code')
 
     class Meta:
         model = ServiceItem
         fields = ('id', 'type', 'title', 'price', 'currency',)
 
 class ServiceOrderDetailSerializer(serializers.ModelSerializer):
-    type = serializers.Field(source='service_name')
-    supplierId = serializers.Field(source='loru.pk')
-    placeId = serializers.Field(source='customplace.pk')
-    number = serializers.Field(source='number_verbose')
-    isArchived = serializers.Field(source='archived')
-    clientRating = serializers.Field(source='applicant_approved')
+    type = serializers.CharField(source='service_name')
+    supplierId = serializers.ReadOnlyField(source='loru.pk')
+    placeId = serializers.ReadOnlyField(source='customplace.pk')
+    number = serializers.ReadOnlyField(source='number_verbose')
+    isArchived = serializers.BooleanField(source='archived')
+    clientRating = serializers.NullBooleanField(source='applicant_approved')
     services = ServiceItemSerializer(many=True, source='serviceitem_set')
     products = serializers.SerializerMethodField('products_func')
 

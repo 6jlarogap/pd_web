@@ -40,11 +40,11 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class AlivePerson2Serializer(serializers.HyperlinkedModelSerializer):
-    lastName = serializers.Field(source='last_name')
-    firstName = serializers.Field(source='first_name')
-    middleName = serializers.Field(source='middle_name')
-    address = serializers.RelatedField(read_only=True)
-    phoneNumber = serializers.Field(source='phones')
+    lastName = serializers.CharField(source='last_name')
+    firstName = serializers.CharField(source='first_name')
+    middleName = serializers.CharField(source='middle_name')
+    address = serializers.StringRelatedField(read_only=True)
+    phoneNumber = serializers.CharField(source='phones')
 
     class Meta:
         model = AlivePerson
@@ -85,15 +85,15 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSeri
             customplace=customplace,
         )]
 
-class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
-    location = serializers.Field(source='location_dict')
-    performerId = serializers.Field(source='favorite_performer.id')
+class CustomPlaceEditSerializer(RestoreObjectMixin, serializers.HyperlinkedModelSerializer):
+    location = serializers.ReadOnlyField(source='location_dict')
+    performerId = serializers.ReadOnlyField(source='favorite_performer.id')
 
     class Meta:
         model = CustomPlace
         fields = ('id', 'name', 'address', 'location', 'performerId', 'comment')
 
-    def restore_object(self, attrs, instance=None):
+    def restore_object_(self, instance=None, validated_data=[]):
         data = self.context['request'].data
 
         name = data.get('name')
@@ -130,7 +130,7 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
 
 class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
     titlePhoto = HyperlinkedFileField(source='title_photo')
-    omsData = serializers.Field(source='oms_data')
+    omsData = serializers.ReadOnlyField(source='oms_data')
     performer = OrgShort6Serializer(source='favorite_performer')
 
     class Meta:
@@ -147,7 +147,11 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
         model = DeadPerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
 
-class DeadPerson2Serializer(UnclearDateFieldMixin, RestoreObjectMixin, serializers.HyperlinkedModelSerializer):
+class DeadPerson2Serializer(
+    UnclearDateFieldMixin,
+    RestoreObjectMixin,
+    serializers.HyperlinkedModelSerializer
+    ):
     birthDate = UnclearDateFieldSerializer('birth_date')
     deathDate = UnclearDateFieldSerializer('death_date')
     lastName = serializers.CharField(source='last_name')
@@ -183,9 +187,9 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, RestoreObjectMixin, serialize
 class DeadPerson3Serializer(serializers.ModelSerializer):
     dob = UnclearDateFieldSerializer('birth_date')
     dod = UnclearDateFieldSerializer('death_date')
-    lastName = serializers.Field(source='last_name')
-    firstName = serializers.Field(source='first_name')
-    middleName = serializers.Field(source='middle_name')
+    lastName = serializers.CharField(source='last_name')
+    firstName = serializers.CharField(source='first_name')
+    middleName = serializers.CharField(source='middle_name')
 
     class Meta:
         model = DeadPerson
@@ -204,6 +208,7 @@ class CustomPersonPermissionsMixin(object):
 
 class BaseCustomPersonSerializer(
         UnclearDateFieldMixin,
+        RestoreObjectMixin,
         CustomPersonPermissionsMixin,
         serializers.HyperlinkedModelSerializer
     ):
@@ -212,10 +217,10 @@ class BaseCustomPersonSerializer(
     lastName = serializers.CharField(source='last_name')
     firstName = serializers.CharField(source='first_name')
     middleName = serializers.CharField(source='middle_name')
-    permissions = serializers.Field(source='permission')
+    permissions = serializers.CharField(source='permission')
     selected = serializers.SerializerMethodField('selected_func')
 
-    def restore_object(self, attrs, instance=None):
+    def restore_object_(self, instance=None, validated_data=[]):
         data = self.context['request'].data
 
         # - post:   из view всегда придет context['customplace']
@@ -261,7 +266,7 @@ class CustomPersonSerializer(BaseCustomPersonSerializer):
 
 class CustomPerson2Serializer(BaseCustomPersonSerializer):
     grave = serializers.SerializerMethodField('grave_func')
-    photo = HyperlinkedFileField(source='photo', required=False)
+    photo = HyperlinkedFileField(required=False)
 
     class Meta:
         model = CustomPerson
@@ -321,6 +326,7 @@ class MemoryGallery2Serializer(MemoryGallerySerializer, UserProfileMixin):
 
 class CustomPerson3Serializer(
         UnclearDateFieldMixin,
+        RestoreObjectMixin,
         CustomPersonPermissionsMixin,
         serializers.ModelSerializer
     ):
@@ -359,7 +365,7 @@ class CustomPerson3Serializer(
                         )
         ]
 
-    def restore_object(self, attrs, instance=None):
+    def restore_object_(self, instance=None, validated_data=[]):
         data = self.context['request'].data
         customplace = self.context.get('customplace')
 
@@ -379,7 +385,7 @@ class CustomPerson3Serializer(
             fields['birth_date'] = self.set_unclear_date(data['dob'])
         if 'dod' in data:
             fields['death_date'] = self.set_unclear_date(data['dod'])
-        photo = self.context['request'].FILES.get('photo')
+        photo = self.context['request'].data.get('photo')
         remove_photo = 'photo' in data and data['photo'] is None
         if photo or remove_photo:
             fields.update(dict(photo=photo))
@@ -396,7 +402,7 @@ class CustomPerson3Serializer(
 
 class CustomPerson4Serializer(BaseCustomPersonSerializer):
     titlePhoto = HyperlinkedFileField(source='photo', required=False)
-    placeId = serializers.Field(source='customplace.id')
+    placeId = serializers.ReadOnlyField(source='customplace.id')
 
     class Meta:
         model = CustomPerson

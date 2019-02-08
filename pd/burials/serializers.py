@@ -331,10 +331,10 @@ class PlaceSizeSerializer(serializers.ModelSerializer):
         fields = ('graves_count', 'place_length', 'place_width')
       
 class OrderPlaceSerializer(serializers.ModelSerializer):
-    cemeteryId = serializers.Field(source='cemetery.id')
-    cemeteryText = serializers.Field(source='cemetery_text')
-    areaId = serializers.Field(source='area.id')
-    placeNumber = serializers.Field(source='place')
+    cemeteryId = serializers.ReadOnlyField(source='cemetery.id')
+    cemeteryText = serializers.CharField(source='cemetery_text')
+    areaId = serializers.ReadOnlyField(source='area.id')
+    placeNumber = serializers.CharField(source='place')
 
     class Meta:
         model = OrderPlace

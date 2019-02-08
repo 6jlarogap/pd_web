@@ -136,7 +136,7 @@ class Store2Serializer(StoreSerializer):
         return self.context['request'].build_absolute_uri(photo.url) if photo else ''
 
 class StoreShortSerializer(serializers.ModelSerializer):
-    title = serializers.Field(source='name')
+    title = serializers.CharField(source='name')
 
     class Meta:
         model = Store
@@ -215,7 +215,7 @@ class OrgShort5Serializer(OrgSerializerMixin, OrgShort4Serializer):
         fields = ('id', 'shortName', 'phones', 'isFavorite', )
 
 class OrgShort6Serializer(serializers.ModelSerializer):
-    domainName = serializers.Field(source='subdomain')
+    domainName = serializers.CharField(source='subdomain')
 
     class Meta:
         model = Org
@@ -468,7 +468,7 @@ class UserSettings2Serializer(UserSettingsSerializer):
         fields = ('id', 'firstName', 'lastName', 'middleName', 'photoUrl', )
 
 class OauthSerializer(serializers.ModelSerializer):
-    name = serializers.Field(source='get_display_name')
+    name = serializers.ReadOnlyField(source='get_display_name')
 
     class Meta:
         model = Oauth
