@@ -6,7 +6,7 @@ from rest_framework.fields import Field
 from django.db.models.query_utils import Q
 
 from rest_api.fields import HyperlinkedFileField, DateTimeUtcField
-from pd.utils import PhonesFromTextMixin, utcisoformat, CreatedAtMixin
+from pd.utils import PhonesFromTextMixin, utcisoformat, CreatedAtMixin, RestoreObjectMixin
 
 from django.contrib.auth.models import User
 
@@ -55,7 +55,7 @@ class OrgSerializerMixin(object):
                     ).exists()
         return result
 
-class StoreSerializer(serializers.ModelSerializer):
+class StoreSerializer(RestoreObjectMixin, serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
     phones = serializers.SerializerMethodField('phones_func')
     location = serializers.SerializerMethodField('location_func')
@@ -65,8 +65,8 @@ class StoreSerializer(serializers.ModelSerializer):
         model = Store
         fields = ('id', 'name', 'address', 'location', 'phones', 'hasComponents', )
 
-    def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+    def restore_object_(self, instance=None, validated_data=[]):
+        data = self.context['request'].data
         name = data.get('name', instance and instance.name or '')
         address = data.get('address', '')
         location = data.get('location')

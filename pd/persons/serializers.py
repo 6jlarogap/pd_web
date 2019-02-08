@@ -15,7 +15,7 @@ from users.serializers import OrgShort6Serializer, UserProfileMixin
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
 
-from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None, capitalize
+from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None, capitalize, RestoreObjectMixin
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
     #person = serializers.PrimaryKeyRelatedField()
@@ -94,7 +94,7 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'name', 'address', 'location', 'performerId', 'comment')
 
     def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+        data = self.context['request'].data
 
         name = data.get('name')
         address = data.get('address')
@@ -147,7 +147,7 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
         model = DeadPerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
 
-class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
+class DeadPerson2Serializer(UnclearDateFieldMixin, RestoreObjectMixin, serializers.HyperlinkedModelSerializer):
     birthDate = UnclearDateFieldSerializer('birth_date')
     deathDate = UnclearDateFieldSerializer('death_date')
     lastName = serializers.CharField(source='last_name')
@@ -158,17 +158,7 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
         model = DeadPerson
         fields = ('id', 'firstName', 'lastName', 'middleName', 'birthDate', 'deathDate')
 
-    def create(self, validated_data):
-        deadman = self.restore_object_(instance=None)
-        deadman.save(force_insert=True)
-        return deadman
-
-    def update(self, instance, validated_data):
-        deadman = self.restore_object_(instance=instance)
-        deadman.save()
-        return deadman
-
-    def restore_object_(self, instance=None):
+    def restore_object_(self, instance=None, validated_data=[]):
         data = self.context['request'].data
 
         fields_got = dict(
@@ -226,7 +216,7 @@ class BaseCustomPersonSerializer(
     selected = serializers.SerializerMethodField('selected_func')
 
     def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+        data = self.context['request'].data
 
         # - post:   из view всегда придет context['customplace']
         # - put:    может прийти context['customplace'] (реальный или null),
@@ -370,7 +360,7 @@ class CustomPerson3Serializer(
         ]
 
     def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+        data = self.context['request'].data
         customplace = self.context.get('customplace')
 
         fields_got = dict(

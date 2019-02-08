@@ -2969,10 +2969,10 @@ class StoreList(APIView):
             raise PermissionDenied
         serializer = StoreSerializer(data=request.data, context={ 'request': request, })
         if serializer.is_valid():
-            serializer.save()
+            obj = serializer.save()
             phones = request.data.get('phones')
             if phones is not None:
-                Phone.create_default_phones(serializer.object, phones)
+                Phone.create_default_phones(obj, phones)
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
     
@@ -3001,10 +3001,10 @@ class StoreDetail(APIView):
             return PermissionDenied
         serializer = StoreSerializer(store, data=request.data, context={ 'request': request, })
         if serializer.is_valid():
-            serializer.save()
+            obj = serializer.save()
             phones = request.data.get('phones')
             if phones is not None:
-                Phone.create_default_phones(serializer.object, phones)
+                Phone.create_default_phones(obj, phones)
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
 

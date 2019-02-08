@@ -178,7 +178,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
         return instance.productcategory.pk
 
     def get_catalogs_prices(self):
-        data = self.context['request'].DATA
+        data = self.context['request'].data
         is_public_catalog = str_to_bool_or_None(data.get('isShownInRetailCatalog'))
         is_wholesale = str_to_bool_or_None(data.get('isShownInTradeCatalog'))
         price = data.get('retailPrice')
@@ -196,7 +196,7 @@ class ProductEditSerializer(serializers.HyperlinkedModelSerializer):
         return is_public_catalog, is_wholesale, price, price_wholesale
 
     def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+        data = self.context['request'].data
         image = self.context['request'].FILES.get('image')
         is_public_catalog, is_wholesale, price, price_wholesale = self.get_catalogs_prices()
 
