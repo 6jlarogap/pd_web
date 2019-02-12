@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
 
-from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType
 
@@ -26,7 +25,6 @@ class PhoneSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
-    #address = serializers.Field(source='address_id')
     address = serializers.PrimaryKeyRelatedField(read_only=True)
     address_str = serializers.StringRelatedField(source='address', read_only=True)
     # login_phone объявлен editable=False для django форм,
@@ -240,7 +238,7 @@ class BaseCustomPersonSerializer(
         fields = dict()
         for k in fields_got:
             if fields_got[k] is not None:
-                fields[k] = serializers.Fields_got[k]
+                fields[k] = fields_got[k]
         if 'birthDate' in data:
             fields['birth_date'] = self.set_unclear_date(data['birthDate'])
         if 'deathDate' in data:
@@ -380,7 +378,7 @@ class CustomPerson3Serializer(
         fields = dict()
         for k in fields_got:
             if fields_got[k] is not None:
-                fields[k] = serializers.Fields_got[k]
+                fields[k] = fields_got[k]
         if 'dob' in data:
             fields['birth_date'] = self.set_unclear_date(data['dob'])
         if 'dod' in data:

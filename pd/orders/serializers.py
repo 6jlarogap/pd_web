@@ -96,7 +96,7 @@ class ProductsOptSerializer(serializers.HyperlinkedModelSerializer):
 class ProductInfoSerializer(serializers.HyperlinkedModelSerializer):
     photo = HyperlinkedFileField()
     currency = serializers.CharField(source='loru.currency.code')
-    category = serializers.RelatedField(source='productcategory', read_only=True)
+    category = serializers.StringRelatedField(source='productcategory', read_only=True)
     supplier = OrgSerializer(source='loru')
     priceWholesale = serializers.SerializerMethodField('price_wholesale_func')
     model3d = serializers.SerializerMethodField('model3d_func')

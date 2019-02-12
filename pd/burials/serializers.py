@@ -4,8 +4,6 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
 from rest_framework import serializers
-from rest_framework.fields import Field, TimeField, ReadOnlyField
-
 
 from burials.models import Cemetery, Place, Area, Grave, Burial, AreaPhoto, BurialFiles, ExhumationRequest, \
     AreaPurpose, PlaceSize, PlaceStatus, CemeteryCoordinates, AreaCoordinates, PlaceSize, PlacePhoto, \
@@ -29,12 +27,6 @@ class GetGalleryMixin(object):
     def gallery_func(self, obj):
         request = self.context.get('request')
         return obj.get_photo_gallery(request) if request else []
-
-class SubCemeterySerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Cemetery
-        fields = ('id', 'name')
 
 class CemeteryTitleSerializer(serializers.ModelSerializer):
     title = serializers.ReadOnlyField(source='name')
@@ -68,10 +60,10 @@ class CemeteryPhotoMixin(object):
         return photo
 
 class CemeteryClientSiteSerializer(AddressLatLonMixin, CemeteryPhotoMixin, serializers.ModelSerializer):
-    phones = ReadOnlyField(source='phone_list')
+    phones = serializers.ReadOnlyField(source='phone_list')
     address = serializers.StringRelatedField(read_only=True)
     location = serializers.SerializerMethodField('location_func')
-    workTimes = ReadOnlyField(source='worktimes')
+    workTimes = serializers.ReadOnlyField(source='worktimes')
     executive = serializers.SerializerMethodField('executive_func')
     photoUrl = serializers.SerializerMethodField('photoUrl_func')
     schemaUrl = serializers.SerializerMethodField('schemaUrl_func')
@@ -107,17 +99,10 @@ class AreaPurposeSerializer(serializers.ModelSerializer):
         model = AreaPurpose
         fields = ('id', 'name')
 
-class SubPlaceItemSerializer(serializers.ModelSerializer):
-    responsible = AlivePersonSerializer(source='responsible')
-    class Meta:
-        model = Place
-        fields = ('id', 'row', 'place', 'responsible')
-
-
 class CemeterySerializer(CemeteryPhotoMixin, serializers.ModelSerializer):
-    address = ReadOnlyField(source='address_id')
-    time_begin = TimeField()
-    time_end = TimeField()
+    address = serializers.ReadOnlyField(source='address_id')
+    time_begin = serializers.TimeField()
+    time_end = serializers.TimeField()
     caretaker = serializers.PrimaryKeyRelatedField(
         required=False,
         queryset=User.objects.filter(is_active=True),
@@ -138,7 +123,7 @@ class CemeterySerializer(CemeteryPhotoMixin, serializers.ModelSerializer):
 
 
 class CemeteryBriefSerializer(serializers.ModelSerializer):
-    phones = ReadOnlyField(source='phone_list')
+    phones = serializers.ReadOnlyField(source='phone_list')
     address = serializers.StringRelatedField(read_only=True)
 
     class Meta:
@@ -215,8 +200,6 @@ class ApiClientSitePlacesSerializer(PlaceDeadmenMixin, ApiPlacesSerializer):
 class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField(queryset=Cemetery.objects.all(), required=False)
     area = serializers.PrimaryKeyRelatedField(queryset=Area.objects.all(), required=False)
-    # responsible = serializers.PrimaryKeyRelatedField(required=False, read_only=True)
-    #available_count = Field(source='available_count')
     responsible_txt = serializers.SerializerMethodField('responsible_str')
     gallery = serializers.SerializerMethodField('gallery_func')
     dt_free = serializers.DateTimeField(allow_null=True, required=False)

@@ -7,7 +7,6 @@ get_model = apps.get_model
 from django.core.urlresolvers import reverse
 
 from rest_framework import serializers
-from rest_framework.fields import Field
 
 from logs.models import Log
 from django.contrib.auth.models import User
