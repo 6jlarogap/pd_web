@@ -150,8 +150,8 @@ class DeadPerson2Serializer(
     RestoreObjectMixin,
     serializers.HyperlinkedModelSerializer
     ):
-    birthDate = UnclearDateFieldSerializer('birth_date')
-    deathDate = UnclearDateFieldSerializer('death_date')
+    birthDate = UnclearDateFieldSerializer(source='birth_date')
+    deathDate = UnclearDateFieldSerializer(source='death_date')
     lastName = serializers.CharField(source='last_name')
     firstName = serializers.CharField(source='first_name')
     middleName = serializers.CharField(source='middle_name')
@@ -183,8 +183,8 @@ class DeadPerson2Serializer(
         return DeadPerson(**fields)
 
 class DeadPerson3Serializer(serializers.ModelSerializer):
-    dob = UnclearDateFieldSerializer('birth_date')
-    dod = UnclearDateFieldSerializer('death_date')
+    dob = UnclearDateFieldSerializer(source='birth_date')
+    dod = UnclearDateFieldSerializer(source='death_date')
     lastName = serializers.CharField(source='last_name')
     firstName = serializers.CharField(source='first_name')
     middleName = serializers.CharField(source='middle_name')

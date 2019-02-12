@@ -235,8 +235,8 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
             return ''
 
 class PlaceLockSerializer(PlaceDeadmenMixin, serializers.ModelSerializer):
-    cemetery = CemeteryTitleSerializer('cemetery')
-    area = AreaTitleSerializer('area')
+    cemetery = CemeteryTitleSerializer()
+    area = AreaTitleSerializer()
     # place как PlaceTitleSerializer(place), вынужден подставлять во view
     # есть "простое" (не foreignKey) поле place, наверняка это мешает.
     gallery = serializers.SerializerMethodField('photos_func')
