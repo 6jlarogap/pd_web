@@ -308,7 +308,7 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
         model = Order
         fields = ('id', 'type', 'performer', 'owner', 'number', 'status', 'isArchived',
                   'totalPrice', 'currency', 'createdAt', 'modifiedAt',
-                  'titlePhoto',
+                  'titlePhoto', 'location',
         )
 
 class LoruOrderItemSerializer(serializers.ModelSerializer):

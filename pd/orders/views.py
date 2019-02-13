@@ -2656,7 +2656,7 @@ class ApiLoruOrdersView(
             for k in mapping:
                 if request.data.get(k):
                     try:
-                        other_keys[mapping[k]] = datetime.datetime.strptime(request.data[k], '%H:%M')
+                        other_keys[mapping[k]] = datetime.datetime.strptime(request.data[k], '%H:%M').time()
                     except ValueError:
                         raise ServiceException(_(u"Неверное %s") %
                             Order._meta.get_field(mapping[k]).verbose_name.lower()
@@ -2864,7 +2864,7 @@ class ApiLoruOrdersDetailView(
                     f = request.data[k] and request.data[k].strip() or None
                     if f is not None:
                         try:
-                            f = datetime.datetime.strptime(f, '%H:%M')
+                            f = datetime.datetime.strptime(f, '%H:%M').time()
                         except ValueError:
                             raise ServiceException(_(u"Неверное %s") %
                                 Order._meta.get_field(mapping[k]).verbose_name.lower()
