@@ -310,12 +310,6 @@ REST_FRAMEWORK = {
     #
     'UNICODE_JSON': False,
 
-    # Мы нигде не используем пажинацию,
-    # но есть методы api, которые возвращают
-    # так как если бы пажинация была
-    #
-    'PAGE_SIZE': 1000,
-
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_api.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',

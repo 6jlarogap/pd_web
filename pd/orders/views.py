@@ -56,7 +56,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.renderers import StaticHTMLRenderer
-from rest_framework.pagination import PageNumberPagination
 
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
@@ -930,24 +929,34 @@ class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
 
 order_burial = OrderBurialView.as_view()
 
+class ProductCategories(APIView):
 
-class ProductCategoryViewSet(viewsets.ModelViewSet):
-    model = ProductCategory
-    serializer_class = ProductCategorySerializer
-    pagination_class = PageNumberPagination
-
-    def get_queryset(self):
-        loru_ids = self.request.GET.getlist('filter[supplier]')
+    def get(self, request):
+        loru_ids = request.GET.getlist('filter[supplier]')
         while loru_ids.count(u''):
             loru_ids.remove(u'')
         if loru_ids:
             qs = Q(product__loru__pk__in=loru_ids)
         else:
             qs = Q()
-        onlyOpt = self.request.GET.get('filter[onlyOpt]')
+        onlyOpt = request.GET.get('filter[onlyOpt]')
         if onlyOpt and onlyOpt == 'true':
             qs &= Q(product__is_wholesale=True)
-        return ProductCategory.objects.filter(qs).order_by('name').distinct()
+        categories = [ProductCategorySerializer(pc).data \
+            for pc in ProductCategory.objects.filter(qs).order_by('name').distinct()
+        ]
+        return Response(
+            status=200,
+            data = {
+                # Раньше это был viewset с пажинацией и на то настроен front-end
+                #
+                'count': len(categories),
+                'next': None,
+                'previous': None,
+                'results': categories,
+        })
+
+api_catalog_categories = ProductCategories.as_view()
 
 class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
@@ -955,7 +964,6 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     model = Product
     serializer_class = ProductsSerializer
-    paginate_by = None
 
     def get_queryset(self):
         qs = Q(is_archived=False)
@@ -1021,7 +1029,6 @@ class ProductsOptViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     api/optplaces/suppliers/(?P<loru_pk>\d+)/products
     """
     model = Product
-    paginate_by = None
 
     def get_queryset(self, *args, **kwargs):
         qs = Q(
