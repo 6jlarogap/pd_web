@@ -84,7 +84,7 @@ class ProductsOptSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Product
         fields = ('id', 'sku', 'photo', 'slug', 'name', 'description', 'measure', 'price', 'currency',
-                  'withVAT', 'category', 'subcategory', 
+                  'withVAT', 'category', 'subcategory', 'supplier',
         )
 
     def subcategory_func(self, product):
@@ -142,18 +142,19 @@ class OptOrderInfoSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('products', 'comment', 'number', 'supplier', 'customer', )
 
 class ProductEditSerializer(RestoreObjectMixin, serializers.HyperlinkedModelSerializer):
-    typeId = serializers.CharField(source='ptype')
+    name = serializers.CharField(required=False)
+    typeId = serializers.CharField(source='ptype', required=False)
     typeName = serializers.SerializerMethodField('typeName_func')
     categoryId = serializers.SerializerMethodField('categoryId_func')
     categoryName = serializers.StringRelatedField(source='productcategory', read_only=True)
-    measurementUnit = serializers.CharField(source='measure')
-    isDefault = serializers.BooleanField(source='default')
-    isArchived = serializers.BooleanField(source='is_archived')
-    retailPrice = serializers.DecimalField(20, 2, source='price')
-    currency = serializers.CharField(source='loru.currency.code')
-    tradePrice = serializers.DecimalField(20, 2, source='price_wholesale')
-    isShownInRetailCatalog = serializers.BooleanField(source='is_public_catalog')
-    isShownInTradeCatalog = serializers.BooleanField(source='is_wholesale')
+    measurementUnit = serializers.CharField(source='measure', required=False)
+    isDefault = serializers.BooleanField(source='default', required=False)
+    isArchived = serializers.BooleanField(source='is_archived', required=False)
+    retailPrice = serializers.DecimalField(20, 2, source='price', required=False)
+    tradePrice = serializers.DecimalField(20, 2, source='price_wholesale', required=False)
+    currency = serializers.CharField(source='loru.currency.code', required=False)
+    isShownInRetailCatalog = serializers.BooleanField(source='is_public_catalog', required=False)
+    isShownInTradeCatalog = serializers.BooleanField(source='is_wholesale', required=False)
     imageUrl = HyperlinkedFileField(source='photo', required=False)
     
     class Meta:
@@ -174,7 +175,7 @@ class ProductEditSerializer(RestoreObjectMixin, serializers.HyperlinkedModelSeri
     def categoryId_func(self, instance):
         return instance.productcategory.pk
 
-    def get_catalogs_prices(self):
+    def get_catalogs_prices(self, instance):
         data = self.context['request'].data
         is_public_catalog = str_to_bool_or_None(data.get('isShownInRetailCatalog'))
         is_wholesale = str_to_bool_or_None(data.get('isShownInTradeCatalog'))
@@ -190,12 +191,24 @@ class ProductEditSerializer(RestoreObjectMixin, serializers.HyperlinkedModelSeri
                 price_wholesale = decimal.Decimal(price_wholesale)
             except decimal.InvalidOperation:
                 raise ServiceException(_(u'Неверно задана оптовая цена'))
+        if instance:
+            is_public_catalog = instance.is_public_catalog if is_public_catalog is None else is_public_catalog
+            is_wholesale = instance.is_wholesale if is_wholesale is None else is_wholesale
+            price = instance.price if price is None else price
+            price_wholesale = instance.price_wholesale if price_wholesale is None else price_wholesale
+        else:
+            price = price or 0
+            price_wholesale = price_wholesale or 0
+        if is_public_catalog and price <= 0:
+            raise ServiceException(_(u'Не задана или неверна розничная цена при помещении товара/услуги в публичный каталог'))
+        elif is_wholesale and price_wholesale <= 0:
+            raise ServiceException(_(u'Не задана или неверна оптовая цена при помещении товара/услуги в оптовый каталог'))
         return is_public_catalog, is_wholesale, price, price_wholesale
 
     def restore_object_(self, instance=None, validated_data=[]):
         data = self.context['request'].data
         image = self.context['request'].data.get('image')
-        is_public_catalog, is_wholesale, price, price_wholesale = self.get_catalogs_prices()
+        is_public_catalog, is_wholesale, price, price_wholesale = self.get_catalogs_prices(instance)
 
         # В вызывающем post (добавление продукта) должны быть проверены
         # на обязательность соответствующие поля продукта
@@ -246,45 +259,6 @@ class ProductEditSerializer(RestoreObjectMixin, serializers.HyperlinkedModelSeri
             fields['price'] = fields.get('price', 0)
             fields['price_wholesale'] = fields.get('price_wholesale', 0)
             return Product(**fields)
-
-    def is_valid(self):
-        message = ''
-        valid = True
-        try:
-            is_public_catalog, is_wholesale, price, price_wholesale = self.get_catalogs_prices()
-        except ServiceException as excpt:
-            message = excpt.message
-            valid = False
-        else:
-            valid = not self.errors
-            if self.object:
-                is_public_catalog = self.object.is_public_catalog if is_public_catalog is None else is_public_catalog
-                is_wholesale = self.object.is_wholesale if is_wholesale is None else is_wholesale
-                price = self.object.price if price is None else price
-                price_wholesale = self.object.price_wholesale if price_wholesale is None else price_wholesale
-            else:
-                price = price or 0
-                price_wholesale = price_wholesale or 0
-            if is_public_catalog and price <= 0:
-                message = _(u'Не задана или неверна розничная цена при помещении товара/услуги в публичный каталог')
-            elif is_wholesale and price_wholesale <= 0:
-                message = _(u'Не задана или неверна оптовая цена при помещении товара/услуги в оптовый каталог')
-        if message:
-            self._errors = self._errors or {}
-            self._errors.update(dict(
-                status='error',
-                message=message,
-            ))
-            valid = False
-        return valid
-
-    @transaction.atomic
-    def save_object(self, obj, **kwargs):
-        new_obj = obj.pk is None
-        obj.save(**kwargs)
-        if new_obj and (not obj.sku or not obj.sku.strip()):
-            obj.sku = obj.pk
-            obj.save()
 
 class MeasureSerializer(serializers.ModelSerializer):
 

@@ -1531,8 +1531,11 @@ class ApiProductDetail(APIView):
             context=dict(request=request),
         )
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
+            try:
+                product = serializer.save()
+                return Response(serializer.data, status=200)
+            except ServiceException as excpt:
+                return Response(data={'status': 'error', 'message': excpt.message}, status=400)
         return Response(serializer.errors, status=400)
 
 api_product_detail = ApiProductDetail.as_view()
