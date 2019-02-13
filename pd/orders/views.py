@@ -56,6 +56,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.renderers import StaticHTMLRenderer
+from rest_framework.pagination import PageNumberPagination
+
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
@@ -932,6 +934,7 @@ order_burial = OrderBurialView.as_view()
 class ProductCategoryViewSet(viewsets.ModelViewSet):
     model = ProductCategory
     serializer_class = ProductCategorySerializer
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         loru_ids = self.request.GET.getlist('filter[supplier]')

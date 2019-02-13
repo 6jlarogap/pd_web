@@ -139,7 +139,6 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
     model = Cemetery
     serializer_class = CemeterySerializer
     permission_classes = (PermitIfUgh,)
-    paginate_by = None
 
     MSG_ALREADY_EXISTS = _(u"Кладбище с таким названием уже существует")
 
@@ -362,7 +361,6 @@ class AreaViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSe
     model = Area
     serializer_class = AreaSerializer
     permission_classes = (PermitIfUgh,)
-    paginate_by = None
 
     def get_queryset(self):
         item = self.getCemetery(self.request)
@@ -413,7 +411,6 @@ class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
     model = Place
     serializer_class = ApiOmsPlacesSerializer
     permission_classes = (PermitIfUgh,)
-    paginate_by = None
 
     def get_queryset(self):
         return Place.objects.filter(
@@ -425,7 +422,6 @@ class ApiOmsPlacesViewSet(viewsets.ReadOnlyModelViewSet):
 class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
     model = Place
     serializer_class = ApiCatalogPlacesSerializer
-    paginate_by = None
 
     def get_queryset(self):
         q = Q(
@@ -452,7 +448,6 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
     model = Place
     serializer_class = PlaceSerializer
     permission_classes = (IsAuthenticated,)
-    paginate_by = None
 
     old_place = None
     old_responsible = None
@@ -758,7 +753,6 @@ class AreaPurposeViewSet(viewsets.ModelViewSet):
     model = AreaPurpose
     serializer_class = AreaPurposeSerializer
     permission_classes = (IsAuthenticated,)
-    paginate_by = None
 
     def get_queryset(self):
         return self.model.objects.all()
@@ -768,7 +762,6 @@ class GraveViewSet(viewsets.ModelViewSet):
     model = Grave
     serializer_class = GraveSerializer
     permission_classes = (PermitIfUgh,)
-    paginate_by = 1
 
     def get_queryset(self):
         place = self.getPlace(self.request)
@@ -800,7 +793,6 @@ class BurialViewSet(EditCemeteryObjectsMixin, viewsets.ModelViewSet):
     serializer_list_class = BurialListSerializer
     serializer_put_grave_class = BurialPutGraveSerializer
     permission_classes = (PermitIfUgh,)
-    paginate_by = None
 
     def get_queryset(self):
         return self.model.objects.filter(cemetery__ugh=self.request.user.profile.org)
@@ -857,7 +849,6 @@ class AreaPhotoViewSet(EditCemeteryObjectsMixin, viewsets.ModelViewSet):
     model = AreaPhoto
     serializer_class = AreaPhotoSerializer
     permission_classes = (IsAuthenticated,)
-    paginate_by = None
     
     def get_queryset(self):
         qs = self.model.objects.filter(area__cemetery__ugh=self.request.user.profile.org)
