@@ -1486,28 +1486,30 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
         ]
         return Response(data=data, status=200)
 
+    @transaction.atomic
     def post(self, request):
-        required_not_got = list()
-        for f in (
-            'name',
-            'description',
-            'categoryId',
-                 ):
-            if not request.data.get(f):
-                required_not_got.append(f)
-        if required_not_got:
-            return Response(
-                data={
-                    'status': 'error',
-                    'message': _(u"Не заданы параметры: %s") % ", ".join(required_not_got),
-                     },
-                status=400,
-            )
-        serializer = ProductEditSerializer(data=request.data, context={ 'request': request, })
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
-        return Response(serializer.errors, status=400)
+        try:
+            required_not_got = list()
+            for f in (
+                'name',
+                'description',
+                'categoryId',
+                    ):
+                if not request.data.get(f):
+                    required_not_got.append(f)
+            if required_not_got:
+                raise ServiceException(_(u"Не заданы параметры: %s") % ", ".join(required_not_got))
+            serializer = ProductEditSerializer(data=request.data, context={ 'request': request, })
+            if serializer.is_valid():
+                product = serializer.save()
+                if not product.sku or not product.sku.strip():
+                    product.sku = product.pk
+                    product.save()
+                    serializer = ProductEditSerializer(product, context={ 'request': request, })
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        except ServiceException as excpt:
+            return Response(data={'status': 'error', 'message': excpt.message}, status=400)
 
 api_product_list = ApiProductList.as_view()
 
@@ -1526,6 +1528,7 @@ class ApiProductDetail(APIView):
         serializer = ProductEditSerializer(product, context=dict(request=request))
         return Response(serializer.data)
 
+    @transaction.atomic
     def put(self, request, pk):
         product = self.get_object(request, pk)
         serializer = ProductEditSerializer(
@@ -1535,7 +1538,7 @@ class ApiProductDetail(APIView):
         )
         if serializer.is_valid():
             try:
-                product = serializer.save()
+                serializer.save()
                 return Response(serializer.data, status=200)
             except ServiceException as excpt:
                 return Response(data={'status': 'error', 'message': excpt.message}, status=400)
