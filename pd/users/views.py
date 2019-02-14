@@ -2856,7 +2856,7 @@ class ApiEducation(APIView):
                         if not row[3]:
                             data.append({
                                 'type': 'category', 
-                                'title': row[1],
+                                'title': row[1].decode('utf8'),
                                 'order': order_titles + 1,
                                 'items': []
                             })
@@ -2868,8 +2868,8 @@ class ApiEducation(APIView):
                             url =  u"%s/media/%s/video/%s/%s" % (host, cls.FOLDER_EDU, type_, row[3], ), 
                             append_to.append({
                                 'type': 'item', 
-                                'title': row[1],
-                                'text': row[2],
+                                'title': row[1].decode('utf8'),
+                                'text': row[2].decode('utf8'),
                                 'urls':  [
                                     { 'url': u"%s.mp4" % url, 'type': 'mp4' },
                                     { 'url': u"%s.webm" % url, 'type': 'webm' },
