@@ -7,7 +7,6 @@ get_model = apps.get_model
 from django.core.urlresolvers import reverse
 
 from rest_framework import serializers
-from rest_framework.fields import Field
 
 from logs.models import Log
 from django.contrib.auth.models import User
@@ -15,11 +14,11 @@ from django.contrib.auth.models import User
 from users.models import get_profile, is_cabinet_user
 
 class ObjField(serializers.Field):
-    def to_native(self, obj):
+    def to_representation(self, obj):
         return obj.__unicode__()
 
 class UserField(serializers.Field):
-    def to_native(self, user):
+    def to_representation(self, user):
         profile = get_profile(user)
         if profile:
             s = u"%s / %s" % (
@@ -35,7 +34,7 @@ class PlaceLogSerializer(serializers.ModelSerializer):
     obj = ObjField()
     user = UserField()   
     dt = serializers.DateTimeField(format="%d.%m.%Y %H:%M")
-    msg = serializers.Field(source='log_msg_display')
+    msg = serializers.ReadOnlyField(source='log_msg_display')
     obj_str = serializers.SerializerMethodField('obj_str_func')
 
     class Meta:

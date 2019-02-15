@@ -53,7 +53,6 @@ class LogViewSet(viewsets.ModelViewSet):
     model = Log
     serializer_class = PlaceLogSerializer
     permission_classes = (IsAuthenticated,)
-    paginate_by = None
 
     def get_queryset(self):
         log_type = self.request.GET.get("type")

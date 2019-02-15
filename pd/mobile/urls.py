@@ -12,11 +12,6 @@ urlpatterns = [
     url(r'^mobile/place/$', views.place_list),
     url(r'^api/mobile/place/(?P<place_id>\d+)/?$', views.api_mobile_place),
     url(r'^api/mobile/area/(?P<area_id>\d+)/places/?$', views.api_mobile_area_places),
-
-    # TODO: obsolete after 11.04.16
-    url(r'^mobile/grave/$', views.api_mobile_grave),
-    # ----
-
     url(r'^api/mobile/grave/?$', views.api_mobile_grave),
     url(r'^mobile/burial/$', views.burial_list),
     url(r'^api/mobile/burials/?$', views.api_mobile_burials),

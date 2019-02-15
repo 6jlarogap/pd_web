@@ -713,7 +713,7 @@ class PlaceStatus(BaseModel):
                                 on_delete=models.PROTECT)
 
 
-class Grave(GeoPointModel, BaseModelManualDtCreated):
+class Grave(BaseModelManualDtCreated):
     place = models.ForeignKey(Place, verbose_name=_(u"Место"))
     grave_number = models.PositiveSmallIntegerField(_(u"Номер"), default=1)
     is_wrong_fio = models.BooleanField(_(u"Неверное ФИО"), default=False)
