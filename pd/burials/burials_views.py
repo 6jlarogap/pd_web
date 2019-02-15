@@ -1328,7 +1328,7 @@ class GetCemeteryTimes(View):
         except (ValueError, Cemetery.DoesNotExist, ):
             return HttpResponse(json.dumps({}), content_type='application/json')
         try:
-            date = datetime.datetime.strptime(request.GET.get('date'), '%d.%m.%Y').date
+            date = datetime.datetime.strptime(request.GET.get('date'), '%d.%m.%Y').date()
         except ValueError:
             # Есть таки возможность пользователю ввести плановую дату типа 30 февраля:
             return HttpResponse(json.dumps({c.pk: []}), content_type='application/json')
