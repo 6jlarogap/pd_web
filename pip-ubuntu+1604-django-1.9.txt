@@ -14,8 +14,8 @@ django-google-charts
 django-nocaptcha-recaptcha
 django-qsstats-magic
 
-redis==2.10.5
-django-redis==3.8.0
+redis==2.10.6
+django-redis==4.4.4
 
 django-wkhtmltopdf
 djangorestframework==3.6.4
