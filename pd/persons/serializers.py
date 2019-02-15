@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import re
 
-from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
-from rest_framework.fields import Field, TimeField, DecimalField, BooleanField
+from django.contrib.contenttypes.models import ContentType
 
 from geo.models import Location
 from persons.models import AlivePerson, DeadPerson, Phone, CustomPlace, CustomPerson, \
@@ -15,25 +14,23 @@ from users.serializers import OrgShort6Serializer, UserProfileMixin
 from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, UnclearDateFieldSafeSerializer, \
                             HyperlinkedFileField
 
-from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None, capitalize
+from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None, capitalize, RestoreObjectMixin
 
 class PhoneSerializer(serializers.HyperlinkedModelSerializer):
     #person = serializers.PrimaryKeyRelatedField()
-    ct = serializers.PrimaryKeyRelatedField()
+    ct = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
     class Meta:
         model = Phone
         fields = ('id', 'phonetype', 'number', 'ct', 'obj_id')
 
 
 class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
-    #address = Field(source='address_id')
-    address = serializers.PrimaryKeyRelatedField()
-    phones = Field(source='phones')
-    address_str = Field(source='address')
+    address = serializers.PrimaryKeyRelatedField(read_only=True)
+    address_str = serializers.StringRelatedField(source='address', read_only=True)
     # login_phone объявлен editable=False для django форм,
     # посему здесь прописываем явно, чтоб можно было изменить
-    login_phone = DecimalField(source='login_phone')
-    is_inbook = BooleanField(source='is_inbook')
+    login_phone = serializers.DecimalField(15, 0, allow_null=True)
+    is_inbook = serializers.BooleanField()
 
     class Meta:
         model = AlivePerson
@@ -41,11 +38,11 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class AlivePerson2Serializer(serializers.HyperlinkedModelSerializer):
-    lastName = Field(source='last_name')
-    firstName = Field(source='first_name')
-    middleName = Field(source='middle_name')
-    address = serializers.RelatedField(source='address')
-    phoneNumber = Field(source='phones')
+    lastName = serializers.CharField(source='last_name')
+    firstName = serializers.CharField(source='first_name')
+    middleName = serializers.CharField(source='middle_name')
+    address = serializers.StringRelatedField(read_only=True)
+    phoneNumber = serializers.CharField(source='phones')
 
     class Meta:
         model = AlivePerson
@@ -86,17 +83,16 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSeri
             customplace=customplace,
         )]
 
-class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
-    address = Field(source='address')
-    location = Field(source='location_dict')
-    performerId = Field(source='favorite_performer.id')
+class CustomPlaceEditSerializer(RestoreObjectMixin, serializers.HyperlinkedModelSerializer):
+    location = serializers.ReadOnlyField(source='location_dict')
+    performerId = serializers.ReadOnlyField(source='favorite_performer.id')
 
     class Meta:
         model = CustomPlace
         fields = ('id', 'name', 'address', 'location', 'performerId', 'comment')
 
-    def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+    def restore_object_(self, instance=None, validated_data=[]):
+        data = self.context['request'].data
 
         name = data.get('name')
         address = data.get('address')
@@ -132,7 +128,7 @@ class CustomPlaceEditSerializer(serializers.HyperlinkedModelSerializer):
 
 class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
     titlePhoto = HyperlinkedFileField(source='title_photo')
-    omsData = Field(source='oms_data')
+    omsData = serializers.ReadOnlyField(source='oms_data')
     performer = OrgShort6Serializer(source='favorite_performer')
 
     class Meta:
@@ -149,19 +145,23 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
         model = DeadPerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
 
-class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelSerializer):
-    birthDate = UnclearDateFieldSerializer('birth_date')
-    deathDate = UnclearDateFieldSerializer('death_date')
-    lastName = Field(source='last_name')
-    firstName = Field(source='first_name')
-    middleName = Field(source='middle_name')
+class DeadPerson2Serializer(
+    UnclearDateFieldMixin,
+    RestoreObjectMixin,
+    serializers.HyperlinkedModelSerializer
+    ):
+    birthDate = UnclearDateFieldSerializer(source='birth_date')
+    deathDate = UnclearDateFieldSerializer(source='death_date')
+    lastName = serializers.CharField(source='last_name')
+    firstName = serializers.CharField(source='first_name')
+    middleName = serializers.CharField(source='middle_name')
 
     class Meta:
         model = DeadPerson
         fields = ('id', 'firstName', 'lastName', 'middleName', 'birthDate', 'deathDate')
 
-    def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+    def restore_object_(self, instance=None, validated_data=[]):
+        data = self.context['request'].data
 
         fields_got = dict(
             last_name=data.get('lastName'),
@@ -183,11 +183,11 @@ class DeadPerson2Serializer(UnclearDateFieldMixin, serializers.HyperlinkedModelS
         return DeadPerson(**fields)
 
 class DeadPerson3Serializer(serializers.ModelSerializer):
-    dob = UnclearDateFieldSerializer('birth_date')
-    dod = UnclearDateFieldSerializer('death_date')
-    lastName = Field(source='last_name')
-    firstName = Field(source='first_name')
-    middleName = Field(source='middle_name')
+    dob = UnclearDateFieldSerializer(source='birth_date')
+    dod = UnclearDateFieldSerializer(source='death_date')
+    lastName = serializers.CharField(source='last_name')
+    firstName = serializers.CharField(source='first_name')
+    middleName = serializers.CharField(source='middle_name')
 
     class Meta:
         model = DeadPerson
@@ -206,19 +206,20 @@ class CustomPersonPermissionsMixin(object):
 
 class BaseCustomPersonSerializer(
         UnclearDateFieldMixin,
+        RestoreObjectMixin,
         CustomPersonPermissionsMixin,
         serializers.HyperlinkedModelSerializer
     ):
     birthDate = serializers.SerializerMethodField('birth_date')
     deathDate = serializers.SerializerMethodField('death_date')
-    lastName = Field(source='last_name')
-    firstName = Field(source='first_name')
-    middleName = Field(source='middle_name')
-    permissions = Field(source='permission')
+    lastName = serializers.CharField(source='last_name')
+    firstName = serializers.CharField(source='first_name')
+    middleName = serializers.CharField(source='middle_name')
+    permissions = serializers.CharField(source='permission')
     selected = serializers.SerializerMethodField('selected_func')
 
-    def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+    def restore_object_(self, instance=None, validated_data=[]):
+        data = self.context['request'].data
 
         # - post:   из view всегда придет context['customplace']
         # - put:    может прийти context['customplace'] (реальный или null),
@@ -252,7 +253,7 @@ class BaseCustomPersonSerializer(
             return CustomPerson(customplace=customplace, user=self.context['request'].user, **fields)
 
 class CustomPersonSerializer(BaseCustomPersonSerializer):
-    omsData = Field(source='oms_data')
+    omsData = serializers.ReadOnlyField(source='oms_data')
     titlePhoto = HyperlinkedFileField(source='photo', required=False)
 
     class Meta:
@@ -263,7 +264,7 @@ class CustomPersonSerializer(BaseCustomPersonSerializer):
 
 class CustomPerson2Serializer(BaseCustomPersonSerializer):
     grave = serializers.SerializerMethodField('grave_func')
-    photo = HyperlinkedFileField(source='photo', required=False)
+    photo = HyperlinkedFileField(required=False)
 
     class Meta:
         model = CustomPerson
@@ -288,7 +289,7 @@ class MemoryGallerySerializer(CreatedAtMixin, serializers.ModelSerializer):
 
 class MemoryGallery2Serializer(MemoryGallerySerializer, UserProfileMixin):
     createdBy = serializers.SerializerMethodField('createdBy_func')
-    permissions = Field(source='permission')
+    permissions = serializers.ReadOnlyField(source='permission')
     selected = serializers.SerializerMethodField('selected_func')
 
     class Meta:
@@ -323,20 +324,21 @@ class MemoryGallery2Serializer(MemoryGallerySerializer, UserProfileMixin):
 
 class CustomPerson3Serializer(
         UnclearDateFieldMixin,
+        RestoreObjectMixin,
         CustomPersonPermissionsMixin,
         serializers.ModelSerializer
     ):
-    lastname = Field(source='last_name')
-    firstname = Field(source='first_name')
-    middlename = Field(source='middle_name')
-    commonText = serializers.Field(source='memory_text')
+    lastname = serializers.CharField(source='last_name')
+    firstname = serializers.CharField(source='first_name')
+    middlename = serializers.CharField(source='middle_name')
+    commonText = serializers.CharField(source='memory_text')
     dob = serializers.SerializerMethodField('birth_date')
     dod = serializers.SerializerMethodField('death_date')
-    photo = HyperlinkedFileField(source='photo', required=False)
+    photo = HyperlinkedFileField(required=False)
     gallery = serializers.SerializerMethodField('gallery_func')
-    isDead = Field(source='is_dead')
-    placeId = Field(source='customplace.id')
-    permissions = Field(source='permission')
+    isDead = serializers.BooleanField(source='is_dead')
+    placeId = serializers.ReadOnlyField(source='customplace.id')
+    permissions = serializers.CharField(source='permission')
     selected = serializers.SerializerMethodField('selected_func')
 
     class Meta:
@@ -361,8 +363,8 @@ class CustomPerson3Serializer(
                         )
         ]
 
-    def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+    def restore_object_(self, instance=None, validated_data=[]):
+        data = self.context['request'].data
         customplace = self.context.get('customplace')
 
         fields_got = dict(
@@ -381,7 +383,7 @@ class CustomPerson3Serializer(
             fields['birth_date'] = self.set_unclear_date(data['dob'])
         if 'dod' in data:
             fields['death_date'] = self.set_unclear_date(data['dod'])
-        photo = self.context['request'].FILES.get('photo')
+        photo = self.context['request'].data.get('photo')
         remove_photo = 'photo' in data and data['photo'] is None
         if photo or remove_photo:
             fields.update(dict(photo=photo))
@@ -398,7 +400,7 @@ class CustomPerson3Serializer(
 
 class CustomPerson4Serializer(BaseCustomPersonSerializer):
     titlePhoto = HyperlinkedFileField(source='photo', required=False)
-    placeId = serializers.Field('customplace.id')
+    placeId = serializers.ReadOnlyField(source='customplace.id')
 
     class Meta:
         model = CustomPerson
@@ -406,23 +408,3 @@ class CustomPerson4Serializer(BaseCustomPersonSerializer):
                   'birthDate', 'deathDate', 'titlePhoto', 'placeId',
                   'permissions', 'selected',
         )
-
-class ArchIDDocumentTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IDDocumentType
-        fields = ('id', 'name', )
-
-class ArchDocumentSourceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DocumentSource
-        fields = ('id', 'name', )
-
-class ArchPersonIDSerializer(serializers.ModelSerializer):
-    person_id = serializers.Field('person.id')
-    id_type_id = serializers.Field('id_type.id')
-    source_id = serializers.Field('source.id')
-
-    class Meta:
-        model = PersonID
-        fields = ('id', 'person_id', 'id_type_id', 'series', 'number', 'source_id', 'date')
-

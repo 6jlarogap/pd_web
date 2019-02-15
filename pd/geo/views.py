@@ -164,9 +164,6 @@ class LocationStaticViewSet(LocationViewSet):
     permission_classes = (IsAuthenticated,)
     serializer_class = LocationStaticSerializer
 
-
-
-
 country_list = CountryList.as_view()
 region_list  = RegionList.as_view()
 city_list    = CityList.as_view()

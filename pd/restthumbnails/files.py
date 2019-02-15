@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from django.utils.log import getLogger
+from logging import getLogger
 
 from restthumbnails import processors, exceptions
 from restthumbnails.base import ThumbnailBase
@@ -95,7 +95,7 @@ class ThumbnailContentFile(object):
     Принимает файл, делает из него ContentFile в соответствии с заданным качеством
 
     -   source,  любой объект, имеющий метод .read(),
-        например request.FILES['filename']
+        например, файл из request
     -   minsize, минимальный размер фото 
         (число пикселей), при котором делается
         минимизация фото

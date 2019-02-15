@@ -653,13 +653,13 @@ class CheckLifeDatesMixin(object):
         """
         Проверка дат рождения/смерти у person
 
-        - параметры person могут быть в self.request.DATA или в словаре person
+        - параметры person могут быть в self.request.data или в словаре person
         в person могут быть даты в форматах: 'гггг', 'гггг-мм', 'гггг-мм-дд',
         None или 'null'
         при format=='d.m.y' сначала преобразуем к y-m-d
         """
         if not person:
-            person = self.request.DATA
+            person = self.request.data
         birth_date, req_birth_date = self.get_parm_(person, 'birthDate', 'dob', 'birth_date')
         death_date, req_death_date = self.get_parm_(person, 'deathDate', 'dod', 'death_date')
         fact_date,  req_fact_date  = self.get_parm_(person, 'factDate', 'fact_date')
