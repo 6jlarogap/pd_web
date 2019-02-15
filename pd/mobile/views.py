@@ -528,7 +528,7 @@ class PlaceUploadMixin(object):
         return Response(
             status=400,
             data=dict(
-                message=u"Такое место уже существует",
+                message=_(u"Такое место уже существует"),
                 code='place_already_exists'
         ))
 
