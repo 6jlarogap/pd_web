@@ -360,3 +360,17 @@ def reorder_form_fields(fields, old_pos, new_pos):
     field_keys.insert(new_pos, field_keys.pop(old_pos))
     fields = OrderedDict((k, fields[k]) for k in field_keys)
     return fields
+
+class RestoreObjectMixin(object):
+    """
+    Приводим restore_object(), отработанную в DRF 2.x, к функциям из DRF 3.x
+    """
+    def create(self, validated_data):
+        obj = self.restore_object_(instance=None, validated_data=validated_data)
+        obj.save(force_insert=True)
+        return obj
+
+    def update(self, instance, validated_data):
+        obj = self.restore_object_(instance=instance, validated_data=validated_data)
+        obj.save()
+        return obj

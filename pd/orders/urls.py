@@ -36,6 +36,7 @@ urlpatterns = [
     url(r'^api/loru/categories/?$', views.api_loru_categories, name='api_loru_categories'),
 
     url(r'^api/catalog/products/(?P<product_slug>[\w-]+)/?$', views.api_catalog_products_detail, name='api_catalog_products_detail'),
+    url(r'^api/catalog/categories/?$', views.api_catalog_categories, name='api_catalog_categories'),
 
     url(r'^api/optplaces/orders/?$', views.api_optplaces_orders, name='api_optplaces_orders'),
     url(r'^api/optplaces/orders/(?P<pk>\d+)/?$', views.api_optplaces_orders_detail, name='api_optplaces_orders_detail'),

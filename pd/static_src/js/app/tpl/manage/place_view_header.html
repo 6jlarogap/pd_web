@@ -9,5 +9,5 @@
     <li ng-show="is_editable && area.kind == 'g'"><span class="divider">|</span></li>
     <!-- li><a href="#" ng-click="openEditForm('isPlaceEditorOpen')" ng-disabled="loading">Редактировать</a></li>
     <li><span class="divider">|</span></li -->
-    <li ng-show="is_editable && area.kind == 'g'" ng-disabled="loading"><a href="#" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</a></li>
+    <li ng-show="is_editable && area.kind == 'g' && num_graves < max_graves_count" ng-disabled="loading"><a href="#" ng-click="openEditForm('isGraveAddOpen')">Добавить могилу</a></li>
 </ul>

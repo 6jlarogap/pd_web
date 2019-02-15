@@ -56,6 +56,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.renderers import StaticHTMLRenderer
+
 from orders.serializers import ProductCategorySerializer, ProductsSerializer, ProductsOptSerializer, \
                                ProductInfoSerializer, OptOrdersSerializer, OptOrderInfoSerializer, \
                                ProductEditSerializer, ServiceSerializer, OrgServiceSerializer, \
@@ -928,23 +929,34 @@ class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
 
 order_burial = OrderBurialView.as_view()
 
+class ProductCategories(APIView):
 
-class ProductCategoryViewSet(viewsets.ModelViewSet):
-    model = ProductCategory
-    serializer_class = ProductCategorySerializer
-
-    def get_queryset(self):
-        loru_ids = self.request.GET.getlist('filter[supplier]')
+    def get(self, request):
+        loru_ids = request.GET.getlist('filter[supplier]')
         while loru_ids.count(u''):
             loru_ids.remove(u'')
         if loru_ids:
             qs = Q(product__loru__pk__in=loru_ids)
         else:
             qs = Q()
-        onlyOpt = self.request.GET.get('filter[onlyOpt]')
+        onlyOpt = request.GET.get('filter[onlyOpt]')
         if onlyOpt and onlyOpt == 'true':
             qs &= Q(product__is_wholesale=True)
-        return ProductCategory.objects.filter(qs).order_by('name').distinct()
+        categories = [ProductCategorySerializer(pc).data \
+            for pc in ProductCategory.objects.filter(qs).order_by('name').distinct()
+        ]
+        return Response(
+            status=200,
+            data = {
+                # Раньше это был viewset с пажинацией и на то настроен front-end
+                #
+                'count': len(categories),
+                'next': None,
+                'previous': None,
+                'results': categories,
+        })
+
+api_catalog_categories = ProductCategories.as_view()
 
 class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
@@ -952,7 +964,6 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     model = Product
     serializer_class = ProductsSerializer
-    paginate_by = None
 
     def get_queryset(self):
         qs = Q(is_archived=False)
@@ -1018,7 +1029,6 @@ class ProductsOptViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     api/optplaces/suppliers/(?P<loru_pk>\d+)/products
     """
     model = Product
-    paginate_by = None
 
     def get_queryset(self, *args, **kwargs):
         qs = Q(
@@ -1101,7 +1111,7 @@ class ApiLoruProductPlaces(APIView):
         }
         data = []
         catalog_org_pk = Org.get_catalog_org_pk()
-        for p in request.DATA:
+        for p in request.data:
             try:
                 product = Product.objects.get(pk=p['id'], loru=request.user.profile.org)
                 data_p = { 'id': p['id'], 'places': [catalog_org_pk] }
@@ -1296,7 +1306,7 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
         year = datetime.datetime.now().year
         try:
             customer= title = phones = address = None
-            customer_input = request.DATA.get("customer")
+            customer_input = request.data.get("customer")
             if customer_input:
                 if customer_input.get('id'):
                     try:
@@ -1316,8 +1326,8 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
             else:
                 customer = request.user.profile.org
             supplier = None
-            products = request.DATA.get("products",[])
-            comment = request.DATA.get("comment",'')
+            products = request.data.get("products",[])
+            comment = request.data.get("comment",'')
             for p in products:
                 try:
                     product = Product.objects.get(pk=p['id'])
@@ -1404,7 +1414,7 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
             return response
         status_code=200
         data = dict(status='success')
-        products = request.DATA.get("products")
+        products = request.data.get("products")
         if products is None:
             raise ServiceException(_(u'Не задан список товаров, пусть даже пустой'))
         try:
@@ -1418,7 +1428,7 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
                         self.put_item(order, product, p['count'], p.get('comment'))
                 except Product.DoesNotExist:
                     raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
-            comment = request.DATA.get("comment")
+            comment = request.data.get("comment")
             if comment is not None:
                 try:
                     ordercomment = OrderComment.objects.filter(order=order)[0]
@@ -1483,28 +1493,30 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
         ]
         return Response(data=data, status=200)
 
+    @transaction.atomic
     def post(self, request):
-        required_not_got = list()
-        for f in (
-            'name',
-            'description',
-            'categoryId',
-                 ):
-            if not request.DATA.get(f):
-                required_not_got.append(f)
-        if required_not_got:
-            return Response(
-                data={
-                    'status': 'error',
-                    'message': _(u"Не заданы параметры: %s") % ", ".join(required_not_got),
-                     },
-                status=400,
-            )
-        serializer = ProductEditSerializer(data=request.DATA, context={ 'request': request, })
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
-        return Response(serializer.errors, status=400)
+        try:
+            required_not_got = list()
+            for f in (
+                'name',
+                'description',
+                'categoryId',
+                    ):
+                if not request.data.get(f):
+                    required_not_got.append(f)
+            if required_not_got:
+                raise ServiceException(_(u"Не заданы параметры: %s") % ", ".join(required_not_got))
+            serializer = ProductEditSerializer(data=request.data, context={ 'request': request, })
+            if serializer.is_valid():
+                product = serializer.save()
+                if not product.sku or not product.sku.strip():
+                    product.sku = product.pk
+                    product.save()
+                    serializer = ProductEditSerializer(product, context={ 'request': request, })
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        except ServiceException as excpt:
+            return Response(data={'status': 'error', 'message': excpt.message}, status=400)
 
 api_product_list = ApiProductList.as_view()
 
@@ -1523,16 +1535,20 @@ class ApiProductDetail(APIView):
         serializer = ProductEditSerializer(product, context=dict(request=request))
         return Response(serializer.data)
 
+    @transaction.atomic
     def put(self, request, pk):
         product = self.get_object(request, pk)
         serializer = ProductEditSerializer(
             product,
-            data=request.DATA,
+            data=request.data,
             context=dict(request=request),
         )
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
+            try:
+                serializer.save()
+                return Response(serializer.data, status=200)
+            except ServiceException as excpt:
+                return Response(data={'status': 'error', 'message': excpt.message}, status=400)
         return Response(serializer.errors, status=400)
 
 api_product_detail = ApiProductDetail.as_view()
@@ -1562,14 +1578,14 @@ class ApiOrgServicesMixin(object):
     
     def check_input_message(self, request, org_id, service_name=None):
         self.data = self.Data()
-        self.data.measures_get = request.DATA.get('measures', [])
+        self.data.measures_get = request.data.get('measures', [])
 
         org, message = self.check_org_id(request, org_id)
         if message:
             return message
 
         if not service_name:
-            service_name = request.DATA.get('type')
+            service_name = request.data.get('type')
         try:
             self.data.service = Service.objects.get(name=service_name)
         except Service.DoesNotExist:
@@ -1716,7 +1732,7 @@ class ApiServicePriceMixin(object):
             if request.method == 'GET':
                 req_dict = request.GET
             elif request.method == 'POST':
-                req_dict = request.DATA
+                req_dict = request.data
 
             self.data.service_name = req_dict.get('type')
             try:
@@ -2077,7 +2093,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
                 lat=self.data.latitude,
                 lng=self.data.longitude,
             )
-        comment = request.DATA.get('comment')
+        comment = request.data.get('comment')
         if comment:
             OrderComment.objects.create(
                 order=order,
@@ -2150,7 +2166,7 @@ class ApiOrderCommentsView(ApiOrderMixin, APIView):
     @transaction.atomic
     def post(self, request, pk):
         order = self.get_order(pk=pk)
-        comment = request.DATA.get('comment')
+        comment = request.data.get('comment')
         if comment is not None:
             ordercomment = OrderComment.objects.create(
                 order=order,
@@ -2215,7 +2231,7 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
             order = self.get_order(pk=pk)
             if not is_trade_user(request.user):
                 raise PermissionDenied
-            type_ = request.DATA.get('type')
+            type_ = request.data.get('type')
             if not type_:
                 raise ServiceException(_(u"Не задан тип загружаемого файла"))
             for tp in ResultFile.RESULT_TYPES:
@@ -2223,9 +2239,9 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
                     break
             else:
                 raise ServiceException(_(u"Тип %s файла результата выполнения заказа не предусмотрен") % type_)
-            if 'file' not in request.FILES:
+            if 'file' not in request.data:
                 raise ServiceException(_(u"Не получен загружаемый файл 'file'"))
-            uploaded_file = request.FILES['file']
+            uploaded_file = request.data['file']
             if type_ == ResultFile.TYPE_IMAGE:
                 if uploaded_file.size > ResultFile.MAX_IMAGE_SIZE * 1024 * 1024:
                     raise ServiceException(_(u"Размер изображения превышает %d Мб") % ResultFile.MAX_IMAGE_SIZE)
@@ -2234,7 +2250,7 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
             elif type_ == ResultFile.TYPE_VIDEO:
                 if not is_video(uploaded_file):
                     raise ServiceException(_(u"Загруженный файл не является видео"))
-            is_title = str_to_bool_or_None(request.DATA.get('isTitle'))
+            is_title = str_to_bool_or_None(request.data.get('isTitle'))
             if is_title is None:
                 is_title = True
             resultfile = ResultFile.objects.create(
@@ -2271,7 +2287,7 @@ class ApiOrderResultDetailView(ApiOrderMixin, APIView):
 
     def put(self, request, pk, result_pk):
         resultfile = self.get_object(pk, result_pk)
-        is_title = request.DATA.get('isTitle')
+        is_title = request.data.get('isTitle')
         if is_title is not None and resultfile.type == ResultFile.TYPE_IMAGE:
             resultfile.is_title = is_title
             resultfile.save()
@@ -2307,7 +2323,7 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
             order = self.get_order(pk=pk)
             kwargs = dict()
 
-            status = request.DATA.get('status')
+            status = request.data.get('status')
             if status:
                 for st in Order.STATUS_TYPES:
                     if status == st[0]:
@@ -2317,14 +2333,14 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
                 if order.status != status:
                     kwargs.update(dict(status=status))
 
-            if 'clientRating' in request.DATA:
-                kwargs.update(dict(applicant_approved=request.DATA['clientRating']))
+            if 'clientRating' in request.data:
+                kwargs.update(dict(applicant_approved=request.data['clientRating']))
 
-            archived = request.DATA.get('isArchived')
+            archived = request.data.get('isArchived')
             if archived is not None:
                 kwargs.update(dict(archived=archived))
 
-            product_items = request.DATA.get('products')
+            product_items = request.data.get('products')
             if product_items is not None:
                 if order.status not in (Order.STATUS_POSTED, Order.STATUS_ACCEPTED,):
                     raise ServiceException(_(u"Набор товаров/услуг можно изменять только в размещенном заказе"))
@@ -2492,7 +2508,7 @@ class ApiWebPayNotifyView(APIView):
         input_data = dict()
         for post_key in post_keys:
             model_key = 'order_ident' if post_key == 'order_id' else post_key
-            input_data[model_key] = request.DATA.get(post_key)
+            input_data[model_key] = request.data.get(post_key)
 
         if input_data['payment_type'] in OrderWebPay.SUCCESS_PAY_TYPES:
             order.status = Order.STATUS_PAID
@@ -2525,11 +2541,11 @@ class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
             статус для заказа paid, при получении этого запроса - должен будет вернуть 201,
             либо если еще не выставило, то выставить и вернуть 201
         """
-        pay_system = request.DATA.get('type')
+        pay_system = request.data.get('type')
         try:
             order, pay_data = self.check_order_pay_system(order_pk=pk, pay_system=pay_system)
             if pay_system == self.PAY_SYSTEM_WEBPAY:
-                transaction_id = request.DATA.get('paymentToken')
+                transaction_id = request.data.get('paymentToken')
                 if not transaction_id:
                     raise ServiceException(_(u"Не задан параметр paymentToken (идентификатор транзакции webpay)"))
             try:
@@ -2594,7 +2610,7 @@ class ApiLoruOrdersView(
         msg_invalid_dt_due = _(u"Неверная дата похорон")
         msg_invalid_dt = _(u"Неверная дата создания заказа")
         try:
-            customer = request.DATA.get('customer')
+            customer = request.data.get('customer')
             login_phone = None
             applicant = None
             if customer:
@@ -2619,7 +2635,7 @@ class ApiLoruOrdersView(
                     address=address,
                     login_phone=login_phone,
                 )
-            dt_due = request.DATA.get('dueDate') or None
+            dt_due = request.data.get('dueDate') or None
             if dt_due:
                 try:
                     dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
@@ -2629,7 +2645,7 @@ class ApiLoruOrdersView(
                     dt_due.strftime("%d.%m.%Y")
                 except ValueError:
                     raise ServiceException(msg_invalid_dt_due)
-            dt = request.DATA.get('createdDate') or None
+            dt = request.data.get('createdDate') or None
             mapping = dict(
                 burialPlanTime='burial_plan_time',
                 initialTime='initial_time',
@@ -2638,9 +2654,9 @@ class ApiLoruOrdersView(
             )
             other_keys = dict()
             for k in mapping:
-                if request.DATA.get(k):
+                if request.data.get(k):
                     try:
-                        other_keys[mapping[k]] = datetime.datetime.strptime(request.DATA[k], '%H:%M')
+                        other_keys[mapping[k]] = datetime.datetime.strptime(request.data[k], '%H:%M').time()
                     except ValueError:
                         raise ServiceException(_(u"Неверное %s") %
                             Order._meta.get_field(mapping[k]).verbose_name.lower()
@@ -2651,8 +2667,8 @@ class ApiLoruOrdersView(
                 repastPlace='repast_place',
             )
             for k in mapping:
-                if request.DATA.get(k):
-                    other_keys[mapping[k]] = request.DATA[k]
+                if request.data.get(k):
+                    other_keys[mapping[k]] = request.data[k]
             if dt:
                 try:
                     dt = datetime.datetime.strptime(dt, "%d.%m.%Y").date()
@@ -2670,7 +2686,7 @@ class ApiLoruOrdersView(
                 type=Order.TYPE_FUNERAL,
                 **other_keys
             )
-            deadman = request.DATA.get('deadman')
+            deadman = request.data.get('deadman')
             if deadman:
                 message = self.check_life_dates(person=deadman, format='d.m.y')
                 if message:
@@ -2683,7 +2699,7 @@ class ApiLoruOrdersView(
                     birth_date=self.set_unclear_date(deadman.get('dob'), format='d.m.y'),
                     death_date=self.set_unclear_date(deadman.get('dod'), format='d.m.y'),
                 )
-            place = request.DATA.get('place')
+            place = request.data.get('place')
             if place:
                 cemetery = None
                 if place.get('cemeteryId') or place.get('areaId'):
@@ -2719,7 +2735,7 @@ class ApiLoruOrdersView(
                     place=place_number,
                     size=size,
                 )
-            products = request.DATA.get('products', [])
+            products = request.data.get('products', [])
             for item in products:
                 product, quantity, discount = self.checked_order_item(request, item)
                 orderitem = OrderItem.objects.create(
@@ -2809,8 +2825,8 @@ class ApiLoruOrdersDetailView(
         msg_invalid_dt = _(u"Неверная дата создания заказа")
         try:
             order_save = False
-            if 'dueDate' in request.DATA:
-                dt_due = request.DATA['dueDate'] or None
+            if 'dueDate' in request.data:
+                dt_due = request.data['dueDate'] or None
                 if dt_due:
                     try:
                         dt_due = datetime.datetime.strptime(dt_due, "%d.%m.%Y").date()
@@ -2823,7 +2839,7 @@ class ApiLoruOrdersDetailView(
                 if order.dt_due != dt_due:
                     order.dt_due = dt_due
                     order_save = True
-            dt = request.DATA.get('createdDate') or None
+            dt = request.data.get('createdDate') or None
             if dt:
                 try:
                     dt = datetime.datetime.strptime(dt, "%d.%m.%Y").date()
@@ -2844,11 +2860,11 @@ class ApiLoruOrdersDetailView(
             )
             other_keys = dict()
             for k in mapping:
-                if k in request.DATA:
-                    f = request.DATA[k] and request.DATA[k].strip() or None
+                if k in request.data:
+                    f = request.data[k] and request.data[k].strip() or None
                     if f is not None:
                         try:
-                            f = datetime.datetime.strptime(f, '%H:%M')
+                            f = datetime.datetime.strptime(f, '%H:%M').time()
                         except ValueError:
                             raise ServiceException(_(u"Неверное %s") %
                                 Order._meta.get_field(mapping[k]).verbose_name.lower()
@@ -2862,13 +2878,13 @@ class ApiLoruOrdersDetailView(
                 repastPlace='repast_place',
             )
             for k in mapping:
-                if k in request.DATA:
-                    f = request.DATA[k] and request.DATA[k].strip() or ''
+                if k in request.data:
+                    f = request.data[k] and request.data[k].strip() or ''
                     if f != getattr(order, mapping[k]):
                         order_save = True
                         setattr(order, mapping[k], f)
-            if 'customer' in request.DATA:
-                customer = request.DATA['customer']
+            if 'customer' in request.data:
+                customer = request.data['customer']
                 if customer is None:
                     self.safe_delete('applicant', order)
                 else:
@@ -2911,8 +2927,8 @@ class ApiLoruOrdersDetailView(
                         )
                         order.applicant = applicant
                         order_save = True
-            if 'products' in request.DATA:
-                products = request.DATA['products'] or []
+            if 'products' in request.data:
+                products = request.data['products'] or []
                 for item in OrderItem.objects.filter(order=order):
                     item.delete()
                 for item in products:
@@ -2923,8 +2939,8 @@ class ApiLoruOrdersDetailView(
                         quantity=quantity,
                         discount=discount,
                     )
-            if 'deadman' in request.DATA:
-                deadman = request.DATA['deadman']
+            if 'deadman' in request.data:
+                deadman = request.data['deadman']
                 try:
                     instance = order.orderdeadperson
                 except (OrderDeadPerson.DoesNotExist, AttributeError,):
@@ -2968,8 +2984,8 @@ class ApiLoruOrdersDetailView(
                         birth_date=self.set_unclear_date(deadman.get('dob'), format='d.m.y'),
                         death_date=self.set_unclear_date(deadman.get('dod'), format='d.m.y'),
                     )
-            if 'place' in request.DATA:
-                place = request.DATA['place']
+            if 'place' in request.data:
+                place = request.data['place']
                 cemetery = area = None
                 if place is not None:
                     if place.get('cemeteryId') or place.get('areaId'):
