@@ -150,11 +150,11 @@ class DeadPerson2Serializer(
     RestoreObjectMixin,
     serializers.HyperlinkedModelSerializer
     ):
-    birthDate = UnclearDateFieldSerializer(source='birth_date')
-    deathDate = UnclearDateFieldSerializer(source='death_date')
+    birthDate = UnclearDateFieldSerializer(source='birth_date', required=False, allow_null=True)
+    deathDate = UnclearDateFieldSerializer(source='death_date', required=False, allow_null=True)
     lastName = serializers.CharField(source='last_name')
-    firstName = serializers.CharField(source='first_name')
-    middleName = serializers.CharField(source='middle_name')
+    firstName = serializers.CharField(source='first_name', required=False, allow_blank=True)
+    middleName = serializers.CharField(source='middle_name', required=False, allow_blank=True)
 
     class Meta:
         model = DeadPerson
@@ -183,11 +183,11 @@ class DeadPerson2Serializer(
         return DeadPerson(**fields)
 
 class DeadPerson3Serializer(serializers.ModelSerializer):
-    dob = UnclearDateFieldSerializer(source='birth_date')
-    dod = UnclearDateFieldSerializer(source='death_date')
+    dob = UnclearDateFieldSerializer(source='birth_date', required=False, allow_null=True)
+    dod = UnclearDateFieldSerializer(source='death_date', required=False, allow_null=True)
     lastName = serializers.CharField(source='last_name')
-    firstName = serializers.CharField(source='first_name')
-    middleName = serializers.CharField(source='middle_name')
+    firstName = serializers.CharField(source='first_name', required=False, allow_blank=True)
+    middleName = serializers.CharField(source='middle_name', required=False, allow_blank=True)
 
     class Meta:
         model = DeadPerson
