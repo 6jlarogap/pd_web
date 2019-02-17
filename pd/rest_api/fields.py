@@ -11,32 +11,30 @@ from pd.utils import local2utc, utc2local
 
 class HyperlinkedFileField(serializers.FileField):
     """
-    Show full URL of o file field
+    Show full URL of of a file field
     """
     def to_representation(self, value):
         request = self.context.get('request', None)
         return request.build_absolute_uri(value.url) if request and value else ''
 
 class UnclearDateFieldSerializer(serializers.Field):
-    """
-    Field to frontend conversion
-    --
-    next step: serializers.WritebleField
-    """
+    date_format = 'd.m.y'
+
     def to_representation(self, obj):
         try:
-            return obj.str_safe(format='d.m.y')
+            return obj.str_safe(format=self.date_format)
         except:
             return obj
 
+    def to_internal_value(self, value):
+        if UnclearDate.check_safe_str(value, check_today=False, format=self.date_format):
+            # Неверная дата
+            return None
+        return UnclearDate.from_str_safe(value, self.date_format)
 
-class UnclearDateFieldSafeSerializer(serializers.Field):
-    def to_representation(self, obj):
-        if obj is not None:
-            return obj.str_safe()
-        else:
-            return obj
 
+class UnclearDateFieldSafeSerializer(UnclearDateFieldSerializer):
+    date_format = ''
 
 class ThumbnailFieldSerializer(serializers.Field):
     """
