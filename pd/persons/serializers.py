@@ -39,8 +39,8 @@ class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
 
 class AlivePerson2Serializer(serializers.HyperlinkedModelSerializer):
     lastName = serializers.CharField(source='last_name')
-    firstName = serializers.CharField(source='first_name')
-    middleName = serializers.CharField(source='middle_name')
+    firstName = serializers.CharField(source='first_name', required=False, allow_blank=True)
+    middleName = serializers.CharField(source='middle_name', required=False, allow_blank=True)
     address = serializers.StringRelatedField(read_only=True)
     phoneNumber = serializers.CharField(source='phones')
 
@@ -139,8 +139,8 @@ class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
         )
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
-    birth_date = UnclearDateFieldSerializer()
-    death_date = UnclearDateFieldSerializer()
+    birth_date = UnclearDateFieldSerializer(source='birth_date', required=False, allow_null=True)
+    death_date = UnclearDateFieldSerializer(source='death_date', required=False, allow_null=True)
     class Meta:
         model = DeadPerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')
@@ -213,8 +213,8 @@ class BaseCustomPersonSerializer(
     birthDate = serializers.SerializerMethodField('birth_date')
     deathDate = serializers.SerializerMethodField('death_date')
     lastName = serializers.CharField(source='last_name')
-    firstName = serializers.CharField(source='first_name')
-    middleName = serializers.CharField(source='middle_name')
+    firstName = serializers.CharField(source='first_name', required=False, allow_blank=True)
+    middleName = serializers.CharField(source='middle_name', required=False, allow_blank=True)
     permissions = serializers.CharField(source='permission')
     selected = serializers.SerializerMethodField('selected_func')
 
@@ -329,8 +329,8 @@ class CustomPerson3Serializer(
         serializers.ModelSerializer
     ):
     lastname = serializers.CharField(source='last_name')
-    firstname = serializers.CharField(source='first_name')
-    middlename = serializers.CharField(source='middle_name')
+    firstname = serializers.CharField(source='first_name', required=False, allow_blank=True)
+    middlename = serializers.CharField(source='middle_name', required=False, allow_blank=True)
     commonText = serializers.CharField(source='memory_text')
     dob = serializers.SerializerMethodField('birth_date')
     dod = serializers.SerializerMethodField('death_date')
