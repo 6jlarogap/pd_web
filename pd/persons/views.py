@@ -223,6 +223,8 @@ class AutocompleteDocSources(View):
 
 autocomplete_docsources = AutocompleteDocSources.as_view()
 
+# TODO - the methods below are never called. Please check and remove if so
+#
 class AlivePersonViewSet(viewsets.ModelViewSet):
     model = AlivePerson
     serializer_class = AlivePersonSerializer
@@ -237,6 +239,8 @@ class PhoneViewSet(viewsets.ModelViewSet):
     model = Phone
     serializer_class = PhoneSerializer
     permission_classes = (IsAuthenticated,)
+#
+# TODO --------------------------------------------------------------------
 
 class ApiClientPlacesMixin(CheckLifeDatesMixin):
 
