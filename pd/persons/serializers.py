@@ -16,7 +16,7 @@ from rest_api.fields import UnclearDateFieldSerializer, UnclearDateFieldMixin, U
 
 from pd.utils import CreatedAtMixin, utcisoformat, str_to_bool_or_None, capitalize, RestoreObjectMixin
 
-class PhoneSerializer(serializers.HyperlinkedModelSerializer):
+class PhoneSerializer(serializers.ModelSerializer):
     #person = serializers.PrimaryKeyRelatedField()
     ct = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
     class Meta:
@@ -24,20 +24,19 @@ class PhoneSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'phonetype', 'number', 'ct', 'obj_id')
 
 
-class AlivePersonSerializer(serializers.HyperlinkedModelSerializer):
+class AlivePersonSerializer(serializers.ModelSerializer):
     address = serializers.PrimaryKeyRelatedField(read_only=True)
     address_str = serializers.StringRelatedField(source='address', read_only=True)
     # login_phone объявлен editable=False для django форм,
     # посему здесь прописываем явно, чтоб можно было изменить
     login_phone = serializers.DecimalField(15, 0, allow_null=True)
-    is_inbook = serializers.BooleanField()
 
     class Meta:
         model = AlivePerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'address', 'phones', 'login_phone', 'address_str', 'is_inbook')
 
 
-class AlivePerson2Serializer(serializers.HyperlinkedModelSerializer):
+class AlivePerson2Serializer(serializers.ModelSerializer):
     lastName = serializers.CharField(source='last_name')
     firstName = serializers.CharField(source='first_name', required=False, allow_blank=True)
     middleName = serializers.CharField(source='middle_name', required=False, allow_blank=True)
@@ -49,8 +48,8 @@ class AlivePerson2Serializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'firstName', 'lastName', 'middleName', 'address', 'phoneNumber',)
 
 
-class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSerializer):
-    titlePhoto = HyperlinkedFileField(source='title_photo')
+class CustomPlaceListSerializer(CreatedAtMixin, serializers.ModelSerializer):
+    titlePhoto = HyperlinkedFileField(source='title_photo', read_only=True)
     deadmans = serializers.SerializerMethodField('deadmans_func')
     address = serializers.SerializerMethodField('address_func')
     location = serializers.SerializerMethodField('location_func')
@@ -83,9 +82,10 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.HyperlinkedModelSeri
             customplace=customplace,
         )]
 
-class CustomPlaceEditSerializer(RestoreObjectMixin, serializers.HyperlinkedModelSerializer):
+class CustomPlaceEditSerializer(RestoreObjectMixin, serializers.ModelSerializer):
     location = serializers.ReadOnlyField(source='location_dict')
     performerId = serializers.ReadOnlyField(source='favorite_performer.id')
+    address = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = CustomPlace
@@ -127,7 +127,7 @@ class CustomPlaceEditSerializer(RestoreObjectMixin, serializers.HyperlinkedModel
             )
 
 class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
-    titlePhoto = HyperlinkedFileField(source='title_photo')
+    titlePhoto = HyperlinkedFileField(source='title_photo', read_only=True)
     omsData = serializers.ReadOnlyField(source='oms_data')
     performer = OrgShort6Serializer(source='favorite_performer')
 
@@ -138,7 +138,7 @@ class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
             'performer', 'comment',
         )
 
-class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
+class DeadPersonSerializer(serializers.ModelSerializer):
     birth_date = UnclearDateFieldSerializer(required=False, allow_null=True)
     death_date = UnclearDateFieldSerializer(required=False, allow_null=True)
     class Meta:
@@ -148,7 +148,7 @@ class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
 class DeadPerson2Serializer(
     UnclearDateFieldMixin,
     RestoreObjectMixin,
-    serializers.HyperlinkedModelSerializer
+    serializers.ModelSerializer
     ):
     birthDate = UnclearDateFieldSerializer(source='birth_date', required=False, allow_null=True)
     deathDate = UnclearDateFieldSerializer(source='death_date', required=False, allow_null=True)
@@ -208,7 +208,7 @@ class BaseCustomPersonSerializer(
         UnclearDateFieldMixin,
         RestoreObjectMixin,
         CustomPersonPermissionsMixin,
-        serializers.HyperlinkedModelSerializer
+        serializers.ModelSerializer
     ):
     birthDate = serializers.SerializerMethodField('birth_date')
     deathDate = serializers.SerializerMethodField('death_date')
@@ -254,7 +254,7 @@ class BaseCustomPersonSerializer(
 
 class CustomPersonSerializer(BaseCustomPersonSerializer):
     omsData = serializers.ReadOnlyField(source='oms_data')
-    titlePhoto = HyperlinkedFileField(source='photo', required=False)
+    titlePhoto = HyperlinkedFileField(source='photo', read_only=True)
 
     class Meta:
         model = CustomPerson
@@ -264,7 +264,7 @@ class CustomPersonSerializer(BaseCustomPersonSerializer):
 
 class CustomPerson2Serializer(BaseCustomPersonSerializer):
     grave = serializers.SerializerMethodField('grave_func')
-    photo = HyperlinkedFileField(required=False)
+    photo = HyperlinkedFileField(read_only=True)
 
     class Meta:
         model = CustomPerson
@@ -279,7 +279,7 @@ class CustomPerson2Serializer(BaseCustomPersonSerializer):
             return None
 
 class MemoryGallerySerializer(CreatedAtMixin, serializers.ModelSerializer):
-    mediaContent = HyperlinkedFileField(source='bfile', required=False)
+    mediaContent = HyperlinkedFileField(source='bfile', read_only=True)
     addedAt = serializers.SerializerMethodField('createdAt_func')
     eventDate = UnclearDateFieldSafeSerializer(source='event_date')
 
@@ -334,7 +334,7 @@ class CustomPerson3Serializer(
     commonText = serializers.CharField(source='memory_text')
     dob = serializers.SerializerMethodField('birth_date')
     dod = serializers.SerializerMethodField('death_date')
-    photo = HyperlinkedFileField(required=False)
+    photo = HyperlinkedFileField(read_only=True)
     gallery = serializers.SerializerMethodField('gallery_func')
     isDead = serializers.BooleanField(source='is_dead')
     placeId = serializers.ReadOnlyField(source='customplace.id')
@@ -399,7 +399,7 @@ class CustomPerson3Serializer(
             return CustomPerson(customplace=customplace, user=self.context['request'].user, **fields)
 
 class CustomPerson4Serializer(BaseCustomPersonSerializer):
-    titlePhoto = HyperlinkedFileField(source='photo', required=False)
+    titlePhoto = HyperlinkedFileField(source='photo', read_only=True)
     placeId = serializers.ReadOnlyField(source='customplace.id')
 
     class Meta:
