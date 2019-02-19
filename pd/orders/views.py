@@ -1439,7 +1439,8 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
                         comment=comment,
                     )
                 else:
-                    order.comment = comment
+                    ordercomment.comment = comment
+                    ordercomment.save()
             # В любом случае сохранить, чтоб подправилась dt_modified
             order.save()
         except ServiceException as excpt:
