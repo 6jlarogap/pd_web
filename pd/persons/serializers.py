@@ -139,8 +139,8 @@ class CustomPlaceDetailSerializer(CustomPlaceEditSerializer):
         )
 
 class DeadPersonSerializer(serializers.HyperlinkedModelSerializer):
-    birth_date = UnclearDateFieldSerializer(source='birth_date', required=False, allow_null=True)
-    death_date = UnclearDateFieldSerializer(source='death_date', required=False, allow_null=True)
+    birth_date = UnclearDateFieldSerializer(required=False, allow_null=True)
+    death_date = UnclearDateFieldSerializer(required=False, allow_null=True)
     class Meta:
         model = DeadPerson
         fields = ('id', 'first_name', 'last_name', 'middle_name', 'birth_date', 'death_date')

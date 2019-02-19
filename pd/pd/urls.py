@@ -7,7 +7,6 @@ from django.views.static import serve
 from django.conf import settings
 
 from django.contrib import admin
-# - django 1.7 no need - admin.autodiscover()
 
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter(trailing_slash=False)
@@ -120,4 +119,8 @@ urlpatterns += [
 if settings.DEBUG:
     urlpatterns += [
             url(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
+    ]
+    from debug_toolbar import urls as debug_urls
+    urlpatterns += [
+        url(r'^__debug__/', include(debug_urls)),
     ]
