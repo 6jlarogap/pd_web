@@ -298,7 +298,7 @@ class ServiceOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     owner = UserFioSerializer(source='customplace.user')
     number = serializers.ReadOnlyField(source='number_verbose')
     totalPrice = serializers.ReadOnlyField(source='total_float')
-    currency = serializers.CharField(source='loru.currency.code')
+    currency = serializers.CharField(source='loru.currency.code', read_only=True)
     createdAt = serializers.SerializerMethodField('createdAt_func')
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
     isArchived = serializers.BooleanField(source='archived')
@@ -332,7 +332,7 @@ class LoruOrderSerializer(CreatedAtMixin, serializers.ModelSerializer):
     createdAt = serializers.SerializerMethodField('createdAt_func')
     modifiedAt = serializers.SerializerMethodField('modifiedAt_func')
     totalPrice = serializers.ReadOnlyField(source='total_float')
-    currency = serializers.CharField(source='loru.currency.code')
+    currency = serializers.CharField(source='loru.currency.code', read_only=True)
     products = serializers.SerializerMethodField('products_func')
     burialPlanTime = serializers.TimeField(source='burial_plan_time', format='%H:%M')
     initialTime = serializers.TimeField(source='initial_time', format='%H:%M')
@@ -433,7 +433,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     productId = serializers.ReadOnlyField(source='product.pk')
     price = serializers.ReadOnlyField(source='cost_float')
     quantity = serializers.ReadOnlyField(source='quantity_float')
-    currency = serializers.ReadOnlyField(source='order.loru.currency.code')
+    currency = serializers.ReadOnlyField(source='order.loru.currency.code', read_only=True)
     product = serializers.SerializerMethodField('product_func')
 
     class Meta:
@@ -451,7 +451,7 @@ class ServiceItemSerializer(serializers.ModelSerializer):
     type = serializers.CharField(source='orgservice.service.name')
     title = serializers.CharField(source='orgservice.service.title')
     price = serializers.ReadOnlyField(source='cost_float')
-    currency = serializers.CharField(source='order.loru.currency.code')
+    currency = serializers.CharField(source='order.loru.currency.code', read_only=True)
 
     class Meta:
         model = ServiceItem
