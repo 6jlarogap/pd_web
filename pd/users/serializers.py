@@ -307,7 +307,7 @@ class ShopDetailSerializer(ShopSerializerMixin, serializers.ModelSerializer):
 
 class OrgGallerySerializer(serializers.ModelSerializer):
     title = serializers.CharField(source='comment')
-    photoUrl = HyperlinkedFileField(source='bfile')
+    photoUrl = HyperlinkedFileField(source='bfile', read_only=True)
 
     class Meta:
         model = OrgGallery
