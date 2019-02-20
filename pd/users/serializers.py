@@ -1,12 +1,11 @@
 # coding=utf-8
 
 from rest_framework import serializers
-from rest_framework.fields import Field
 
 from django.db.models.query_utils import Q
 
 from rest_api.fields import HyperlinkedFileField, DateTimeUtcField
-from pd.utils import PhonesFromTextMixin, utcisoformat, CreatedAtMixin
+from pd.utils import PhonesFromTextMixin, utcisoformat, CreatedAtMixin, RestoreObjectMixin
 
 from django.contrib.auth.models import User
 
@@ -55,7 +54,7 @@ class OrgSerializerMixin(object):
                     ).exists()
         return result
 
-class StoreSerializer(serializers.ModelSerializer):
+class StoreSerializer(RestoreObjectMixin, serializers.ModelSerializer):
     address = serializers.SerializerMethodField('address_func')
     phones = serializers.SerializerMethodField('phones_func')
     location = serializers.SerializerMethodField('location_func')
@@ -65,8 +64,8 @@ class StoreSerializer(serializers.ModelSerializer):
         model = Store
         fields = ('id', 'name', 'address', 'location', 'phones', 'hasComponents', )
 
-    def restore_object(self, attrs, instance=None):
-        data = self.context['request'].DATA
+    def restore_object_(self, instance=None, validated_data=[]):
+        data = self.context['request'].data
         name = data.get('name', instance and instance.name or '')
         address = data.get('address', '')
         location = data.get('location')
@@ -120,8 +119,8 @@ class StoreSerializer(serializers.ModelSerializer):
             return None
 
 class Store2Serializer(StoreSerializer):
-    title = Field(source='name')
-    workTimes = Field(source='worktimes')
+    title = serializers.CharField(source='name')
+    workTimes = serializers.ReadOnlyField(source='worktimes')
     photoUrl = serializers.SerializerMethodField('photoUrl_func')
 
     class Meta:
@@ -136,15 +135,15 @@ class Store2Serializer(StoreSerializer):
         return self.context['request'].build_absolute_uri(photo.url) if photo else ''
 
 class StoreShortSerializer(serializers.ModelSerializer):
-    title = serializers.Field(source='name')
+    title = serializers.CharField(source='name')
 
     class Meta:
         model = Store
         fields = ('id', 'title', )
 
 class OrgSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSerializer):
-    fullname = Field(source='full_name')
-    address = serializers.RelatedField(source='off_address')
+    fullname = serializers.CharField(source='full_name')
+    address = serializers.StringRelatedField(source='off_address', read_only=True)
     stores = StoreSerializer(many=True, source='store_set')
     phones = serializers.SerializerMethodField('phones_func')
     categories = serializers.SerializerMethodField('categories_func')
@@ -169,7 +168,7 @@ class OrgSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSe
         ]
 
 class OrgShortSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
-    address = serializers.RelatedField(source='off_address')
+    address = serializers.StringRelatedField(source='off_address', read_only=True)
     phones = serializers.SerializerMethodField('phones_func')
 
     class Meta:
@@ -200,7 +199,7 @@ class OrgShort3Serializer(serializers.ModelSerializer):
         fields = ('id', 'name',)
 
 class OrgShort4Serializer(PhonesFromTextMixin, serializers.ModelSerializer):
-    shortName = Field(source='name')
+    shortName = serializers.CharField(source='name')
     phones = serializers.SerializerMethodField('phones_func')
 
     class Meta:
@@ -215,18 +214,18 @@ class OrgShort5Serializer(OrgSerializerMixin, OrgShort4Serializer):
         fields = ('id', 'shortName', 'phones', 'isFavorite', )
 
 class OrgShort6Serializer(serializers.ModelSerializer):
-    domainName = serializers.Field(source='subdomain')
+    domainName = serializers.CharField(source='subdomain')
 
     class Meta:
         model = Org
         fields = ('id', 'domainName')
 
 class OrgClientSiteSerializer(PhonesFromTextMixin, OrgSerializerMixin, serializers.ModelSerializer):
-    fullName = Field(source='full_name')
-    address = serializers.RelatedField(source='off_address')
+    fullName = serializers.CharField(source='full_name')
+    address = serializers.StringRelatedField(source='off_address', read_only=True)
     phones = serializers.SerializerMethodField('phones_func')
     location = serializers.SerializerMethodField('location_func')
-    shopSite = Field(source='shop_site')
+    shopSite = serializers.CharField(source='shop_site')
 
     class Meta:
         model = Org
@@ -235,7 +234,7 @@ class OrgClientSiteSerializer(PhonesFromTextMixin, OrgSerializerMixin, serialize
         )
 
 class OrgOptSupplierSerializer(serializers.ModelSerializer):
-    tin = Field(source='inn')
+    tin = serializers.CharField(source='inn')
     dtLastOrder = serializers.SerializerMethodField('dt_last_order_func')
 
     class Meta:
@@ -263,10 +262,10 @@ class ShopSerializerMixin(object):
 
 
 class ShopSerializer(ShopSerializerMixin, serializers.ModelSerializer):
-    title = Field(source='name')
+    title = serializers.CharField(source='name')
     itemPrice = serializers.SerializerMethodField('itemPrice_func')
     titleImageUrl = serializers.SerializerMethodField('titleImageUrl_func')
-    subdomainName = Field(source='subdomain')
+    subdomainName = serializers.CharField(source='subdomain')
 
     class Meta:
         model = Org
@@ -288,10 +287,10 @@ class ShopSerializer(ShopSerializerMixin, serializers.ModelSerializer):
             return None
 
 class ShopDetailSerializer(ShopSerializerMixin, serializers.ModelSerializer):
-    title = Field(source='name')
+    title = serializers.CharField(source='name')
     titleImageUrl = serializers.SerializerMethodField('titleImageUrl_func')
     contacts = serializers.SerializerMethodField('contacts_func')
-    subdomainName = Field(source='subdomain')
+    subdomainName = serializers.CharField(source='subdomain')
 
     class Meta:
         model = Org
@@ -307,8 +306,8 @@ class ShopDetailSerializer(ShopSerializerMixin, serializers.ModelSerializer):
         )
 
 class OrgGallerySerializer(serializers.ModelSerializer):
-    title = Field(source='comment')
-    photoUrl = HyperlinkedFileField(source='bfile')
+    title = serializers.CharField(source='comment')
+    photoUrl = HyperlinkedFileField(source='bfile', read_only=True)
 
     class Meta:
         model = OrgGallery
@@ -412,8 +411,8 @@ class ProfileFioLoginSerializer(serializers.ModelSerializer):
 
 class ProfileClientSiteSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     phones = serializers.SerializerMethodField('phones_published_func')
-    fullName = Field(source='full_name')
-    role = Field(source='title')
+    fullName = serializers.CharField(source='full_name')
+    role = serializers.CharField(source='title')
     photoUrl = serializers.SerializerMethodField('userPhotoUrl_func')
     department = StoreShortSerializer(source='store')
 
@@ -436,13 +435,13 @@ class ProfileClientSiteSerializer(PhonesFromTextMixin, serializers.ModelSerializ
             return []
 
 class OrgReviewSerializer(CreatedAtMixin, serializers.ModelSerializer):
-    isPositive = Field(source='is_positive')
+    isPositive = serializers.NullBooleanField(source='is_positive')
     author = UserFioSerializer(source='creator')
     createdAt = serializers.SerializerMethodField('createdAt_func')
-    title = Field(source='subject')
-    commonText = Field(source='common_text')
-    positiveText = Field(source='positive_text')
-    negativeText = Field(source='negative_text')
+    title = serializers.CharField(source='subject')
+    commonText = serializers.CharField(source='common_text')
+    positiveText = serializers.CharField(source='positive_text')
+    negativeText = serializers.CharField(source='negative_text')
 
     class Meta:
         model = OrgReview
@@ -468,14 +467,14 @@ class UserSettings2Serializer(UserSettingsSerializer):
         fields = ('id', 'firstName', 'lastName', 'middleName', 'photoUrl', )
 
 class OauthSerializer(serializers.ModelSerializer):
-    name = serializers.Field(source='get_display_name')
+    name = serializers.ReadOnlyField(source='get_display_name')
 
     class Meta:
         model = Oauth
         fields = ('id', 'provider', 'name', )
 
 class YoutubeVideoSerializer(serializers.ModelSerializer):
-    video_id = Field(source='yid')
+    video_id = serializers.CharField(source='yid')
     added_at = DateTimeUtcField(source='dt_created', required=False)
 
     class Meta:
@@ -483,10 +482,10 @@ class YoutubeVideoSerializer(serializers.ModelSerializer):
         fields = ('video_id', 'added_at', 'url', 'title', 'title_photo_url',)
 
 class YoutubeVoteSerializer(serializers.ModelSerializer):
-    id = Field(source='youtubevideo.yid')
+    id = serializers.CharField(source='youtubevideo.yid')
     datetime = DateTimeUtcField(source='dt_created', required=False)
-    type = Field(source='like')
-    timestamp = Field(source='time')
+    type = serializers.CharField(source='like')
+    timestamp = serializers.IntegerField(source='time')
 
     class Meta:
         model = YoutubeVote

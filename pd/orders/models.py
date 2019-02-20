@@ -179,21 +179,26 @@ class Product(BaseModel):
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
 
+    def delete_photo(self, photo):
+        path = photo and photo.name and photo.path or None
+        if path and os.path.exists(path):
+            try:
+                os.remove(path)
+            except IOError:
+                pass
+        thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, photo.name) if path else None
+        if thmb and os.path.exists(thmb):
+            shutil.rmtree(thmb, ignore_errors=True)
+
     def delete(self):
-        path = self.photo and self.photo.path or None
-        thmb = os.path.join(settings.THUMBNAILS_STORAGE_ROOT, self.photo.name) if path else None
+        photo = self.photo
         try:
-            super(Product, self).delete()
+            result = super(Product, self).delete()
         except:
             raise
         else:
-            if path and os.path.exists(path):
-                try:
-                    os.remove(path)
-                except IOError:
-                    pass
-            if thmb and os.path.exists(thmb):
-                shutil.rmtree(thmb, ignore_errors=True)
+            self.delete_photo(photo)
+        return result
 
 class Order(GetLogsMixin, BaseModel):
     # Типы заказов.
