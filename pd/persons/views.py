@@ -454,6 +454,7 @@ class ApiCustompersonDetailView(
             status=200
         )
         
+    @transaction.atomic
     def put(self, request, pk):
         try:
             customperson = self.get_customperson(pk, owner_only=True)
@@ -488,9 +489,9 @@ class ApiCustompersonDetailView(
                 context=context,
             )
             if serializer.is_valid():
-                serializer.save()
+                customperson = serializer.save()
                 self.put_permissions_(
-                    serializer.object,
+                    customperson,
                     self.get_permissions_(request),
                     instance_existed=True
                 )
@@ -499,6 +500,7 @@ class ApiCustompersonDetailView(
         except ServiceException as excpt:
             return Response(data=dict(status='error', message=excpt.message), status=400)
 
+    @transaction.atomic
     def delete(self, request, pk):
         return self.delete_customperson(pk)
 
@@ -683,6 +685,7 @@ class ApiCustompersonMemoryGalleryDetail(ApiCustompersonMixin, ApiMemoryGalleryM
     def put(self, request, pk, memory_pk):
         return self.make_object(pk, memory_pk)
 
+    @transaction.atomic
     def delete(self, request, pk, memory_pk):
         customperson = self.get_customperson(pk, owner_only=True)
         try:
@@ -707,6 +710,7 @@ class ApiClientPlacesDeadmansView(ApiClientPlacesMixin, APIView):
             status=200,
         )
 
+    @transaction.atomic
     def post(self, request, pk):
         customplace=self.get_customplace(pk)
         message = self.check_life_dates()
@@ -729,6 +733,7 @@ api_client_places_deadmans = ApiClientPlacesDeadmansView.as_view()
 class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMixin, APIView):
     permission_classes = (PermitIfCabinet,)
 
+    @transaction.atomic
     def put(self, request, pk, deadman_pk):
         customplace = self.get_customplace(pk)
         customperson = self.get_customperson(deadman_pk, owner_only=True)
@@ -747,6 +752,7 @@ class ApiClientPlacesDeadmansDetailView(ApiClientPlacesMixin, ApiCustompersonMix
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
 
+    @transaction.atomic
     def delete(self, request, pk, deadman_pk):
         customplace = self.get_customplace(pk)
         customperson = self.get_customperson(deadman_pk, owner_only=True)
@@ -788,6 +794,7 @@ class ApiClientPersonsView(ApiClientPlacesMixin, ApiSelectedPermissionsMixin, AP
             status=200,
         )
 
+    @transaction.atomic
     def post(self, request):
         try:
             customplace_id = request.data.get('placeId')
@@ -803,9 +810,9 @@ class ApiClientPersonsView(ApiClientPlacesMixin, ApiSelectedPermissionsMixin, AP
                 context=dict(request=request, customplace=customplace),
             )
             if serializer.is_valid():
-                serializer.save()
+                customperson = serializer.save()
                 self.put_permissions_(
-                    serializer.object,
+                    customperson,
                     self.get_permissions_(request),
                     instance_existed=False,
                 )
@@ -831,6 +838,7 @@ class ApiClientPersonsDetailView(
             status=200,
         )
 
+    @transaction.atomic
     def put(self, request, pk):
         try:
             customperson = self.get_customperson(pk, owner_only=True)
@@ -851,9 +859,9 @@ class ApiClientPersonsDetailView(
                 context=context,
             )
             if serializer.is_valid():
-                serializer.save()
+                customperson = serializer.save()
                 self.put_permissions_(
-                    serializer.object,
+                    customperson,
                     self.get_permissions_(request),
                     instance_existed=True,
                 )
@@ -920,6 +928,7 @@ api_client_places_orders = ApiClientPlacesOrdersView.as_view()
 class ApiOmsBurialsView(CheckLifeDatesMixin, APIView):
     permission_classes = (PermitIfUgh,)
 
+    @transaction.atomic
     def post(self, request):
         place_pk = request.data.get('placeId')
         place, status, message = Place.check_invent_place(request, place_pk)
@@ -962,6 +971,7 @@ api_oms_burials = ApiOmsBurialsView.as_view()
 class ApiOmsBurialsDetailView(CheckLifeDatesMixin, APIView):
     permission_classes = (PermitIfUgh,)
 
+    @transaction.atomic
     def put(self, request, pk):
         status = 404
         message = ''
