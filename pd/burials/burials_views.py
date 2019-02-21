@@ -1560,11 +1560,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
         )
         q_dates &= ~Q(place_number=u'-')
 
-        select_related = (
-            'area__name',
-            'deadman__last_name', 'deadman__first_name', 'deadman__middle_name',
-            'deadman__ident_number'
-        )
+        select_related = ('area', 'deadman',)
 
         # Список файлов для архивации
         #
