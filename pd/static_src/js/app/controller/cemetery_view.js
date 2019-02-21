@@ -150,7 +150,6 @@ function CemeteryViewCtrl(
                 $scope.area.kind = 'v';
             }
             $scope.is_editable = result.is_editable;
-            $scope.is_yandex_map_enabled = result.is_yandex_map_enabled;
             $scope.can_add_area = result.can_add_area;
             $scope.editor.caretaker = result.cemetery.caretaker;
             $scope.editor.caretakers = result.caretakers;
