@@ -2446,7 +2446,7 @@ class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
             pks = {}
             currencies = set()
             for opt_order in Order.objects.filter(q_opt_order). \
-                            select_related('loru', 'loru__name', 'loru__currency'):
+                            select_related('loru', 'loru__currency'):
                 org_pk = opt_order.loru.pk
                 if org_pk not in pks:
                     pks[org_pk] = dict(
@@ -2466,7 +2466,7 @@ class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
                 total['sum_orders'] +=  this_sum
 
             for order in Order.objects.filter(q_order). \
-                            select_related('loru', 'loru__name', 'loru__currency'):
+                            select_related('loru', 'loru__currency'):
                 org_pk = order.loru.pk
                 if org_pk not in pks:
                     pks[org_pk] = dict(
