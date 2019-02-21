@@ -122,7 +122,6 @@
         $scope.area = new Area(result.area);
         $scope.item = new Place(result.place);
         $scope.is_editable = result.is_editable;
-        $scope.is_yandex_map_enabled = result.is_yandex_map_enabled;
         $scope.max_graves_count = result.max_graves_count;
         $scope.is_caretaker_only = result.is_caretaker_only;
         // координаты места, а если их нет, то кладбища {latitude: xxx, longitude: ...}
