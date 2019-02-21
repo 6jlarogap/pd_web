@@ -671,7 +671,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
                 "responsible_address" : {},
                 "log": log_data,
                 "log_page":page.number,
-                "log_pages":page.paginator._num_pages,
+                "log_pages":page.paginator.num_pages,
                 "is_editable": cemetery in Cemetery.editable_ugh_cemeteries(request.user),
                 "is_caretaker_only": request.user.profile.is_caretaker_only(), 
                 }
@@ -706,7 +706,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
         return Response({
                          'count': place.grave_set.count(),
                          'page': grave_list.number,
-                         'pages': grave_list.paginator._num_pages,
+                         'pages': grave_list.paginator.num_pages,
                          'graves': GraveSerializer(grave_list, many=True).data,
                          'burials': BurialSerializer(burial_list, many=True).data,
                          })
