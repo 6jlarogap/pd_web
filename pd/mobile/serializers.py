@@ -18,11 +18,11 @@ class CoordinatesSerializer(BaseSerializer):
 class CemeteryPhotoSerializer(BaseSerializer):
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
-    photoUrl = HyperlinkedFileField(source='photo', required=False)
+    photoUrl = HyperlinkedFileField(source='photo', read_only=True)
     dt_modified = serializers.DateTimeField(required=False)
 
 class CemeterySchemaSerializer(BaseSerializer):
-    schemaUrl = HyperlinkedFileField(source='photo', required=False)
+    schemaUrl = HyperlinkedFileField(source='photo', read_only=True)
     dt_modified = serializers.DateTimeField(required=False)
 
 class CemeterySerializer(BaseSerializer):
@@ -31,7 +31,7 @@ class CemeterySerializer(BaseSerializer):
     ugh = BaseSerializer(required=True)
     dt_created = serializers.DateTimeField(required=False)
 
-class CemeteryWithNestedObjectSerializer(CemeterySerializer):	
+class CemeteryWithNestedObjectSerializer(CemeterySerializer):
     coordinates = CoordinatesSerializer(many=True)
     photo = serializers.SerializerMethodField('photo_func')
     schema = serializers.SerializerMethodField('schema_func')
@@ -158,7 +158,7 @@ class PlacePhotoSerializer(BaseSerializer):
     place = BaseSerializer(required=False)    
     lat = serializers.CharField(required=False)
     lng = serializers.CharField(required=False)
-    photoUrl = HyperlinkedFileField(source='bfile', required=False)
+    photoUrl = HyperlinkedFileField(source='bfile', read_only=True)
     dt_modified = DateTimeUtcField(required=False)
     original_name = serializers.CharField(required=False)
     # TODO: obsolete
