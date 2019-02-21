@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 from django.views.generic.base import RedirectView
 from django.views.i18n import javascript_catalog
 from django.views.static import serve
