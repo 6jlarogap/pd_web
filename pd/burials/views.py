@@ -190,7 +190,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
         obj.address = address_serializer.save()
         obj.address.set_related_addr(data=address)
         coords_by_address = False
-        if obj.address and settings.YANDEX_API_KEYS and \
+        if obj.address and \
            (obj.address.gps_y is None or obj.address.gps_x is None):
             location = obj.address.get_yandex_coords()
             if location:
@@ -253,7 +253,6 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
         data['caretakers'] = self.get_caretakers(cemetery)
         data['can_add_area'] = cemetery in Cemetery.editable_ugh_cemeteries(request.user)
         data['is_editable'] = request.user.profile.is_admin() or data['can_add_area']
-        data['is_yandex_map_enabled'] = bool(settings.YANDEX_API_KEYS)
         return Response(status=200, data=data)
 
     @detail_route(methods=['GET',])
@@ -685,7 +684,6 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
             if place.responsible.address:
                 data["responsible_address"] = LocationStaticSerializer(place.responsible.address).data
         data['caretakers'] = self.get_caretakers(cemetery)
-        data['is_yandex_map_enabled'] = bool(settings.YANDEX_API_KEYS)
         data["max_graves_count"] = request.user.profile.org.max_graves_count
         return Response(status=200, data=data)
 
