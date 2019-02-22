@@ -22,7 +22,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.sessions.models import Session
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError, PermissionDenied
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.db import transaction, connection, IntegrityError

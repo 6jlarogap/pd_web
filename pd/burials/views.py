@@ -6,7 +6,7 @@ import geohash, uuid
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.paginator import Paginator
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile

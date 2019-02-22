@@ -5,7 +5,7 @@ from django import db
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
