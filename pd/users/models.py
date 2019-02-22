@@ -369,7 +369,7 @@ class PermitIfCabinet(permissions.BasePermission):
 
 def get_mail_footer(user):
     footer = ''
-    if user.is_authenticated():
+    if user.is_authenticated:
         is_customer = is_cabinet_user(user)
         pr = user.customerprofile if is_customer else user.profile
         footer = _(     u'\n\n'

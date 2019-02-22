@@ -205,7 +205,7 @@ def write_log(request, obj=None, msg='', reason=None, code=None, operation=None,
         else:
             msg = reason
     if not user:
-        user = request and request.user.is_authenticated() and request.user or None
+        user = request and request.user.is_authenticated and request.user or None
     return Log.objects.create(
         user=user,
         ct=obj and ContentType.objects.get_for_model(obj) or None,
@@ -286,7 +286,7 @@ def log_object(request, obj=None, old=None, new=None, reason=None, footer=None, 
                 if res:
                     msg.append(res)
 
-    user = request and request.user.is_authenticated() and request.user or None
+    user = request and request.user.is_authenticated and request.user or None
     if footer:
         msg.append(footer)
 

@@ -87,7 +87,7 @@ class ProductCategoryQsMixin(object):
 
 class LORURequiredMixin:
     def is_loru(self, request):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return False
         if not getattr(self.request.user, 'profile', None):
             return False

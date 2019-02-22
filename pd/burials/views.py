@@ -1007,7 +1007,7 @@ add_graves = AddGravesView.as_view()
 class GetPlaceView(View):
     def dispatch(self, request, *args, **kwargs):
         self.request = request
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return redirect('/')
         return View.dispatch(self, request, *args, **kwargs)
 
@@ -1046,7 +1046,7 @@ get_place = GetPlaceView.as_view()
 class GetGravesNumberView(View):
     def dispatch(self, request, *args, **kwargs):
         self.request = request
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return redirect('/')
         return View.dispatch(self, request, *args, **kwargs)
 
