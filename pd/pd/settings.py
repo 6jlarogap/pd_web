@@ -531,9 +531,13 @@ except NameError:
 # TIME_FORMAT, DATETIME_FORMAT, or SHORT_DATETIME_FORMAT.
 #
 from django.conf.locale.ru import formats as ru_formats
-ru_formats.TIME_FORMAT += ":s"
-ru_formats.DATETIME_FORMAT += ":s"
-ru_formats.SHORT_DATETIME_FORMAT = ":s"
+sec_suffix = ":s"
+if not ru_formats.TIME_FORMAT.endswith(sec_suffix):
+    ru_formats.TIME_FORMAT += sec_suffix
+if not ru_formats.DATETIME_FORMAT.endswith(sec_suffix):
+    ru_formats.DATETIME_FORMAT += sec_suffix
+if not ru_formats.SHORT_DATETIME_FORMAT.endswith(sec_suffix):
+    ru_formats.SHORT_DATETIME_FORMAT += sec_suffix
 
 # Test system is to be revised.
 #import sys

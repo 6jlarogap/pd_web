@@ -13,7 +13,7 @@ from rest_framework.routers import DefaultRouter
 router = DefaultRouter(trailing_slash=False)
 
 from geo.views import LocationViewSet, LocationStaticViewSet
-from rest_api.views import base_page
+from rest_api.views import base_page, api_root
 from pd.views import media_xsendfile
 
 from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
@@ -70,6 +70,7 @@ urlpatterns = [
 
 # Redirects. Move into nginx at production
 urlpatterns += [
+    url(r'^api$', api_root),
     url(r'^manage/404$', base_page),
     url(r'^manage/500$', base_page),
     url(r'^manage/cemetery/$', base_page),
