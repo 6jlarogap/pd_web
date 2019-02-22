@@ -7,12 +7,13 @@ from django.views.static import serve
 from django.conf import settings
 
 from django.contrib import admin
+from django.templatetags.static import static
 
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter(trailing_slash=False)
 
 from geo.views import LocationViewSet, LocationStaticViewSet
-from rest_api.views import base_page, api_root
+from rest_api.views import base_page
 from pd.views import media_xsendfile
 
 from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
@@ -52,7 +53,7 @@ router.register(r'^api/geo/location/static', LocationStaticViewSet, base_name='a
 
 urlpatterns = [
     url(r'^favicon\.ico$',
-        RedirectView.as_view(url='{0}img/favicon16x16.ico'.format(settings.STATIC_URL), permanent=True)),
+        RedirectView.as_view(url=static('img/favicon16x16.ico'), permanent=True)),
     url(r'^thumb/', include('pd.restthumbnails_urls')),
 
     url(r'', include('users.urls')),
@@ -69,7 +70,6 @@ urlpatterns = [
 
 # Redirects. Move into nginx at production
 urlpatterns += [
-    url(r'^api$', api_root),
     url(r'^manage/404$', base_page),
     url(r'^manage/500$', base_page),
     url(r'^manage/cemetery/$', base_page),

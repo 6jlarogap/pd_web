@@ -1,27 +1,27 @@
 {% extends "base.html" %}
 
-{% load i18n assets %}
+{% load i18n assets static %}
 
 
 {% block container_attr_extra %}ng-app="angularPD" ng-view{% endblock %}
 
 {% block jquery %}
-    <script type="text/javascript" src="{{ STATIC_URL }}jquery/jquery.js"></script>
+    <script type="text/javascript" src="{% static 'jquery/jquery.js' %}"></script>
     {% assets "js_jquery" %}
     <script type="text/javascript" src="{{ ASSET_URL }}"></script>{% endassets %}
-    <link type="text/css" href="{{ STATIC_URL }}jquery-ui/themes/ui-lightness/jquery-ui.min.css" rel="stylesheet" />
+    <link type="text/css" href="{% static 'jquery-ui/themes/ui-lightness/jquery-ui.min.css' %}" rel="stylesheet" />
 {% endblock %}
 
 
 {% block scripts %}
-    <script type="text/javascript" src="{{ STATIC_URL }}angular/angular.min.js"></script>
+    <script type="text/javascript" src="{% static 'angular/angular.min.js' %}"></script>
 
     <!-- js_angular -->
     {% assets "js_angular" %}
         <script type="text/javascript" src="{{ ASSET_URL }}"></script>
     {% endassets %}
 
-    <!-- script src="{{ STATIC_URL }}js/jquery/vendor/jquery.ui.widget.js"></script-->
+    <!-- script src="{% static 'js/jquery/vendor/jquery.ui.widget.js' %}"></script-->
 
     <!-- FileUpload -->
     <script src="https://blueimp.github.io/JavaScript-Load-Image/js/load-image.all.min.js"></script>
