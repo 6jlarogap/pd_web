@@ -234,7 +234,7 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
         if user:
             if user.is_active:
                 if password:
-                    user = authenticate(username=username, password=password)
+                    user = authenticate(request=request, username=username, password=password)
                     if not user:
                         data['message'] = _(u"Неверный пароль")
                         data['errorCode'] = 'wrong_password'
@@ -484,6 +484,7 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
                             login_phone=login_phone
                         )
                         user = authenticate(
+                            request=request,
                             username=customerprofile.user.username,
                             password=password,
                         )
@@ -801,7 +802,7 @@ class ApiSettings(APIView):
             old_username = user.username
             old_password = request.data.get('oldPassword')
             if old_password:
-                user = authenticate(username=old_username, password=old_password)
+                user = authenticate(request=request, username=old_username, password=old_password)
                 if not user:
                     raise ServiceException(_(u'Неверно указан действующий пароль'))
 

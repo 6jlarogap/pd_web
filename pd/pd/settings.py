@@ -183,6 +183,18 @@ INTERNAL_IPS = ['127.0.0.1',]
 #
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
 
+# With the default file upload settings, files larger than
+# FILE_UPLOAD_MAX_MEMORY_SIZE now have the same permissions as
+# temporary files (often 0o600).
+#
+# А это неудобно для резервного копирования медии: его обычно
+# выполняет другой пользователь, нежели www-data и т.п.
+#
+# Set the FILE_UPLOAD_PERMISSIONS if you need the same permission
+# regardless of file size.
+#
+FILE_UPLOAD_PERMISSIONS = 0o644
+
 # Разрешить вводить идентификационный номер для усопшего:
 # Это же применяется для кода, значимого для реестра
 #
