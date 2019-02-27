@@ -4,6 +4,9 @@ from __future__ import unicode_literals
 
 from django.db import migrations
 
+def reverse_it(apps, schema_editor):
+    pass
+
 def operation(apps, schema_editor):
     Burial = apps.get_model('burials', 'Burial')
     Burial.objects.filter(account_number__isnull=True).update(account_number='')
@@ -17,5 +20,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(operation),
+        migrations.RunPython(operation, reverse_it),
     ]

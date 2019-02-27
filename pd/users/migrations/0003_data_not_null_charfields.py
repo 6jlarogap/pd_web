@@ -4,6 +4,9 @@ from __future__ import unicode_literals
 
 from django.db import migrations
 
+def reverse_it(apps, schema_editor):
+    pass
+
 def operation(apps, schema_editor):
     Profile = apps.get_model('users', 'Profile')
     Profile.objects.filter(user_last_name__isnull=True).update(user_last_name='')
@@ -32,5 +35,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(operation),
+        migrations.RunPython(operation, reverse_it),
     ]
