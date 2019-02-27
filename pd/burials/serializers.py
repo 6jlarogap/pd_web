@@ -100,7 +100,7 @@ class AreaPurposeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name')
 
 class CemeterySerializer(CemeteryPhotoMixin, serializers.ModelSerializer):
-    address = serializers.ReadOnlyField(source='address_id')
+    address = serializers.PrimaryKeyRelatedField(read_only=True)
     time_begin = serializers.TimeField()
     time_end = serializers.TimeField()
     caretaker = serializers.PrimaryKeyRelatedField(
@@ -314,9 +314,9 @@ class PlaceSizeSerializer(serializers.ModelSerializer):
         fields = ('graves_count', 'place_length', 'place_width')
       
 class OrderPlaceSerializer(serializers.ModelSerializer):
-    cemeteryId = serializers.ReadOnlyField(source='cemetery.id')
+    cemeteryId = serializers.PrimaryKeyRelatedField(source='cemetery', read_only=True)
     cemeteryText = serializers.CharField(source='cemetery_text')
-    areaId = serializers.ReadOnlyField(source='area.id')
+    areaId = serializers.PrimaryKeyRelatedField(source='area', read_only=True)
     placeNumber = serializers.CharField(source='place')
 
     class Meta:
