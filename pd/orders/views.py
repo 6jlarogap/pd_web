@@ -761,6 +761,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
                     death_date=deadman.death_date,
                 )
         context.update(dict(
+            user=self.request.user,
             now=datetime.datetime.now(),
             customerprofile=customerprofile,
             deadman=deadman,
@@ -790,6 +791,7 @@ class PrintOrderReceiptView(LORURequiredMixin, DetailView):
         order = self.get_object()
         context.update(dict(
             now=datetime.datetime.now(),
+            user=self.request.user,
         ))
         report = make_report(
             user=self.request.user,
@@ -810,6 +812,7 @@ class PrintContractView(LORURequiredMixin, DetailView):
 
     def render_to_response(self, context, **response_kwargs):
         context['now'] = datetime.datetime.now()
+        context['user'] = self.request.user
         report = make_report(
             user=self.request.user,
             msg=_(u"Договор"),
