@@ -41,11 +41,11 @@ class LoginRequiredMiddleware(object):
         if any(m.match(path) for m in exempt_urls) or is_url_accessible_anonymous(request):
             pass
         elif not request.user.is_authenticated:
-            if not path or exempt_urls[0].match(path):
-                next = ''
+            if path:
+                next_ = u"?redirectUrl=%s" % quote_plus(unquote_plus(request.build_absolute_uri()))
             else:
-                next = u"?redirectUrl=%s" % quote_plus(unquote_plus(request.build_absolute_uri()))
-            return HttpResponseRedirect(settings.LOGIN_URL+next)
+                next_ = ''
+            return HttpResponseRedirect(settings.LOGIN_URL + next_)
 
         response = self.get_response(request)
 
