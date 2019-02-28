@@ -17,7 +17,6 @@ from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render, render_to_response
-from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.views.generic.base import View
 from django.views.generic.detail import DetailView
@@ -775,7 +774,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
             template='reports/order_yalta.html' \
                 if self.request.user.profile.org.inn == '9103078189' \
                 else 'reports/order.html',
-            context=RequestContext(self.request, context),
+            context=context,
         )
         return redirect('report_view', report.pk)
 
@@ -797,7 +796,7 @@ class PrintOrderReceiptView(LORURequiredMixin, DetailView):
             msg=_(u"Квитанция покупателя"),
             obj=order,
             template='reports/order_receipt.html',
-            context=RequestContext(self.request, context),
+            context=context,
         )
         return redirect('report_view', report.pk)
 
@@ -816,7 +815,7 @@ class PrintContractView(LORURequiredMixin, DetailView):
             msg=_(u"Договор"),
             obj=self.get_object(),
             template='reports/contract.html',
-            context=RequestContext(self.request, context),
+            context=context,
         )
         return redirect('report_view', report.pk)
 
