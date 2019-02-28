@@ -22,7 +22,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.sessions.models import Session
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError, PermissionDenied
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.db import transaction, connection, IntegrityError
@@ -234,7 +234,7 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
         if user:
             if user.is_active:
                 if password:
-                    user = authenticate(username=username, password=password)
+                    user = authenticate(request=request, username=username, password=password)
                     if not user:
                         data['message'] = _(u"Неверный пароль")
                         data['errorCode'] = 'wrong_password'
@@ -289,7 +289,7 @@ class ApiAuthSignoutView(APIView):
 
     def post(self, request):
         user=request.user
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             # print u'DEBUG: %s:%s /API/AUTH/SIGNOUT' % (request.get_host(), request.user.username, )
             logout(request)
             Token.objects.filter(user=user).delete()
@@ -423,7 +423,7 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
             *   Если телефона нет в той таблице, то телефон и код есть login_phone и пароль.
         """
         try:
-            if request.user.is_authenticated():
+            if request.user.is_authenticated:
                 user = request.user
                 if request.data.get('oauth'):
                     user_rec, oauth_rec, message = Oauth.check_token(
@@ -484,6 +484,7 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
                             login_phone=login_phone
                         )
                         user = authenticate(
+                            request=request,
                             username=customerprofile.user.username,
                             password=password,
                         )
@@ -498,7 +499,7 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
                     errorCode=u'user_not_active'
                 ))
 
-            if not request.user.is_authenticated():
+            if not request.user.is_authenticated:
                 user.backend = 'django.contrib.auth.backends.ModelBackend'
                 login(request, user)
                 write_log(request, user, _(u'Вход в систему'))
@@ -801,7 +802,7 @@ class ApiSettings(APIView):
             old_username = user.username
             old_password = request.data.get('oldPassword')
             if old_password:
-                user = authenticate(username=old_username, password=old_password)
+                user = authenticate(request=request, username=old_username, password=old_password)
                 if not user:
                     raise ServiceException(_(u'Неверно указан действующий пароль'))
 
@@ -1181,7 +1182,7 @@ class ApiFeedBack(CheckRecaptcha2Mixin, APIView):
         status_code = 400
         recaptcha_data = request.data.get('captchaData')
         try:
-            if not request.user.is_authenticated():
+            if not request.user.is_authenticated:
                 if not recaptcha_data or not isinstance(recaptcha_data, basestring):
                     raise ServiceException(_(u'Нет данных по captcha'))
                 if not self.check_recaptcha(self.request, recaptcha_data):
@@ -1217,7 +1218,7 @@ class ApiFeedBack(CheckRecaptcha2Mixin, APIView):
             if not email_subject:
                 email_subject = _(u'Вопрос в поддержку')
             
-            if request.user.is_authenticated():
+            if request.user.is_authenticated:
                 user_email = request.user.email
                 if not user_email and email_from:
                     try:
@@ -1348,7 +1349,7 @@ class LoginView(View):
     если задан параметр settings.REDIRECT_LOGIN_TO_FRONT_END
     """
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             return redirect('/')
         return super(LoginView, self).dispatch(request, *args, **kwargs)
 
@@ -1391,7 +1392,7 @@ class LogoutView(View):
     Выход пользователя из системы.
     """
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return redirect('/')
         user = request.user
         write_log(request, request.user, _(u'Выход из системы'))
@@ -3691,7 +3692,7 @@ class ApiVideoVotesView(ApiVideoMixin, APIView):
         return Response(data=data)
 
     def post(self, request, yid):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             raise PermissionDenied
         youtubevideo, created = self.get_or_add_video(yid)
         if not youtubevideo:
@@ -3804,7 +3805,7 @@ class ApiVideosView(ApiVideoMixin, APIView):
     def post(self, request):
         status_code = 200
         try:
-            if not request.user.is_authenticated():
+            if not request.user.is_authenticated:
                 raise PermissionDenied
             yid = request.data.get('youtube_url_or_id')
             if not yid:
@@ -3854,7 +3855,7 @@ class ApiVideoCaptionsVotesView(APIView):
         return Response(data, status=200)
 
     def post(self, request, yid):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             raise PermissionDenied
         caption_id = request.data.get('subtitle_id')
         if not caption_id:

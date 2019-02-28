@@ -1,8 +1,6 @@
 # coding: utf-8
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
-ASSETS_DEBUG = DEBUG
 
 ADMIN_ENABLED = True
 SUPERVISOR_ORG_INN = '------'
@@ -12,10 +10,6 @@ ADMINS = (
 )
 
 MANAGERS = ADMINS
-
-TEMPLATE_DIRS = (
-    '/home/sev/projects/ughone/pd_web/pd/templates/',
-)
 
 TIME_ZONE = 'Europe/Moscow'
 
@@ -77,7 +71,7 @@ DEADMAN_IDENT_NUMBER_ALLOW = True
 # мобильного телефона для входа отвественного:
 CREATE_CABINET_ALLOW = False
 
-CURRENCY_DEFAULT_CODE = 'BYR'
+CURRENCY_DEFAULT_CODE = 'BYN'
 
 DEATH_CERTIFICATE_REQUIRED = False
 

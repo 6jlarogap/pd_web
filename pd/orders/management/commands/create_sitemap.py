@@ -48,7 +48,7 @@ class Command(BaseCommand):
             DOMAINS = DOMAINS_
         else:
             if domain_ not in DOMAINS_:
-                raise Exception("Domain '%s' is not in supported domains" % domain)
+                raise Exception("Domain '%s' is not in supported domains" % domain_)
             DOMAINS = { domain_ : DOMAINS_[domain_] }
 
         q_published = Q(is_public_catalog=True)

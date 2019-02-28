@@ -10,14 +10,13 @@ import hashlib
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render, render_to_response
-from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.views.generic.base import View
 from django.views.generic.detail import DetailView
@@ -87,7 +86,7 @@ class ProductCategoryQsMixin(object):
 
 class LORURequiredMixin:
     def is_loru(self, request):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return False
         if not getattr(self.request.user, 'profile', None):
             return False
@@ -762,6 +761,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
                     death_date=deadman.death_date,
                 )
         context.update(dict(
+            user=self.request.user,
             now=datetime.datetime.now(),
             customerprofile=customerprofile,
             deadman=deadman,
@@ -775,7 +775,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
             template='reports/order_yalta.html' \
                 if self.request.user.profile.org.inn == '9103078189' \
                 else 'reports/order.html',
-            context=RequestContext(self.request, context),
+            context=context,
         )
         return redirect('report_view', report.pk)
 
@@ -791,13 +791,14 @@ class PrintOrderReceiptView(LORURequiredMixin, DetailView):
         order = self.get_object()
         context.update(dict(
             now=datetime.datetime.now(),
+            user=self.request.user,
         ))
         report = make_report(
             user=self.request.user,
             msg=_(u"Квитанция покупателя"),
             obj=order,
             template='reports/order_receipt.html',
-            context=RequestContext(self.request, context),
+            context=context,
         )
         return redirect('report_view', report.pk)
 
@@ -811,12 +812,13 @@ class PrintContractView(LORURequiredMixin, DetailView):
 
     def render_to_response(self, context, **response_kwargs):
         context['now'] = datetime.datetime.now()
+        context['user'] = self.request.user
         report = make_report(
             user=self.request.user,
             msg=_(u"Договор"),
             obj=self.get_object(),
             template='reports/contract.html',
-            context=RequestContext(self.request, context),
+            context=context,
         )
         return redirect('report_view', report.pk)
 

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load i18n %}
+{% load i18n static %}
 
 {% block content %}
     <h1>{% if form.instance.pk %}{% trans "Товар" %} {{ form.instance }}{% else %}{% trans "Новый товар" %}{% endif %}</h1>
@@ -10,11 +10,11 @@
             {{ field.errors }}
             <p>{{ field.label_tag }} {{ field }}<span class="helptext">{{ field.help_text }}</span>
             {% if field.name == "name" %}
-                <a href="#product_name_help" data-toggle="modal" title="{{ form.NAME_TITLE }}"><img src="/static/help-question.png">
+                <a href="#product_name_help" data-toggle="modal" title="{{ form.NAME_TITLE }}"><img src="{% static 'help-question.png' %}">
                 </a>
             {% endif %}
             {% if field.name == "description" %}
-                <a href="#product_description_help" data-toggle="modal" title="{{ form.DESCRIPTION_TITLE }}"><img src="/static/help-question.png">
+                <a href="#product_description_help" data-toggle="modal" title="{{ form.DESCRIPTION_TITLE }}"><img src="{% static 'help-question.png' %}">
                 </a>
             {% endif %}
             {% if field.name == "price" or field.name == "price_wholesale" %}

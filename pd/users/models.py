@@ -82,9 +82,9 @@ class CommonProfile(BaseModel):
     USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')
 
     user = models.OneToOneField('auth.User', null=True)
-    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, null=True, blank=True)
-    user_first_name = models.CharField(_(u"Имя"), max_length=255, null=True, blank=True)
-    user_middle_name = models.CharField(_(u"Отчество"), max_length=255, null=True, blank=True)
+    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True, default='')
+    user_first_name = models.CharField(_(u"Имя"), max_length=255, blank=True, default='')
+    user_middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True, default='')
     phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
     birthday = models.DateField(_(u"Дата рождения у провайдера"), null=True, editable=False)
     site = models.URLField(_(u"Сайт пользователя"), max_length=255, default='', editable=False)
@@ -369,7 +369,7 @@ class PermitIfCabinet(permissions.BasePermission):
 
 def get_mail_footer(user):
     footer = ''
-    if user.is_authenticated():
+    if user.is_authenticated:
         is_customer = is_cabinet_user(user)
         pr = user.customerprofile if is_customer else user.profile
         footer = _(     u'\n\n'
@@ -1350,7 +1350,7 @@ class BankAccountCommon(models.Model):
     ks = models.CharField(u"Корреспондентский счет", max_length=20, blank=True, validators=[DigitsValidator(), LengthValidator(20), ])
     bik = models.CharField(u"БИК", max_length=9, validators=[DigitsValidator(), LengthValidator(9), ])
     bankname = models.CharField(u"Наименование банка", max_length=64, validators=[NotEmptyValidator(1), ])
-    ls = models.CharField(u"Л/с", max_length=11, blank=True, null=True, validators=[LengthValidator(11), ])
+    ls = models.CharField(u"Л/с", max_length=11, blank=True, validators=[LengthValidator(11), ], default='')
     off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, editable=False)
 
 class BankAccount(BankAccountCommon):
@@ -1424,7 +1424,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
                                  validators=[validate_username], help_text=Profile.USERNAME_HELPTEXT)
     user_last_name = models.CharField(_(u"Фамилия"), max_length=255)
     user_first_name = models.CharField(_(u"Имя"), max_length=255)
-    user_middle_name = models.CharField(_(u"Отчество (необязательно)"), max_length=255, null=True, blank=True)
+    user_middle_name = models.CharField(_(u"Отчество (необязательно)"), max_length=255, blank=True, default='')
     user_email = models.EmailField(_(u"Email"))
     # Сразу hash (django.contrib.auth.hashers.make_password(raw_password)):
     user_password = models.CharField(_(u"Пароль"), max_length=255, editable=False, default='')

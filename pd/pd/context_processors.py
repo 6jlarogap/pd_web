@@ -18,7 +18,7 @@ def context_processor(request):
 
         Все наши сценарии определяются в шаблонах как:
 
-        <script src="{{ STATIC_URL }}js/<сценарий>.js?updated_=<timestamp>">
+        <script src="{% static 'js/<сценарий>.js' %}?updated_=<timestamp>">
         </script>
 
         где <timestamp> - UTC время в секундах изменения папки

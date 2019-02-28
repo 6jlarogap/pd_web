@@ -2,11 +2,12 @@
 
 from django.conf.urls import include, url
 from django.views.generic.base import RedirectView
-from django.views.i18n import javascript_catalog
+from django.views.i18n import JavaScriptCatalog
 from django.views.static import serve
 from django.conf import settings
 
 from django.contrib import admin
+from django.templatetags.static import static
 
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter(trailing_slash=False)
@@ -52,7 +53,7 @@ router.register(r'^api/geo/location/static', LocationStaticViewSet, base_name='a
 
 urlpatterns = [
     url(r'^favicon\.ico$',
-        RedirectView.as_view(url='{0}img/favicon16x16.ico'.format(settings.STATIC_URL), permanent=True)),
+        RedirectView.as_view(url=static('img/favicon16x16.ico'), permanent=True)),
     url(r'^thumb/', include('pd.restthumbnails_urls')),
 
     url(r'', include('users.urls')),
@@ -78,17 +79,12 @@ urlpatterns += [
     url(r'^manage/place/(?P<id>.*)$', base_page),
 ]
 
-# Заглушка
-js_locale_packages = ('django.conf', )
+js_locale_kwargs = dict()
 if settings.SPECIFIC_RU_LOCALE_APP:
-    # 'locale_by' для Беларуси
-    js_locale_packages = (settings.SPECIFIC_RU_LOCALE_APP, )
-js_info_dict = {
-    'packages': js_locale_packages,
-}
+    js_locale_kwargs['packages'] = [settings.SPECIFIC_RU_LOCALE_APP, ]
 
 urlpatterns += [
-    url(r'^jsi18n/$', javascript_catalog, js_info_dict, name='jsi18n'),
+    url(r'^jsi18n/$', JavaScriptCatalog.as_view(**js_locale_kwargs), name='jsi18n'),
 ]
 
 # Для включения административных функций (http://.../admin)
@@ -97,7 +93,7 @@ urlpatterns += [
 #
 if 'ADMIN_ENABLED' in dir(settings) and settings.ADMIN_ENABLED:
     urlpatterns += [
-        url(r'^admin/jsi18n/', javascript_catalog),
+        url(r'^admin/jsi18n/', JavaScriptCatalog.as_view()),
         url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
         url(r'^admin/', admin.site.urls),
     ]

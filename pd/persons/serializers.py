@@ -85,7 +85,7 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.ModelSerializer):
 
 class CustomPlaceEditSerializer(RestoreObjectMixin, serializers.ModelSerializer):
     location = serializers.ReadOnlyField(source='location_dict')
-    performerId = serializers.ReadOnlyField(source='favorite_performer.id')
+    performerId = serializers.PrimaryKeyRelatedField(source='favorite_performer', read_only=True)
     address = serializers.StringRelatedField(read_only=True)
 
     class Meta:
@@ -338,7 +338,7 @@ class CustomPerson3Serializer(
     photo = HyperlinkedFileField(read_only=True)
     gallery = serializers.SerializerMethodField('gallery_func')
     isDead = serializers.BooleanField(source='is_dead', required=False)
-    placeId = serializers.ReadOnlyField(source='customplace.id')
+    placeId = serializers.PrimaryKeyRelatedField(source='customplace', read_only=True)
     permissions = serializers.CharField(source='permission', required=False, allow_blank=True)
     selected = serializers.SerializerMethodField('selected_func')
 
@@ -401,7 +401,7 @@ class CustomPerson3Serializer(
 
 class CustomPerson4Serializer(BaseCustomPersonSerializer):
     titlePhoto = HyperlinkedFileField(source='photo', read_only=True)
-    placeId = serializers.ReadOnlyField(source='customplace.id', read_only=True)
+    placeId = serializers.PrimaryKeyRelatedField(source='customplace', read_only=True)
 
     class Meta:
         model = CustomPerson

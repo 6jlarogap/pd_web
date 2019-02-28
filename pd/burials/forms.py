@@ -9,7 +9,7 @@ from django import forms
 from django.contrib import messages
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import models, transaction, IntegrityError
 from django.db.models.aggregates import Max
 from django.db.models.deletion import ProtectedError
@@ -1524,9 +1524,10 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             # Закрытие
             if not self.instance.fact_date:
                 self.initial['fact_date'] = self.instance.plan_date
-            for f in self.fields:
-                if f not in ['row', 'place_number']:
-                    self.fields[f].required = True
+            if self.request.POST.get('complete'):
+                for f in self.fields:
+                    if f not in ['row', 'place_number']:
+                        self.fields[f].required = True
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
             self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
             if place:
@@ -1552,9 +1553,10 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 else:
                     for f in ('row', 'place_number', 'fact_date', ):
                         del self.fields[f]
-                    for f in self.fields:
-                        if f in ('cemetery', 'area', ):
-                            self.fields[f].required = True
+                    if self.request.POST.get('approve'):
+                        for f in self.fields:
+                            if f in ('cemetery', 'area', ):
+                                self.fields[f].required = True
                     self.fields['cemetery'].queryset = \
                         Cemetery.objects.filter(cemetery_qs & Q(area__availability=Area.AVAILABILITY_OPEN)).distinct()
                 if 'desired_graves_count' in self.fields:
