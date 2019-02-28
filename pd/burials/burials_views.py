@@ -1230,6 +1230,7 @@ class MakeNotificationView(BurialsListGenericMixin, DetailView):
 
     def render_to_response(self, context, **response_kwargs):
         context['now'] = datetime.datetime.now()
+        context['user'] = self.request.user
         template = 'reports/notification.html'
         if self.request.user.profile.is_ugh():
             report = make_report(
@@ -1239,7 +1240,6 @@ class MakeNotificationView(BurialsListGenericMixin, DetailView):
                 template=template,
                 context=context,
             )
-        context['user'] = self.request.user
         return render_to_response(template, context)
 
 make_notification = MakeNotificationView.as_view()
@@ -1306,6 +1306,7 @@ class MakeSpravka(BurialsListGenericMixin, DetailView):
         template = 'spravka_minsk.html' if host_country_code(self.request) == 'by' else 'spravka.html'
         template = "reports/%s" % template
         context['print_now'] = True
+        context['user'] = self.request.user
         report = make_report(
             user=self.request.user,
             msg=_(u"Справка"),
