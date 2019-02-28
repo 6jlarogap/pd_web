@@ -169,7 +169,7 @@ LOGGING = {
         'django.request': {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
-            'propagate': True,
+            'propagate': False,
         },
     }
 }
@@ -301,8 +301,15 @@ THUMBNAILS_ALLOWED_SIZE_RANGE = dict(min=20, max=2000)
 
 # REST framework
 REST_FRAMEWORK = {
-    'PAGINATE_BY': 50,
-    'PAGINATE_BY_PARAM': 'page_size',
+
+    # Вместо русской 'a' выводить \u0430, например.
+    # Так было  в Django REST v2 по умолчанию.
+    # Наш мобильный клиент понимает только \u0430,
+    # и некоторые, -- особенно старые, -- браузеры
+    # non ascii json вывод не понимают
+    #
+    'UNICODE_JSON': False,
+
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_api.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
@@ -407,6 +414,10 @@ OAUTH_PROVIDERS_KEYS = {
 }
 
 YANDEX_API_KEYS = [
+    #
+    # Применяются в паспорте захоронения, чтоб нарисовать
+    # квадратик карты вокруг точки с координатами.
+    #
     # Ключи получены на пользователя invozm@yandex.ru.
     # В зависимости от домена, откуда идет вызов к yandex api,
     # применяется тот или иной ключ

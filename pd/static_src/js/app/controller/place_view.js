@@ -122,6 +122,7 @@
         $scope.area = new Area(result.area);
         $scope.item = new Place(result.place);
         $scope.is_editable = result.is_editable;
+        $scope.max_graves_count = result.max_graves_count;
         $scope.is_caretaker_only = result.is_caretaker_only;
         // координаты места, а если их нет, то кладбища {latitude: xxx, longitude: ...}
         $scope.location = result.location;
@@ -208,9 +209,11 @@
       $scope.grave_pages = graves.pages;
       delete $scope.graves;
       $scope.graves = [];
+      $scope.num_graves = 0;
       angular.forEach(graves.graves, function (row, key) {
         var grave = new Grave(row);
         $scope.graves.push(grave);
+        $scope.num_graves = $scope.num_graves + 1;
       });
       delete $scope.burials;
       $scope.burials = [];
@@ -224,18 +227,6 @@
       $scope.loading = false;
       return;
 
-      if ($scope.placeCoordinates) {
-        var lat = $scope.placeCoordinates.lat, lng = $scope.placeCoordinates.lng;
-      }
-      // New element with default data
-      $scope.newGrave = new Grave({
-        is_wrong_fio: false,
-        is_military: false,
-        place: $scope.item.id,
-        grave_number: $scope.graves.length + 1 //todo add way to count next grave_number or add validation of grave_number
-        //lat :geo.getLat(lat || $scope.item.latitude),
-        //lng :geo.getLng(lng || $scope.item.longitude)
-      });
     }, function (data) {
       $scope.loading = false;
     });
@@ -334,9 +325,7 @@
           is_wrong_fio: false,
           is_military: false,
           place: $scope.item.id,
-          grave_number: $scope.grave_count + 1 //todo add way to count next grave_number or add validation of grave_number
-          //lat :geo.getLat(lat || $scope.item.lat),
-          //lng :geo.getLng(lng || $scope.item.lng )
+          grave_number: $scope.grave_count + 1
         });
         break;
       case 'isGraveEditOpen':
@@ -477,6 +466,7 @@
     if ($scope.responsible.last_name || $scope.responsible.first_name || $scope.responsible.middle_name) {
       var fio = "{0} {1} {2}".format($scope.responsible.last_name, $scope.responsible.first_name, $scope.responsible.middle_name);
       if (confirm("Открепить " + fio + '?')) {
+        $scope.item.delete_responsible = true;
         delete $scope.item.responsible;
         $scope.loading = true;
         $scope.item.$update({placeID: $routeParams.place_id,

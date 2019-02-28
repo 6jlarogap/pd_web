@@ -14,9 +14,11 @@ class ImportMinskView(TemplateView):
     template_name = 'import_minsk.html'
 
     def get_context_data(self, **kwargs):
-        return {
+        data = super(ImportMinskView, self).get_context_data(**kwargs)
+        data.update({
             'burials_form': ImportCsvMinskForm(prefix='burials'),
-        }
+        })
+        return data
 
 import_minsk = ImportMinskView.as_view()
 
@@ -38,10 +40,12 @@ import_burials_minsk = ImportBurialsMinskView.as_view()
 class ImportFormsView(TemplateView):
     template_name = 'import_forms.html'
     def get_context_data(self, **kwargs):
-        return {
+        data = super(ImportFormsView, self).get_context_data(**kwargs)
+        data.update({
             'orgs_form': ImportCsvForm(prefix='orgs'),
             'burials_form': ImportCsvForm(prefix='burials'),
-        }
+        })
+        return data
 
 import_forms = ImportFormsView.as_view()
 
@@ -80,13 +84,15 @@ class ImportKalugaView(TemplateView):
     template_name = 'import_kaluga.html'
 
     def get_context_data(self, **kwargs):
-        return {
+        data = super(ImportKalugaView, self).get_context_data(**kwargs)
+        data.update({
             'services_form': ImportCsvForm(prefix='services'),
             'banks_form': ImportCsvForm(prefix='banks'),
             'orders_form': ImportCsvForm(prefix='orders'),
             'docs_form': ImportCsvForm(prefix='docs'),
             'dcs_form': ImportCsvForm(prefix='dcs'),
-        }
+        })
+        return data
 
 import_kaluga = ImportKalugaView.as_view()
 

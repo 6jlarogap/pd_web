@@ -1,13 +1,12 @@
 # coding: utf-8
 
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 from django.views.generic.base import RedirectView
 from django.views.i18n import javascript_catalog
 from django.views.static import serve
 from django.conf import settings
 
 from django.contrib import admin
-# - django 1.7 no need - admin.autodiscover()
 
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter(trailing_slash=False)
@@ -22,40 +21,34 @@ from burials.views import CemeteryViewSet, AreaViewSet, PlaceViewSet, \
 
 from persons.views import AlivePersonViewSet, DeadPersonViewSet, PhoneViewSet 
 from logs.views import LogViewSet
-from orders.views import ProductCategoryViewSet, ProductsViewSet, ProductsOptViewSet, \
-                         UghPublishedProductsViewSet
+from orders.views import ProductsViewSet, ProductsOptViewSet, UghPublishedProductsViewSet
 
 # Burial
-router.register(r'^api/log', LogViewSet)
-router.register(r'^api/cemetery', CemeteryViewSet)
-router.register(r'^api/area', AreaViewSet)
-router.register(r'^api/place', PlaceViewSet)
+router.register(r'^api/log', LogViewSet, base_name='api-log-viewset')
+router.register(r'^api/cemetery', CemeteryViewSet, base_name='api-cemetery-viewset')
+router.register(r'^api/area', AreaViewSet, base_name='api-area-viewset')
+router.register(r'^api/place', PlaceViewSet, base_name='api-place-viewset')
+router.register(r'^api/grave', GraveViewSet, base_name='api-grave-viewset')
+router.register(r'^api/burial', BurialViewSet, base_name='api-burial-viewset')
+router.register(r'^api/area-photo', AreaPhotoViewSet, base_name='api-areaphoto-viewset')
+router.register(r'^api/area-purpose', AreaPurposeViewSet, base_name='api-area-purpose-viewset')
+router.register(r'^api/oms/places', ApiOmsPlacesViewSet, base_name='api-oms-places-viewset')
+router.register(r'^api/catalog/places', ApiCatalogPlacesViewSet, base_name='api-catalog-place-viewset')
 
-router.register(r'^api/place', PlaceViewSet)
-router.register(r'^api/grave', GraveViewSet)
-router.register(r'^api/burial', BurialViewSet)
-router.register(r'^api/area-photo', AreaPhotoViewSet)
-router.register(r'^api/area-purpose', AreaPurposeViewSet)
-router.register(r'^api/oms/places', ApiOmsPlacesViewSet)
-router.register(r'^api/catalog/places', ApiCatalogPlacesViewSet)
+router.register(r'^api/alive-person', AlivePersonViewSet, base_name='api-aliveperson-viewset')
+router.register(r'^api/dead-person', DeadPersonViewSet, base_name='api-deadperson-viewset')
 
-router.register(r'^api/alive-person', AlivePersonViewSet)
-router.register(r'^api/dead-person', DeadPersonViewSet)
-
-router.register(r'^api/alive-person-phone', PhoneViewSet)
-router.register(r'^api/placesize', PlaceSizeViewSet)
+router.register(r'^api/alive-person-phone', PhoneViewSet, base_name='api-aliveperson-phone-viewset')
+router.register(r'^api/placesize', PlaceSizeViewSet, base_name='api-placesize-viewset')
 
 # Orders
-router.register(r'^api/catalog/categories', ProductCategoryViewSet)
-router.register(r'^api/catalog/products/?$', ProductsViewSet)
-
+router.register(r'^api/catalog/products/?$', ProductsViewSet, base_name='api-catalog-categories-viewset')
 router.register(r'^api/loru/products', UghPublishedProductsViewSet)
-
-router.register(r'^api/optplaces/suppliers/(?P<loru_pk>\d+)/products/?$', ProductsOptViewSet)
+router.register(r'^api/optplaces/suppliers/(?P<loru_pk>\d+)/products/?$', ProductsOptViewSet, base_name='api-optplaces-suppliers-viewset')
 
 # Geo
-router.register(r'^api/geo/location', LocationViewSet)
-router.register(r'^api/geo/location/static', LocationStaticViewSet)
+router.register(r'^api/geo/location', LocationViewSet, base_name='api-geo-location-viewset')
+router.register(r'^api/geo/location/static', LocationStaticViewSet, base_name='api-geo-location-static-viewset')
 
 urlpatterns = [
     url(r'^favicon\.ico$',
@@ -106,7 +99,7 @@ if 'ADMIN_ENABLED' in dir(settings) and settings.ADMIN_ENABLED:
     urlpatterns += [
         url(r'^admin/jsi18n/', javascript_catalog),
         url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-        url(r'^admin/', include(admin.site.urls)),
+        url(r'^admin/', admin.site.urls),
     ]
 
 urlpatterns += [
@@ -126,4 +119,8 @@ urlpatterns += [
 if settings.DEBUG:
     urlpatterns += [
             url(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
+    ]
+    from debug_toolbar import urls as debug_urls
+    urlpatterns += [
+        url(r'^__debug__/', include(debug_urls)),
     ]

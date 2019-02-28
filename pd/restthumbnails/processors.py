@@ -411,7 +411,7 @@ def get_minimized_contentfile(source, minsize=0, quality=50):
     ContentFile фото с меньшим качеством, с сохранением exif
     
     -   source,  любой объект, имеющий метод .read(),
-        например request.FILES['filename']
+        например, файловый объект из request.data
     -   minsize, минимальный размер фото 
         (число пикселей), при котором делается
         минимизация фото

@@ -211,14 +211,14 @@ class ApiAuthSigninView(SessionDataMixin, APIView):
         message = ''
          # Так надо для login() без предварительного authenticate()
         user_backend = 'django.contrib.auth.backends.ModelBackend'
-        confirm_tc = True # пока нет во front-end пользовательского соглашения: request.DATA.get('confirmTC')
-        oauth = request.DATA.get('oauth')
+        confirm_tc = True # пока нет во front-end пользовательского соглашения: request.data.get('confirmTC')
+        oauth = request.data.get('oauth')
         password = None
         if user:
             user.backend = user_backend
         else:
-            username = request.DATA.get('username')
-            password = request.DATA.get('password')
+            username = request.data.get('username')
+            password = request.data.get('password')
             if username and password:
                 try:
                     user = User.objects.get(username=username)
@@ -300,9 +300,9 @@ api_auth_signout = ApiAuthSignoutView.as_view()
 class ApiThankMixin(object):
 
     def get_thanked(self, request, must_thank=True):
-        thank_got = request.DATA.get('thank') or \
+        thank_got = request.data.get('thank') or \
                     request.GET.get('thank') or \
-                    request.DATA.get('thankToken') or \
+                    request.data.get('thankToken') or \
                     request.GET.get('thankToken')
         if not thank_got:
             if must_thank:
@@ -348,7 +348,7 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
         status_code = 200
         data = {}
         try:
-            login_phone = request.DATA.get('phone', '').strip().lstrip('+')
+            login_phone = request.data.get('phone', '').strip().lstrip('+')
             thanked = self.get_thanked(request, must_thank=False)
             site = thanked.thank_site if thanked and thanked.thank_site else 'GoraTsvetov'
             # отправитель в смс, до 11 символов. Если больше обрежетсся при отправке
@@ -425,23 +425,23 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
         try:
             if request.user.is_authenticated():
                 user = request.user
-                if request.DATA.get('oauth'):
+                if request.data.get('oauth'):
                     user_rec, oauth_rec, message = Oauth.check_token(
-                        oauth_dict=request.DATA['oauth'],
+                        oauth_dict=request.data['oauth'],
                         bind_dict=dict(
                             user=user,
                     ))
-            elif request.DATA.get('oauth'):
+            elif request.data.get('oauth'):
                 user, oauth_rec, message = Oauth.check_token(
-                    oauth_dict=request.DATA['oauth'],
+                    oauth_dict=request.data['oauth'],
                     signup_dict=dict(
                         signup_if_absent=True,
                 ))
                 if message:
                     raise ServiceException(message)
             else:
-                login_phone = request.DATA.get('phone', '').strip().lstrip('+')
-                password = request.DATA.get('code')
+                login_phone = request.data.get('phone', '').strip().lstrip('+')
+                password = request.data.get('code')
                 if not login_phone or not password:
                     raise ServiceException(_(u'Не заданы phone и code'))
                 try:
@@ -589,17 +589,17 @@ class ApiAuthSignupView(CheckRecaptcha2Mixin, ApiAuthSigninView):
     def post(self, request):
         data = dict(status='error')
         status_code = 400
-        username = request.DATA.get('username')
-        password = request.DATA.get('password')
-        profile = request.DATA.get('profile')
+        username = request.data.get('username')
+        password = request.data.get('password')
+        profile = request.data.get('profile')
         try:
             if profile and profile.get('email'):
                 try:
                     validate_email(profile['email'])
                 except ValidationError:
                     raise ServiceException(_(u'Неверный формат адреса электронной почты'))
-            oauth = request.DATA.get('oauth')
-            recaptcha_data = request.DATA.get('captchaData')
+            oauth = request.data.get('oauth')
+            recaptcha_data = request.data.get('captchaData')
             if oauth:
                 user, oauth_rec, message = Oauth.check_token(
                     oauth,
@@ -681,7 +681,7 @@ class ApiSettingsOauthProvidersView(APIView):
         data = dict(status='error')
         status_code = 400
         user, oauth_rec, message = Oauth.check_token(
-            request.DATA,
+            request.data,
             bind_dict=dict(
                 user=request.user,
             ),
@@ -734,7 +734,7 @@ class ApiCabinetOauth(ApiCabinetUsersMixin, APIView):
         user = self.get_user(pk)
         data = dict()
         user, oauth_rec, message = Oauth.check_token(
-            request.DATA,
+            request.data,
             bind_dict=dict(
                 user=user,
             ),
@@ -783,7 +783,7 @@ class ApiSettings(APIView):
         {
            "avatar",
                 - None в json-input, тогда удаляем картинку
-                - request.FILES['avatar'], в multipart-input,
+                - request.data['avatar'] и это файловый объект, в multipart-input,
                   тогда устанавляваем фото
            "username": "somebody",
            "loginPhone": "375297542270",
@@ -799,13 +799,13 @@ class ApiSettings(APIView):
             profile = get_profile(user)
             change_profile = False
             old_username = user.username
-            old_password = request.DATA.get('oldPassword')
+            old_password = request.data.get('oldPassword')
             if old_password:
                 user = authenticate(username=old_username, password=old_password)
                 if not user:
                     raise ServiceException(_(u'Неверно указан действующий пароль'))
 
-            login_phone = request.DATA.get('loginPhone')
+            login_phone = request.data.get('loginPhone')
             if login_phone and is_cabinet_user(user):
                 try:
                     new_login_phone = decimal.Decimal(login_phone)
@@ -823,15 +823,15 @@ class ApiSettings(APIView):
                     except IntegrityError:
                         raise ServiceException(_(u'Такой номер телефона ответственного уже имеется'))
 
-            new_username = request.DATA.get('username')
+            new_username = request.data.get('username')
             if new_username:
                 user.username = new_username
 
-            new_password = request.DATA.get('newPassword')
+            new_password = request.data.get('newPassword')
             if new_password:
                 user.set_password(new_password)
 
-            email = request.DATA.get('email')
+            email = request.data.get('email')
             if email:
                 try:
                     validate_email(email)
@@ -846,42 +846,42 @@ class ApiSettings(APIView):
                 except IntegrityError:
                     raise ServiceException(_(u'Пользователь с таким именем для входа в систему уже имеется'))
 
-            user_last_name = request.DATA.get('lastName')
+            user_last_name = request.data.get('lastName')
             if user_last_name is not None:
                 change_profile = True
                 profile.user_last_name = user_last_name
-            user_first_name = request.DATA.get('firstName')
+            user_first_name = request.data.get('firstName')
             if user_first_name is not None:
                 change_profile = True
                 profile.user_first_name = user_first_name
-            user_middle_name = request.DATA.get('middleName')
+            user_middle_name = request.data.get('middleName')
             if user_middle_name is not None:
                 change_profile = True
                 profile.user_middle_name = user_middle_name
-            avatar = request.FILES.get('avatar')
-            if avatar:
-                if avatar.size > UserPhoto.MAX_SIZE * 1024 * 1024:
-                    raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
-                image = get_image(avatar)
-                if not image:
-                    raise ServiceException(_(u"Прикрепленный файл не является изображением"))
-                if image.size[0] <= UserPhoto.MIN_SIZE_X:
-                    raise ServiceException(_(u"Ширина картинки должна быть больше %s px") % UserPhoto.MIN_SIZE_X)
-                userphoto, created_ = UserPhoto.objects.get_or_create(
-                    user=user,
-                    defaults=dict(
-                        creator=user,
-                        bfile=avatar,
-                ))
-                if not created_:
-                    userphoto.delete_from_media()
-                    userphoto.bfile.save(avatar.name, avatar)
-                change_profile = True
-            elif 'avatar' in request.DATA and request.DATA['avatar'] is None:
-                for photo in UserPhoto.objects.filter(user=user):
-                    photo.delete()
+            if 'avatar' in request.data:
+                avatar = request.data['avatar']
+                if request.data['avatar'] is None:
+                    for photo in UserPhoto.objects.filter(user=user):
+                        photo.delete()
+                        change_profile = True
+                else:
+                    if avatar.size > UserPhoto.MAX_SIZE * 1024 * 1024:
+                        raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
+                    image = get_image(avatar)
+                    if not image:
+                        raise ServiceException(_(u"Прикрепленный файл не является изображением"))
+                    if image.size[0] <= UserPhoto.MIN_SIZE_X:
+                        raise ServiceException(_(u"Ширина картинки должна быть больше %s px") % UserPhoto.MIN_SIZE_X)
+                    userphoto, created_ = UserPhoto.objects.get_or_create(
+                        user=user,
+                        defaults=dict(
+                            creator=user,
+                            bfile=avatar,
+                    ))
+                    if not created_:
+                        userphoto.delete_from_media()
+                        userphoto.bfile.save(avatar.name, avatar)
                     change_profile = True
-
             if change_profile:
                 profile.save()
         except ServiceException as excpt:
@@ -918,7 +918,7 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
         {
            "photo",
                 - None в json-input, тогда удаляем картинку
-                - request.FILES['photo'], в multipart-input,
+                - request.data['photo'], и это файловый объект, в multipart-input,
                   тогда устанавляваем фото
            "lastName": "Моя-новая-фамилия",
            "firstName": "Мое-новое-имя",
@@ -938,29 +938,30 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
                 middleName='user_middle_name',
             )
             for f in profile_map:
-                if f in request.DATA:
-                    profile_fields[profile_map[f]] = request.DATA[f] or ''
-            photo_changed = True
-            photo = request.FILES.get('photo')
-            if photo:
-                if photo.size > UserPhoto.MAX_SIZE * 1024 * 1024:
-                    raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
-                image = get_image(photo)
-                if not image:
-                    raise ServiceException(_(u"Прикрепленный файл не является изображением"))
-                userphoto, created_ = UserPhoto.objects.get_or_create(
-                    user=user,
-                    defaults=dict(
-                        creator=user,
-                        bfile=photo,
-                ))
-                if not created_:
-                    userphoto.delete_from_media()
-                    userphoto.bfile.save(photo.name, photo)
-            elif 'photo' in request.DATA and request.DATA['photo'] is None:
-                UserPhoto.objects.filter(user=user).delete()
-            else:
-                photo_changed = False
+                if f in request.data:
+                    profile_fields[profile_map[f]] = request.data[f] or ''
+            photo_changed = False
+            if 'photo' in request.data:
+                photo = request.data['photo']
+                if photo is None:
+                    UserPhoto.objects.filter(user=user).delete()
+                    photo_changed = True
+                else:
+                    if photo.size > UserPhoto.MAX_SIZE * 1024 * 1024:
+                        raise ServiceException(_(u"Размер изображения не должен превышать %sМб") % UserPhoto.MAX_SIZE)
+                    image = get_image(photo)
+                    if not image:
+                        raise ServiceException(_(u"Прикрепленный файл не является изображением"))
+                    userphoto, created_ = UserPhoto.objects.get_or_create(
+                        user=user,
+                        defaults=dict(
+                            creator=user,
+                            bfile=photo,
+                    ))
+                    if not created_:
+                        userphoto.delete_from_media()
+                        userphoto.bfile.save(photo.name, photo)
+                    photo_changed = True
 
             if profile_fields:
                 profile = get_profile(user)
@@ -1113,8 +1114,8 @@ class AuthGetPasswordBySMSView(CheckRecaptcha2Mixin, APIView):
         status = 'error'
         status_code = 400
         message = ''
-        login_phone = request.DATA.get('phoneNumber')
-        recaptcha_data = request.DATA.get('captchaData')
+        login_phone = request.data.get('phoneNumber')
+        recaptcha_data = request.data.get('captchaData')
         if not recaptcha_data or not isinstance(recaptcha_data, basestring):
             message = _(u'Нет данных по captcha')
         elif not self.check_recaptcha(self.request, recaptcha_data):
@@ -1178,7 +1179,7 @@ class ApiFeedBack(CheckRecaptcha2Mixin, APIView):
     """
     def post(self, request):
         status_code = 400
-        recaptcha_data = request.DATA.get('captchaData')
+        recaptcha_data = request.data.get('captchaData')
         try:
             if not request.user.is_authenticated():
                 if not recaptcha_data or not isinstance(recaptcha_data, basestring):
@@ -1186,10 +1187,10 @@ class ApiFeedBack(CheckRecaptcha2Mixin, APIView):
                 if not self.check_recaptcha(self.request, recaptcha_data):
                     raise ServiceException(_(u'Ошибка проверки captcha'))
 
-            email_from = (request.DATA.get('email') or '').strip()
-            callback = request.DATA.get('requestBackCall')
-            phone = (request.DATA.get('phoneNumber') or '').strip()
-            email_text = (request.DATA.get('text') or '').strip()
+            email_from = (request.data.get('email') or '').strip()
+            callback = request.data.get('requestBackCall')
+            phone = (request.data.get('phoneNumber') or '').strip()
+            email_text = (request.data.get('text') or '').strip()
 
             if callback:
                 try:
@@ -1204,15 +1205,15 @@ class ApiFeedBack(CheckRecaptcha2Mixin, APIView):
                 if not email_text:
                     raise ServiceException(_(u"Если не требуется обратный звонок, то задайте вопрос"))
                 
-            user_last_name = (request.DATA.get('lastName') or '').strip()
+            user_last_name = (request.data.get('lastName') or '').strip()
             if not user_last_name:
                 raise ServiceException(_(u"Не задана фамилия"))
-            user_first_name = (request.DATA.get('firstName') or '').strip()
-            user_middle_name = (request.DATA.get('middleName') or '').strip()
+            user_first_name = (request.data.get('firstName') or '').strip()
+            user_middle_name = (request.data.get('middleName') or '').strip()
             if not user_first_name and user_middle_name:
                 raise ServiceException(_(u"Не указано имя при указанном отчестве"))
 
-            email_subject = (request.DATA.get('subject') or '').strip()
+            email_subject = (request.data.get('subject') or '').strip()
             if not email_subject:
                 email_subject = _(u'Вопрос в поддержку')
             
@@ -2147,6 +2148,7 @@ class RegistrantsView(SupervisorRequiredMixin, TemplateView):
     template_name = 'registrants.html'
 
     def get_context_data(self, **kwargs):
+        data = super(RegistrantsView, self).get_context_data(**kwargs)
         sort = self.request.GET.get('sort', '-pk')
         SORT_FIELDS = {
             'pk': 'pk',
@@ -2167,11 +2169,12 @@ class RegistrantsView(SupervisorRequiredMixin, TemplateView):
             s = [s]
 
         registrants = RegisterProfile.objects.all().order_by(*s)
-        return {
+        data.update({
             'registrants': registrants,
             'sort': sort,
             'RegisterProfile' : RegisterProfile,
-        }
+        })
+        return data
 
 registrants = RegistrantsView.as_view()
 
@@ -2347,6 +2350,7 @@ class OmsBurialStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'oms_burial_stats.html'
 
     def get_context_data(self, **kwargs):
+        data = super(OmsBurialStatsView, self).get_context_data(**kwargs)
         form = self.get_form()
         q = Q()
         if form.data and form.is_valid():
@@ -2391,12 +2395,13 @@ class OmsBurialStatsView(SupervisorProductionRequiredMixin, TemplateView):
                 total['all'] += org[source_type[0]]
             orgs.append(org)
 
-        return {
+        data.update({
             'form': form,
             'orgs':orgs,
             'total': total,
             'sort': sort,
-        }
+        })
+        return data
 
     def get_form(self):
         return OrgBurialStatsForm(data=self.request.GET or None)
@@ -2441,7 +2446,7 @@ class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
             pks = {}
             currencies = set()
             for opt_order in Order.objects.filter(q_opt_order). \
-                            select_related('loru', 'loru__name', 'loru__currency'):
+                            select_related('loru', 'loru__currency'):
                 org_pk = opt_order.loru.pk
                 if org_pk not in pks:
                     pks[org_pk] = dict(
@@ -2461,7 +2466,7 @@ class LoruOrderStatsView(SupervisorProductionRequiredMixin, PaginateListView):
                 total['sum_orders'] +=  this_sum
 
             for order in Order.objects.filter(q_order). \
-                            select_related('loru', 'loru__name', 'loru__currency'):
+                            select_related('loru', 'loru__currency'):
                 org_pk = order.loru.pk
                 if org_pk not in pks:
                     pks[org_pk] = dict(
@@ -2519,6 +2524,7 @@ class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'oms_current_stats.html'
 
     def get_context_data(self, **kwargs):
+        data = super(OmsCurrentStatsView, self).get_context_data(**kwargs)
         sort = self.request.GET.get('sort', 'org')
         SORT_FIELDS = {
             'org': 'name',
@@ -2634,11 +2640,12 @@ class OmsCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
         total['products_count'] = Product.objects.all().count()
         total['published_products_count'] = Product.objects.filter(q_published).distinct().count()
 
-        return {
+        data.update({
             'orgs':orgs,
             'total': total,
             'sort': sort,
-        }
+        })
+        return data
 
 oms_current_stats = OmsCurrentStatsView.as_view()
 
@@ -2646,6 +2653,7 @@ class LoruCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
     template_name = 'loru_current_stats.html'
 
     def get_context_data(self, **kwargs):
+        data = super(LoruCurrentStatsView, self).get_context_data(**kwargs)
         
         sort = self.request.GET.get('sort', 'name')
         
@@ -2725,11 +2733,12 @@ class LoruCurrentStatsView(SupervisorProductionRequiredMixin, TemplateView):
 
         orgs.sort(key=sort_key, reverse=sort.startswith('-'))
 
-        return {
+        data.update({
             'orgs':orgs,
             'total': total,
             'sort': sort,
-        }
+        })
+        return data
 
 loru_current_stats = LoruCurrentStatsView.as_view()
 
@@ -2847,7 +2856,7 @@ class ApiEducation(APIView):
                         if not row[3]:
                             data.append({
                                 'type': 'category', 
-                                'title': row[1],
+                                'title': row[1].decode('utf8'),
                                 'order': order_titles + 1,
                                 'items': []
                             })
@@ -2859,8 +2868,8 @@ class ApiEducation(APIView):
                             url =  u"%s/media/%s/video/%s/%s" % (host, cls.FOLDER_EDU, type_, row[3], ), 
                             append_to.append({
                                 'type': 'item', 
-                                'title': row[1],
-                                'text': row[2],
+                                'title': row[1].decode('utf8'),
+                                'text': row[2].decode('utf8'),
                                 'urls':  [
                                     { 'url': u"%s.mp4" % url, 'type': 'mp4' },
                                     { 'url': u"%s.webm" % url, 'type': 'webm' },
@@ -2958,12 +2967,12 @@ class StoreList(APIView):
     def post(self, request, format=None):
         if is_ugh_user(request.user) and not request.user.profile.is_admin():
             raise PermissionDenied
-        serializer = StoreSerializer(data=request.DATA, context={ 'request': request, })
+        serializer = StoreSerializer(data=request.data, context={ 'request': request, })
         if serializer.is_valid():
-            serializer.save()
-            phones = request.DATA.get('phones')
+            obj = serializer.save()
+            phones = request.data.get('phones')
             if phones is not None:
-                Phone.create_default_phones(serializer.object, phones)
+                Phone.create_default_phones(obj, phones)
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
     
@@ -2990,12 +2999,12 @@ class StoreDetail(APIView):
         store = self.get_object(request, pk)
         if is_ugh_user(request.user) and not request.user.profile.is_admin():
             return PermissionDenied
-        serializer = StoreSerializer(store, data=request.DATA, context={ 'request': request, })
+        serializer = StoreSerializer(store, data=request.data, context={ 'request': request, })
         if serializer.is_valid():
-            serializer.save()
-            phones = request.DATA.get('phones')
+            obj = serializer.save()
+            phones = request.data.get('phones')
             if phones is not None:
-                Phone.create_default_phones(serializer.object, phones)
+                Phone.create_default_phones(obj, phones)
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
 
@@ -3012,18 +3021,18 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
     """
     Регистрация ЛОРУ (нового поставщика)
     """
-    parser_classes = (MultiPartParser,)
+    parser_classes = (MultiPartParser, JSONParser, )
     
     @transaction.atomic
     def post(self, request):
         try:
-            recaptcha_data = request.DATA.get('captchaData')
+            recaptcha_data = request.data.get('captchaData')
             if not recaptcha_data:
                 raise ServiceException(_(u'Нет captcha'))
             elif not self.check_recaptcha(self.request, recaptcha_data):
                 raise ServiceException(_(u'Введена неверная captcha'))
 
-            username = request.DATA.get('username', '').strip()
+            username = request.data.get('username', '').strip()
             if not username:
                 raise ServiceException(_(u'Не задано имя пользователя для входа в систему'))
             try:
@@ -3041,7 +3050,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
             if RegisterProfile.objects.filter(q).exists():
                 raise ServiceException(_(u"Имя  %s уже используется среди кандидатов на регистрацию") % username)
 
-            email = request.DATA.get('email', '').strip()
+            email = request.data.get('email', '').strip()
             if not email:
                 raise ServiceException(_(u'Не задан адрес электронной почты'))
             try:
@@ -3056,14 +3065,14 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
             if RegisterProfile.objects.filter(q).exists():
                 raise ServiceException(_(u"Email %s уже используется среди кандидатов на регистрацию") % email)
 
-            password = request.DATA.get('password', '')
+            password = request.data.get('password', '')
             if not password.strip():
                 raise ServiceException(_(u'Не задан пароль'))
             user_password = make_password(password)
             salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
             user_activation_key = hashlib.sha1(salt+username).hexdigest()
 
-            location = request.DATA.get('registredOffice')
+            location = request.data.get('registredOffice')
             if not location:
                 raise ServiceException(_(u'Не задан адрес организации'))
             try:
@@ -3080,7 +3089,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
                 gps_x=gps_x,
                 gps_y=gps_y,
             )
-            currency_code = request.DATA.get('currency')
+            currency_code = request.data.get('currency')
             if currency_code:
                 try:
                     org_currency = Currency.objects.get(code=country_code)
@@ -3089,20 +3098,20 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
             else:
                 org_currency = country_currency or get_default_currency()
 
-            user_last_name = request.DATA.get('userLastName', '').strip()
+            user_last_name = request.data.get('userLastName', '').strip()
             if not user_last_name:
                 raise ServiceException(_(u'Не задана фамилия пользователя'))
-            user_first_name = request.DATA.get('userFirstName', '').strip()
+            user_first_name = request.data.get('userFirstName', '').strip()
             if not user_first_name:
                 raise ServiceException(_(u'Не задано имя пользователя'))
-            user_middle_name = request.DATA.get('userMiddleName', '').strip()
+            user_middle_name = request.data.get('userMiddleName', '').strip()
 
-            org_name = request.DATA.get('orgName', '').strip()
+            org_name = request.data.get('orgName', '').strip()
             if not org_name:
                 raise ServiceException(_(u'Не задано краткое наименование организации'))
             if re.search(r'^[\d\s]+$', org_name):
                 raise ServiceException(_(u'Невозможное название организации (только из цифр)'))
-            org_subdomain = request.DATA.get('subdomainName', '').lower().strip() or None
+            org_subdomain = request.data.get('subdomainName', '').lower().strip() or None
             if org_subdomain:
                 if not re.search(r'^[\w-]+$', org_subdomain):
                     raise ServiceException(_(u'В поддомене допустимы лишь латинские буквы, цифры, _, -'))
@@ -3113,13 +3122,13 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
                 if RegisterProfile.objects.filter(q).exists():
                     raise ServiceException(_(u'Есть уже кандидат на регистрацию с таким поддоменом'))
             org_types = dict(loru=Org.PROFILE_LORU, oms=Org.PROFILE_UGH)
-            org_type = request.DATA.get('orgType')
+            org_type = request.data.get('orgType')
             if not org_type or org_type not in org_types:
                 raise ServiceException(_(u'Тип организации не задан или неверен'))
             org_type = org_types[org_type]
-            org_phones = request.DATA.get('phones')
+            org_phones = request.data.get('phones')
             fax_len = RegisterProfile._meta.get_field('org_fax').max_length
-            org_fax=request.DATA.get('fax', '').strip()
+            org_fax=request.data.get('fax', '').strip()
             if len(org_fax) > fax_len:
                 raise ServiceException(_(u'Факс: длина больше %d символов') % fax_len)
             if org_phones:
@@ -3129,8 +3138,8 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
                     raise ServiceException(_(u'Неверный формат телефонов (phones)'))
             if not org_phones:
                 raise ServiceException(_(u'Не указано ни одного телефона'))
-            org_inn=request.DATA.get('tin', '').strip()
-            org_basis = request.DATA.get('directorPowerSource', Org.BASIS_CHARTER)
+            org_inn=request.data.get('tin', '').strip()
+            org_basis = request.data.get('directorPowerSource', Org.BASIS_CHARTER)
             org_address.save()
             registerprofile = RegisterProfile.objects.create(
                 status=RegisterProfile.STATUS_TO_CONFIRM,
@@ -3144,18 +3153,18 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
                 org_type=org_type,
                 org_name=org_name,
                 org_subdomain=org_subdomain,
-                org_full_name=request.DATA.get('orgFullName', '').strip() or org_name,
+                org_full_name=request.data.get('orgFullName', '').strip() or org_name,
                 org_currency=org_currency,
                 org_inn=org_inn,
-                org_ogrn=request.DATA.get('OGRN', '').strip(),
-                org_director=request.DATA.get('directorFullname', '').strip(),
+                org_ogrn=request.data.get('OGRN', '').strip(),
+                org_director=request.data.get('directorFullname', '').strip(),
                 org_phones=org_phones,
                 org_fax=org_fax,
                 org_address=org_address,
                 org_basis=org_basis,
             )
 
-            banks = request.DATA.get('bankAccounts')
+            banks = request.data.get('bankAccounts')
             if banks:
                 name_len = BankAccountRegister._meta.get_field('bankname').max_length
                 rs_len = BankAccountRegister._meta.get_field('rs').max_length
@@ -3209,7 +3218,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
                         off_address=bank_address,
                     )
 
-            cert = request.FILES.get('certificatePhoto')
+            cert = request.data.get('certificatePhoto')
             if cert:
                 RegisterProfileScan.objects.create(
                     bfile=cert,
@@ -3374,7 +3383,7 @@ class ApiShopsMixin(object):
             raise Http404
 
 class ApiShopsGalleryView(ApiShopsMixin, APIView):
-    parser_classes = (MultiPartParser,)
+    parser_classes = (MultiPartParser, JSONParser, )
     
     def get(self, request, pk):
         shop = self.get_shop(pk, authorized_only=False)
@@ -3389,7 +3398,7 @@ class ApiShopsGalleryView(ApiShopsMixin, APIView):
     def post(self, request, pk):
         try:
             shop = self.get_shop(pk, authorized_only=True)
-            photo = request.FILES.get('photo')
+            photo = request.data.get('photo')
             if photo:
                 if photo.size > OrgGallery.MAX_IMAGE_SIZE * 1024 * 1024:
                     raise ServiceException(_(u"Размер фото превышает %d Мб") % OrgGallery.MAX_IMAGE_SIZE)
@@ -3401,7 +3410,7 @@ class ApiShopsGalleryView(ApiShopsMixin, APIView):
                 org=shop,
                 bfile=photo,
                 creator=request.user,
-                comment=request.DATA.get('title'),
+                comment=request.data.get('title'),
             )
             return Response(
                 data = OrgGallerySerializer(item, context=dict(request=request)).data,
@@ -3446,10 +3455,10 @@ class ApiShopsReviewsView(ApiShopsMixin, APIView):
             )
             kwargs = dict()
             for key in mapping:
-                if request.DATA.get(key) is not None:
-                    kwargs[mapping[key]] = request.DATA[key]
-            if 'isPositive' in request.DATA:
-                kwargs['is_positive'] = request.DATA['isPositive']
+                if request.data.get(key) is not None:
+                    kwargs[mapping[key]] = request.data[key]
+            if 'isPositive' in request.data:
+                kwargs['is_positive'] = request.data['isPositive']
             # Не должно быть пустого отзыва. Хотя бы только оценка
             if kwargs.get('is_positive') not in (True, False):
                 for key in mapping:
@@ -3551,21 +3560,21 @@ class ApiClientSiteMessagesView(ApiClientSiteMixin, APIView):
             except ValidationError:
                 raise ServiceException(_(u"Неверный или не задан адрес электронной почты организации"))
 
-            email_reply_to = request.DATA.get('email', '').strip()
+            email_reply_to = request.data.get('email', '').strip()
             try:
                 validate_email(email_reply_to)
             except ValidationError:
                 raise ServiceException(_(u"Неверный или не задан адрес электронной почты отправителя"))
 
-            subject = request.DATA.get('subject', '').strip()
+            subject = request.data.get('subject', '').strip()
             email_subject = subject if subject else _(u'Сообщение на сайт')
 
-            email_text = request.DATA.get('text', '').strip()
+            email_text = request.data.get('text', '').strip()
             if not email_text:
                 raise ServiceException(_(u"Нет текста сообщения"))
 
-            full_name = request.DATA.get('fullName', '').strip()
-            phone = request.DATA.get('phoneNumber', '').strip()
+            full_name = request.data.get('fullName', '').strip()
+            phone = request.data.get('phoneNumber', '').strip()
             email_text += u"\n\n----------"
             if full_name:
                 email_text += u"\n%s" % full_name
@@ -3690,10 +3699,10 @@ class ApiVideoVotesView(ApiVideoMixin, APIView):
                 data=dict(message=_(u"Ошибка идентификатора Youtube видео")),
                 status=400,
             )
-        type_ = (request.DATA.get('type') or YoutubeVote.LIKE_UP).lower()
+        type_ = (request.data.get('type') or YoutubeVote.LIKE_UP).lower()
         if type_ not in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
             type_ = YoutubeVote.LIKE_UP
-        timestamp = max(request.DATA.get('timestamp') or 0, 0)
+        timestamp = max(request.data.get('timestamp') or 0, 0)
         vote = YoutubeVote.objects.create(
             youtubevideo=youtubevideo,
             user=request.user,
@@ -3797,7 +3806,7 @@ class ApiVideosView(ApiVideoMixin, APIView):
         try:
             if not request.user.is_authenticated():
                 raise PermissionDenied
-            yid = request.DATA.get('youtube_url_or_id')
+            yid = request.data.get('youtube_url_or_id')
             if not yid:
                 raise ServiceException(_(u"Не задан идентификатор или URL Youtube видео"))
             youtubevideo, created = self.get_or_add_video(yid)
@@ -3847,7 +3856,7 @@ class ApiVideoCaptionsVotesView(APIView):
     def post(self, request, yid):
         if not request.user.is_authenticated():
             raise PermissionDenied
-        caption_id = request.DATA.get('subtitle_id')
+        caption_id = request.data.get('subtitle_id')
         if not caption_id:
             raise Http404
         youtubecaption = get_object_or_404(
@@ -3855,7 +3864,7 @@ class ApiVideoCaptionsVotesView(APIView):
             youtubevideo__yid=yid,
             pk=caption_id
         )
-        type_ = (request.DATA.get('type') or YoutubeVote.LIKE_UP).lower()
+        type_ = (request.data.get('type') or YoutubeVote.LIKE_UP).lower()
         if type_ not in (YoutubeVote.LIKE_UP, YoutubeVote.LIKE_DOWN,):
             type_ = YoutubeVote.LIKE_UP
         vote = YoutubeCaptionVote.objects.create(
@@ -4091,7 +4100,7 @@ class ApiVkBotHandlerView(APIView):
         content_type = 'text/plain'
         message = 'ok'
         msg_failed_send = "Failed to send message to the user"
-        data=request.DATA
+        data=request.data
         if settings.DEBUG:
             print "DEBUG: ..."
             print data

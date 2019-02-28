@@ -114,6 +114,7 @@ class DashboardView(TemplateView):
         return qs
 
     def get_context_data(self, **kwargs):
+        data = super(DashboardView, self).get_context_data(**kwargs)
         qs = self.get_qs_filter()
         ex_qs = Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
         if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
@@ -167,12 +168,13 @@ class DashboardView(TemplateView):
             q_o &=  Q(dt_due__isnull=True) & Q(dt__gte=date_to) | \
                     Q(dt_due__isnull=False) & Q(dt_due__gte=date_to)
             orders = Order.objects.filter(q_o).order_by('-dt').distinct()
-        return {
+        data.update({
             'burials': burials,
             'orders': orders,
             'sort': sort,
             'editable_ugh_cemeteries': Cemetery.editable_ugh_cemeteries(self.request.user),
-        }
+        })
+        return data
 
 dashboard = DashboardView.as_view()
 
@@ -519,9 +521,10 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         return form
 
     def get_context_data(self, **kwargs):
+        data = super(BurialView, self).get_context_data(**kwargs)
         b = self.get_object()
         org = self.request.user.profile.org
-        return {
+        data.update({
             'b': b,
             'reason_typical_back': Reason.objects.filter(org=org, reason_type=Reason.TYPE_BACK),
             'reason_typical_decline': Reason.objects.filter(org=org, reason_type=Reason.TYPE_DECLINE),
@@ -544,7 +547,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                                  self.request.user.profile.is_caretaker_only() and not b.is_closed()),
             'place': b.get_place(),
             'editable_ugh_cemeteries': Cemetery.editable_ugh_cemeteries(self.request.user)
-        }
+        })
+        return data
 
 view_burial = BurialView.as_view()
 
@@ -1324,7 +1328,7 @@ class GetCemeteryTimes(View):
         except (ValueError, Cemetery.DoesNotExist, ):
             return HttpResponse(json.dumps({}), content_type='application/json')
         try:
-            date = datetime.datetime.strptime(request.GET.get('date'), '%d.%m.%Y').date
+            date = datetime.datetime.strptime(request.GET.get('date'), '%d.%m.%Y').date()
         except ValueError:
             # Есть таки возможность пользователю ввести плановую дату типа 30 февраля:
             return HttpResponse(json.dumps({c.pk: []}), content_type='application/json')
@@ -1556,11 +1560,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
         )
         q_dates &= ~Q(place_number=u'-')
 
-        select_related = (
-            'area__name',
-            'deadman__last_name', 'deadman__first_name', 'deadman__middle_name',
-            'deadman__ident_number'
-        )
+        select_related = ('area', 'deadman',)
 
         # Список файлов для архивации
         #
