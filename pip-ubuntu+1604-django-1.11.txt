@@ -1,24 +1,24 @@
 # Для pip install -r <этот_файл>
 # ОС: Ubuntu 16.04, 18.04
 # Python: 2.7
-# Django 1.9
+# Django 1.11
 #
 AxmlParserPY
 cssmin
-Django==1.9.13
-django-assets==0.11
+Django==1.11.20
+django-assets==0.12
 django-autoslug
 django-cors-headers
-django-debug-toolbar==1.9.1
+django-debug-toolbar==1.11
 django-google-charts
 django-nocaptcha-recaptcha
 django-qsstats-magic
 
-redis==2.10.6
-django-redis==4.4.4
+redis==3.2.0
+django-redis==4.10.0
 
 django-wkhtmltopdf
-djangorestframework==3.6.4
+djangorestframework==3.9.1
 djangorestframework-jsonp
 
 LatLon
@@ -37,4 +37,4 @@ python-magic
 pytils
 raven
 rjsmin
-webassets==0.11
+webassets==0.12.1

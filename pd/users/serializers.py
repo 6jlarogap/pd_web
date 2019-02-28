@@ -482,7 +482,7 @@ class YoutubeVideoSerializer(serializers.ModelSerializer):
         fields = ('video_id', 'added_at', 'url', 'title', 'title_photo_url',)
 
 class YoutubeVoteSerializer(serializers.ModelSerializer):
-    id = serializers.CharField(source='youtubevideo.yid')
+    id = serializers.SerializerMethodField('id_func')
     datetime = DateTimeUtcField(source='dt_created', required=False)
     type = serializers.CharField(source='like')
     timestamp = serializers.IntegerField(source='time')
@@ -490,6 +490,12 @@ class YoutubeVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = YoutubeVote
         fields = ('id', 'datetime', 'type', 'timestamp', )
+
+    def id_func(self, instance):
+        result = None
+        if instance.youtubevideo:
+            return instance.youtubevideo.yid
+        return result
 
 class YoutubeCaptionSerializer(serializers.ModelSerializer):
     timeline = serializers.SerializerMethodField('timeline_func')

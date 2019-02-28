@@ -27,15 +27,28 @@ for regex in (settings.REGISTER_URLS_REGEX,
              ):
     exempt_urls.append(re.compile(regex, flags=re.I))
 
-class LoginRequiredMiddleware:
+class LoginRequiredMiddleware(object):
 
-    def process_request(self, request):
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # One-time configuration and initialization.
+
+    def __call__(self, request):
+
+        # Code to be executed for each request before
+        # the view (and later middleware) are called.
         path = request.path_info.lstrip('/')
         if any(m.match(path) for m in exempt_urls) or is_url_accessible_anonymous(request):
-            return
-        if not request.user.is_authenticated():
-            if not path or exempt_urls[0].match(path):
-                next = ''
+            pass
+        elif not request.user.is_authenticated:
+            if path:
+                next_ = u"?redirectUrl=%s" % quote_plus(unquote_plus(request.build_absolute_uri()))
             else:
-                next = u"?redirectUrl=%s" % quote_plus(unquote_plus(request.build_absolute_uri()))
-            return HttpResponseRedirect(settings.LOGIN_URL+next)
+                next_ = ''
+            return HttpResponseRedirect(settings.LOGIN_URL + next_)
+
+        response = self.get_response(request)
+
+        # Code to be executed for each request/response after
+        # the view is called.
+        return response

@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group, Permission
 from django.utils.translation import ugettext_lazy as _
 from django.apps import apps
 get_model = apps.get_model
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from rest_framework import serializers
 
