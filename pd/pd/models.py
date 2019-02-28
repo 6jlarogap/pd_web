@@ -365,16 +365,6 @@ class UnclearDateModelField(models.DateField):
             value = value.d
         return super(UnclearDateModelField, self).get_db_prep_save(value, connection)
 
-    # В Django 1.7 это только мешает. Там другой формат этой функции для поля
-    #
-    #def get_db_prep_lookup(self, lookup_type, value, **kwargs):
-        #if lookup_type == 'exact':
-            #return [self.get_db_prep_save(value, **kwargs)]
-        #elif lookup_type == 'in':
-            #return [self.get_db_prep_save(v, **kwargs) for v in value]
-        #else:
-            #return super(UnclearDateModelField, self).get_db_prep_lookup(lookup_type, value, **kwargs)
-
     def to_python(self, value):
         if isinstance(value, UnclearDate):
             return value

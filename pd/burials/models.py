@@ -879,10 +879,10 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         (CONTAINER_BIO, _(u"Биоотходы")),
     )
 
-    burial_type = models.CharField(_(u"Вид захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_TYPES, default=BURIAL_NEW)
-    burial_container = models.CharField(_(u"Тип захоронения"), max_length=255, null=True, blank=True, choices=BURIAL_CONTAINERS, default=CONTAINER_COFFIN)
+    burial_type = models.CharField(_(u"Вид захоронения"), max_length=255, blank=True, choices=BURIAL_TYPES, default=BURIAL_NEW)
+    burial_container = models.CharField(_(u"Тип захоронения"), max_length=255, blank=True, choices=BURIAL_CONTAINERS, default=CONTAINER_COFFIN)
     source_type = models.CharField(_(u"Источник"), max_length=255, null=True, editable=False, choices=SOURCE_TYPES)
-    account_number = models.CharField(_(u"№ в книге учета"), max_length=255, null=True, blank=True)
+    account_number = models.CharField(_(u"№ в книге учета"), max_length=255, blank=True, default='')
 
     place = models.ForeignKey(Place, verbose_name=_(u"Место"), null=True, blank=True, on_delete=models.PROTECT)
     cemetery = models.ForeignKey(Cemetery, verbose_name=_(u"Кладбище"), null=True, blank=True, on_delete=models.PROTECT)
@@ -1708,10 +1708,10 @@ class Burial1(BaseModel):
     Остальные поля в модели Burial1 дублируют соответствующие поля Burial.
     """
 
-    burial_type = models.CharField(_(u"Вид захоронения"), max_length=255, null=True)
-    burial_container = models.CharField(_(u"Тип захоронения"), max_length=255, null=True)
+    burial_type = models.CharField(_(u"Вид захоронения"), max_length=255, default=Burial.BURIAL_NEW)
+    burial_container = models.CharField(_(u"Тип захоронения"), max_length=255, default=Burial.CONTAINER_COFFIN)
     source_type = models.CharField(_(u"Источник"), max_length=255, null=True)
-    account_number = models.CharField(_(u"№ в книге учета"), max_length=255, null=True)
+    account_number = models.CharField(_(u"№ в книге учета"), max_length=255, default='')
     account_number_s1 = models.TextField(null=True)
     account_number_s2 = models.FloatField(null=True)
     account_number_s3 = models.TextField(null=True)

@@ -10,7 +10,7 @@ import hashlib
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
 from django.db.models.aggregates import Count, Sum
@@ -87,7 +87,7 @@ class ProductCategoryQsMixin(object):
 
 class LORURequiredMixin:
     def is_loru(self, request):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return False
         if not getattr(self.request.user, 'profile', None):
             return False
