@@ -11,7 +11,6 @@ from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render_to_response
-from django.template.context import RequestContext
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.detail import DetailView
@@ -1238,7 +1237,7 @@ class MakeNotificationView(BurialsListGenericMixin, DetailView):
                 msg=_(u"Уведомление"),
                 obj=self.get_object(),
                 template=template,
-                context=RequestContext(self.request, context),
+                context=context,
             )
         context['user'] = self.request.user
         return render_to_response(template, context)
@@ -1312,7 +1311,7 @@ class MakeSpravka(BurialsListGenericMixin, DetailView):
             msg=_(u"Справка"),
             obj=self.get_object(),
             template=template,
-            context=RequestContext(self.request, context),
+            context=context,
         )
         return redirect('report_view', report.pk)
 
