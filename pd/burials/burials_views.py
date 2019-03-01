@@ -94,9 +94,9 @@ class DashboardView(TemplateView):
                     dict(message=_(u"Рабочее место пользователя кабинета организовано другими средствами"))
                 )
         elif request.user.profile.is_ugh():
-             if request.user.profile.is_registrator_or_caretaker() and request.user.profile.cemeteries.count():
-                 return super(DashboardView, self).get(request, *args, **kwargs)
-             else:
+            if request.user.profile.is_registrator_or_caretaker() and request.user.profile.cemeteries.count():
+                return super(DashboardView, self).get(request, *args, **kwargs)
+            else:
                 return redirect(reverse('burial_list'))
         elif request.user.profile.is_loru():
             return super(DashboardView, self).get(request, *args, **kwargs)
@@ -561,14 +561,18 @@ class BurialsListView(PaginateListView):
 
     def get_queryset(self):
         if not self.request.GET:
-            return Burial.objects.none()
+            # Избегаем предупреждения в paginated views:
+            #   UnorderedObjectListWarning:
+            #   Pagination may yield inconsistent results with an unordered object_list
+            #
+            return Burial.objects.none().order_by('-pk')
 
         if self.request.user.is_authenticated:
             burials = Burial1.objects.filter(
                 Q(applicant_organization=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org),
             ).order_by('-pk')
         else:
-            burials = Burial.objects.none()
+            burials = Burial.objects.none().order_by('-pk')
         form = self.get_form()
         if form.data and form.is_valid():
             if form.cleaned_data['operation']:
@@ -746,7 +750,7 @@ class BurialsPublicListView(PaginateListView):
         
     def get_queryset(self):
         if not self.request.GET:
-            return Burial.objects.none()
+            return Burial.objects.none().order_by('-pk')
 
         if self.request.user.is_authenticated and self.request.user.profile.is_loru():
             burials = Burial1.objects.filter(
@@ -781,7 +785,7 @@ class BurialsPublicListView(PaginateListView):
                  )
                  ).order_by('-pk').distinct()
         else:
-            burials = Burial.objects.none()
+            burials = Burial.objects.none().order_by('-pk')
         form = self.get_form()
         if form.data and form.is_valid():
             if form.cleaned_data['fio']:

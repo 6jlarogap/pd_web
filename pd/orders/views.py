@@ -160,7 +160,7 @@ class OrderList(LORURequiredMixin, PaginateListView):
         
     def get_queryset(self):
         if not self.request.GET:
-            return Order.objects.none()
+            return Order.objects.none().order_by('-pk')
 
         return self.filtered_orders()
 
