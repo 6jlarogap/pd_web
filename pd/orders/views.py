@@ -334,11 +334,6 @@ class OrderList(LORURequiredMixin, PaginateListView):
     def get_form(self):
         return OrderSearchForm(data=self.request.GET or None)
 
-    def get_paginator(self, queryset, per_page, orphans=0, allow_empty_first_page=True):
-        paginator = super(OrderList, self).get_paginator(queryset, per_page, orphans, allow_empty_first_page)
-        paginator._count = queryset.count()
-        return paginator
-
     def q_by_name(self, search_by, name_string):
         import operator
         values = [re_search(f) for f in name_string.split()]
