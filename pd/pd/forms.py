@@ -8,7 +8,7 @@ import django
 from django import forms
 from django.conf import settings
 from django.db.models.fields.files import FieldFile
-from django.forms.widgets import SelectDateWidget
+from django.forms.widgets import SelectDateWidget, HiddenInput
 from django.utils.dates import MONTHS
 from django.utils.formats import get_format
 from django.utils.html import escape, conditional_escape
@@ -101,6 +101,9 @@ class LoggingFormMixin:
                 prefix = self.get_prefix(form)
                 for f in form.changed_data:
                     if f in ('password1', 'password2',):
+                        continue
+                    widget = getattr(form.fields[f], 'widget', None)
+                    if isinstance(widget, HiddenInput):
                         continue
                     old_value = obj and getattr(obj, f, None) or form.initial.get(f)
                     new_value = form.cleaned_data.get(f)
