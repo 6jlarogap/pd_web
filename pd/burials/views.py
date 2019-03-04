@@ -1283,7 +1283,7 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
                 fact_date = _(u"дата похорон неизвестна")
             right.append(_(u"№: %(pk)s, %(deadman)s, %(lived)s, %(fact_date)s") % dict(
                             pk=burial.pk,
-                            deadman=burial.deadman and burial.deadman or _(u"Неизвестный"),
+                            deadman=burial.deadman or _(u"Неизвестный"),
                             lived=lived,
                             fact_date=fact_date
             ))
