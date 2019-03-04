@@ -148,8 +148,8 @@ class ResponsibleForm(AlivePersonForm):
 
     take_from = forms.ChoiceField(label=_(u"Где берем Ответственного?"), choices=WHERE_CHOICES,
                                   widget=forms.RadioSelect, required=True, initial=WHERE_NEW)
-    place = forms.ModelChoiceField(queryset=Place.objects.all(), widget=forms.HiddenInput, required=False)
-    order = forms.ModelChoiceField(queryset=Order.objects.all().select_related('loru'), widget=forms.HiddenInput, required=False)
+    place = forms.CharField(widget=forms.HiddenInput, required=False, )
+    order = forms.CharField(widget=forms.HiddenInput, required=False, )
     login_phone_ = forms.DecimalField(label=AlivePerson._meta.get_field('login_phone').verbose_name,
                                       max_digits=AlivePerson._meta.get_field('login_phone').max_digits,
                                       decimal_places=AlivePerson._meta.get_field('login_phone').decimal_places,
