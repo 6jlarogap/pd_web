@@ -256,7 +256,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         reason = request.POST.get('reason') or request.POST.get('reason_typical')
         if request.POST.get('back') and request.user.profile.is_loru() and b.can_back() and b.loru == request.user.profile.org:
             b.status = Burial.STATUS_BACKED
-            b.account_number = None
+            b.account_number = ''
             write_log(request, b, _(u'Захоронение отозвано'), reason)
             messages.success(
                 request,
@@ -348,7 +348,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         if request.POST.get('decline') and request.user.profile.is_ugh() and b.can_decline():
             if reason and reason.strip():
                 b.status = Burial.STATUS_DECLINED
-                b.account_number = None
+                b.account_number = ''
                 msg_declined = u'Захоронение отклонено'
                 write_log(request, b, msg_declined, reason)
                 messages.success(
