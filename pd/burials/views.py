@@ -6,7 +6,7 @@ import geohash, uuid
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.paginator import Paginator
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
@@ -48,7 +48,7 @@ from restthumbnails.files import ThumbnailContentFile
 
 from rest_framework import generics, viewsets
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view, permission_classes, detail_route, list_route
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
@@ -237,7 +237,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
             id_binds[res.id] = 1
         obj.phone_set.exclude(pk__in=id_binds.keys()).delete()
 
-    @detail_route(methods=['GET',])
+    @action(detail=True, methods=['GET'])
     def getform(self, request, pk=None):
         cemetery = get_object_or_404(self.get_queryset(), pk=pk)
         data = {
@@ -255,7 +255,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
         data['is_editable'] = request.user.profile.is_admin() or data['can_add_area']
         return Response(status=200, data=data)
 
-    @detail_route(methods=['GET',])
+    @action(detail=True, methods=['GET'])
     def authdata0(self, request, pk=None):
         return Response(
             status=200,
@@ -264,7 +264,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
                                  request.user.profile.is_registrator_or_caretaker(),
             ))
 
-    @detail_route(methods=['GET',])
+    @action(detail=True, methods=['GET'])
     def authdata(self, request, pk=None):
         """
         Данные для создания/редактирования кладбища
@@ -291,7 +291,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
                 need_code = settings.DEADMAN_IDENT_NUMBER_ALLOW,
         ))
 
-    @detail_route(methods=['GET',])
+    @action(detail=True, methods=['GET'])
     def iseditable(self, request, pk=None):
         cemetery = get_object_or_404(self.get_queryset(), pk=pk)
         return Response(status=200, data=dict(
@@ -635,7 +635,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
         
         return place
 
-    @detail_route(methods=['GET',])
+    @action(detail=True, methods=['GET'])
     def getform(self, request, pk=None):
         cemetery = self.getCemetery(self.request)
         if self.request.GET.get('area_id'):
@@ -671,7 +671,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
                 "responsible_address" : {},
                 "log": log_data,
                 "log_page":page.number,
-                "log_pages":page.paginator._num_pages,
+                "log_pages":page.paginator.num_pages,
                 "is_editable": cemetery in Cemetery.editable_ugh_cemeteries(request.user),
                 "is_caretaker_only": request.user.profile.is_caretaker_only(), 
                 }
@@ -688,7 +688,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
         return Response(status=200, data=data)
 
 
-    @detail_route(methods=['GET',])
+    @action(detail=True, methods=['GET'])
     def getgraves(self, request, pk=None):
         cemetery = self.getCemetery(self.request)
         if self.request.GET.get('area_id'):
@@ -706,13 +706,13 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
         return Response({
                          'count': place.grave_set.count(),
                          'page': grave_list.number,
-                         'pages': grave_list.paginator._num_pages,
+                         'pages': grave_list.paginator.num_pages,
                          'graves': GraveSerializer(grave_list, many=True).data,
                          'burials': BurialSerializer(burial_list, many=True).data,
                          })
 
 
-    @detail_route(methods=['POST',])
+    @action(detail=True, methods=['POST'])
     def setform(self, request, pk=None):
         form = request.GET.get('form')
         address = request.GET.get('address')
@@ -721,7 +721,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
         return Response(status=200)
 
 
-    @detail_route(methods=['DELETE',])
+    @action(detail=True, methods=['DELETE'])
     def deletephoto(self, request, pk=None):
         photo_id = request.GET.get('photo_id')
         placePhoto = get_object_or_404(PlacePhoto, place=pk, pk=photo_id)
@@ -733,7 +733,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
         return Response(status=200)
 
         
-    @detail_route(methods=['GET',])
+    @action(detail=True, methods=['GET'])
     def cancel_exhumation(self, request, pk=None):
         cemetery = self.getCemetery(self.request)
         if self.request.GET.get('area_id'):
@@ -1007,7 +1007,7 @@ add_graves = AddGravesView.as_view()
 class GetPlaceView(View):
     def dispatch(self, request, *args, **kwargs):
         self.request = request
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return redirect('/')
         return View.dispatch(self, request, *args, **kwargs)
 
@@ -1046,7 +1046,7 @@ get_place = GetPlaceView.as_view()
 class GetGravesNumberView(View):
     def dispatch(self, request, *args, **kwargs):
         self.request = request
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return redirect('/')
         return View.dispatch(self, request, *args, **kwargs)
 

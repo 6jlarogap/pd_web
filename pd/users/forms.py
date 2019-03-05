@@ -701,7 +701,7 @@ class SupportForm(forms.Form):
         self.save_user_email = False
         self.save_org_phone = False
         self.fio = ('user_last_name', 'user_first_name', 'user_middle_name', )
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             del self.fields['captcha']
             self.initial['sender'] = request.user.email or \
                                      not is_cabinet_user(request.user) and request.user.profile.org.email or \
@@ -763,7 +763,7 @@ class SupportForm(forms.Form):
         if self.save_org_phone and org_phone and self.cleaned_data.get('callback'):
             self.request.user.profile.org.phones = org_phone
             self.request.user.profile.org.save()
-        if self.request.user.is_authenticated():
+        if self.request.user.is_authenticated:
             changed_ = False
             for f in self.fio:
                 if f in self.changed_data:

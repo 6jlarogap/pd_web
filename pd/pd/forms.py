@@ -313,7 +313,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
         else:
             id_ = 'id_%s' % name
         choices.insert(0, self.none_value)
-        local_attrs = self.build_attrs(id=field % id_, **attrs)
+        local_attrs = self.build_attrs(attrs, extra_attrs={'id': field % id_})
         s = Select(choices=choices)
         select_html = s.render(field % name, val, local_attrs)
         return select_html
@@ -324,7 +324,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
             id_ = self.attrs['id']
         else:
             id_ = 'id_%s' % name
-        local_attrs = self.build_attrs(id=field % id_, **attrs)
+        local_attrs = self.build_attrs(attrs, extra_attrs={'id': field % id_})
         s = Input(attrs=attrs)
         input_html = s.render(field % name, unicode(val).rjust(4, '0') if val else val, local_attrs)
         return input_html

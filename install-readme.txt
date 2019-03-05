@@ -202,7 +202,11 @@ install-readme.txt, utf8 code page
 
     * sitemap.xml (в особенности для production site):
         - обеспечить периодическую регенерацию, например, строчкой в /etc/crontab:
-            19 1 * * *   www-data cd /home/www-data/django/pd_prod/pd && ./manage.py create_sitemap https://pohoronnoedelo.ru
+            19 1 * * *   www-data cd /home/www-data/django/pd_prod/pd && ./manage.py create_sitemap https://pohoronnoedelo all
+            В конфигурационном файле для pohoronnoedelo.ru:
+                Alias /sitemap.xml      /home/www-data/django/MEDIA/pd_prod/sitemap_ru.xml
+            В конфигурационном файле для pohoronnoedelo.by:
+                Alias /sitemap.xml      /home/www-data/django/MEDIA/pd_prod/sitemap_by.xml
         - submit sitemap посредством google webmaster tools, см. инструкцию
             https://support.google.com/webmasters/answer/183669?hl=en&ref_topic=4581713
         - обеспечить resubmit sitemap, после того как меняется sitemap, например, строчкой в /etc/crontab:

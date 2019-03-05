@@ -1,15 +1,15 @@
 # Для pip install -r <этот_файл>
 # ОС: Ubuntu 16.04, 18.04
 # Python: 2.7
-# Django 1.9
+# Django 1.10
 #
 AxmlParserPY
 cssmin
-Django==1.9.13
+Django==1.10.8
 django-assets==0.11
 django-autoslug
 django-cors-headers
-django-debug-toolbar==1.9.1
+django-debug-toolbar==1.10.1
 django-google-charts
 django-nocaptcha-recaptcha
 django-qsstats-magic

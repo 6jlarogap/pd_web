@@ -258,8 +258,8 @@ class PersonID(models.Model):
 
     person = models.OneToOneField(BasePerson)
     id_type = models.ForeignKey(IDDocumentType, verbose_name=_(u"Тип документа"), blank=True, null=True)
-    series = models.CharField(_(u"Серия"), max_length=255, blank=True, null=True)
-    number = models.CharField(_(u"Номер"), max_length=255, blank=True, null=True)
+    series = models.CharField(_(u"Серия"), max_length=255, blank=True, default='')
+    number = models.CharField(_(u"Номер"), max_length=255, blank=True, default='')
     source = models.ForeignKey(DocumentSource, verbose_name=_(u"Кем выдан"), blank=True, null=True)
     date = models.DateField(_(u"Дата выдачи"), blank=True, null=True)
     date_expire = models.DateField(_(u"Срок действия"), blank=True, null=True)
@@ -289,8 +289,8 @@ class DeathCertificate(BaseModel):
     person = models.OneToOneField(DeadPerson)
 
     type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES, default=PROFILE_ZAGS)
-    s_number = models.CharField(_(u"Номер"), max_length=255, blank=True, null=True)
-    series = models.CharField(_(u"Серия"), max_length=255, blank=True, null=True)
+    s_number = models.CharField(_(u"Номер"), max_length=255, blank=True, default='')
+    series = models.CharField(_(u"Серия"), max_length=255, blank=True, default='')
     release_date = models.DateField(_(u"Дата выдачи"), null=True, blank=True)
     zags = models.ForeignKey(Org, verbose_name=_(u"ЗАГС"), null=True, blank=True)
 
