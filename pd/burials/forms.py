@@ -178,9 +178,14 @@ class ResponsibleForm(AlivePersonForm):
 
     def clean(self):
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
-            if not self.cleaned_data.get('place'):
+            place_pk = self.cleaned_data.get('place')
+            if not place_pk:
                 raise forms.ValidationError(_(u'Нет места'))
-            if not self.cleaned_data.get('place').responsible:
+            try:
+                place = Place.objects.get(pk=place_pk)
+            except Place.DoesNotExist:
+                raise forms.ValidationError(_(u'Нет места'))
+            if not place.responsible:
                 raise forms.ValidationError(_(u'Нет Ответственного у места'))
         return self.cleaned_data
 
