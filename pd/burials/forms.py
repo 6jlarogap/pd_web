@@ -176,6 +176,7 @@ class ResponsibleForm(AlivePersonForm):
         self.fields = reorder_form_fields(self.fields, old_pos=-1, new_pos=-3)
 
         self.initial.setdefault('take_from', self.WHERE_NEW)
+        self.fields['login_phone_'].widget.input_type = 'text'
 
     def clean(self):
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
