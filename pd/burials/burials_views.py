@@ -1072,12 +1072,13 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.changed_by = self.request.user
                 b.close(request=self.request)
-                form.compare_responsible_info(
-                    request=self.request,
-                    old_responsible_info=old_responsible_info,
-                    burial=b,
-                    is_new_burial=not is_existing_burial,
-                )
+                if form.responsible_form.cleaned_data.get('take_from') != form.responsible_form.WHERE_FROM_PLACE:
+                    form.compare_responsible_info(
+                        request=self.request,
+                        old_responsible_info=old_responsible_info,
+                        burial=b,
+                        is_new_burial=not is_existing_burial,
+                    )
                 messages.success(
                     self.request,
                     _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
