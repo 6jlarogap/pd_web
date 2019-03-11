@@ -41,7 +41,7 @@ js_app = Bundle(
     
 
 js_angular = Bundle(
-        #<script type="text/javascript" src="{{ STATIC_URL }}angular/angular.min.js"></script>
+        #<script type="text/javascript" src="{% static 'angular/angular.min.js' %}"></script>
         "ng-grid/ng-grid-2.0.7.debug.js",
 
         # "angular/angular.min.js",

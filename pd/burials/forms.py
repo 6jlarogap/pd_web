@@ -9,7 +9,7 @@ from django import forms
 from django.contrib import messages
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import models, transaction, IntegrityError
 from django.db.models.aggregates import Max
 from django.db.models.deletion import ProtectedError
@@ -161,6 +161,7 @@ class ResponsibleForm(AlivePersonForm):
                                       required=False)
 
     def __init__(self, *args, **kwargs):
+        self.place_ = None
         super(ResponsibleForm, self).__init__(*args, **kwargs)
         if self.instance.pk:
             del self.fields['take_from']
@@ -175,24 +176,35 @@ class ResponsibleForm(AlivePersonForm):
         self.fields = reorder_form_fields(self.fields, old_pos=-1, new_pos=-3)
 
         self.initial.setdefault('take_from', self.WHERE_NEW)
+        self.fields['login_phone_'].widget.input_type = 'text'
 
     def clean(self):
         if self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
-            if not self.cleaned_data.get('place'):
+            place_pk = self.cleaned_data.get('place')
+            if not place_pk:
                 raise forms.ValidationError(_(u'Нет места'))
-            if not self.cleaned_data.get('place').responsible:
+            try:
+                self.place_ = Place.objects.get(pk=place_pk)
+            except Place.DoesNotExist:
+                raise forms.ValidationError(_(u'Нет места'))
+            if not self.place_.responsible:
                 raise forms.ValidationError(_(u'Нет Ответственного у места'))
         return self.cleaned_data
 
     def save(self, *args, **kwargs):
         if 'login_phone_' in self.fields:
             self.instance.login_phone = self.cleaned_data['login_phone_']
+            if self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
+                if self.place_.responsible.login_phone != self.instance.login_phone:
+                    self.place_.responsible.login_phone = self.instance.login_phone
+                    self.place_.responsible.save()
+                return self.place_.responsible
         if 'is_inbook_' in self.fields:
             self.instance.is_inbook = self.cleaned_data['is_inbook_']
         if self.instance.pk:
             return super(ResponsibleForm, self).save(*args, **kwargs)
         elif self.cleaned_data.get('take_from') == self.WHERE_FROM_PLACE:
-            return self.cleaned_data['place'].responsible.deep_copy()
+            return self.place_.responsible
         else:
             return super(ResponsibleForm, self).save(*args, **kwargs)
 
@@ -774,7 +786,9 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
             self.instance.flag_no_applicant_doc_required = False
 
         remove_responsible = False
-        if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT and \
+        if self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_PLACE:
+            self.instance.responsible = self.responsible_form.save()
+        elif self.responsible_form.cleaned_data.get('take_from') == ResponsibleForm.WHERE_FROM_APPLICANT and \
            self.instance.applicant:
             # Заявитель-ФЛ при этом формируется новый и без login_phone, но это может измениться
             applicant_login_phone = self.instance.applicant.login_phone
@@ -1524,9 +1538,10 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
             # Закрытие
             if not self.instance.fact_date:
                 self.initial['fact_date'] = self.instance.plan_date
-            for f in self.fields:
-                if f not in ['row', 'place_number']:
-                    self.fields[f].required = True
+            if self.request.POST.get('complete'):
+                for f in self.fields:
+                    if f not in ['row', 'place_number']:
+                        self.fields[f].required = True
             self.fields['cemetery'].queryset = Cemetery.objects.filter(cemetery_qs)
             self.fields['desired_graves_count'].widget = forms.Select(choices=max_grave_choices)
             if place:
@@ -1552,9 +1567,10 @@ class BurialApproveCloseForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelFor
                 else:
                     for f in ('row', 'place_number', 'fact_date', ):
                         del self.fields[f]
-                    for f in self.fields:
-                        if f in ('cemetery', 'area', ):
-                            self.fields[f].required = True
+                    if self.request.POST.get('approve'):
+                        for f in self.fields:
+                            if f in ('cemetery', 'area', ):
+                                self.fields[f].required = True
                     self.fields['cemetery'].queryset = \
                         Cemetery.objects.filter(cemetery_qs & Q(area__availability=Area.AVAILABILITY_OPEN)).distinct()
                 if 'desired_graves_count' in self.fields:

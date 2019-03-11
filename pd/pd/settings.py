@@ -63,7 +63,7 @@ STATICFILES_FINDERS = (
 
 SECRET_KEY = 'r9ux__e!=awmsi7x%(&amp;-fd*#sob2u4*ks-h@1id=ldn0^f=11('
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -175,8 +175,25 @@ LOGGING = {
 }
 
 
-
 INTERNAL_IPS = ['127.0.0.1',]
+
+# Объем отправляемых данных, в байтах, исключая файлы.
+# По умолчанию 2.5М. Добавим на всякий случай: у нас
+# вводят иногда тексты.
+#
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
+
+# With the default file upload settings, files larger than
+# FILE_UPLOAD_MAX_MEMORY_SIZE now have the same permissions as
+# temporary files (often 0o600).
+#
+# А это неудобно для резервного копирования медии: его обычно
+# выполняет другой пользователь, нежели www-data и т.п.
+#
+# Set the FILE_UPLOAD_PERMISSIONS if you need the same permission
+# regardless of file size.
+#
+FILE_UPLOAD_PERMISSIONS = 0o644
 
 # Разрешить вводить идентификационный номер для усопшего:
 # Это же применяется для кода, значимого для реестра
@@ -526,9 +543,13 @@ except NameError:
 # TIME_FORMAT, DATETIME_FORMAT, or SHORT_DATETIME_FORMAT.
 #
 from django.conf.locale.ru import formats as ru_formats
-ru_formats.TIME_FORMAT += ":s"
-ru_formats.DATETIME_FORMAT += ":s"
-ru_formats.SHORT_DATETIME_FORMAT = ":s"
+sec_suffix = ":s"
+if not ru_formats.TIME_FORMAT.endswith(sec_suffix):
+    ru_formats.TIME_FORMAT += sec_suffix
+if not ru_formats.DATETIME_FORMAT.endswith(sec_suffix):
+    ru_formats.DATETIME_FORMAT += sec_suffix
+if not ru_formats.SHORT_DATETIME_FORMAT.endswith(sec_suffix):
+    ru_formats.SHORT_DATETIME_FORMAT += sec_suffix
 
 # Test system is to be revised.
 #import sys

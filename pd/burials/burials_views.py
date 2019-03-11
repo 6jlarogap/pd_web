@@ -5,13 +5,12 @@ from django import db
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render_to_response
-from django.template.context import RequestContext
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.detail import DetailView
@@ -73,7 +72,7 @@ class BurialsListGenericMixin:
 
     def get_qs_filter(self):
         qs = Q(pk__isnull=True)
-        if self.request.user.is_authenticated():
+        if self.request.user.is_authenticated:
             if self.request.user.profile.is_loru():
                 loru = self.request.user.profile.org
                 qs = Q(applicant_organization=loru) | Q(loru=loru) | Q(ugh__loru_list__loru=loru)
@@ -95,9 +94,9 @@ class DashboardView(TemplateView):
                     dict(message=_(u"Рабочее место пользователя кабинета организовано другими средствами"))
                 )
         elif request.user.profile.is_ugh():
-             if request.user.profile.is_registrator_or_caretaker() and request.user.profile.cemeteries.count():
-                 return super(DashboardView, self).get(request, *args, **kwargs)
-             else:
+            if request.user.profile.is_registrator_or_caretaker() and request.user.profile.cemeteries.count():
+                return super(DashboardView, self).get(request, *args, **kwargs)
+            else:
                 return redirect(reverse('burial_list'))
         elif request.user.profile.is_loru():
             return super(DashboardView, self).get(request, *args, **kwargs)
@@ -117,7 +116,7 @@ class DashboardView(TemplateView):
         data = super(DashboardView, self).get_context_data(**kwargs)
         qs = self.get_qs_filter()
         ex_qs = Q(status__in=[Burial.STATUS_CLOSED, Burial.STATUS_EXHUMATED])
-        if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
+        if self.request.user.is_authenticated and self.request.user.profile.is_ugh():
             ex_qs |= Q(source_type=Burial.SOURCE_FULL, status=Burial.STATUS_DRAFT)
         ex_qs |= Q(annulated=True)
 
@@ -154,7 +153,7 @@ class DashboardView(TemplateView):
         burials.count = lambda: burials_count
         # Оплаченные заказы похорон, у ОМС
         orders = []
-        if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
+        if self.request.user.is_authenticated and self.request.user.profile.is_ugh():
             q_o = Q(
                 type=Order.TYPE_FUNERAL,
                 loru__ugh_list__ugh=self.request.user.profile.org,
@@ -181,7 +180,7 @@ dashboard = DashboardView.as_view()
 class ArchiveMixin(BurialsListGenericMixin):
     def get_qs_filter(self):
         qs = Q(pk__isnull=True)
-        if self.request.user.is_authenticated():
+        if self.request.user.is_authenticated:
             qs = Q(applicant_organization=self.request.user.profile.org) | \
                  Q(ugh=self.request.user.profile.org) | \
                  Q(cemetery__ugh=self.request.user.profile.org)
@@ -241,7 +240,7 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
         return burials
 
     def post(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return redirect('dashboard')
 
         b = self.get_object()
@@ -562,14 +561,18 @@ class BurialsListView(PaginateListView):
 
     def get_queryset(self):
         if not self.request.GET:
-            return Burial.objects.none()
+            # Избегаем предупреждения в paginated views:
+            #   UnorderedObjectListWarning:
+            #   Pagination may yield inconsistent results with an unordered object_list
+            #
+            return Burial.objects.none().order_by('-pk')
 
-        if self.request.user.is_authenticated():
+        if self.request.user.is_authenticated:
             burials = Burial1.objects.filter(
                 Q(applicant_organization=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org),
             ).order_by('-pk')
         else:
-            burials = Burial.objects.none()
+            burials = Burial.objects.none().order_by('-pk')
         form = self.get_form()
         if form.data and form.is_valid():
             if form.cleaned_data['operation']:
@@ -747,9 +750,9 @@ class BurialsPublicListView(PaginateListView):
         
     def get_queryset(self):
         if not self.request.GET:
-            return Burial.objects.none()
+            return Burial.objects.none().order_by('-pk')
 
-        if self.request.user.is_authenticated() and self.request.user.profile.is_loru():
+        if self.request.user.is_authenticated and self.request.user.profile.is_loru():
             burials = Burial1.objects.filter(
                 #Q(
                   #(
@@ -782,7 +785,7 @@ class BurialsPublicListView(PaginateListView):
                  )
                  ).order_by('-pk').distinct()
         else:
-            burials = Burial.objects.none()
+            burials = Burial.objects.none().order_by('-pk')
         form = self.get_form()
         if form.data and form.is_valid():
             if form.cleaned_data['fio']:
@@ -1069,12 +1072,13 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.changed_by = self.request.user
                 b.close(request=self.request)
-                form.compare_responsible_info(
-                    request=self.request,
-                    old_responsible_info=old_responsible_info,
-                    burial=b,
-                    is_new_burial=not is_existing_burial,
-                )
+                if form.responsible_form.cleaned_data.get('take_from') != form.responsible_form.WHERE_FROM_PLACE:
+                    form.compare_responsible_info(
+                        request=self.request,
+                        old_responsible_info=old_responsible_info,
+                        burial=b,
+                        is_new_burial=not is_existing_burial,
+                    )
                 messages.success(
                     self.request,
                     _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
@@ -1231,6 +1235,7 @@ class MakeNotificationView(BurialsListGenericMixin, DetailView):
 
     def render_to_response(self, context, **response_kwargs):
         context['now'] = datetime.datetime.now()
+        context['user'] = self.request.user
         template = 'reports/notification.html'
         if self.request.user.profile.is_ugh():
             report = make_report(
@@ -1238,9 +1243,8 @@ class MakeNotificationView(BurialsListGenericMixin, DetailView):
                 msg=_(u"Уведомление"),
                 obj=self.get_object(),
                 template=template,
-                context=RequestContext(self.request, context),
+                context=context,
             )
-        context['user'] = self.request.user
         return render_to_response(template, context)
 
 make_notification = MakeNotificationView.as_view()
@@ -1255,7 +1259,7 @@ class MakeExhumateReport(BurialsListGenericMixin, DetailView):
     def render_to_response(self, context, **response_kwargs):
         context['user'] = self.request.user
         template = 'simple_message.html'
-        if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
+        if self.request.user.is_authenticated and self.request.user.profile.is_ugh():
             if self.get_object().exhumated:
                 template = 'reports/exhumate.html'
             else:
@@ -1276,7 +1280,7 @@ class MakeExhumateNotification(BurialsListGenericMixin, DetailView):
     def render_to_response(self, context, **response_kwargs):
         context['user'] = self.request.user
         template = 'simple_message.html'
-        if self.request.user.is_authenticated() and self.request.user.profile.is_ugh():
+        if self.request.user.is_authenticated and self.request.user.profile.is_ugh():
             if self.get_object().exhumated:
                 template = 'reports/exhumate_notification.html'
             else:
@@ -1307,12 +1311,13 @@ class MakeSpravka(BurialsListGenericMixin, DetailView):
         template = 'spravka_minsk.html' if host_country_code(self.request) == 'by' else 'spravka.html'
         template = "reports/%s" % template
         context['print_now'] = True
+        context['user'] = self.request.user
         report = make_report(
             user=self.request.user,
             msg=_(u"Справка"),
             obj=self.get_object(),
             template=template,
-            context=RequestContext(self.request, context),
+            context=context,
         )
         return redirect('report_view', report.pk)
 
@@ -1320,7 +1325,7 @@ make_spravka = MakeSpravka.as_view()
 
 class GetCemeteryTimes(View):
     def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             messages.error(request, _(u"Доступно только для пользователей"))
             return redirect('/')
         try:
@@ -1340,7 +1345,7 @@ cemetery_times = GetCemeteryTimes.as_view()
 class GetCemeteryPersonalData(View):
     def get(self, request, *args, **kwargs):
         pk=request.GET.get('cem')
-        if not request.user.is_authenticated() or pk is None:
+        if not request.user.is_authenticated or pk is None:
             return redirect('/')
         result = False
         if pk:
