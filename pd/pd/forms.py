@@ -138,7 +138,7 @@ class LoggingFormMixin:
                         else:
                             if obj:
                                 old_value = form.initial.get(f)
-                            old_value = u", ".join([unicode(form.fields[f]._queryset.model.objects.get(pk=u)) for u in old_value])
+                            old_value = u", ".join([unicode(u) for u in old_value])
                             old_value = u"[" + old_value + u"]"
                         if not new_value:
                             new_value = u"[]"

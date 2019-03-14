@@ -1072,12 +1072,13 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.changed_by = self.request.user
                 b.close(request=self.request)
-                form.compare_responsible_info(
-                    request=self.request,
-                    old_responsible_info=old_responsible_info,
-                    burial=b,
-                    is_new_burial=not is_existing_burial,
-                )
+                if form.responsible_form.cleaned_data.get('take_from') != form.responsible_form.WHERE_FROM_PLACE:
+                    form.compare_responsible_info(
+                        request=self.request,
+                        old_responsible_info=old_responsible_info,
+                        burial=b,
+                        is_new_burial=not is_existing_burial,
+                    )
                 messages.success(
                     self.request,
                     _(u"<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
@@ -1139,12 +1140,14 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
 
     def get_form_class(self):
         action =  self.get_action()
-        if action and action not in ('annulate', 'unbind', 'disapprove'):
-            return BurialCommitForm
-        elif self.get_object() and self.get_object().is_finished() and self.request.user.profile.is_ugh():
-            return BurialCommitForm
-        else:
+        if action in ('annulate', 'deannulate', 'unbind', 'disapprove',):
             return BurialForm
+        if action in ('complete', 'approve', 'ready',):
+            return BurialCommitForm
+        burial = self.get_object()
+        if burial and burial.is_finished() and self.request.user.profile.is_ugh() and not burial.annulated:
+            return BurialCommitForm
+        return BurialForm
 
     def get(self, request, *args, **kwargs):
         if self.get_action():
