@@ -1910,6 +1910,9 @@ class ApiOmsPlacesClusters(APIView):
                     res['properties'] = dict(
                         iconContent=str(row_dict['quantity'])
                     )
+                    res['options'] = dict(
+                        openBalloonOnClick=False,
+                    )
 
                 data['features'].append(res)
 
