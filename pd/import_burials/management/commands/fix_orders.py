@@ -26,8 +26,8 @@ class Command(BaseCommand):
                     transaction.commit()
                     gc.collect()
                     reset_queries()
-                    print 'Processed', i, 'of', cnt
-            print 'Processed', cnt, 'with broken applicants'
+                    print('Processed', i, 'of', cnt)
+            print('Processed', cnt, 'with broken applicants')
 
             wrong_date_orders = Order.objects.filter(burial__source_type=Burial.SOURCE_TRANSFERRED, dt__gte='2013-03-12')
             cnt = wrong_date_orders.count()
@@ -43,8 +43,8 @@ class Command(BaseCommand):
                     transaction.commit()
                     gc.collect()
                     reset_queries()
-                    print 'Processed', i, 'of', cnt
-            print 'Processed', cnt, 'with broken datetime'
+                    print('Processed', i, 'of', cnt)
+            print('Processed', cnt, 'with broken datetime')
         finally:
             transaction.commit()
             transaction.set_autocommit(True)

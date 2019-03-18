@@ -104,10 +104,10 @@ class OrdersTest(TestCase):
         self.assertEqual(Order.objects.get().applicant_organization, None)
 
         r = self.loru_client.post('/order/%s/products/' % o.pk, {
-            'orderitem_set-0-id': u'', 'orderitem_set-0-product': u'%s' % self.product.pk, 'orderitem_set-0-quantity': u'10',
-            'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'', 'orderitem_set-1-quantity': u'1',
-            'orderitem_set-2-id': u'', 'orderitem_set-2-quantity': u'1', 'orderitem_set-2-product': u'',
-            'orderitem_set-INITIAL_FORMS': u'0', 'orderitem_set-MAX_NUM_FORMS': u'', 'orderitem_set-TOTAL_FORMS': u'3',
+            'orderitem_set-0-id': '', 'orderitem_set-0-product': '%s' % self.product.pk, 'orderitem_set-0-quantity': '10',
+            'orderitem_set-1-id': '', 'orderitem_set-1-product': '', 'orderitem_set-1-quantity': '1',
+            'orderitem_set-2-id': '', 'orderitem_set-2-quantity': '1', 'orderitem_set-2-product': '',
+            'orderitem_set-INITIAL_FORMS': '0', 'orderitem_set-MAX_NUM_FORMS': '', 'orderitem_set-TOTAL_FORMS': '3',
             })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Order.objects.get().orderitem_set.all().count(), 1)
@@ -137,11 +137,11 @@ class OrdersTest(TestCase):
         self.assertEqual(Order.objects.get().orderitem_set.all().count(), 0)
 
         r = self.loru_client.post('/order/%s/products/' % o.pk, {
-            'orderitem_set-0-id': u'', 'orderitem_set-0-product': u'%s' % self.product.pk, 'orderitem_set-0-quantity': u'10',
-            'orderitem_set-1-id': u'', 'orderitem_set-1-product': u'%s' % self.product_same.pk, 'orderitem_set-1-quantity': u'1',
-            'orderitem_set-2-id': u'', 'orderitem_set-2-product': u'%s' % self.product_type.pk, 'orderitem_set-2-quantity': u'1',
-            'orderitem_set-3-id': u'', 'orderitem_set-3-product': u'%s' % self.product_other.pk, 'orderitem_set-3-quantity': u'1',
-            'orderitem_set-INITIAL_FORMS': u'0', 'orderitem_set-MAX_NUM_FORMS': u'', 'orderitem_set-TOTAL_FORMS': u'4',
+            'orderitem_set-0-id': '', 'orderitem_set-0-product': '%s' % self.product.pk, 'orderitem_set-0-quantity': '10',
+            'orderitem_set-1-id': '', 'orderitem_set-1-product': '%s' % self.product_same.pk, 'orderitem_set-1-quantity': '1',
+            'orderitem_set-2-id': '', 'orderitem_set-2-product': '%s' % self.product_type.pk, 'orderitem_set-2-quantity': '1',
+            'orderitem_set-3-id': '', 'orderitem_set-3-product': '%s' % self.product_other.pk, 'orderitem_set-3-quantity': '1',
+            'orderitem_set-INITIAL_FORMS': '0', 'orderitem_set-MAX_NUM_FORMS': '', 'orderitem_set-TOTAL_FORMS': '4',
         })
         self.assertEqual(r.status_code, 302)
         self.assertEqual(Order.objects.get().orderitem_set.all().count(), 2)

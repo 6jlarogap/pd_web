@@ -18,7 +18,7 @@ import magic
 
 class DigitsValidator(RegexValidator):
     regex = '^\d+$'
-    message = _(u'Допускаются только цифры')
+    message = _('Допускаются только цифры')
     code = 'digits'
 
     def __init__(self):
@@ -26,18 +26,18 @@ class DigitsValidator(RegexValidator):
 
 class LengthValidator(MinLengthValidator):
     compare = lambda self, v, l: v != l
-    message = _(u'Длина %(limit_value)s')
+    message = _('Длина %(limit_value)s')
     code = 'length_custom'
 
 class VarLengthValidator(MinLengthValidator):
     compare = lambda self, v, l:  not l[0] <= v <= l[1]
-    message = _(u'Длина %(limit_value)s')
+    message = _('Длина %(limit_value)s')
     code = 'length_custom1'
 
 class NotEmptyValidator(MinLengthValidator):
     compare = lambda self, v, l:  not v
-    clean = lambda self, x: unicode(x).strip()
-    message = _(u'Не пусто')
+    clean = lambda self, x: str(x).strip()
+    message = _('Не пусто')
     code = 'not_empty'
 
 def utcisoformat(dt, remove_mcsec=True):
@@ -109,7 +109,7 @@ def str_to_bool_or_None(s):
     но с сохранением совместимости, если передаются булевы параметры
     """
     result = None
-    if isinstance(s, basestring):
+    if isinstance(s, str):
         s = s.lower()
         if s == 'true':
             result = True
@@ -130,7 +130,7 @@ class EmailMessage(EmailMessage):
 
     def send(self, **kwargs):
         if not settings.PRODUCTION_SITE:
-            self.subject = u"[dev] %s" % self.subject
+            self.subject = "[dev] %s" % self.subject
         if settings.BCC_OUR_MAIL:
             self.bcc.append(settings.BCC_OUR_MAIL)
         super(EmailMessage, self).send(**kwargs)
@@ -184,7 +184,7 @@ def capitalize(s):
     """
     if s is None:
         return ''
-    dash_char = lambda m: u"-%s" % m.group(1).upper()
+    dash_char = lambda m: "-%s" % m.group(1).upper()
     return s and re.sub(r'\-(\S)', dash_char, string.capwords(s)) or ''
 
 def re_search(s):
@@ -202,27 +202,27 @@ def re_search(s):
     Полагаем, что на вход всегда идет строка, не содержащая пробелов
     """
     regex = s.strip(). \
-            replace(u'\\', u'\\\\'). \
-            replace(u'|', u'\\|'). \
-            replace(u'(', u'\\('). \
-            replace(u')', u'\\)'). \
-            replace(u'{', u'\\{'). \
-            replace(u'}', u'\\}'). \
-            replace(u'^', u'\\^'). \
-            replace(u'$', u'\\$'). \
-            replace(u'.', u'\\.'). \
-            replace(u'+', u'\\+')
+            replace('\\', '\\\\'). \
+            replace('|', '\\|'). \
+            replace('(', '\\('). \
+            replace(')', '\\)'). \
+            replace('{', '\\{'). \
+            replace('}', '\\}'). \
+            replace('^', '\\^'). \
+            replace('$', '\\$'). \
+            replace('.', '\\.'). \
+            replace('+', '\\+')
     # Всего в регулярных выражениях 12 метасимволов. Кроме перечисленных выше 10,
     # еще те 2, по которым анализируем:
     if re.search(r'[\?\*]', regex):
         regex = re.sub(r'\?', r'.',  regex)
         regex = re.sub(r'\*', r'.*', regex)
         if regex.startswith(".*"):
-            regex = u"%s$" % regex
+            regex = "%s$" % regex
         else:
-            regex = u"^%s" % regex
+            regex = "^%s" % regex
     else:
-        regex = u"^%s" % regex
+        regex = "^%s" % regex
     return regex
 
 
@@ -230,7 +230,7 @@ def dictfetchall(cursor):
     "Return all rows from a cursor as a dict"
     columns = [col[0] for col in cursor.description]
     return [
-        dict(zip(columns, row))
+        dict(list(zip(columns, row)))
         for row in cursor.fetchall()
     ]
 
@@ -272,7 +272,7 @@ class SeriesTable(Sequence):
         self._indexes = list()
         for ser in series:
             self._collection.append(ser)
-        for i in xrange(len(self._collection[0])):
+        for i in range(len(self._collection[0])):
             do_append = False
             for k in range(len(self._collection)):
                 if self._collection[k][i][1]:
@@ -291,7 +291,7 @@ class SeriesTable(Sequence):
             stop = key.stop
             if stop is None:
                 stop = self._total
-            for i in xrange(key.start or 0, stop, key.step or 1):
+            for i in range(key.start or 0, stop, key.step or 1):
                 try:
                     result.append(self.__getitem__(i))
                 except IndexError:
@@ -336,10 +336,10 @@ def rus_to_lat(s):
     """
     В строке преобразовать русские буквы в одинаковые по начертанию латинские
     """
-    if isinstance(s, basestring):
+    if isinstance(s, str):
         result = ''
-        tr_from = u'авекмнорстухАВЕКМНОРСТУХ'
-        tr_to   = u'abekmhopctyxABEKMHOPCTYX'
+        tr_from = 'авекмнорстухАВЕКМНОРСТУХ'
+        tr_to   = 'abekmhopctyxABEKMHOPCTYX'
         for c in s:
             ind = tr_from.find(c)
             if ind < 0:
@@ -354,8 +354,8 @@ def reorder_form_fields(fields, old_pos, new_pos):
     """
     Поместить поле из form fields из позиции old_pos перед new_pos, вернуть fields
     """
-    field_keys = fields.keys()
-    if isinstance(new_pos, basestring):
+    field_keys = list(fields.keys())
+    if isinstance(new_pos, str):
         new_pos = field_keys.index(new_pos)
     field_keys.insert(new_pos, field_keys.pop(old_pos))
     fields = OrderedDict((k, fields[k]) for k in field_keys)

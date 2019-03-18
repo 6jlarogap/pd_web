@@ -14,7 +14,7 @@ from persons.models import CustomPerson
 from users.models import Thank
 
 REGEX = r'^(.+)\<script\>window\.defaultUsersCount\s*=\s*(\d+)\;\<\/script\>(.+)$'
-LINE = u'<script>window.defaultUsersCount = %s;</script>'
+LINE = '<script>window.defaultUsersCount = %s;</script>'
 
 class Command(BaseCommand):
     help = 'Fill index.html with default count of thanked person with token'
@@ -44,7 +44,7 @@ class Command(BaseCommand):
             quit()
         current_counter = Thank.objects.filter(customperson=cp).count()
         if current_counter != file_counter:
-            data_new = u"%s%s%s" % (
+            data_new = "%s%s%s" % (
                 m.group(1),
                 LINE % current_counter,
                 m.group(3),

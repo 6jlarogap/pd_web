@@ -54,16 +54,16 @@ class Command(BaseCommand):
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
-            print u"ERROR! User %s not found" % username
+            print("ERROR! User %s not found" % username)
             quit()
         try:
             from_time = datetime.datetime.strptime(from_time, TEMPLATE_DATE_TIME)
             to_time = datetime.datetime.strptime(to_time, TEMPLATE_DATE_TIME)
         except ValueError:
-            print 'ERROR! Invalid from_time or/and to_time. Type --help to get help'
+            print('ERROR! Invalid from_time or/and to_time. Type --help to get help')
             quit()
         if from_time > to_time:
-            print 'ERROR! From_time > to_time. Type --help to get help'
+            print('ERROR! From_time > to_time. Type --help to get help')
             quit()
         f = open(output_file, 'w')
 

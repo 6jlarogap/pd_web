@@ -9,10 +9,10 @@ from pd.forms import PartialFormMixin
 
 
 class LocationForm(PartialFormMixin, forms.ModelForm):
-    country_name = forms.CharField(label=_(u"Страна"), required=False)
-    region_name =  forms.CharField(label=_(u"Регион"), required=False)
-    city_name = forms.CharField(label=_(u"Город"), required=False)
-    street_name = forms.CharField(label=_(u"Улица"), required=False)
+    country_name = forms.CharField(label=_("Страна"), required=False)
+    region_name =  forms.CharField(label=_("Регион"), required=False)
+    city_name = forms.CharField(label=_("Город"), required=False)
+    street_name = forms.CharField(label=_("Улица"), required=False)
 
     fias_address = forms.CharField(label='', required=False)
 

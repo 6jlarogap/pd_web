@@ -8,7 +8,7 @@ from django.utils.translation import ugettext as _
 
 from pd.models import BaseModel 
 
-import re, urllib2, json
+import re, urllib.request, urllib.error, urllib.parse, json
 
 YANDEX_GEOCODE_URL = "http://geocode-maps.yandex.ru/1.x/?geocode=%s&format=json&results=1"
 
@@ -16,8 +16,8 @@ class GeoPointModel(models.Model):
     """
     Базовая GEO модель
     """
-    lat = models.FloatField(_(u"Широта"), blank=True, null=True)
-    lng = models.FloatField(_(u"Долгота"), blank=True, null=True)
+    lat = models.FloatField(_("Широта"), blank=True, null=True)
+    lng = models.FloatField(_("Долгота"), blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -35,9 +35,9 @@ class CoordinatesModel(models.Model):
     # TODO  Убрать этот базовый класс, а модель на его основе, burials.CemeteryCoordinates
     #       привести к PointsModel (неудачное название angle_number)
     #
-    angle_number = models.PositiveIntegerField(_(u"Порядок следования углов многоугольника"))
-    lat = models.FloatField(_(u"Широта"))
-    lng = models.FloatField(_(u"Долгота"))
+    angle_number = models.PositiveIntegerField(_("Порядок следования углов многоугольника"))
+    lat = models.FloatField(_("Широта"))
+    lng = models.FloatField(_("Долгота"))
 
     class Meta:
         abstract = True
@@ -47,9 +47,9 @@ class PointsModel(models.Model):
     """
     Базовая модель для списка координат: маршрута или вершин многоугольника
     """
-    index = models.PositiveIntegerField(_(u"Порядок следования точек, начиная с 0"))
-    lat = models.FloatField(_(u"Широта"))
-    lng = models.FloatField(_(u"Долгота"))
+    index = models.PositiveIntegerField(_("Порядок следования точек, начиная с 0"))
+    lat = models.FloatField(_("Широта"))
+    lng = models.FloatField(_("Долгота"))
 
     class Meta:
         abstract = True
@@ -60,9 +60,9 @@ class Country(models.Model):
     Страна.
     """
 
-    name = models.CharField(_(u"Название"), max_length=255, db_index=True, unique=True)
+    name = models.CharField(_("Название"), max_length=255, db_index=True, unique=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name[:24]
 
     @classmethod
@@ -72,11 +72,11 @@ class Country(models.Model):
         """
         if latitude is None or longitude is None:
             return None
-        query = u"%s,%s" % (longitude, latitude, )
+        query = "%s,%s" % (longitude, latitude, )
         try:
-            r = urllib2.urlopen(YANDEX_GEOCODE_URL % query)
+            r = urllib.request.urlopen(YANDEX_GEOCODE_URL % query)
             raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
-        except (urllib2.HTTPError, urllib2.URLError):
+        except (urllib.error.HTTPError, urllib.error.URLError):
             return None
         try:
             return json.loads(raw_data)
@@ -91,8 +91,8 @@ class Country(models.Model):
         result = None, None
 
         DOMAINS = dict(
-            ru=dict(name=u'Россия', currency='RUR',),
-            by=dict(name=u'Беларусь', currency='BYN',),
+            ru=dict(name='Россия', currency='RUR',),
+            by=dict(name='Беларусь', currency='BYN',),
         )
 
         data = cls.get_yandex_address_info(latitude, longitude)
@@ -124,7 +124,7 @@ class Country(models.Model):
                 data = data['response']['GeoObjectCollection']['featureMember'][0]\
                             ['GeoObject']
                 if 'name' in data and 'description' in data:
-                    result = u"%s, %s" % (data['name'], data['description'])
+                    result = "%s, %s" % (data['name'], data['description'])
                 elif 'description' in data:
                     result = data['description']
                 elif 'name' in data:
@@ -136,8 +136,8 @@ class Country(models.Model):
     class Meta:
         db_table = "common_geocountry"
         ordering = ['name']
-        verbose_name = _(u"страна")
-        verbose_name_plural = _(u"страны")
+        verbose_name = _("страна")
+        verbose_name_plural = _("страны")
 
 
 class Region(models.Model):
@@ -146,15 +146,15 @@ class Region(models.Model):
     """
 
     country = models.ForeignKey(Country)
-    name = models.CharField(_(u"Название"), max_length=255, db_index=True)
+    name = models.CharField(_("Название"), max_length=255, db_index=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name[:24]
 
     class Meta:
         unique_together = (("country", "name"),)
-        verbose_name = _(u"регион")
-        verbose_name_plural = _(u"регионы")
+        verbose_name = _("регион")
+        verbose_name_plural = _("регионы")
         db_table = "common_georegion"
         ordering = ['name']
 
@@ -164,15 +164,15 @@ class City(models.Model):
     """
 
     region = models.ForeignKey(Region)
-    name = models.CharField(_(u"Название"), max_length=255, db_index=True)
+    name = models.CharField(_("Название"), max_length=255, db_index=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name[:24]
 
     class Meta:
         unique_together = (("region", "name"),)
-        verbose_name = _(u"населенный пункт")
-        verbose_name_plural = _(u"населенные пункты")
+        verbose_name = _("населенный пункт")
+        verbose_name_plural = _("населенные пункты")
         db_table = "common_geocity"
         ordering = ['name']
 
@@ -187,49 +187,49 @@ class Street(models.Model):
     class Meta:
         ordering = ['name']
         unique_together = (("city", "name"),)
-        verbose_name = (_(u"улица"))
-        verbose_name_plural = (_(u"улицы"))
+        verbose_name = (_("улица"))
+        verbose_name_plural = (_("улицы"))
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 class Location(models.Model):
     """
     Адрес.
     """
-    country = models.ForeignKey(Country, verbose_name=_(u"Страна"), blank=True, null=True, on_delete=models.SET_NULL)
-    region = models.ForeignKey(Region, verbose_name=_(u"Регион"), blank=True, null=True, on_delete=models.SET_NULL)
-    city = models.ForeignKey(City, verbose_name=_(u"Город"), blank=True, null=True, on_delete=models.SET_NULL)
-    street = models.ForeignKey(Street, verbose_name=_(u"Улица"), blank=True, null=True, on_delete=models.SET_NULL)
-    post_index = models.CharField(_(u"Почтовый индекс"), max_length=255, blank=True)
+    country = models.ForeignKey(Country, verbose_name=_("Страна"), blank=True, null=True, on_delete=models.SET_NULL)
+    region = models.ForeignKey(Region, verbose_name=_("Регион"), blank=True, null=True, on_delete=models.SET_NULL)
+    city = models.ForeignKey(City, verbose_name=_("Город"), blank=True, null=True, on_delete=models.SET_NULL)
+    street = models.ForeignKey(Street, verbose_name=_("Улица"), blank=True, null=True, on_delete=models.SET_NULL)
+    post_index = models.CharField(_("Почтовый индекс"), max_length=255, blank=True)
 
-    house = models.CharField(_(u"Дом"), max_length=255, blank=True)
-    block = models.CharField(_(u"Корпус"), max_length=255, blank=True)
-    building = models.CharField(_(u"Строение"), max_length=255, blank=True)
-    flat = models.CharField(_(u"Квартира"), max_length=255, blank=True)
-    gps_x = models.FloatField(_(u"Координата X"), blank=True, null=True, editable=False)
-    gps_y = models.FloatField(_(u"Координата Y"), blank=True, null=True, editable=False)
-    info = models.TextField(_(u"Дополнительная информация"), blank=True, null=True)
+    house = models.CharField(_("Дом"), max_length=255, blank=True)
+    block = models.CharField(_("Корпус"), max_length=255, blank=True)
+    building = models.CharField(_("Строение"), max_length=255, blank=True)
+    flat = models.CharField(_("Квартира"), max_length=255, blank=True)
+    gps_x = models.FloatField(_("Координата X"), blank=True, null=True, editable=False)
+    gps_y = models.FloatField(_("Координата Y"), blank=True, null=True, editable=False)
+    info = models.TextField(_("Дополнительная информация"), blank=True, null=True)
     # Строка адреса в произвольной форме. Такая может приходить при входе в систему
     # пользователя лору, если его организация не имела доселе адреса и пользователь
     # этот адрес заполнил вручную. Преобразовать подобный адрес а структуру
     # страна, регион и т.д не всегда возможно, отсюда и необходимость в таком поле
-    addr_str = models.CharField(_(u"Адрес"), max_length=255, blank=True)
+    addr_str = models.CharField(_("Адрес"), max_length=255, blank=True)
 
     def get_local_addr(self, addr):
         if self.house:
             if addr:
-                addr += _(u', дом %s') % self.house
+                addr += _(', дом %s') % self.house
             else:
-                addr += _(u'дом %s') % self.house
+                addr += _('дом %s') % self.house
         if self.block:
-            addr += _(u', корп. %s') % self.block
+            addr += _(', корп. %s') % self.block
         if self.building:
-            addr += _(u', строен. %s') % self.building
+            addr += _(', строен. %s') % self.building
         if self.flat:
-            addr += _(u', кв. %s') % self.flat
+            addr += _(', кв. %s') % self.flat
         if self.info:
-            addr += u', %s' % self.info
+            addr += ', %s' % self.info
         return addr
 
     def city_addr(self):
@@ -237,48 +237,48 @@ class Location(models.Model):
         Только адрес города, строка
         """
         if self.city:
-            return u'%s, %s, %s' % (self.city, self.region, self.country,)
+            return '%s, %s, %s' % (self.city, self.region, self.country,)
         else:
-            return u''
+            return ''
 
     def address_(self, is_short=False, empty=False):
         if self.addr_str and self.addr_str.strip():
             return self.addr_str.strip()
         elif self.street or self.region or self.country:
-            addr = u''
+            addr = ''
             if self.street:
-                addr += u'%s' % self.street
+                addr += '%s' % self.street
             addr = self.get_local_addr(addr)
 
             if addr:
-                addr += u', %s' % (self.city or self.street and self.street.city or '')
+                addr += ', %s' % (self.city or self.street and self.street.city or '')
             else:
-                addr += u'%s' % (self.city or self.street and self.street.city or '')
+                addr += '%s' % (self.city or self.street and self.street.city or '')
             
             if is_short:
                 return addr.replace(', ,', ', ')
 
             if addr:
-                addr += u', %s' % (self.region or self.street and self.street.city.region or '')
+                addr += ', %s' % (self.region or self.street and self.street.city.region or '')
             else:
-                addr += u'%s' % (self.region or self.street and self.street.city.region or '')
+                addr += '%s' % (self.region or self.street and self.street.city.region or '')
 
             if addr:
-                addr += u', %s' % (self.country or self.street and self.street.city.region.country or '')
+                addr += ', %s' % (self.country or self.street and self.street.city.region.country or '')
             else:
-                addr += u'%s' % (self.country or self.street and self.street.city.region.country or '')
+                addr += '%s' % (self.country or self.street and self.street.city.region.country or '')
 
             if addr and self.post_index:
-                addr += u' %s' % self.post_index
+                addr += ' %s' % self.post_index
 
             return addr.replace(', ,', ', ')
         else:
             if empty:
                 return ''
             else:
-                return _(u"незаполненный адрес")
+                return _("незаполненный адрес")
 
-    def __unicode__(self):
+    def __str__(self):
         return self.address_(is_short=False)
 
     def short(self):
@@ -322,13 +322,13 @@ class Location(models.Model):
         if self.addr_str:
             query = self.addr_str.strip()
         elif self.country and self.country.name:
-            query = self.__unicode__()
+            query = str(self)
         else:
             query = ''
         if len(query) > 3:
             try:
-                query = urllib2.quote(query.encode('utf-8'))
-                r = urllib2.urlopen(YANDEX_GEOCODE_URL % query, timeout=10)
+                query = urllib.parse.quote(query.encode('utf-8'))
+                r = urllib.request.urlopen(YANDEX_GEOCODE_URL % query, timeout=10)
                 raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
                 data = json.loads(raw_data)
                 pos  = data['response']['GeoObjectCollection']['featureMember'][0] \
@@ -339,8 +339,8 @@ class Location(models.Model):
                     longitude=float(longitude),
                 )
             except (
-                    urllib2.HTTPError,
-                    urllib2.URLError,
+                    urllib.error.HTTPError,
+                    urllib.error.URLError,
                     IndexError,
                     KeyError,
                     ValueError,

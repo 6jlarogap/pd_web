@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import re, urllib2, json
+import re, urllib.request, urllib.error, urllib.parse, json
 from decimal import Decimal
 
 from django.conf import settings
@@ -75,10 +75,10 @@ class Youtube(object):
             key=settings.GOOGLE_SERVER_API_KEY
         )
         try:
-            r = urllib2.urlopen(url)
+            r = urllib.request.urlopen(url)
             raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
             data = json.loads(raw_data)
-        except (urllib2.HTTPError, urllib2.URLError, ValueError):
+        except (urllib.error.HTTPError, urllib.error.URLError, ValueError):
             raise ExcptHttp
         result = dict(
             yid=self._id,
@@ -148,8 +148,8 @@ class Youtube(object):
             lang=lang,
         )
         try:
-            r = urllib2.urlopen(url)
-        except (urllib2.HTTPError, urllib2.URLError,):
+            r = urllib.request.urlopen(url)
+        except (urllib.error.HTTPError, urllib.error.URLError,):
             return result
         buf = r.read().decode(r.info().getparam('charset') or 'utf-8')
         for text in buf.replace('\n', '').split('><'):

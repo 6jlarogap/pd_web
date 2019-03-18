@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 # EOF REST import
 
 
-from serializers import PlaceLogSerializer
+from .serializers import PlaceLogSerializer
 
 from burials.models import Place, Grave, Burial
 from logs.models import Log

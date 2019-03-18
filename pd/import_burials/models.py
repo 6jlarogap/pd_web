@@ -2,7 +2,7 @@
 import os
 import copy
 import csv
-import cStringIO
+import io
 import datetime
 import gc
 import json
@@ -37,7 +37,7 @@ class UTF8Recoder:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         return self.reader.next().encode("utf-8")
 
 class UnicodeReader:
@@ -45,36 +45,12 @@ class UnicodeReader:
         f = UTF8Recoder(f, encoding)
         self.reader = csv.reader(f, dialect=dialect, **kwds)
 
-    def next(self):
-        row = self.reader.next()
-        return [unicode(s, "utf-8") for s in row]
+    def __next__(self):
+        row = next(self.reader)
+        return [str(s, "utf-8") for s in row]
 
     def __iter__(self):
         return self
-
-class UnicodeWriter:
-    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
-        # Redirect output to a queue
-        self.queue = cStringIO.StringIO()
-        self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
-        self.stream = f
-        self.encoder = codecs.getincrementalencoder(encoding)()
-
-    def writerow(self, row):
-        self.writer.writerow([s.encode("utf-8") for s in row])
-        # Fetch UTF-8 output from the queue ...
-        data = self.queue.getvalue()
-        data = data.decode("utf-8")
-        # ... and reencode it into the target encoding
-        data = self.encoder.encode(data)
-        # write to the target stream
-        self.stream.write(data)
-        # empty queue
-        self.queue.truncate(0)
-
-    def writerows(self, rows):
-        for row in rows:
-            self.writerow(row)
 
 def import_location(location_data):
     country, _created = Country.objects.get_or_create(name=location_data[0])
@@ -96,7 +72,7 @@ def do_import_orgs(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     for i, row in enumerate(csvreader):
         if i > 0:
-            row = map(lambda c: '' if c == 'None' else c, row)
+            row = ['' if c == 'None' else c for c in row]
             org = None
             try:
                 if row[0]:
@@ -149,7 +125,7 @@ def import_alive_person(data):
 
 def import_dead_person(data):
     f,i,o = data[:3]
-    if not any([f,i,o]) or f.lower() == u'биоотходы':
+    if not any([f,i,o]) or f.lower() == 'биоотходы':
         return None
 
     birth_dt = make_unc_date(data[3])
@@ -176,15 +152,15 @@ def import_dead_person(data):
         return dp
 
 NO_NAMES = (
-    u'?',
-    u'*',
-    u'ъ',
-    u'ь',
-    u'неизвест',
-    u'без хоз',
-    u'без фамил',
+    '?',
+    '*',
+    'ъ',
+    'ь',
+    'неизвест',
+    'без хоз',
+    'без фамил',
     )
-NO_NAMES_RE = re.compile(ur'^(?:%s)' % ur'|'.join([re.escape(n) for n in NO_NAMES]))
+NO_NAMES_RE = re.compile(r'^(?:%s)' % r'|'.join([re.escape(n) for n in NO_NAMES]))
 
 def make_name(name):
     name = name.strip()
@@ -210,7 +186,7 @@ def make_date(s):
         pass
     return d
 
-COMMENT_URN_RE = re.compile(ur'kombinat\:\d+.*\s+(?:урна|урнов)')
+COMMENT_URN_RE = re.compile(r'kombinat\:\d+.*\s+(?:урна|урнов)')
 
 def do_import_burials_minsk(csv_fileobj, cemetery, user):
     
@@ -218,9 +194,9 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     cemetery = Cemetery.objects.filter(name=cemetery, ugh=ugh)[0]
     # Defaults:
     area_availability = Area.AVAILABILITY_OPEN
-    area_purpose, _created = AreaPurpose.objects.get_or_create(name=u'общественный')
-    comment_child_burial = u"Захоронение детское"
-    comment_child_burial_2 = u"Детское захоронение"
+    area_purpose, _created = AreaPurpose.objects.get_or_create(name='общественный')
+    comment_child_burial = "Захоронение детское"
+    comment_child_burial_2 = "Детское захоронение"
     re_comment_child_burial = re.escape(comment_child_burial)
     re_comment_child_burial_2 = re.escape(comment_child_burial_2)
 
@@ -240,7 +216,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         file_names, file_comments,
         post_index, building,
         op_type,
-     ) = range(28)
+     ) = list(range(28))
     today = datetime.date.today()
     today_str = "{0:d}/{1:02d}/{2:02d}".format(today.year, today.month, today.day)
      
@@ -256,7 +232,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         """
         row[area_name] = row[area_name].strip()
         if not row[area_name]:
-            row[area_name] = u'Без имени'
+            row[area_name] = 'Без имени'
 
         area, _created = Area.objects.get_or_create(
             cemetery=cemetery,
@@ -284,22 +260,22 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             # Адрес заявителя. Формируем, когда хотя бы есть город
             country = region = city = street = location = None
             row[country_name] = row[country_name].strip()
-            if row[country_name].lower() == u'неизвестен':
-                row[country_name] = u'Беларусь'
+            if row[country_name].lower() == 'неизвестен':
+                row[country_name] = 'Беларусь'
             if row[country_name]:
                 country, _created = Country.objects.get_or_create(
                     name=row[country_name],
                 )
             row[region_name] = row[region_name].strip()
-            if row[region_name].lower() == u'неизвестен':
-                row[region_name] = u'Минская обл.'
+            if row[region_name].lower() == 'неизвестен':
+                row[region_name] = 'Минская обл.'
             if row[region_name] and country:
                 region, _created = Region.objects.get_or_create(
                     country=country,
                     name=row[region_name],
                 )
-            if row[city_name].lower() == u'неизвестен':
-                row[city_name] = u'Минск'
+            if row[city_name].lower() == 'неизвестен':
+                row[city_name] = 'Минск'
             if row[city_name] and region:
                 city, _created = City.objects.get_or_create(
                     region=region,
@@ -351,7 +327,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                 grave_number=grave_number,
             )
 
-        burial_container = Burial.CONTAINER_URN if is_urn or row[op_type].lower() == u'урна' \
+        burial_container = Burial.CONTAINER_URN if is_urn or row[op_type].lower() == 'урна' \
                                                 else Burial.CONTAINER_COFFIN
 
         row[deadman_ln] = row[deadman_ln].strip()
@@ -387,7 +363,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         
         request = HttpRequest()
         request.user = user
-        if row[op_type].lower() == u"захоронение детское":
+        if row[op_type].lower() == "захоронение детское":
             if not re.search(re_comment_child_burial, row[comments], flags=re.I) and \
                not re.search(re_comment_child_burial_2, row[comments], flags=re.I):
                 BurialComment.objects.create(
@@ -395,12 +371,12 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                     creator=user,
                     comment=comment_child_burial,
                 )
-                write_log(request, burial, u"Комментарий: %s" % comment_child_burial)
+                write_log(request, burial, "Комментарий: %s" % comment_child_burial)
 
         if row[comments]:
             for c in row[comments].split('\t'):
                 try:
-                    i_sep = c.index(u'~')
+                    i_sep = c.index('~')
                     date_of_comment = datetime.datetime.strptime(c[:i_sep], DT_TEMPLATE)
                     comment = BurialComment.objects.create(
                         burial=burial,
@@ -411,7 +387,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                         dt_created=date_of_comment,
                         dt_modified=date_of_comment,
                     )
-                    write_log(request, burial, u"Комментарий (%s):\n%s" % (
+                    write_log(request, burial, "Комментарий (%s):\n%s" % (
                             localize(date_of_comment, use_l10n=True),
                             c[i_sep+1:],
                     ))
@@ -421,7 +397,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
                         creator=user,
                         comment=row[comments],
                     )
-                    write_log(request, burial, u"Комментарий: %s" % row[comments])
+                    write_log(request, burial, "Комментарий: %s" % row[comments])
         write_log(request, burial, operation=LogOperation.CLOSED_BURIAL_TRANSFERRED)
         
         if row[file_names]:
@@ -450,11 +426,11 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     total = 0
     f = open(tmp_file, 'r')
     csvreader = UnicodeReader(f, dialect="4minsk")
-    print '1-st step: new burials: burials, kid burials, honour burials'
+    print('1-st step: new burials: burials, kid burials, honour burials')
     n = 0
     for i, row in enumerate(csvreader):
         row[op_type] = row[op_type].lower()
-        if row[op_type] in (u'', u'захоронение', u'захоронение детское', u'почетное захоронение', ):
+        if row[op_type] in ('', 'захоронение', 'захоронение детское', 'почетное захоронение', ):
             if urn_by_comment(row):
                 continue
             n += 1
@@ -462,18 +438,18 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             make_burial(row, Burial.BURIAL_NEW)
             if n % 1000 == 0:
                 transaction.commit()
-                print 'Processed', n
+                print('Processed', n)
     if n % 1000 != 0:
-        print 'Processed', n
+        print('Processed', n)
     f.close()
 
     f = open(tmp_file, 'r')
     csvreader = UnicodeReader(f, dialect="4minsk")
-    print '2-nd step: burials to add to existing place'
+    print('2-nd step: burials to add to existing place')
     n = 0
     for i, row in enumerate(csvreader):
         row[op_type] = row[op_type].lower()
-        if row[op_type].startswith(u'подзахоронен'):
+        if row[op_type].startswith('подзахоронен'):
             if urn_by_comment(row):
                 continue
             n += 1
@@ -481,31 +457,31 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
             make_burial(row, Burial.BURIAL_ADD)
             if n % 1000 == 0:
                 transaction.commit()
-                print 'Processed', n
+                print('Processed', n)
     if n % 1000 != 0:
-        print 'Processed', n
+        print('Processed', n)
     f.close()
 
     f = open(tmp_file, 'r')
     csvreader = UnicodeReader(f, dialect="4minsk")
-    print '3-rd step: burials to existing graves, including urns'
+    print('3-rd step: burials to existing graves, including urns')
     n = 0
     for i, row in enumerate(csvreader):
         row[op_type] = row[op_type].lower()
         is_urn = urn_by_comment(row)
-        if row[op_type].startswith(u'захоронение в существ') or \
-           row[op_type] == u'урна' or \
+        if row[op_type].startswith('захоронение в существ') or \
+           row[op_type] == 'урна' or \
            is_urn:
             n += 1
             total += 1
             make_burial(row, Burial.BURIAL_OVER, is_urn=is_urn)
             if n % 1000 == 0:
                 transaction.commit()
-                print 'Processed', n
+                print('Processed', n)
     if n % 1000 != 0:
-        print 'Processed', n
+        print('Processed', n)
     f.close()
-    print 'Processed total', total
+    print('Processed total', total)
 
     os.remove(tmp_file)
     return total
@@ -517,10 +493,10 @@ def do_import_burials(csv_fileobj, user):
     except Org.DoesNotExist:
         loru = None
     BURIAL_TYPES = {
-        u'Захоронение': Burial.BURIAL_NEW,
-        u'Подзахоронение к существ': Burial.BURIAL_ADD,
-        u'Захоронение в существующ': Burial.BURIAL_OVER,
-        u'Урна': Burial.BURIAL_URN,
+        'Захоронение': Burial.BURIAL_NEW,
+        'Подзахоронение к существ': Burial.BURIAL_ADD,
+        'Захоронение в существующ': Burial.BURIAL_OVER,
+        'Урна': Burial.BURIAL_URN,
     }
     real_i = 0
     dupes_i = 0
@@ -530,9 +506,9 @@ def do_import_burials(csv_fileobj, user):
                 transaction.commit()
                 gc.collect()
                 reset_queries()
-                print 'Processed', i
+                print('Processed', i)
 
-            row = map(lambda c: '' if c == 'None' else c, row)
+            row = ['' if c == 'None' else c for c in row]
             try:
                 cemetery = Cemetery.objects.get(name=row[6])
             except Cemetery.DoesNotExist:
@@ -544,8 +520,8 @@ def do_import_burials(csv_fileobj, user):
 
             try:
                 changed_dt = row[64].split(' ', 2)[2].rsplit(':', 1)[0]
-            except Exception, e:
-                print 'Error parsing', row[64], e
+            except Exception as e:
+                print('Error parsing', row[64], e)
                 changed_dt = datetime.datetime.now()
 
             try:
@@ -606,11 +582,11 @@ def do_import_burials(csv_fileobj, user):
                         else:
                             app_org = Org.objects.get(full_name=row[56])
                     except Org.DoesNotExist:
-                        print 'Org not found', row[55], row[56]
+                        print('Org not found', row[55], row[56])
                         app_org = None
 
                 if row[58]:
-                    fm = u'%s %s' % (row[59] or '', row[60] or '')
+                    fm = '%s %s' % (row[59] or '', row[60] or '')
                     fm = fm.strip()[:30]
                     try:
                         agent = Profile.objects.get(
@@ -634,7 +610,7 @@ def do_import_burials(csv_fileobj, user):
 
                 plan_date = make_unc_date(row[2])
                 burial_container = Burial.CONTAINER_COFFIN
-                if row[27].lower() == u'биоотходы':
+                if row[27].lower() == 'биоотходы':
                     burial_container = Burial.CONTAINER_BIO
                 elif BURIAL_TYPES[row[1]] == Burial.BURIAL_URN:
                     burial_container = Burial.CONTAINER_URN
@@ -679,7 +655,7 @@ def do_import_burials(csv_fileobj, user):
                 request = HttpRequest()
                 request.user = user
                 if not area.name:
-                    write_log(request, b, _(u'Участок не был указан'))
+                    write_log(request, b, _('Участок не был указан'))
 
                 if row[64]:
                     # В файле импорта: Создано: %s %s' % (b.creator, b.added)
@@ -690,7 +666,7 @@ def do_import_burials(csv_fileobj, user):
                         created_by = row[64]
                     write_log(request, b, created_by)
 
-                write_log(request, b, _(u'Тип до импорта: %s') % row[1])
+                write_log(request, b, _('Тип до импорта: %s') % row[1])
 
     return real_i, dupes_i
 
@@ -702,7 +678,7 @@ def do_import_services(csv_fileobj):
         loru = None
     for i, row in enumerate(csvreader):
         if i > 0:
-            row = map(lambda c: '' if c == 'None' else c, row)
+            row = ['' if c == 'None' else c for c in row]
             try:
                 Product.objects.get(name=row[0])
             except Product.DoesNotExist:
@@ -729,9 +705,9 @@ def do_import_orders(csv_fileobj):
                 transaction.commit()
                 gc.collect()
                 reset_queries()
-                print 'Processed', i
+                print('Processed', i)
 
-            row = map(lambda c: '' if c == 'None' else c, row)
+            row = ['' if c == 'None' else c for c in row]
             
             all_data = {}
             if row[4]:
@@ -744,7 +720,7 @@ def do_import_orders(csv_fileobj):
                 items_data = {}
 
             try:
-                if row[1].lower() == u'биоотходы':
+                if row[1].lower() == 'биоотходы':
                     o = Order.objects.filter(burial__account_number=row[0], burial__deadman__isnull=True)[0]
                 else:
                     o = Order.objects.filter(burial__account_number=row[0], burial__deadman__last_name=row[1],
@@ -771,8 +747,8 @@ def do_import_orders(csv_fileobj):
 
                 real_i += 1
             except IndexError:
-                print 'Order not found:'
-                print ','.join(row[:4])
+                print('Order not found:')
+                print(','.join(row[:4]))
                 dupes_i += 1
                 continue
             #else:
@@ -834,7 +810,7 @@ def do_import_banks(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     for i, row in enumerate(csvreader):
         if i > 0:
-            row = map(lambda c: '' if c == 'None' else c, row)
+            row = ['' if c == 'None' else c for c in row]
             try:
                 BankAccount.objects.get(ls=row[6])
             except BankAccount.DoesNotExist:
@@ -848,7 +824,7 @@ def do_import_docs(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     for i, row in enumerate(csvreader):
         if i > 0:
-            row = map(lambda c: '' if c == 'None' else c, row)
+            row = ['' if c == 'None' else c for c in row]
             try:
                 PersonID.objects.get(person__last_name=row[0], person__first_name=row[1], series=row[4], number=row[5])
             except PersonID.DoesNotExist:
@@ -866,7 +842,7 @@ def do_import_dcs(csv_fileobj):
     csvreader = UnicodeReader(csv_fileobj)
     for i, row in enumerate(csvreader):
         if i > 0:
-            row = map(lambda c: '' if c == 'None' else c, row)
+            row = ['' if c == 'None' else c for c in row]
             try:
                 DeathCertificate.objects.get(person__last_name=row[0], person__first_name=row[1], series=row[3], s_number=row[4])
             except DeathCertificate.DoesNotExist:
@@ -874,17 +850,17 @@ def do_import_dcs(csv_fileobj):
                 try:
                     person=DeadPerson.objects.get(last_name=row[0], first_name=row[1], middle_name=row[2])
                 except DeadPerson.MultipleObjectsReturned:
-                    print 'Duplicate dead person(s) for a death certificate:'
-                    print ",".join(row)
+                    print('Duplicate dead person(s) for a death certificate:')
+                    print(",".join(row))
                     dupes_i += 1
                 except DeadPerson.DoesNotExist:
-                    print 'Dead person not found for a death certificate:'
-                    print ",".join(row)
+                    print('Dead person not found for a death certificate:')
+                    print(",".join(row))
                     dupes_i += 1
                 else:
                     if DeathCertificate.objects.filter(person=person):
-                        print 'Dead person already exists in the death certificate table:'
-                        print ",".join(row)
+                        print('Dead person already exists in the death certificate table:')
+                        print(",".join(row))
                         dupes_i += 1
                         continue
                     try:

@@ -53,44 +53,44 @@ def send_sms(
         if default_serv:
             your_serv = default_serv
         else:
-            message = _(u"Оператора телефона нет в настройках системы")
+            message = _("Оператора телефона нет в настройках системы")
     if not message:
         have_code = True
         try:
             smsapi = sms24x7.smsapi(your_serv['user'], your_serv['password'])
-            print 'DEBUG: send_sms, country_code=%s, user=%s' % (
+            print('DEBUG: send_sms, country_code=%s, user=%s' % (
                 your_serv['country_code'],
                 your_serv['user'],
-            )
+            ))
             smsapi.push_msg(
                 text,
                 phone_number,
                 # 11 chars max
-                sender_name=sender_name and sender_name[:11] or u'PohoronnoeD',
+                sender_name=sender_name and sender_name[:11] or 'PohoronnoeD',
                 nologin = True
             )
         # Некоторые ошибки идут с нормальной расшифровкой, но иные только
         # с цифровыми кодами, приходится перечислять
         except sms24x7.smsapi_nogate_exception:
-            message = _(u"Ошибка СМС-сервиса: сотовый оператор не подключен")
+            message = _("Ошибка СМС-сервиса: сотовый оператор не подключен")
             no_gate = True
             have_code = False
         except sms24x7.smsapi_auth_exception as excpt:
-            message = _(u"Ошибка СМС-сервиса: аутентификация, код: %s") % excpt
+            message = _("Ошибка СМС-сервиса: аутентификация, код: %s") % excpt
         except sms24x7.smsapi_spam_exception as excpt:
-            message = _(u"Ошибка СМС-сервиса: спам, код: %s") % excpt
+            message = _("Ошибка СМС-сервиса: спам, код: %s") % excpt
         except sms24x7.smsapi_encoding_exception as excpt:
-            message = _(u"Ошибка СМС-сервиса: кодировка, код: %s") % excpt
+            message = _("Ошибка СМС-сервиса: кодировка, код: %s") % excpt
         except sms24x7.smsapi_other_exception as excpt:
-            message = _(u"Ошибка СМС-сервиса: иная, код: %s") % excpt
+            message = _("Ошибка СМС-сервиса: иная, код: %s") % excpt
         # Все остальные идут с нормальной тестовой расшифрровкой
         except sms24x7.smsapi_exception as excpt:
-            message = _(u"Ошибка СМС-сервиса, %s") % excpt
+            message = _("Ошибка СМС-сервиса, %s") % excpt
     if message and error_email:
         if no_gate and user:
             try:
-                email_error_text += u"\n\n%s: %s / %s / %s\n" % (
-                    _(u'Регистратор'),
+                email_error_text += "\n\n%s: %s / %s / %s\n" % (
+                    _('Регистратор'),
                     user.username,
                     user.profile.full_name(),
                     user.profile.org.name,
@@ -98,14 +98,14 @@ def send_sms(
                 email_copy = user.email or user.profile.org.email or None
             except (AttributeError, Profile.DoesNotExist, ):
                 pass
-        email_error_text += u"\n%s%s" % (
+        email_error_text += "\n%s%s" % (
             message,
-            u"\n%s" % _(u"Справка по числовому коду: https://outbox.sms24x7.ru/api_manual/errors.html") \
+            "\n%s" % _("Справка по числовому коду: https://outbox.sms24x7.ru/api_manual/errors.html") \
                     if have_code else '',
         )
         email_from = settings.DEFAULT_FROM_EMAIL
         email_to = settings.SUPPORT_EMAILS
-        email_subject = _(u'Ошибка СМС-сервиса при отправке на %s') % phone_number
+        email_subject = _('Ошибка СМС-сервиса при отправке на %s') % phone_number
         email_text = email_error_text
         kwargs = dict()
         if email_copy:

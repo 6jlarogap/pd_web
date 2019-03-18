@@ -37,7 +37,7 @@ LOGGING = {
     }
 }
 
-from settings import INSTALLED_APPS
+from .settings import INSTALLED_APPS
 
 INSTALLED_APPS = [ia for ia in INSTALLED_APPS if ia != 'raven']
 

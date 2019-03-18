@@ -108,7 +108,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         yes_word = kwargs['yes_word']
         if yes_word.lower() != 'yes':
-            print "Give 'yes' as a single parameter if you mean to create/replace burial view(s)"
+            print("Give 'yes' as a single parameter if you mean to create/replace burial view(s)")
             quit()
         with connection.cursor() as cursor:
             for view in VIEWS:

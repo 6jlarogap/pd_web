@@ -13,7 +13,7 @@ class Command(BaseCommand):
         Fill place with grave available count
         """
         cnt = Place.objects.count()
-        print "Apply migration on %d objects" % cnt
+        print("Apply migration on %d objects" % cnt)
         
         row=0
         for place in Place.objects.all():
@@ -24,5 +24,5 @@ class Command(BaseCommand):
             if row % 500 == 0:
                 sys.stdout.write("\r%d%%" % int(row*100/cnt))
                 sys.stdout.flush()
-        print '\nDone'
+        print('\nDone')
        

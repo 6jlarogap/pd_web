@@ -10,9 +10,9 @@ from geo.models import Location, DFiasAddrobj, LocationFIAS
 class TestLocationForm(TestCase):
     def test_basic(self):
         data = {
-            'country_name': u'Россия',
-            'region_name': u'Санкт-Петербург',
-            'city_name': u'Санкт-Петербург',
+            'country_name': 'Россия',
+            'region_name': 'Санкт-Петербург',
+            'city_name': 'Санкт-Петербург',
         }
 
         f = LocationForm(data=data)
@@ -31,20 +31,20 @@ class TestLocationForm(TestCase):
         settings.DATABASES['fias'] = settings.TEST_FIAS
 
         lenin = DFiasAddrobj.objects.get_streets(
-            country=u'Россия',
-            region=u'Санкт-Петербург',
-            city=u'Санкт-Петербург',
-            street=u'улица Ленина',
+            country='Россия',
+            region='Санкт-Петербург',
+            city='Санкт-Петербург',
+            street='улица Ленина',
         )
 
         self.assertEqual(lenin.count(), 1)
         self.assertEqual(lenin[0].aoguid, '1faa3b1e-8558-42b0-9956-154daafe999f')
 
         svoboda = DFiasAddrobj.objects.get_streets(
-            country=u'Россия',
-            region=u'Краснодарский край',
-            city=u'Новороссийск',
-            street=u'улица Свободы',
+            country='Россия',
+            region='Краснодарский край',
+            city='Новороссийск',
+            street='улица Свободы',
         )
 
         self.assertEqual(svoboda.count(), 1)

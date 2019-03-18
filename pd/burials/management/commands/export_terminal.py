@@ -76,7 +76,7 @@ class Command(BaseCommand):
         translation.activate('ru')
 
         for cemetery_parms in CEMETERIES:
-            print "Processing bundle of cemeteries for %s.csv" % cemetery_parms['export']
+            print("Processing bundle of cemeteries for %s.csv" % cemetery_parms['export'])
             cemeteries = []
             for cemetery_pk in cemetery_parms['cemeteries']:
                 try:
@@ -85,7 +85,7 @@ class Command(BaseCommand):
                 except Cemetery.DoesNotExist:
                     pass
             if not cemeteries:
-                print "    !!! No cemeteries in system found for bundle %s" % cemetery_parms['export']
+                print("    !!! No cemeteries in system found for bundle %s" % cemetery_parms['export'])
                 continue
             csv.register_dialect(cemetery_parms['export'], **CSV_KWARGS)
             fname_export = os.path.join(export_path, "%s.csv" % cemetery_parms['export'])
@@ -101,11 +101,11 @@ class Command(BaseCommand):
                 ~Q(
                     burial_container=Burial.CONTAINER_BIO,
                 )
-            print "    %s: %s" % (
-                u"Cemetery" if len(cemeteries) == 1 else u"Cemeteries",
+            print("    %s: %s" % (
+                "Cemetery" if len(cemeteries) == 1 else "Cemeteries",
                 # Запуск из cron'a не терпит non-ASCII stdout output
-                u", ".join([pytils.translit.slugify(cemetery.name) for cemetery in cemeteries]),
-            )
+                ", ".join([pytils.translit.slugify(cemetery.name) for cemetery in cemeteries]),
+            ))
             burials = Burial.objects.filter(q).order_by(
                 "deadman__last_name",
                 "deadman__first_name",
@@ -122,15 +122,15 @@ class Command(BaseCommand):
                 place = burial.place
                 if last_name_lower and \
                    place and \
-                   not u'неизвестен' in last_name_lower and \
-                   not u'безфамильн' in last_name_lower:
+                   not 'неизвестен' in last_name_lower and \
+                   not 'безфамильн' in last_name_lower:
                     pk = str(deadman.pk)
 
                     last_name = last_name.upper().encode('cp1251')
-                    initials = u""
-                    first_name = deadman.first_name and deadman.first_name.rstrip(u".")
+                    initials = ""
+                    first_name = deadman.first_name and deadman.first_name.rstrip(".")
                     first_name = re.sub(BAD_CHAR_RE, '', first_name)
-                    middle_name = deadman.middle_name and deadman.middle_name.rstrip(u".")
+                    middle_name = deadman.middle_name and deadman.middle_name.rstrip(".")
                     middle_name = re.sub(BAD_CHAR_RE, '', middle_name)
                     if first_name:
                         if len(first_name) == 1:
@@ -138,20 +138,20 @@ class Command(BaseCommand):
                         else:
                             initials = first_name
                             if middle_name:
-                                initials = u"%s %s" % (first_name, middle_name,)
+                                initials = "%s %s" % (first_name, middle_name,)
                     if len(initials) > 30:
-                        initials = u"%s..." % initials[:28]
-                    initials = initials.encode('cp1251') or u"-"
+                        initials = "%s..." % initials[:28]
+                    initials = initials.encode('cp1251') or "-"
 
                     b_date = burial.fact_date
                     if b_date:
                         date = "%02d.%02d.%04d" % (b_date.day, b_date.month, b_date.year)
                     else:
-                        date = u"-"
+                        date = "-"
 
                     area = re.sub(BAD_CHAR_RE, '', place.area.name)
                     if not area:
-                        area = u"-"
+                        area = "-"
                     area = area.encode('cp1251')
 
                     row = re.sub(BAD_CHAR_RE, '', place.row)
@@ -159,33 +159,33 @@ class Command(BaseCommand):
 
                     cemetery_name = burial.cemetery and burial.cemetery.name or ''
                     if not cemetery_name:
-                        cemetery_name = u"-"
+                        cemetery_name = "-"
                     cemetery_name_lower = cemetery_name.lower()
-                    if u'колумбари' not in cemetery_name_lower and \
-                        u'кладбищ' not in cemetery_name_lower:
-                        cemetery_name = u"Кладбище %s" % cemetery_name
-                    if cemetery_name.startswith(u"Колумбарий") and \
-                        u'кладбищ' in cemetery_name:
-                        cemetery_name = cemetery_name.replace(u"кладбище", u"кл.")
-                        cemetery_name = cemetery_name.replace(u"кладбища", u"кл.")
+                    if 'колумбари' not in cemetery_name_lower and \
+                        'кладбищ' not in cemetery_name_lower:
+                        cemetery_name = "Кладбище %s" % cemetery_name
+                    if cemetery_name.startswith("Колумбарий") and \
+                        'кладбищ' in cemetery_name:
+                        cemetery_name = cemetery_name.replace("кладбище", "кл.")
+                        cemetery_name = cemetery_name.replace("кладбища", "кл.")
                     cemetery_name = cemetery_name.encode('cp1251')
                     if row and seat:
-                        row_seat = u"ряд %s, %s %s " % (
+                        row_seat = "ряд %s, %s %s " % (
                             row,
                             place.place_name(),
                             seat
                         )
                     elif seat:
-                        row_seat = u"%s %s" % (
+                        row_seat = "%s %s" % (
                             place.place_name(),
                             seat
                         )
                     elif row:
-                        row_seat = u"ряд %s" % (
+                        row_seat = "ряд %s" % (
                             row,
                         )
                     else:
-                        row_seat = u"-"
+                        row_seat = "-"
                     row_seat = row_seat.encode('cp1251')
                     columns = [pk, last_name, initials, date, cemetery_name, area, row_seat]
 

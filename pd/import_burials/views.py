@@ -29,7 +29,7 @@ class ImportBurialsMinskView(View):
             total = do_import_burials_minsk(request.FILES['burials-csv'],
                                             request.POST['burials-cemetery'],
                                             user=request.user)
-            messages.success(request, _(u"Импорт успешен, %s записей") % total)
+            messages.success(request, _("Импорт успешен, %s записей") % total)
         finally:
             transaction.commit()
             transaction.set_autocommit(True)
@@ -55,7 +55,7 @@ class ImportOrgsView(View):
         transaction.set_autocommit(False)
         try:
             do_import_orgs(request.FILES['orgs-csv'])
-            messages.success(request, _(u"Импорт успешен"))
+            messages.success(request, _("Импорт успешен"))
         finally:
             transaction.commit()
             transaction.set_autocommit(True)
@@ -70,7 +70,7 @@ class ImportBurialsView(View):
             real_i, dupes_i = do_import_burials(request.FILES['burials-csv'], user=request.user)
             messages.success(
                 request,
-                _(u"Импорт успешен, %(real_i)s записей, игнорировано %(dupes_i)s записей") % dict(
+                _("Импорт успешен, %(real_i)s записей, игнорировано %(dupes_i)s записей") % dict(
                     real_i=real_i, dupes_i=dupes_i
             ))
         finally:
@@ -101,7 +101,7 @@ class ImportBanksView(View):
         transaction.set_autocommit(False)
         try:
             do_import_banks(request.FILES['banks-csv'])
-            messages.success(request, _(u"Импорт успешен"))
+            messages.success(request, _("Импорт успешен"))
         finally:
             transaction.commit()
             transaction.set_autocommit(True)
@@ -114,7 +114,7 @@ class ImportServicesView(View):
         transaction.set_autocommit(False)
         try:
             do_import_services(request.FILES['services-csv'])
-            messages.success(request, _(u"Импорт успешен"))
+            messages.success(request, _("Импорт успешен"))
         finally:
             transaction.commit()
             transaction.set_autocommit(True)
@@ -129,7 +129,7 @@ class ImportOrdersView(View):
             real_i, dupes_i = do_import_orders(request.FILES['orders-csv'])
             messages.success(
                 request,
-                _(u"Импорт успешен, %(real_i)s записей, игнорировано %(dupes_i)s записей") % dict(
+                _("Импорт успешен, %(real_i)s записей, игнорировано %(dupes_i)s записей") % dict(
                     real_i=real_i, dupes_i=dupes_i
             ))
         finally:
@@ -144,7 +144,7 @@ class ImportPersonDocsView(View):
         transaction.set_autocommit(False)
         try:
             do_import_docs(request.FILES['docs-csv'])
-            messages.success(request, _(u"Импорт успешен"))
+            messages.success(request, _("Импорт успешен"))
         finally:
             transaction.commit()
             transaction.set_autocommit(True)
@@ -159,7 +159,7 @@ class ImportDeathCertsView(View):
             real_i, dupes_i = do_import_dcs(request.FILES['dcs-csv'])
             messages.success(
                 request,
-                _(u"Импорт успешен, %(real_i)s записей, игнорировано %(dupes_i)s записей") % dict(
+                _("Импорт успешен, %(real_i)s записей, игнорировано %(dupes_i)s записей") % dict(
                     real_i=real_i, dupes_i=dupes_i
             ))
         finally:

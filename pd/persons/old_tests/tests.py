@@ -47,7 +47,7 @@ class ResponsibleTest(TestCase):
         self.assertEqual(self.br.get_place(), None)
         self.assertEqual(self.br.get_responsible(), None)
 
-        self.responsible = AlivePerson.objects.create(last_name=u'Иванов', first_name=u'Иван')
+        self.responsible = AlivePerson.objects.create(last_name='Иванов', first_name='Иван')
         self.place = Place.objects.create(cemetery=self.cemetery, place='123', responsible=self.responsible)
         self.assertEqual(self.br.get_place(), None)
         self.assertEqual(self.br.get_responsible(), None)

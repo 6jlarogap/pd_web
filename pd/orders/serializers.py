@@ -197,13 +197,13 @@ class ProductEditSerializer(RestoreObjectMixin, CurrencyCodeMixin, serializers.M
             try:
                 price = decimal.Decimal(price)
             except decimal.InvalidOperation:
-                raise ServiceException(_(u'Неверно задана розничная цена'))
+                raise ServiceException(_('Неверно задана розничная цена'))
         price_wholesale = data.get('tradePrice')
         if price_wholesale is not None:
             try:
                 price_wholesale = decimal.Decimal(price_wholesale)
             except decimal.InvalidOperation:
-                raise ServiceException(_(u'Неверно задана оптовая цена'))
+                raise ServiceException(_('Неверно задана оптовая цена'))
         if instance:
             is_public_catalog = instance.is_public_catalog if is_public_catalog is None else is_public_catalog
             is_wholesale = instance.is_wholesale if is_wholesale is None else is_wholesale
@@ -213,9 +213,9 @@ class ProductEditSerializer(RestoreObjectMixin, CurrencyCodeMixin, serializers.M
             price = price or 0
             price_wholesale = price_wholesale or 0
         if is_public_catalog and price <= 0:
-            raise ServiceException(_(u'Не задана или неверна розничная цена при помещении товара/услуги в публичный каталог'))
+            raise ServiceException(_('Не задана или неверна розничная цена при помещении товара/услуги в публичный каталог'))
         elif is_wholesale and price_wholesale <= 0:
-            raise ServiceException(_(u'Не задана или неверна оптовая цена при помещении товара/услуги в оптовый каталог'))
+            raise ServiceException(_('Не задана или неверна оптовая цена при помещении товара/услуги в оптовый каталог'))
         return is_public_catalog, is_wholesale, price, price_wholesale
 
     def restore_object_(self, instance=None, validated_data=[]):

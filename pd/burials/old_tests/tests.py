@@ -58,7 +58,7 @@ class RequestsTest(TestCase):
 
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
+            'opf': 'person', 'applicant-last_name': 'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk, 'responsible-take_from': 'new',
         })
@@ -71,7 +71,7 @@ class RequestsTest(TestCase):
     def test_created_lists(self):
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
+            'opf': 'person', 'applicant-last_name': 'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk, 'responsible-take_from': 'new',
         })
@@ -96,7 +96,7 @@ class RequestsTest(TestCase):
 
     def test_actions(self):
         r = self.loru_client.post('/burials/create/', {
-            'coffin_type': 'coffin', 'opf': 'person', 'applicant-last_name': u'Petrov',
+            'coffin_type': 'coffin', 'opf': 'person', 'applicant-last_name': 'Petrov',
             'cemetery': self.cemetery.pk, 'area': self.area.pk, 'places_type': 'manual',
             'plan_date': '12.12.2013', 'plan_time': '12:00', 'grave_number': 1, 'responsible-take_from': 'new',
         })
@@ -149,7 +149,7 @@ class RequestsTest(TestCase):
 
     def test_back(self):
         r = self.loru_client.post('/burials/create/', {
-            'coffin_type': 'coffin', 'opf': 'person', 'applicant-last_name': u'Petrov',
+            'coffin_type': 'coffin', 'opf': 'person', 'applicant-last_name': 'Petrov',
             'cemetery': self.cemetery.pk, 'area': self.area.pk, 'places_type': 'manual',
             'plan_date': '12.12.2013', 'plan_time': '12:00', 'grave_number': 1, 'responsible-take_from': 'new',
         })
@@ -182,7 +182,7 @@ class RequestsTest(TestCase):
     def test_archive(self):
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
+            'opf': 'person', 'applicant-last_name': 'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk, 'responsible-take_from': 'new',
         })
@@ -207,7 +207,7 @@ class RequestsTest(TestCase):
     def test_edit(self):
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
+            'opf': 'person', 'applicant-last_name': 'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk, 'responsible-take_from': 'new',
         })
@@ -228,7 +228,7 @@ class RequestsTest(TestCase):
     def test_edit_loru(self):
         r = self.loru_client.post('/burials/create/', {
             'cemetery': self.cemetery.pk, 'plan_date': '12.12.2013', 'plan_time': '12:00',
-            'opf': 'person', 'applicant-last_name': u'Petrov', 'places_type': 'manual', 'grave_number': 1,
+            'opf': 'person', 'applicant-last_name': 'Petrov', 'places_type': 'manual', 'grave_number': 1,
             'deadman-dc-zags': self.zags.pk, 'responsible-personid-number': '11', 'responsible-personid-series': '11',
             'responsible-personid-id_type': self.doc_type.pk, 'responsible-take_from': 'new',
         })
@@ -285,7 +285,7 @@ class BurialsTest(TestCase):
             fact_date=datetime.date.today(),
             status=Burial.STATUS_CLOSED,
             deadman=DeadPerson.objects.create(
-                last_name=u'Ivanov',
+                last_name='Ivanov',
             )
         )
 
@@ -345,7 +345,7 @@ class BurialsTest(TestCase):
             fact_date=datetime.date.today(),
             status=Burial.STATUS_CLOSED,
             deadman=DeadPerson.objects.create(
-                last_name=u'Ivanov',
+                last_name='Ivanov',
             )
         )
 
@@ -400,7 +400,7 @@ class BurialsTest(TestCase):
         r = self.ugh_client.get('/burials/create/')
         self.assertEqual(r.status_code, 200)
 
-        self.assertEquals(Burial.objects.all().count(), 0)
+        self.assertEqual(Burial.objects.all().count(), 0)
 
         r = self.ugh_client.post('/burials/create/', {
             'coffin_type': 'coffin',
@@ -410,18 +410,18 @@ class BurialsTest(TestCase):
             'opf': 'person',
             'places_type': 'manual',
             'place_number': 123,
-            'deadman-last_name': u'Ivanov',
+            'deadman-last_name': 'Ivanov',
             'deadman-dc-zags': self.zags.pk,
             'responsible-take_from': 'new',
-            'responsible-last_name': u'Petrov',
-            'applicant-last_name': u'Petrov',
+            'responsible-last_name': 'Petrov',
+            'applicant-last_name': 'Petrov',
             'applicant-pid-id_type': self.doc_type.pk,
             'applicant-pid-series': '11111',
             'applicant-pid-number': '222',
         })
         self.assertEqual(r.status_code, 302)
 
-        self.assertEquals(Burial.objects.all().count(), 1)
+        self.assertEqual(Burial.objects.all().count(), 1)
 
         br = Burial.objects.get()
 
@@ -454,7 +454,7 @@ class TestArchived(TestCase):
         r = self.ugh_client.get('/burials/create/?archive=1')
         self.assertEqual(r.status_code, 200)
 
-        self.assertEquals(Burial.objects.all().count(), 0)
+        self.assertEqual(Burial.objects.all().count(), 0)
 
         r = self.ugh_client.post('/burials/create/?archive=1', {
             'coffin_type': 'coffin',
@@ -464,14 +464,14 @@ class TestArchived(TestCase):
             'opf': 'person',
             'places_type': 'manual',
             'responsible-take_from': 'new',
-            'applicant-last_name': u'Petrov',
+            'applicant-last_name': 'Petrov',
             'place_number': 123,
-            'deadman-last_name': u'Ivanov',
+            'deadman-last_name': 'Ivanov',
             'deadman-dc-zags': self.zags.pk,
         })
         self.assertEqual(r.status_code, 302)
 
-        self.assertEquals(Burial.objects.all().count(), 1)
+        self.assertEqual(Burial.objects.all().count(), 1)
 
         br = Burial.objects.get()
 
@@ -591,18 +591,18 @@ class TestAJAX(TestCase):
     def test_place_info(self):
         params = (self.cemetery.pk, '', '123', )
         r = self.ugh_client.get('/burials/get_place/?cemetery=%s&area=%s&row=&place_number=%s' % params)
-        self.assertEqual(r.content, u'')
+        self.assertEqual(r.content, '')
 
         area = Area.objects.create(cemetery=self.cemetery, name='area')
         params = (self.cemetery.pk, area.pk, '123', )
 
         r = self.ugh_client.get('/burials/get_place/?cemetery=%s&area=%s&row=&place_number=%s' % params)
-        self.assertEqual(r.content, u'')
+        self.assertEqual(r.content, '')
 
         p, _created = Place.objects.get_or_create(cemetery=self.cemetery, area=area, row='', place='123')
 
         r = self.ugh_client.get('/burials/get_place/?cemetery=%s&area=%s&row=&place_number=%s' % params)
-        self.assertNotEqual(unicode(r.content.decode('utf-8')), u'')
+        self.assertNotEqual(str(r.content.decode('utf-8')), '')
         self.assertContains(r, p.place)
 
 class ExhumationTest(TestCase):

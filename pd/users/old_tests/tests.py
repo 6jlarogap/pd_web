@@ -127,7 +127,7 @@ class EditDataTest(TestCase):
         self.client = Client()
 
         r = self.client.login(username='test', password='test')
-        self.assertEquals(r, True)
+        self.assertEqual(r, True)
 
         r = self.client.post('/profile/', {
             'org_type': Org.PROFILE_LORU, 'org_name': 'LORU', 'org_inn': '111', 'places_type': 'manual',
@@ -159,9 +159,9 @@ class EditDataTest(TestCase):
 
         self.client.logout()
         r = self.client.login(username='test', password='test')
-        self.assertEquals(r, False)
+        self.assertEqual(r, False)
         r = self.client.login(username='test', password='test1')
-        self.assertEquals(r, True)
+        self.assertEqual(r, True)
 
     def test_create(self):
         r = self.client.post('/user/create/', dict(
@@ -171,4 +171,4 @@ class EditDataTest(TestCase):
 
         self.client.logout()
         r = self.client.login(username='test1', password='test1')
-        self.assertEquals(r, True)
+        self.assertEqual(r, True)

@@ -79,7 +79,7 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
         if not self.instance or not self.instance.pk:
             try:
                 category_default = ProductCategory.objects.get(
-                    name=_(u'Прочие товары и услуги'),
+                    name=_('Прочие товары и услуги'),
                 )
                 self.initial.update({'productcategory': category_default})
             except ProductCategory.DoesNotExist:
@@ -88,13 +88,13 @@ class ProductForm(StrippedStringsMixin, forms.ModelForm):
     def clean_description(self):
         description = self.cleaned_data.get('description')
         if not description or not description.strip():
-            raise forms.ValidationError(_(u'Обязательное поле'))
+            raise forms.ValidationError(_('Обязательное поле'))
         return description
 
     def clean_name(self):
         name = self.cleaned_data.get('name', '').strip()
         if len(name) > Product.PRODUCT_NAME_MAXLEN:
-            raise forms.ValidationError(_(u'Не больше %d символов') % Product.PRODUCT_NAME_MAXLEN)
+            raise forms.ValidationError(_('Не больше %d символов') % Product.PRODUCT_NAME_MAXLEN)
         return name
 
 class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.ModelForm):
@@ -155,13 +155,13 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.Model
             if not (self.cleaned_data.get('agent_director') or \
                     self.cleaned_data.get('agent') and self.cleaned_data.get('dover')
                    ):
-                raise forms.ValidationError(_(u'Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
+                raise forms.ValidationError(_('Нет данных об агенте и/или доверенности для заявителя-ЮЛ. Изменения не сохранены'))
             dover = self.cleaned_data.get('dover')
             if dover and not dover.begin <= self.cleaned_data.get('dt') <= dover.end:
-                    raise forms.ValidationError(_(u'Дата заказа не соответствует сроку действия доверенности. Изменения не сохранены'))
+                    raise forms.ValidationError(_('Дата заказа не соответствует сроку действия доверенности. Изменения не сохранены'))
         elif self.cleaned_data.get('opf') == Org.OPF_PERSON:
             if not self.applicant_form.is_valid_data():
-                raise forms.ValidationError(_(u"Нужно указать Заявителя-ФЛ"))
+                raise forms.ValidationError(_("Нужно указать Заявителя-ФЛ"))
         return self.cleaned_data
             
     def construct_forms(self):
@@ -215,7 +215,7 @@ class OrderForm(ChildrenJSONMixin, SafeDeleteMixin, AppOrgFormMixin, forms.Model
 class OrderServicesForm(forms.Form):
     do_photo = forms.BooleanField(
         required=False,
-        label=_(u"Фотографирование"),
+        label=_("Фотографирование"),
     )
     price_photo = forms.CharField(required=False, widget=forms.HiddenInput)
 
@@ -239,7 +239,7 @@ class OrderItemForm(forms.ModelForm):
     def clean(self):
         for f in self.formset:
             if (f is not self) and f['product'].value() == self['product'].value():
-                raise forms.ValidationError(_(u'Нельзя добавить два или более одинаковых товаров/услуг'))
+                raise forms.ValidationError(_('Нельзя добавить два или более одинаковых товаров/услуг'))
         return self.cleaned_data
 
 class BaseOrderItemFormset(BaseInlineFormSet):
@@ -304,7 +304,7 @@ class AddInfoForm(forms.ModelForm):
         fields = '__all__'
 
 class CoffinForm(forms.ModelForm):
-    size = forms.CharField(label=_(u'Размер'))
+    size = forms.CharField(label=_('Размер'))
 
     class Meta:
         model = CoffinData
@@ -322,36 +322,36 @@ class OrderSearchForm(forms.Form):
         (100, 100),
     )
 
-    fio_order_deadman = forms.CharField(required=False, max_length=100, label=_(u"ФИО усопшего"))
-    no_last_name = forms.BooleanField(required=False, initial=False, label=_(u"Неизв."))
-    birth_date_from = forms.DateField(required=False, label=_(u"Дата рожд. с"))
-    birth_date_to = forms.DateField(required=False, label=_(u"по"))
-    death_date_from = forms.DateField(required=False, label=_(u"Дата смерти с"))
-    death_date_to = forms.DateField(required=False, label=_(u"по"))
-    burial_date_from = forms.DateField(required=False, label=_(u"Дата захор. с"))
-    burial_date_to = forms.DateField(required=False, label=_(u"по"))
-    account_number_from = forms.IntegerField(required=False, label=_(u"Номер Заказа с"))
-    account_number_to = forms.IntegerField(required=False, label=_(u"по"))
-    applicant_org = forms.CharField(required=False, max_length=60, label=_(u"Заказчик-ЮЛ"))
-    applicant_person = forms.CharField(required=False, max_length=40, label=_(u"Заказчик-ФЛ"))
-    responsible = forms.CharField(required=False, max_length=40, label=_(u"Ответственный"))
-    cemetery = forms.CharField(required=False, label=_(u"Кладбища"))
-    area = forms.CharField(required=False, label=_(u"Участок"))
-    row = forms.CharField(required=False, label=_(u"Ряд"))
-    place = forms.CharField(required=False, label=_(u"Место"))
-    no_responsible = forms.BooleanField(required=False, initial=False, label=_(u"Без отв."))
-    status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
-    annulated = forms.BooleanField(required=False, initial=False, label=_(u"Аннулированы"))
-    order_num_from = forms.IntegerField(required=False, label=_(u"Номер Заказа с"))
-    order_num_to = forms.IntegerField(required=False, label=_(u"по"))
-    order_cost_from = forms.IntegerField(required=False, label=_(u"Стоимость с"))
-    order_cost_to = forms.IntegerField(required=False, label=_(u"по"))
-    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
-    burial_num_from = forms.IntegerField(required=False, label=_(u"Номер Захоронения с"))
-    burial_num_to = forms.IntegerField(required=False, label=_(u"по"))
-    reg_number_from = forms.IntegerField(required=False, label=_(u"Рег № с"))
-    reg_number_to = forms.IntegerField(required=False, label=_(u" по "))
-    burial_container = forms.TypedChoiceField(required=False, label=_(u"Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
+    fio_order_deadman = forms.CharField(required=False, max_length=100, label=_("ФИО усопшего"))
+    no_last_name = forms.BooleanField(required=False, initial=False, label=_("Неизв."))
+    birth_date_from = forms.DateField(required=False, label=_("Дата рожд. с"))
+    birth_date_to = forms.DateField(required=False, label=_("по"))
+    death_date_from = forms.DateField(required=False, label=_("Дата смерти с"))
+    death_date_to = forms.DateField(required=False, label=_("по"))
+    burial_date_from = forms.DateField(required=False, label=_("Дата захор. с"))
+    burial_date_to = forms.DateField(required=False, label=_("по"))
+    account_number_from = forms.IntegerField(required=False, label=_("Номер Заказа с"))
+    account_number_to = forms.IntegerField(required=False, label=_("по"))
+    applicant_org = forms.CharField(required=False, max_length=60, label=_("Заказчик-ЮЛ"))
+    applicant_person = forms.CharField(required=False, max_length=40, label=_("Заказчик-ФЛ"))
+    responsible = forms.CharField(required=False, max_length=40, label=_("Ответственный"))
+    cemetery = forms.CharField(required=False, label=_("Кладбища"))
+    area = forms.CharField(required=False, label=_("Участок"))
+    row = forms.CharField(required=False, label=_("Ряд"))
+    place = forms.CharField(required=False, label=_("Место"))
+    no_responsible = forms.BooleanField(required=False, initial=False, label=_("Без отв."))
+    status = forms.TypedChoiceField(required=False, label=_("Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
+    annulated = forms.BooleanField(required=False, initial=False, label=_("Аннулированы"))
+    order_num_from = forms.IntegerField(required=False, label=_("Номер Заказа с"))
+    order_num_to = forms.IntegerField(required=False, label=_("по"))
+    order_cost_from = forms.IntegerField(required=False, label=_("Стоимость с"))
+    order_cost_to = forms.IntegerField(required=False, label=_("по"))
+    per_page = forms.ChoiceField(label=_("На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+    burial_num_from = forms.IntegerField(required=False, label=_("Номер Захоронения с"))
+    burial_num_to = forms.IntegerField(required=False, label=_("по"))
+    reg_number_from = forms.IntegerField(required=False, label=_("Рег № с"))
+    reg_number_to = forms.IntegerField(required=False, label=_(" по "))
+    burial_container = forms.TypedChoiceField(required=False, label=_("Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
 
 class OrderBurialForm(forms.ModelForm):
     """
@@ -361,10 +361,10 @@ class OrderBurialForm(forms.ModelForm):
         model = Order
         fields = ()
 
-    NB_CHOICES = (('new', _(u'Новое захоронение')), ('bind', _(u'Существующее')))
+    NB_CHOICES = (('new', _('Новое захоронение')), ('bind', _('Существующее')))
     
     nb_choice = forms.ChoiceField(label='', choices=NB_CHOICES, widget=forms.RadioSelect, initial='new')
-    nb_burial = forms.IntegerField(required=False, label=_(u"Номер захоронения"))
+    nb_burial = forms.IntegerField(required=False, label=_("Номер захоронения"))
     
     def __init__(self, request, *args, **kwargs):
         self.request = request
@@ -375,18 +375,18 @@ class OrderBurialForm(forms.ModelForm):
         if self.is_valid():
             if cd['nb_choice'] == 'bind':
                 if not cd['nb_burial']:
-                    raise forms.ValidationError(_(u'Задайте номер захоронения'))
+                    raise forms.ValidationError(_('Задайте номер захоронения'))
                 try:
                     burial = Burial.objects.get(pk=cd['nb_burial'])
                     if burial.is_annulated() and \
                        burial.is_full() and burial.loru and burial.loru == self.request.user.profile.org:
                         # своё аннулированное. Чужие проверяются ниже
-                        raise forms.ValidationError(_(u'Анулированное захоронение нельзя прикрепить к заказу'))
+                        raise forms.ValidationError(_('Анулированное захоронение нельзя прикрепить к заказу'))
                     elif not burial.can_bind_to_order(self.request.user.profile.org):
-                        raise forms.ValidationError(_(u'Это захоронение недоступно вашей организации'))
+                        raise forms.ValidationError(_('Это захоронение недоступно вашей организации'))
                     self.instance.burial = burial
                     self.instance.save()
                 except Burial.DoesNotExist:
-                    raise forms.ValidationError(_(u'Нет такого захоронения'))
+                    raise forms.ValidationError(_('Нет такого захоронения'))
         return cd
 

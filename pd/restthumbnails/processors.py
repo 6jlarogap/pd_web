@@ -30,10 +30,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+from io import BytesIO
 
 try:
     from PIL import Image, ImageChops, ImageFilter
@@ -140,12 +137,12 @@ def get_image(source, exif_orientation=True, **options):
     Ориентация исходного снимка определяется пакетом piexif
 
     """
-    # Use a StringIO wrapper because if the source is an incomplete file like
+    # Use a BytesIO wrapper because if the source is an incomplete file like
     # object, PIL may have problems with it. For example, some image types
     # require tell and seek methods that are not present on all storage
     # File objects.
 
-    source = StringIO(source.read())
+    source = BytesIO(source.read())
     image = Image.open(source)
     # Fully load the image now to catch any problems with the image
     # contents.
@@ -166,9 +163,9 @@ def get_image(source, exif_orientation=True, **options):
 
 def save_image(image, format='JPEG', **options):
     """
-    Save a PIL image to memory and return a StringIO instance.
+    Save a PIL image to memory and return a BytesIO instance.
     """
-    destination = StringIO()
+    destination = BytesIO()
     if format == 'JPEG':
         options.setdefault('quality', 85)
         try:
@@ -331,9 +328,9 @@ def scale_and_crop(im, size, crop=False, upscale=True, crop_background='white', 
                    min(source_x, int(target_x) + halfdiff_x),
                    min(source_y, int(target_y) + halfdiff_y)]
             # See if an edge cropping argument was provided.
-            edge_crop = (isinstance(crop, basestring) and
+            edge_crop = (isinstance(crop, str) and
                          re.match(r'(?:(-?)(\d+))?,(?:(-?)(\d+))?$', crop))
-            if edge_crop and filter(None, edge_crop.groups()):
+            if edge_crop and [_f for _f in edge_crop.groups() if _f]:
                 x_right, x_crop, y_bottom, y_crop = edge_crop.groups()
                 if x_crop:
                     offset = min(int(target_x) * int(x_crop) // 100, diff_x)
@@ -419,7 +416,7 @@ def get_minimized_contentfile(source, minsize=0, quality=50):
     """
     try:
         buff = source.read()
-        image = Image.open(StringIO(buff))
+        image = Image.open(BytesIO(buff))
         # Fully load the image now to catch any problems with the image
         # contents.
         image.load()

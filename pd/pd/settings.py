@@ -502,7 +502,7 @@ SHOW_OPER_STATS = True
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
 try:
-    from local_settings import *
+    from .local_settings import *
 except ImportError:
     pass
 
