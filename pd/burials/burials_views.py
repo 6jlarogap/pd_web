@@ -1586,7 +1586,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
         qs = Burial.objects.filter(q_graves_coffins).order_by('dt_register'). \
                 select_related(*select_related).distinct()
         fname = 'registry-1-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
-        with open(os.path.join(temp_dir, fname), 'w') as f:
+        with open(os.path.join(temp_dir, fname), 'wb') as f:
             for b in qs.iterator():
                 full_name = self.check_names(b.deadman)
                 if not full_name:
@@ -1612,7 +1612,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
         qs = Burial.objects.filter(q_graves_urns).order_by('dt_register'). \
                 select_related(*select_related).distinct()
         fname = 'registry-5-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
-        with open(os.path.join(temp_dir, fname), 'w') as f:
+        with open(os.path.join(temp_dir, fname), 'wb') as f:
             for b in qs.iterator():
                 full_name = self.check_names(b.deadman)
                 if not full_name:
@@ -1639,7 +1639,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
         qs = Burial.objects.filter(q_vertical_columbariums).order_by('dt_register'). \
                 select_related(*select_related).distinct()
         fname = 'registry-2-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
-        with open(os.path.join(temp_dir, fname), 'w') as f:
+        with open(os.path.join(temp_dir, fname), 'wb') as f:
             for b in qs.iterator():
                 full_name = self.check_names(b.deadman)
                 if not full_name:
@@ -1667,7 +1667,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
         qs = Burial.objects.filter(q_horizontal_columbariums).order_by('dt_register'). \
                 select_related(*select_related).distinct()
         fname = 'registry-3-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
-        with open(os.path.join(temp_dir, fname), 'w') as f:
+        with open(os.path.join(temp_dir, fname), 'wb') as f:
             for b in qs.iterator():
                 full_name = self.check_names(b.deadman)
                 if not full_name:
@@ -1693,7 +1693,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
         qs = Burial.objects.filter(q_crypts).order_by('dt_register'). \
                 select_related(*select_related).distinct()
         fname = 'registry-4-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
-        with open(os.path.join(temp_dir, fname), 'w') as f:
+        with open(os.path.join(temp_dir, fname), 'wb') as f:
             for b in qs.iterator():
                 full_name = self.check_names(b.deadman)
                 if not full_name:
