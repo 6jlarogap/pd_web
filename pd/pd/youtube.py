@@ -76,7 +76,7 @@ class Youtube(object):
         )
         try:
             r = urllib.request.urlopen(url)
-            raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+            raw_data = r.read().decode(r.headers.get_content_charset('utf-8'))
             data = json.loads(raw_data)
         except (urllib.error.HTTPError, urllib.error.URLError, ValueError):
             raise ExcptHttp

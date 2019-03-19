@@ -692,7 +692,7 @@ class Oauth(BaseModel):
             try:
                 msg_debug = ", url: %s" % url if settings.DEBUG else ""
                 r = urllib.request.urlopen(url)
-                raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+                raw_data = r.read().decode(r.headers.get_content_charset('utf-8'))
             except urllib.error.HTTPError as excpt:
                 raise ServiceException(
                     _('Ошибка в ответе от провайдера %(provider)s, '

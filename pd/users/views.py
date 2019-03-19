@@ -4059,7 +4059,7 @@ class ApiVkBotHandlerView(APIView):
             r = urllib.request.urlopen(
                 "https://api.vk.com/method/users.get?user_ids=%s&v=5.0" % user_id
             )
-            raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+            raw_data = r.read().decode(r.headers.get_content_charset('utf-8'))
             user_data = json.loads(raw_data)
             user_name = user_data['response'][0]['first_name']
         except (urllib.error.HTTPError, urllib.error.URLError,

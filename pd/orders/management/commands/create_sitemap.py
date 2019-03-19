@@ -76,7 +76,7 @@ class Command(BaseCommand):
                     s.off_address.gps_x,
                     s.off_address.gps_y,
                 ))
-                raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+                raw_data = r.read().decode(r.headers.get_content_charset('utf-8'))
             except (urllib.error.HTTPError, urllib.error.URLError):
                 continue
             try:

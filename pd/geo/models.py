@@ -75,7 +75,7 @@ class Country(models.Model):
         query = "%s,%s" % (longitude, latitude, )
         try:
             r = urllib.request.urlopen(YANDEX_GEOCODE_URL % query)
-            raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
+            raw_data = r.read().decode(r.headers.get_content_charset('utf-8'))
         except (urllib.error.HTTPError, urllib.error.URLError):
             return None
         try:
@@ -327,7 +327,7 @@ class Location(models.Model):
             query = ''
         if len(query) > 3:
             try:
-                query = urllib.parse.quote(query.encode('utf-8'))
+                query = urllib.parse.quote(query)
                 r = urllib.request.urlopen(YANDEX_GEOCODE_URL % query, timeout=10)
                 raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
                 data = json.loads(raw_data)
