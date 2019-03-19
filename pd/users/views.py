@@ -2846,7 +2846,7 @@ class ApiEducation(APIView):
             type_ = 'oms' if request.user.profile.is_ugh() else 'loru'
             host = "%s://%s" % ('https' if request.is_secure() else 'http', request.get_host(), )
             try:
-                f_description = open(os.path.join(settings.MEDIA_ROOT, cls.FOLDER_EDU, 'description.csv'), "rb")
+                f_description = open(os.path.join(settings.MEDIA_ROOT, cls.FOLDER_EDU, 'description.csv'), "r")
                 csv_reader = csv.reader(f_description)
                 # 
                 order_titles = 0
@@ -2857,7 +2857,7 @@ class ApiEducation(APIView):
                         if not row[3]:
                             data.append({
                                 'type': 'category', 
-                                'title': row[1].decode('utf8'),
+                                'title': row[1],
                                 'order': order_titles + 1,
                                 'items': []
                             })
@@ -2869,8 +2869,8 @@ class ApiEducation(APIView):
                             url =  "%s/media/%s/video/%s/%s" % (host, cls.FOLDER_EDU, type_, row[3], ), 
                             append_to.append({
                                 'type': 'item', 
-                                'title': row[1].decode('utf8'),
-                                'text': row[2].decode('utf8'),
+                                'title': row[1],
+                                'text': row[2],
                                 'urls':  [
                                     { 'url': "%s.mp4" % url, 'type': 'mp4' },
                                     { 'url': "%s.webm" % url, 'type': 'webm' },
