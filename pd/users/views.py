@@ -1357,7 +1357,7 @@ class LoginView(View):
         if settings.REDIRECT_LOGIN_TO_FRONT_END:
             if request.GET.get("redirectUrl"):
                 next_url = "?redirectUrl=%s" % \
-                        quote_plus(unquote_plus(request.GET.get("redirectUrl")).encode('utf8'))
+                        quote_plus(unquote_plus(request.GET.get("redirectUrl")))
             else:
                 next_url = ''
             response = redirect('%ssignout%s' % (get_front_end_url(request), next_url))
@@ -4089,7 +4089,6 @@ class ApiVkBotHandlerView(APIView):
                 except KeyError:
                     pass
             string += "\n"
-            string = string.encode('utf-8')
             try:
                 f = open(bot_settings['log_file'], 'a+')
                 f.write(string)
@@ -4131,7 +4130,6 @@ class ApiVkBotHandlerView(APIView):
                               "Мы постараемся ответить в ближайшее время."
                 if user_name:
                     msg_to_user = "%s! %s" % (user_name, msg_to_user,)
-                msg_to_user = msg_to_user.encode('utf-8')
                 dict_greet = dict(
                     message=msg_to_user,
                     user_id=user_id,
@@ -4149,7 +4147,6 @@ class ApiVkBotHandlerView(APIView):
                     msg_to_user = "Добро пожаловать в наше сообщество!"
                 if user_name:
                     msg_to_user = "%s! %s" % (user_name, msg_to_user,)
-                msg_to_user = msg_to_user.encode('utf-8')
                 dict_greet = dict(
                     message=msg_to_user,
                     user_id=user_id,
@@ -4167,7 +4164,6 @@ class ApiVkBotHandlerView(APIView):
                     msg_to_user = "Нам жаль прощаться с Вами. До новой встречи!"
                 if user_name:
                     msg_to_user = "%s! %s" % (user_name, msg_to_user,)
-                msg_to_user = msg_to_user.encode('utf-8')
                 dict_greet = dict(
                     message=msg_to_user,
                     user_id=user_id,

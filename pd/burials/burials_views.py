@@ -1505,7 +1505,7 @@ class RegistryView(FormInvalidMixin, UpdateView):
         try:
             result = s.encode(self.ENCODING)
         except UnicodeEncodeError:
-            result = ''
+            result = b''
             for c in s:
                 try:
                     result += c.encode(self.ENCODING)

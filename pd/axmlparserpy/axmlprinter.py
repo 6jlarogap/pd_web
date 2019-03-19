@@ -62,7 +62,7 @@ class AXMLPrinter:
                 break
 
     def getBuff(self):
-        return self.buff.encode("utf-8")
+        return self.buff
 
     def getPrefix(self, prefix):
         if prefix == None or len(prefix) == 0:

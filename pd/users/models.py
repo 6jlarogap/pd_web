@@ -684,8 +684,6 @@ class Oauth(BaseModel):
 
             for parm in ('accessToken', 'public_key', 'signature', ):
                 if oauth_dict.get(parm):
-                    if isinstance(oauth_dict[parm], str):
-                        oauth_dict[parm] = oauth_dict[parm].encode('utf-8')
                     oauth_dict[parm] = urllib.parse.quote(oauth_dict[parm])
             url = provider_details['url'] % oauth_dict
 

@@ -50,5 +50,5 @@ class Command(BaseCommand):
                 m.group(3),
             )
             with open(index_html, "w") as f:
-                f.write(data_new.encode('utf-8'))
+                f.write(data_new)
  
