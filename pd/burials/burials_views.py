@@ -1500,7 +1500,6 @@ class RegistryView(FormInvalidMixin, UpdateView):
         """
         Кодирование, исправление ошибок в вых строке
         """
-        got_error = False
         s = '%s%s' % (s, self.LINE_END)
         try:
             result = s.encode(self.ENCODING)

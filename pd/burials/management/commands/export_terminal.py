@@ -7,7 +7,7 @@
 
 # Формирование .csv файлов для имеющихся терминалов на кладбищах
 
-import sys, csv, os, re
+import sys, os, re
 import pytils
 
 from django import db
@@ -54,14 +54,6 @@ CEMETERIES = (
 #
 UGH_PK = 2
 
-# Формат csv файла
-#
-CSV_KWARGS = dict(delimiter="\t")
-
-# Символы, которые могут в фамилии, имени, отч., по ошибке
-#
-BAD_CHAR_RE = r'\\|\"|\''
-
 # --------- ----------------------------------------------
 
 class Command(BaseCommand):
@@ -87,11 +79,9 @@ class Command(BaseCommand):
             if not cemeteries:
                 print("    !!! No cemeteries in system found for bundle %s" % cemetery_parms['export'])
                 continue
-            csv.register_dialect(cemetery_parms['export'], **CSV_KWARGS)
             fname_export = os.path.join(export_path, "%s.csv" % cemetery_parms['export'])
             fname_export_partial = "%s.partial" % fname_export
-            f = open(fname_export_partial, "w")
-            writer = csv.writer(f, cemetery_parms['export'])
+            f = open(fname_export_partial, "wb")
             q = Q(
                     annulated=False,
                     status=Burial.STATUS_CLOSED,
@@ -117,7 +107,7 @@ class Command(BaseCommand):
             )
             for burial in burials.iterator():
                 deadman = burial.deadman
-                last_name = re.sub(BAD_CHAR_RE, '', deadman.last_name)
+                last_name = self.correct_str(deadman.last_name)
                 last_name_lower = last_name and last_name.lower() or ''
                 place = burial.place
                 if last_name_lower and \
@@ -126,12 +116,12 @@ class Command(BaseCommand):
                    not 'безфамильн' in last_name_lower:
                     pk = str(deadman.pk)
 
-                    last_name = last_name.upper().encode('cp1251')
+                    last_name = last_name.upper()
                     initials = ""
                     first_name = deadman.first_name and deadman.first_name.rstrip(".")
-                    first_name = re.sub(BAD_CHAR_RE, '', first_name)
+                    first_name = self.correct_str(first_name)
                     middle_name = deadman.middle_name and deadman.middle_name.rstrip(".")
-                    middle_name = re.sub(BAD_CHAR_RE, '', middle_name)
+                    middle_name = self.correct_str(middle_name)
                     if first_name:
                         if len(first_name) == 1:
                             initials = deadman.get_initials()
@@ -141,7 +131,7 @@ class Command(BaseCommand):
                                 initials = "%s %s" % (first_name, middle_name,)
                     if len(initials) > 30:
                         initials = "%s..." % initials[:28]
-                    initials = initials.encode('cp1251') or "-"
+                    initials = initials or "-"
 
                     b_date = burial.fact_date
                     if b_date:
@@ -149,13 +139,12 @@ class Command(BaseCommand):
                     else:
                         date = "-"
 
-                    area = re.sub(BAD_CHAR_RE, '', place.area.name)
+                    area = self.correct_str(place.area.name)
                     if not area:
                         area = "-"
-                    area = area.encode('cp1251')
 
-                    row = re.sub(BAD_CHAR_RE, '', place.row)
-                    seat = re.sub(BAD_CHAR_RE, '', place.place)
+                    row = self.correct_str(place.row)
+                    seat = self.correct_str(place.place)
 
                     cemetery_name = burial.cemetery and burial.cemetery.name or ''
                     if not cemetery_name:
@@ -168,7 +157,6 @@ class Command(BaseCommand):
                         'кладбищ' in cemetery_name:
                         cemetery_name = cemetery_name.replace("кладбище", "кл.")
                         cemetery_name = cemetery_name.replace("кладбища", "кл.")
-                    cemetery_name = cemetery_name.encode('cp1251')
                     if row and seat:
                         row_seat = "ряд %s, %s %s " % (
                             row,
@@ -186,12 +174,41 @@ class Command(BaseCommand):
                         )
                     else:
                         row_seat = "-"
-                    row_seat = row_seat.encode('cp1251')
-                    columns = [pk, last_name, initials, date, cemetery_name, area, row_seat]
+                    columns_str = b''
+                    for c in (pk, last_name, initials, date, cemetery_name, area, row_seat,):
+                        columns_str += self.encode_(c) + b'\t'
+                    columns_str = columns_str[:-1]
+                    columns_str += b'\r\n'
 
-                    writer.writerow(columns)
+                    f.write(columns_str)
                     db.reset_queries()
             f.close()
             os.rename(fname_export_partial, fname_export)
 
         translation.deactivate()
+
+    def correct_str(self, s):
+
+        # Символы, которые могут в фамилии, имени, отч., по ошибке
+        #
+        BAD_CHAR_RE = r'\\|\"|\''
+        return re.sub(BAD_CHAR_RE, '', s)
+
+    def encode_(self, s):
+        """
+        Кодирование, исправление ошибок в поле
+        """
+
+        ENCODING = 'cp1251'
+        try:
+            result = s.encode(ENCODING)
+        except UnicodeEncodeError:
+            result = b''
+            for c in s:
+                try:
+                    next_char = c.encode(self.ENCODING)
+                except UnicodeEncodeError:
+                    next_char = '?'.encode(self.ENCODING)
+                result += next_char
+        return result
+
