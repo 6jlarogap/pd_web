@@ -376,7 +376,7 @@ def scale_and_crop(im, size, crop=False, upscale=True, crop_background='white', 
     if our_crop:
         diff_x, diff_y = size[0] - im.size[0], size[1] - im.size[1]
         if diff_x or diff_y:
-            offset = (max(0, diff_x / 2), max(0, diff_y / 2))
+            offset = (max(0, diff_x // 2), max(0, diff_y // 2))
             back = Image.new("RGB", size, crop_background)
             back.paste(im, offset)
             # Результат будет размером в size
