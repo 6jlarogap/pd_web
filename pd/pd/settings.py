@@ -235,9 +235,6 @@ SESSION_COOKIE_NAME = 'pdsession'
 PAGINATION_USER_PER_PAGE_ALLOWED = True
 PAGINATION_PER_PAGE = 50
 
-# Кодировка для файлов обмена.
-CSV_ENCODING = "utf8"
-
 # Валюта по умолчанию, код:
 CURRENCY_DEFAULT_CODE = 'RUR'
 

@@ -13,13 +13,19 @@ install-readme.txt, utf8 code page
     * Д.б. установлено на Linux:
         - средства разработки:
             * python, не ниже 2.6
+              ! python2:
               - пакеты python, которые могут не быть в его "стандартной поставке":
                   * (ubuntu 18.04) python-minimal
                   * (ubuntu) python-all-dev
                     - (ubuntu 14.04) это автоматически установит c/c++, g++
+              ! python3:
+                  - что касается перехода от python2 к python3:
+                  * (ubuntu 16.04, 18.04) sudo apt install python3-all-dev
+
                   * ubuntu 16.04, 18.04: sudo apt install g++
                   * (ubuntu) python-virtualenv
                   * (ubuntu) python-pycurl
+                             python3-pycurl, если python3
                   * (ubuntu) python-tz
                     - это временнЫе зоны, они меняются. Так что, если сервер
                       регулярно обновляется, то можно брать python-tz из
@@ -96,7 +102,12 @@ install-readme.txt, utf8 code page
 
     * Д.б. запущен postgresql сервер
 
-    * mkdir ~/venv; cd ~/venv; virtualenv --no-site-packages pdweb
+    * mkdir ~/venv; cd ~/venv
+    * virtualenv -p `which <pythonV>` pdweb
+        - где <pythonV> :
+            версия python2 или python3.
+            Это важно при переходе от python2 к python3,
+            когда в ubuntu еще по умолчанию стоит python == python2
     * mkdir ~/projects; cd ~/projects
     * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
     * cd ~/projects/pd_web
@@ -138,7 +149,13 @@ install-readme.txt, utf8 code page
 
     * Должен быть установлен Apache mod_wsgi и mod_xsendfile.
         - В Debian/Ubuntu выполнить:
-            sudo apt-get install libapache2-mod-wsgi libapache2-mod-xsendfile
+            sudo apt-get install libapache2-mod-xsendfile
+            * wsgi:
+                - для python2:
+                    sudo apt install libapache2-mod-wsgi
+                - для python3:
+                    sudo apt install libapache2-mod-wsgi-py3
+                Модули взаимо исключаемы.
 
     * При использовании ssl: sudo a2enmod ssl
     * sudo a2enmod rewrite
