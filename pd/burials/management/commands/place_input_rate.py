@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
-
 # burial_input_rate.py
-# ------------------
-
+#
 # Замер производительности при вводе мест 
-
+#
 # Запуск: : ./manage.py place_input_rate username from_time to_time
 #
 #       from_time, to_time  - с какого по какое время,

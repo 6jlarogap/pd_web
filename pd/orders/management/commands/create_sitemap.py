@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import sys, os, codecs, urllib.request, urllib.error, urllib.parse, json
 
 from django.core.management.base import BaseCommand

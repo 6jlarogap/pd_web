@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
-
 # burial_input_rate.py
-# ------------------
-
+#
 # Замер производительности при вводе захоронений
-
+#
 # Запуск: : ./manage.py burial_input_rate username from_time to_time output_file
 #
 #       from_time, to_time  - с какого по какое время,

@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
-
 # export_terminal.py
-# ------------------
-
+#
 # Запуск: : ./manage.py export_terminal каталог_для_результатов
-
+#
 # Формирование .csv файлов для имеющихся терминалов на кладбищах
 
 import sys, os, re
