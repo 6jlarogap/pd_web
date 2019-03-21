@@ -18,11 +18,11 @@ from burials.models import Cemetery, Burial, ExhumationRequest, BurialFiles, \
                            Grave
 from persons.models import AlivePerson, DeadPerson
 
-CEMETERY_NAME = 'Новое-2'
+CEMETERY_NAME = 'Новое-213'
 #
 # Искажение во избежание случайного запуска процедуры
 #
-UGH_PK = 2
+UGH_PK = -2
 
 def main():
     cemetery = Cemetery.objects.get(ugh__pk=UGH_PK, name=CEMETERY_NAME)
