@@ -1,4 +1,3 @@
-# coding=utf-8
 from burials.models import Burial
 from orders.models import Product, Order, OrderItem, CatafalqueData, CoffinData
 import os

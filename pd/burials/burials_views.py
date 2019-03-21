@@ -1,4 +1,3 @@
-# coding=utf-8
 import datetime, time, os, csv, re, tempfile, zipfile
 import json
 from django import db

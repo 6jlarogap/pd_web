@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 DEBUG = True
 
 SENTRY_TESTING = False

@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import re, datetime, os
 from LatLon23 import LatLon, Latitude, Longitude
 import geohash, uuid

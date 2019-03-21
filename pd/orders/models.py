@@ -1,4 +1,3 @@
-# coding=utf-8
 from builtins import property
 import datetime, time
 import os, shutil, decimal

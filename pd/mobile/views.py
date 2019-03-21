@@ -1,5 +1,3 @@
-# coding=utf-8
-
 from django.conf import settings
 
 from django.shortcuts import render, render_to_response, get_object_or_404

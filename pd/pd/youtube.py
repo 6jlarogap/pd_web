@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import re, urllib.request, urllib.error, urllib.parse, json
 from decimal import Decimal
 

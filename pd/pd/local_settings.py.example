@@ -1,5 +1,3 @@
-# coding=utf-8
-
 DEBUG = True
 
 ADMIN_ENABLED = True

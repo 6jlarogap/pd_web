@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os, shutil
 import pytils
 import datetime

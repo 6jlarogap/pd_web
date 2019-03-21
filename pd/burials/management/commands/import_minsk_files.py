@@ -1,5 +1,3 @@
-# coding=utf-8
-
 # import_minsk_files.py
 #
 # Запуск (например): ./manage.py import_minsk_files ofiles 2 Восточное Уручье

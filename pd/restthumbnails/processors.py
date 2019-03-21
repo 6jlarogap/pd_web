@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 This module contains code adapted from easy-thumbnails, under the following
 license:

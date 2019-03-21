@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import copy
 from django.db import models, IntegrityError
 from django.utils.translation import ugettext as _

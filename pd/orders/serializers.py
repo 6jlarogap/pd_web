@@ -1,6 +1,3 @@
-
-# coding=utf-8
-
 import decimal
 
 from django.db import transaction
