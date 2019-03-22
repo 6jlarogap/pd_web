@@ -15,17 +15,11 @@ install-readme.txt, utf8 code page
             * python3, не ниже 3.5
                   * sudo apt install python3-all-dev
                   * sudo apt install g++
-                  * python-virtualenv
-                  * python3-pycurl
-                  * python3-tz
-                    - это временнЫе зоны, они меняются. Так что, если сервер
-                      регулярно обновляется, то можно брать python-tz из
-                      репозитариев дистрибутива Linux. Иначе периодически
-                      выполнять sudo pip install pytz --upgrade
+                  * sudo apt python3-virtualenv python3-pycurl
 
          - postgresql,
-            * в т.ч. для разработчика (ubuntu:
-              sudo apt-get install postgresql postgresql-server-dev-all)
+            * в т.ч. для разработчика, ubuntu:
+              sudo apt-get install postgresql postgresql-server-dev-all
             полагаем, что используется база postgresql на localhost,
             в которой пользователю postgres всё дозволено. Это достигается
             (ubuntu 16.04) в /etc/postgresql/9.5/main/,
