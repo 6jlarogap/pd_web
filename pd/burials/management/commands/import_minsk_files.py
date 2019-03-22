@@ -11,8 +11,11 @@
 #
 #   2:                  ID ОМС, в захоронения которого импортируем файлы
 #
-#   Восточное Уручье:   Одно или несколько названий кладбищ, в захоронения
-#                       которых импортируем файлы
+#   "Восточное~Уручье~Еще кладбище": 
+#                       Одно или несколько названий кладбищ, в захоронения
+#                       которых импортируем файлы. Символ-разделитель: ~
+#                       Параметр обрамить кавычками, на тот случай, если
+#                       в названиях кладбищ будут пробелы.
 
 import os, shutil, re, pytils
 
@@ -26,30 +29,28 @@ class Command(BaseCommand):
     help = "Fill media/bfiles with files from Minsk bunch of cemeteries"
 
     def add_arguments(self, parser):
-        parser.add_argument('ofiles_path', type=str)
+        parser.add_argument('ofiles_path', type=str, help='/path/to/nabivalka/ofiles')
+        parser.add_argument('ugh_pk', type=str, help='Organization pk')
+        parser.add_argument('cemetery_names', type=str, help='"Cemetery Name 1~Cemetery Name 2~..."')
 
     def handle(self, *args, **kwargs):
         error = '!!! Error'
         warning = '*** Warining'
-        ofiles=kwargs['ofiles_path']
+        ofiles = kwargs['ofiles_path']
         media_root = re.sub(r'/+$', '', settings.MEDIA_ROOT)
         ofiles = re.sub(r'/+$', '', os.path.join(media_root, ofiles))
         if not os.path.isdir(ofiles):
             print("%s. Not found ofiles folder: %s" % (error, ofiles))
             quit()
-        try:
-            ugh_pk=args[1]
-        except IndexError:
-            print("%s. No oms_pk given" % error)
-            quit()
+        ugh_pk = kwargs['ugh_pk']
         try:
             ugh = Org.objects.get(pk=ugh_pk, type=Org.PROFILE_UGH)
         except (Org.DoesNotExist, ValueError,):
             print("%s. OMS with pk=%s not found" % (error, ugh_pk))
             quit()
         cemeteries = list()
-        for cemetery_name in args[2:]:
-            cemetery_name = cemetery_name.decode("utf-8")
+        cemetery_names = kwargs['cemetery_names']
+        for cemetery_name in cemetery_names.split('~'):
             try:
                 cemeteries.append(Cemetery.objects.get(ugh=ugh, name=cemetery_name))
             except Cemetery.DoesNotExist:

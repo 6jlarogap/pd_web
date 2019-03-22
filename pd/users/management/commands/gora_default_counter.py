@@ -26,7 +26,7 @@ class Command(BaseCommand):
         token = kwargs['token']
         try:
             with open(index_html, "r") as f:
-                data = f.read().decode('utf-8')
+                data = f.read()
         except IOError:
             quit()
         m = re.match(REGEX, data, flags=re.DOTALL | re.I)
