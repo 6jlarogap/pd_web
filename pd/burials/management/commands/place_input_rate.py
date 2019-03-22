@@ -2,7 +2,7 @@
 #
 # Замер производительности при вводе мест 
 #
-# Запуск: : ./manage.py place_input_rate username from_time to_time
+# Запуск: : ./manage.py place_input_rate username from_time to_time output_file
 #
 #       from_time, to_time  - с какого по какое время,
 #                             в формате YYYY-MM-DDTHH:MM,
@@ -31,7 +31,7 @@ class Command(BaseCommand):
         parser.add_argument('username', type=str, help='username')
         parser.add_argument('from_time', type=str, help='from_time (%s)' % TEMPLATE_DATE_TIME_HELP)
         parser.add_argument('to_time', type=str, help='to_time (%s)' % TEMPLATE_DATE_TIME_HELP)
-        parser.add_argument('output_file', type=str, help='output_time')
+        parser.add_argument('output_file', type=str, help='output_file')
 
     def trunc_msec(self, d):
         """
