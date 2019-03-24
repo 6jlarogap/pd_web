@@ -1,15 +1,12 @@
-# coding=utf-8
-#
 # remove_cemetery.py
 #
 # Удалить кладбище с местами, усопшими, ответственными, заявителями-ФЛ...
 #
 # Запуск из ./manage.py shell :
-# execfile('../contrib/remove_cemetery.py')
+# exec(open('../contrib/remove_cemetery.py').read())
 
 import gc
 
-from django.db import transaction, IntegrityError
 from django.db.models.query_utils import Q
 from django.contrib.contenttypes.models import ContentType
 
@@ -21,17 +18,16 @@ from burials.models import Cemetery, Burial, ExhumationRequest, BurialFiles, \
                            Grave
 from persons.models import AlivePerson, DeadPerson
 
-CEMETERY_NAME = u'Западное'
+CEMETERY_NAME = 'Новое-213'
 #
 # Искажение во избежание случайного запуска процедуры
 #
 UGH_PK = -2
 
 def main():
-
     cemetery = Cemetery.objects.get(ugh__pk=UGH_PK, name=CEMETERY_NAME)
     
-    print '\nremove deadmen'
+    print('\nremove deadmen')
     i = 0
     for deadperson in DeadPerson.objects.filter(burial__cemetery=cemetery).iterator():
         i += 1 
@@ -44,11 +40,10 @@ def main():
         deadperson.delete()
         if i % 1000 == 0:
             print_removed(i)
-            transaction.commit()
             gc.collect()
     print_removed(i)
 
-    print '\nremove burial applicants- alivepersons'
+    print('\nremove burial applicants- alivepersons')
     i = 0
     for aliveperson in AlivePerson.objects.filter(applied_burials__cemetery=cemetery).iterator():
         i += 1
@@ -56,11 +51,10 @@ def main():
         aliveperson.delete()
         if i % 1000 == 0:
             print_removed(i)
-            transaction.commit()
             gc.collect()
     print_removed(i)
 
-    print '\nremove non-closed burial responsibles- alivepersons'
+    print('\nremove non-closed burial responsibles- alivepersons')
     i = 0
     for aliveperson in AlivePerson.objects.filter(responsible_burials__cemetery=cemetery).iterator():
         i += 1
@@ -68,13 +62,11 @@ def main():
         aliveperson.delete()
         if i % 1000 == 0:
             print_removed(i)
-            transaction.commit()
             gc.collect()
     print_removed(i)
-    transaction.commit()
     gc.collect()
 
-    print '\nremove exhumationrequest applicants- alivepersons'
+    print('\nremove exhumationrequest applicants- alivepersons')
     i = 0
     for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__cemetery=cemetery).iterator():
         i += 1
@@ -82,28 +74,25 @@ def main():
         aliveperson.delete()
         if i % 1000 == 0:
             print_removed(i)
-            transaction.commit()
             gc.collect()
     print_removed(i)
-    transaction.commit()
     gc.collect()
 
-    print '\nremove exhumations'
+    print('\nremove exhumations')
     ExhumationRequest.objects.filter(burial__cemetery=cemetery).delete()
 
-    print '\nremove burial files'
+    print('\nremove burial files')
     i = 0
     for burialfile in BurialFiles.objects.filter(burial__cemetery=cemetery).iterator():
         i += 1
         burialfile.delete()
         if i % 1000 == 0:
             print_removed(i)
-            transaction.commit()
             gc.collect()
     print_removed(i)
 
     i = 0
-    print '\nremove burials'
+    print('\nremove burials')
     ct = ContentType.objects.get(app_label="burials", model="burial")
     for burial in Burial.objects.filter(cemetery=cemetery).iterator():
         i += 1
@@ -112,11 +101,10 @@ def main():
         burial.delete()
         if i % 1000 == 0:
             print_removed(i)
-            transaction.commit()
             gc.collect()
     print_removed(i)
 
-    print '\nremove place responsibles - alivepersons'
+    print('\nremove place responsibles - alivepersons')
     i = 0
     for aliveperson in AlivePerson.objects.filter(place__cemetery=cemetery).iterator():
         i += 1
@@ -125,22 +113,20 @@ def main():
             aliveperson.delete()
             if i % 1000 == 0:
                 print_removed(i)
-                transaction.commit()
                 gc.collect()
     print_removed(i)
 
-    print '\nremove place photos'
+    print('\nremove place photos')
     i = 0
     for ph in PlacePhoto.objects.filter(place__cemetery=cemetery).iterator():
         i += 1
         ph.delete()
         if i % 1000 == 0:
             print_removed(i)
-            transaction.commit()
             gc.collect()
     print_removed(i)
 
-    print '\nremove places'
+    print('\nremove places')
     PlaceStatusFiles.objects.filter(placestatus__place__cemetery=cemetery).delete()
     PlaceStatus.objects.filter(place__cemetery=cemetery).delete()
     ct = ContentType.objects.get(app_label="burials", model="place")
@@ -152,28 +138,21 @@ def main():
         place.delete()
         if i % 1000 == 0:
             print_removed(i)
-            transaction.commit()
             gc.collect()
     print_removed(i)
 
-    print '\nremove areas'
+    print('\nremove areas')
     AreaCoordinates.objects.filter(area__cemetery=cemetery).delete()
     AreaPhoto.objects.filter(area__cemetery=cemetery).delete()
     Area.objects.filter(cemetery=cemetery).delete()
-    transaction.commit()
     gc.collect()
-    print '\nremove cemetery log recs'
+    print('\nremove cemetery log recs')
     ct = ContentType.objects.get(app_label="burials", model="cemetery")
     Log.objects.filter(ct=ct, obj_id=cemetery.pk).delete()
-    print '\nremove cemetery'
+    print('\nremove cemetery')
     cemetery.delete()
 
 def print_removed(i):
-    print "%7d removed" % (i or 0)
+    print("%7d removed" % (i or 0))
 
-transaction.set_autocommit(False)
-try:
-    main()
-finally:
-    transaction.commit()
-    transaction.set_autocommit(True)
+main()

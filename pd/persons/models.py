@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import copy
 from django.db import models, IntegrityError
 from django.utils.translation import ugettext as _
@@ -18,19 +16,19 @@ from pd.utils import utcisoformat, capitalize
 from users.models import Org, PhonesMixin
 
 class IDDocumentType(models.Model):
-    name = models.CharField(_(u"Тип документа"), max_length=255, db_index=True)
+    name = models.CharField(_("Тип документа"), max_length=255, db_index=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     class Meta:
-        verbose_name = (_(u"тип документа"))
-        verbose_name_plural = (_(u"типы документов"))
+        verbose_name = (_("тип документа"))
+        verbose_name_plural = (_("типы документов"))
         ordering = ('name', )
 
 class PersonMixin(object):
 
-    def __unicode__(self):
+    def __str__(self):
         if self.last_name.strip():
             result = self.last_name
             if self.first_name:
@@ -38,40 +36,40 @@ class PersonMixin(object):
                 if self.middle_name:
                     result += " %s" % self.middle_name
         else:
-            result = _(u"Неизвестный")
+            result = _("Неизвестный")
         return result
 
     def full_human_name(self):
         return ' '.join((self.last_name, self.first_name, self.middle_name)).strip()
 
     def get_initials(self):
-        initials = u""
+        initials = ""
         if self.first_name:
-            initials = u"%s." % self.first_name[:1].upper()
+            initials = "%s." % self.first_name[:1].upper()
             if self.middle_name:
-                initials = u"%s%s." % (initials, self.middle_name[:1].upper())
+                initials = "%s%s." % (initials, self.middle_name[:1].upper())
         return initials
 
     def full_name(self):
         if self.last_name:
-            fio = u"%s %s" % (self.last_name, self.get_initials())
+            fio = "%s %s" % (self.last_name, self.get_initials())
         else:
-            fio = _(u"Неизвестный")
+            fio = _("Неизвестный")
         return fio.strip()
 
     def full_name_complete(self):
-        fio = u"%s %s %s" % (self.last_name, self.first_name, self.middle_name)
-        return fio.strip() or _(u"Неизвестный")
+        fio = "%s %s %s" % (self.last_name, self.first_name, self.middle_name)
+        return fio.strip() or _("Неизвестный")
 
 class BasePerson(PersonMixin, models.Model):
     """
     Физическое лицо
     """
-    last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
-    first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
-    middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
-    birth_date = UnclearDateModelField(_(u"Дата рождения"), serialize=False, blank=True, null=True)
-    ident_number = models.CharField(_(u"Идентификационный номер"),max_length=255, blank=True)
+    last_name = models.CharField(_("Фамилия"), max_length=255, blank=True)
+    first_name = models.CharField(_("Имя"), max_length=255, blank=True)
+    middle_name = models.CharField(_("Отчество"), max_length=255, blank=True)
+    birth_date = UnclearDateModelField(_("Дата рождения"), serialize=False, blank=True, null=True)
+    ident_number = models.CharField(_("Идентификационный номер"),max_length=255, blank=True)
 
     address = models.ForeignKey(Location, editable=False, null=True, on_delete=models.PROTECT)
 
@@ -166,8 +164,8 @@ class BasePerson(PersonMixin, models.Model):
 
     class Meta:
         ordering = ['last_name', 'first_name', 'middle_name', ]
-        verbose_name = _(u"физ. лицо")
-        verbose_name_plural = _(u"физ. лица")
+        verbose_name = _("физ. лицо")
+        verbose_name_plural = _("физ. лица")
 
 class DeadPersonMixin(object):
 
@@ -196,7 +194,7 @@ class DeadPerson(DeadPersonMixin, BasePerson):
     Мертвое ФЛ
     """
     # serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
-    death_date = UnclearDateModelField(_(u"Дата смерти"), serialize=False, blank=True, null=True)
+    death_date = UnclearDateModelField(_("Дата смерти"), serialize=False, blank=True, null=True)
 
     def delete(self):
         try:
@@ -213,15 +211,15 @@ class OrderDeadPerson(DeadPersonMixin, BasePerson):
     Усопший, указываемый при заказе, для которого еще не сделано захоронение
     """
     # serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
-    order = models.OneToOneField('orders.Order', verbose_name=_(u"Заказ"))
-    death_date = UnclearDateModelField(_(u"Дата смерти"), serialize=False, blank=True, null=True)
+    order = models.OneToOneField('orders.Order', verbose_name=_("Заказ"))
+    death_date = UnclearDateModelField(_("Дата смерти"), serialize=False, blank=True, null=True)
 
 class AlivePerson(BasePerson, PhonesMixin):
     """
     Живое ФЛ с телефоном
     """
-    phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
-    user = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный за место или пользователь- физ. лицо"),
+    phones = models.TextField(_("Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
+    user = models.ForeignKey('auth.User', verbose_name=_("Ответственный за место или пользователь- физ. лицо"),
            null=True, editable=False)
     # Оставляем здесь login_phone как хранилище для телефона логина ответственного,
     # для сохранения черновиков захоронений, а также для удобства отображения в формах.
@@ -229,14 +227,14 @@ class AlivePerson(BasePerson, PhonesMixin):
     # Если пользователь меняет login_phone, то копия его попадет и сюда, т.е. будет поддерживаться:
     # self.login_phone == self.user.customerprofile.login_phone
     #
-    login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"), max_digits=15, decimal_places=0,
+    login_phone = models.DecimalField(_("Мобильный телефон для входа в кабинет"), max_digits=15, decimal_places=0,
                   blank=True, null=True, db_index=True,
-                  help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
+                  help_text=_('В международном формате, начиная с кода страны, без "+", например 79101234567'),
                   validators = [validate_phone_as_number, ],
                   editable=False)
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
     # Для ответственных, сделана ли запись в журнале 
-    is_inbook = models.BooleanField(_(u"Сделана отметка об ответственном в журнале захоронений (бумажном!)"), default=False, editable=False)
+    is_inbook = models.BooleanField(_("Сделана отметка об ответственном в журнале захоронений (бумажном!)"), default=False, editable=False)
 
     def delete(self):
         self.phone_set.delete()
@@ -246,9 +244,9 @@ class AlivePerson(BasePerson, PhonesMixin):
             pass
 
 class DocumentSource(models.Model):
-    name = models.CharField(_(u"Наименование органа"), max_length=255, unique=True)
+    name = models.CharField(_("Наименование органа"), max_length=255, unique=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 class PersonID(models.Model):
@@ -257,19 +255,19 @@ class PersonID(models.Model):
     """
 
     person = models.OneToOneField(BasePerson)
-    id_type = models.ForeignKey(IDDocumentType, verbose_name=_(u"Тип документа"), blank=True, null=True)
-    series = models.CharField(_(u"Серия"), max_length=255, blank=True, default='')
-    number = models.CharField(_(u"Номер"), max_length=255, blank=True, default='')
-    source = models.ForeignKey(DocumentSource, verbose_name=_(u"Кем выдан"), blank=True, null=True)
-    date = models.DateField(_(u"Дата выдачи"), blank=True, null=True)
-    date_expire = models.DateField(_(u"Срок действия"), blank=True, null=True)
+    id_type = models.ForeignKey(IDDocumentType, verbose_name=_("Тип документа"), blank=True, null=True)
+    series = models.CharField(_("Серия"), max_length=255, blank=True, default='')
+    number = models.CharField(_("Номер"), max_length=255, blank=True, default='')
+    source = models.ForeignKey(DocumentSource, verbose_name=_("Кем выдан"), blank=True, null=True)
+    date = models.DateField(_("Дата выдачи"), blank=True, null=True)
+    date_expire = models.DateField(_("Срок действия"), blank=True, null=True)
 
     class Meta:
-        verbose_name = _(u"Удостоверение личности")
-        verbose_name_plural = _(u"Удостоверения личности")
+        verbose_name = _("Удостоверение личности")
+        verbose_name_plural = _("Удостоверения личности")
 
-    def __unicode__(self):
-        return u"%s %s %s" % (self.id_type, self.series, self.number)
+    def __str__(self):
+        return "%s %s %s" % (self.id_type, self.series, self.number)
 
     def save(self, *args, **kwargs):
         self.series = self.series.upper()
@@ -282,24 +280,24 @@ class DeathCertificate(BaseModel):
     PROFILE_ZAGS = 'zags'
     PROFILE_MEDIC = 'medic'
     PROFILE_TYPES = (
-        (PROFILE_ZAGS, _(u"Свидетельство о смерти")),
-        (PROFILE_MEDIC, _(u"Медицинская справка")),
+        (PROFILE_ZAGS, _("Свидетельство о смерти")),
+        (PROFILE_MEDIC, _("Медицинская справка")),
     )
 
     person = models.OneToOneField(DeadPerson)
 
-    type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES, default=PROFILE_ZAGS)
-    s_number = models.CharField(_(u"Номер"), max_length=255, blank=True, default='')
-    series = models.CharField(_(u"Серия"), max_length=255, blank=True, default='')
-    release_date = models.DateField(_(u"Дата выдачи"), null=True, blank=True)
-    zags = models.ForeignKey(Org, verbose_name=_(u"ЗАГС"), null=True, blank=True)
+    type = models.CharField(_("Тип"), max_length=255, choices=PROFILE_TYPES, default=PROFILE_ZAGS)
+    s_number = models.CharField(_("Номер"), max_length=255, blank=True, default='')
+    series = models.CharField(_("Серия"), max_length=255, blank=True, default='')
+    release_date = models.DateField(_("Дата выдачи"), null=True, blank=True)
+    zags = models.ForeignKey(Org, verbose_name=_("ЗАГС"), null=True, blank=True)
 
     class Meta:
-        verbose_name = _(u"свидетельство о смерти")
-        verbose_name_plural = _(u"свидетельства о смерти")
+        verbose_name = _("свидетельство о смерти")
+        verbose_name_plural = _("свидетельства о смерти")
 
-    def __unicode__(self):
-        return _(u"Свид. о смерти (%s)") % self.person.__unicode__()
+    def __str__(self):
+        return _("Свид. о смерти (%s)") % str(self.person)
 
     def save(self, *args, **kwargs):
         self.series = self.series.upper()
@@ -350,26 +348,26 @@ class Phone(BaseModel):
     PHONE_TYPE_OTHER = 3
 
     PHONE_TYPE_CHOICES = (
-        (PHONE_TYPE_MOBILE, _(u"Мобильный")),
-        (PHONE_TYPE_CITY, _(u"Городской")),
-        (PHONE_TYPE_FAX, _(u"Факс")),
-        (PHONE_TYPE_OTHER, _(u"Иной"))
+        (PHONE_TYPE_MOBILE, _("Мобильный")),
+        (PHONE_TYPE_CITY, _("Городской")),
+        (PHONE_TYPE_FAX, _("Факс")),
+        (PHONE_TYPE_OTHER, _("Иной"))
     )
 
-    ct = models.ForeignKey('contenttypes.ContentType', null=True, blank=True, editable=False, verbose_name=_(u"Тип"))
-    obj_id = models.PositiveIntegerField(null=True, blank=True, editable=False, verbose_name=_(u"ID объекта"), db_index=True)
+    ct = models.ForeignKey('contenttypes.ContentType', null=True, blank=True, editable=False, verbose_name=_("Тип"))
+    obj_id = models.PositiveIntegerField(null=True, blank=True, editable=False, verbose_name=_("ID объекта"), db_index=True)
     obj = GenericForeignKey(ct_field='ct', fk_field='obj_id')
-    number = models.CharField(_(u"Номер"), max_length=50, blank=True)
-    phonetype = models.SmallIntegerField(_(u"Тип телефона"), choices=PHONE_TYPE_CHOICES, default=PHONE_TYPE_CITY)
+    number = models.CharField(_("Номер"), max_length=50, blank=True)
+    phonetype = models.SmallIntegerField(_("Тип телефона"), choices=PHONE_TYPE_CHOICES, default=PHONE_TYPE_CITY)
 
     class Meta:
-        verbose_name = _(u"телефон")
-        verbose_name_plural = _(u"Телефоны")
+        verbose_name = _("телефон")
+        verbose_name_plural = _("Телефоны")
 
-    def __unicode__(self):
+    def __str__(self):
          for k, v in self.PHONE_TYPE_CHOICES:  
              if k == self.phonetype:  
-                 return u"%s: %s" % (v, self.number)
+                 return "%s: %s" % (v, self.number)
 
     @classmethod
     def create_default_phones(cls, instance, phones):
@@ -386,19 +384,19 @@ class Phone(BaseModel):
             )
 
 class CustomPlace(LocationMixin, BaseModel):
-    name = models.CharField(_(u"Название"), max_length=255, blank=True)
-    address = models.ForeignKey(Location, verbose_name=_(u"Адрес"), null=True)
-    user = models.ForeignKey('auth.User', verbose_name=_(u"Ответственный за место или указавший место"))
-    place = models.ForeignKey('burials.Place', verbose_name=_(u"Место"), null=True)
+    name = models.CharField(_("Название"), max_length=255, blank=True)
+    address = models.ForeignKey(Location, verbose_name=_("Адрес"), null=True)
+    user = models.ForeignKey('auth.User', verbose_name=_("Ответственный за место или указавший место"))
+    place = models.ForeignKey('burials.Place', verbose_name=_("Место"), null=True)
     # Основное фото места. Оно не грузится от клиента, а копируется из PlacePhoto
     # или из результатов выполнения заказа, как только появляется новое фото места или
     # новый результат заказа, привязанного к этому customPlace. Параметр upload_to
     # указывается, потому что обязателен
     #
-    title_photo = models.ImageField(_(u"Основное Фото"), upload_to='.', null=True)
-    favorite_performer = models.ForeignKey(Org, verbose_name=_(u"Предпочтительный исполнитель"),
+    title_photo = models.ImageField(_("Основное Фото"), upload_to='.', null=True)
+    favorite_performer = models.ForeignKey(Org, verbose_name=_("Предпочтительный исполнитель"),
                                            null=True, blank=True)
-    comment = models.TextField(_(u"Комментарий"), null=True)
+    comment = models.TextField(_("Комментарий"), null=True)
 
 
     class Meta:
@@ -476,11 +474,11 @@ class CustomPlace(LocationMixin, BaseModel):
         for order in Order.objects.filter(customplace=self):
             user = order.applicant and order.applicant.user or None
             if user:
-                comment = _(u'Место, относящееся к заказу, удалено.')
+                comment = _('Место, относящееся к заказу, удалено.')
                 if self.address:
-                    comment += "\n" + _(u'Адрес: %s.') % self.address
+                    comment += "\n" + _('Адрес: %s.') % self.address
                     if self.address.gps_x is not None and self.address.gps_y is not None:
-                        comment += "\n" + _(u'Координаты: широта: %s, долгота: %s.') % (
+                        comment += "\n" + _('Координаты: широта: %s, долгота: %s.') % (
                             self.address.gps_y,
                             self.address.gps_x,
                         )
@@ -523,9 +521,9 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     PERMISSION_PUBLIC = 'public'
     PERMISSION_SELECTED = 'selected'
     PERMISSION_CHOICES = (
-        (PERMISSION_PRIVATE, _(u"Личное")),
-        (PERMISSION_PUBLIC, _(u"В публичном доступе")),
-        (PERMISSION_SELECTED, _(u"Выборочно"))
+        (PERMISSION_PRIVATE, _("Личное")),
+        (PERMISSION_PUBLIC, _("В публичном доступе")),
+        (PERMISSION_SELECTED, _("Выборочно"))
     )
 
     class Meta:
@@ -535,21 +533,21 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     # Поскольку предполагается здесь хранить и живых лиц, то
     # ссылку делаем на Person, как живое, так и мертвое.
     #
-    user = models.ForeignKey('auth.User', verbose_name=_(u"Владелец или указавший захороненного"))
-    customplace = models.ForeignKey(CustomPlace, verbose_name=_(u"Место захоронения"), blank=True, null=True)
-    person = models.ForeignKey(BasePerson, verbose_name=_(u"Лицо"), null=True)
-    last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True)
-    first_name = models.CharField(_(u"Имя"), max_length=255, blank=True)
-    middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True)
-    birth_date = UnclearDateModelField(_(u"Дата рождения"), blank=True, null=True)
-    death_date = UnclearDateModelField(_(u"Дата смерти"), blank=True, null=True)
-    is_dead = models.BooleanField(_(u"Уcопший"), default=True)
-    memory_text = models.TextField(_(u"Памятный текст"), null=True)
-    permission = models.CharField(_(u"Разрешение"), max_length=255,
+    user = models.ForeignKey('auth.User', verbose_name=_("Владелец или указавший захороненного"))
+    customplace = models.ForeignKey(CustomPlace, verbose_name=_("Место захоронения"), blank=True, null=True)
+    person = models.ForeignKey(BasePerson, verbose_name=_("Лицо"), null=True)
+    last_name = models.CharField(_("Фамилия"), max_length=255, blank=True)
+    first_name = models.CharField(_("Имя"), max_length=255, blank=True)
+    middle_name = models.CharField(_("Отчество"), max_length=255, blank=True)
+    birth_date = UnclearDateModelField(_("Дата рождения"), blank=True, null=True)
+    death_date = UnclearDateModelField(_("Дата смерти"), blank=True, null=True)
+    is_dead = models.BooleanField(_("Уcопший"), default=True)
+    memory_text = models.TextField(_("Памятный текст"), null=True)
+    permission = models.CharField(_("Разрешение"), max_length=255,
                                   choices=PERMISSION_CHOICES, default=PERMISSION_PRIVATE)
     # Для сайта с благодарностями от пользователей:
-    token = models.CharField(_(u"Токен"), max_length=255, null=True, editable=False, unique=True)
-    thank_site = models.URLField(_(u"Сайт для благодарностей"), null=True, editable=False)
+    token = models.CharField(_("Токен"), max_length=255, null=True, editable=False, unique=True)
+    thank_site = models.URLField(_("Сайт для благодарностей"), null=True, editable=False)
 
     def delete(self):
         for memorygallery in MemoryGallery.objects.filter(customperson=self):
@@ -582,29 +580,29 @@ class MemoryGallery(Files):
     TYPE_TEXT = 'text'
     TYPE_LINK = 'link'
     TYPE_CHOICES = (
-        (TYPE_IMAGE, _(u"Фото")),
-        (TYPE_VIDEO, _(u"Видео")),
-        (TYPE_TEXT, _(u"Текст")),
-        (TYPE_LINK, _(u"Ссылка")),
+        (TYPE_IMAGE, _("Фото")),
+        (TYPE_VIDEO, _("Видео")),
+        (TYPE_TEXT, _("Текст")),
+        (TYPE_LINK, _("Ссылка")),
     )
 
     PERMISSION_PRIVATE = 'private'
     PERMISSION_PUBLIC = 'public'
     PERMISSION_SELECTED = 'selected'
     PERMISSION_CHOICES = (
-        (PERMISSION_PRIVATE, _(u"Личное")),
-        (PERMISSION_PUBLIC, _(u"В публичном доступе")),
-        (PERMISSION_SELECTED, _(u"Выборочно"))
+        (PERMISSION_PRIVATE, _("Личное")),
+        (PERMISSION_PUBLIC, _("В публичном доступе")),
+        (PERMISSION_SELECTED, _("Выборочно"))
     )
 
     # Мегабайт:
     MAX_IMAGE_SIZE = 10
 
     customperson = models.ForeignKey(CustomPerson)
-    type = models.CharField(_(u"Тип"), max_length=255, choices=TYPE_CHOICES)
-    text = models.TextField(_(u"Текст"), null=True)
-    event_date = UnclearDateModelField(_(u"Дата события"), null=True)
-    permission = models.CharField(_(u"Разрешение"), max_length=255,
+    type = models.CharField(_("Тип"), max_length=255, choices=TYPE_CHOICES)
+    text = models.TextField(_("Текст"), null=True)
+    event_date = UnclearDateModelField(_("Дата события"), null=True)
+    permission = models.CharField(_("Разрешение"), max_length=255,
                                   choices=PERMISSION_CHOICES, default=PERMISSION_PRIVATE)
 
     def delete(self):
@@ -621,8 +619,8 @@ class CustomPersonPermission(models.Model):
     """
 
     customperson = models.ForeignKey(CustomPerson)
-    email = models.EmailField(_(u"Email"), null=True)
-    login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"),
+    email = models.EmailField(_("Email"), null=True)
+    login_phone = models.DecimalField(_("Мобильный телефон для входа в кабинет"),
                                       max_digits=15, decimal_places=0, null=True)
 
 class MemoryGalleryPermission(models.Model):
@@ -635,6 +633,6 @@ class MemoryGalleryPermission(models.Model):
     """
 
     memorygallery = models.ForeignKey(MemoryGallery)
-    email = models.EmailField(_(u"Email"), null=True)
-    login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"),
+    email = models.EmailField(_("Email"), null=True)
+    login_phone = models.DecimalField(_("Мобильный телефон для входа в кабинет"),
                                       max_digits=15, decimal_places=0, null=True)

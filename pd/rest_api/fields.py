@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import datetime
 
 from rest_framework import serializers
@@ -89,6 +87,6 @@ class DateTimeUtcField(DateTimeField):
         # результат: Строка
         if isinstance(value, datetime.datetime):
             value = local2utc(value)
-        elif isinstance(value, basestring):
+        elif isinstance(value, str):
             return value
         return super(DateTimeUtcField, self).to_representation(value)

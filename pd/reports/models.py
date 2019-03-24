@@ -1,4 +1,3 @@
-# coding=utf-8
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.template.loader import render_to_string
@@ -13,7 +12,7 @@ class Report(models.Model):
     user = models.ForeignKey('auth.User', editable=False)
     dt = models.DateTimeField(auto_now_add=True)
 
-    description = models.TextField(_(u"Название отчета"))
+    description = models.TextField(_("Название отчета"))
     html = models.TextField(editable=False)
 
 def make_report(user, msg, obj, template, context):

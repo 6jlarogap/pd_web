@@ -1,5 +1,3 @@
-# coding=utf-8
-
 from django.conf import settings
 
 from django.shortcuts import render, render_to_response, get_object_or_404
@@ -34,10 +32,9 @@ from django.db.models import Q
 from datetime import datetime
 from decimal import Decimal
 
-import os, copy
+import os, copy, json
 from axmlparserpy import apk
 
-from StringIO import StringIO
 from rest_framework import serializers
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework import status
@@ -47,7 +44,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import APIException, PermissionDenied
 
-from serializers import BaseSerializer, CoordinatesSerializer, CemeteryWithNestedObjectSerializer, \
+from .serializers import BaseSerializer, CoordinatesSerializer, CemeteryWithNestedObjectSerializer, \
                         AreaSerializer, AreaWithNestedObjectSerializer, \
                         RegionSerializer, CitySerializer, StreetSerializer, CountrySerializer, LocationSerializer, \
                         PlaceWithNestedObjectSerializer, GraveSerializer, BurialSerializer, \
@@ -89,7 +86,7 @@ class ApiCemeteryUpload(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) :
-        return render_to_response('mobile_upload_cemetery.html', {'message': _(u"Загрузите название кладбища:")})
+        return render_to_response('mobile_upload_cemetery.html', {'message': _("Загрузите название кладбища:")})
 
     @transaction.atomic
     def post(self, request):
@@ -108,19 +105,21 @@ class ApiCemeteryUpload(APIView):
             dtCreated = utc2local(dtCreated)
         isGPSChange = False
         if gpsJSON :
-            isGPSChange = True
-            stream = StringIO(gpsJSON)
-            data = JSONParser().parse(stream)
-            serializer = CoordinatesSerializer(data=data, many=True)
-            if serializer.is_valid():
-                listGPS = serializer.validated_data
+            try:
+                data = json.loads(gpsJSON)
+                serializer = CoordinatesSerializer(data=data, many=True)
+                if serializer.is_valid():
+                    listGPS = serializer.validated_data
+                    isGPSChange = True
+            except json.decoder.JSONDecodeError:
+                pass
         cem = None
         log_recs = []
         try:
             prevCem = Cemetery.objects.get(pk = cemeteryId)
             do_save = False
             if prevCem.name != cemeteryName:
-                log_recs.append(_(u"Изменено название кладбища, %(previous)s -> %(new)s") % dict(
+                log_recs.append(_("Изменено название кладбища, %(previous)s -> %(new)s") % dict(
                     previous=prevCem.name,
                     new=cemeteryName
                 ))
@@ -128,7 +127,7 @@ class ApiCemeteryUpload(APIView):
                 prevCem.name = cemeteryName
             if prevCem.square != square:
                 do_save = True
-                log_recs.append(_(u"Пересчитана площадь кладбища, %s м2") % square)
+                log_recs.append(_("Пересчитана площадь кладбища, %s м2") % square)
                 prevCem.square = square
             if do_save:
                 prevCem.save()
@@ -137,22 +136,22 @@ class ApiCemeteryUpload(APIView):
             prevCem = None
             cem = Cemetery(name = cemeteryName, square = square, creator = request.user, ugh = org, dt_created = dtCreated)
             cem.save()
-            write_log(request, cem, _(u"Кладбище '%s' создано через мобильное приложение") % cem.name)
+            write_log(request, cem, _("Кладбище '%s' создано через мобильное приложение") % cem.name)
             if request.user.profile.is_registrator_or_caretaker():
                 request.user.profile.cemeteries.add(cem)
-                log_mes = _(u"Добавлен доступ к кладбищу: '%s'") % cem.name
-                user_mes=_(u'Изменены данные пользователя %(fio)s (%(username)s)') % dict(
+                log_mes = _("Добавлен доступ к кладбищу: '%s'") % cem.name
+                user_mes=_('Изменены данные пользователя %(fio)s (%(username)s)') % dict(
                     fio=request.user.profile,
                     username=request.user.username,
                 )
-                write_log(request, request.user.profile.org, u"%s\n%s" % (
+                write_log(request, request.user.profile.org, "%s\n%s" % (
                     user_mes,
                     log_mes,
                 ))
                 write_log(request, request.user.profile, log_mes)
             listInsertedCemetery.append(cem)
         if isGPSChange == True :
-            log_recs.append(_(u"Заданы координаты углов кладбища"))
+            log_recs.append(_("Заданы координаты углов кладбища"))
             CemeteryCoordinates.objects.filter(cemetery=cem).delete()
             for gps in listGPS:
                 cemeteryCoordinates = CemeteryCoordinates(**gps)
@@ -199,17 +198,17 @@ class CemeteryPhotoSchemaMixin(object):
         if photo:
             if photo.size > CemeteryPhoto.MAX_PHOTO_SIZE * 1024 * 1024:
                 raise CustomException(
-                    detail=_(u"Размер загружаемого файла превышает %d Мб") % attachment_model.MAX_PHOTO_SIZE,
+                    detail=_("Размер загружаемого файла превышает %d Мб") % attachment_model.MAX_PHOTO_SIZE,
                     status=400,
                )
             if not get_image(photo):
                 raise CustomException(
-                    detail=_(u"Загружаемый файл не является изображением"),
+                    detail=_("Загружаемый файл не является изображением"),
                     status=400,
                 )
         else:
             raise CustomException(
-                detail=_(u"Нет загружаемого файла (%s)") % filefield,
+                detail=_("Нет загружаемого файла (%s)") % filefield,
                 status=400,
                 )
         return cemetery, photo
@@ -239,7 +238,7 @@ class ApiMobileCemeterySchema(CemeteryPhotoSchemaMixin, APIView):
         write_log(
             request,
             cemetery,
-            _(u"Схема кладбища: %s") % request.build_absolute_uri(schema.photo.url),
+            _("Схема кладбища: %s") % request.build_absolute_uri(schema.photo.url),
         )
         return self.response(cemetery)
 
@@ -250,7 +249,7 @@ class ApiMobileCemeterySchema(CemeteryPhotoSchemaMixin, APIView):
             write_log(
                 request,
                 cemetery,
-                _(u"Схема кладбища удалена"),
+                _("Схема кладбища удалена"),
             )
         return self.response(cemetery)
 
@@ -288,7 +287,7 @@ class ApiMobileCemeteryPhoto(CemeteryPhotoSchemaMixin, APIView):
         write_log(
             request,
             cemetery,
-            _(u"Фото кладбища: %s") % request.build_absolute_uri(photo.photo.url),
+            _("Фото кладбища: %s") % request.build_absolute_uri(photo.photo.url),
         )
         if lat is not None and lng is not None:
             old_lat = old_lng = None
@@ -301,13 +300,13 @@ class ApiMobileCemeteryPhoto(CemeteryPhotoSchemaMixin, APIView):
                 Location.objects.filter(
                     pk=cemetery.address.pk).update(gps_x=lng, gps_y=lat)
             msg = _(
-                u"Изменены координаты кладбища\n"
-                u"Широта:  '%(old_lat)s' -> '%(lat)s'\n"
-                u"Долгота: '%(old_lng)s' -> '%(lng)s'"
+                "Изменены координаты кладбища\n"
+                "Широта:  '%(old_lat)s' -> '%(lat)s'\n"
+                "Долгота: '%(old_lng)s' -> '%(lng)s'"
             ) % dict(
-                old_lat=_(u"пусто") if old_lat is None else old_lat,
+                old_lat=_("пусто") if old_lat is None else old_lat,
                 lat=lat,
-                old_lng=_(u"пусто") if old_lng is None else old_lng,
+                old_lng=_("пусто") if old_lng is None else old_lng,
                 lng=lng,
             )
             write_log(request, cemetery, msg)
@@ -320,7 +319,7 @@ class ApiMobileCemeteryPhoto(CemeteryPhotoSchemaMixin, APIView):
             write_log(
                 request,
                 cemetery,
-                _(u"Фото кладбища удалено"),
+                _("Фото кладбища удалено"),
             )
         return self.response(cemetery)
 
@@ -367,7 +366,7 @@ class ApiAreaUpload(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) : 
-        return render_to_response('mobile_upload_area.html', {'message': _(u"Задайте название участка:")})
+        return render_to_response('mobile_upload_area.html', {'message': _("Задайте название участка:")})
 
     @transaction.atomic
     def post(self, request) : 
@@ -390,12 +389,14 @@ class ApiAreaUpload(APIView):
             dtCreated = utc2local(dtCreated)
         isGPSChange = False
         if gpsJSON :
-            isGPSChange = True
-            stream = StringIO(gpsJSON)
-            data = JSONParser().parse(stream)
-            serializer = CoordinatesSerializer(data=data, many=True)
-            if serializer.is_valid():
-                listGPS = serializer.validated_data
+            try:
+                data = json.loads(gpsJSON)
+                serializer = CoordinatesSerializer(data=data, many=True)
+                if serializer.is_valid():
+                    listGPS = serializer.validated_data
+                    isGPSChange = True
+            except json.decoder.JSONDecodeError:
+                pass
         area = None
         try:
             cemetery = Cemetery.objects.get(pk = cemeteryId)
@@ -410,7 +411,7 @@ class ApiAreaUpload(APIView):
             raise Http404
         except Area.DoesNotExist:
             prevArea = None
-            msg_created = _(u"Участок '%s' создан через мобильное приложение") % areaName
+            msg_created = _("Участок '%s' создан через мобильное приложение") % areaName
             if isOverwrite:
                 area, created_ = Area.objects.get_or_create(
                     cemetery=cemetery,
@@ -439,7 +440,7 @@ class ApiAreaUpload(APIView):
                     transaction.set_rollback(True)
                     return Response(
                         status=400,
-                        data=dict(status='error', message=_(u"Такой участок уже существует")),
+                        data=dict(status='error', message=_("Такой участок уже существует")),
                     )
             listInsertedArea.append(area)
         if isGPSChange == True :
@@ -528,7 +529,7 @@ class PlaceUploadMixin(object):
         return Response(
             status=400,
             data=dict(
-                message=_(u"Такое место уже существует"),
+                message=_("Такое место уже существует"),
                 code='place_already_exists'
         ))
 
@@ -567,7 +568,7 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
             return Response(
                 status=400,
                 data = dict(
-                    message=_(u'Не задан номер места. Автоматическая расстановка новых мест на этом кладбище не предусмотрена'),
+                    message=_('Не задан номер места. Автоматическая расстановка новых мест на этом кладбище не предусмотрена'),
                     code='no_placeName_no_placeAlgo',
             ))
         place_key_parms = dict(
@@ -600,7 +601,7 @@ class ApiMobileAreaPlaces(PlaceUploadMixin, APIView):
                 place.save()
                 log_object(
                     request=self.request,
-                    reason=_(u"Место изменено через мобильное приложение при выгрузке места"),
+                    reason=_("Место изменено через мобильное приложение при выгрузке места"),
                     obj=place,
                     old=old_place,
                     new=place,
@@ -643,9 +644,9 @@ class ApiMobilePlace(PlaceUploadMixin, APIView):
                             self.request,
                             b,
                             _(
-                                u"Изменение ряда и/или номера места при правке места\n"
-                                u"Ряд: '%(old_row)s' -> '%(new_row)s'\n"
-                                u"Номер места: '%(old_place)s' -> '%(new_place)s'\n"
+                                "Изменение ряда и/или номера места при правке места\n"
+                                "Ряд: '%(old_row)s' -> '%(new_row)s'\n"
+                                "Номер места: '%(old_place)s' -> '%(new_place)s'\n"
                             ) % dict(
                                 old_row=b.row,
                                 new_row=place.row,
@@ -657,7 +658,7 @@ class ApiMobilePlace(PlaceUploadMixin, APIView):
                         b.save()
                     log_object(
                         request=self.request,
-                        reason=_(u"Место изменено через мобильное приложение"),
+                        reason=_("Место изменено через мобильное приложение"),
                         obj=place,
                         old=old_place,
                         new=place,
@@ -720,7 +721,7 @@ class ApiGraveUpload(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) :
-        return render_to_response('mobile_upload_grave.html', {'message': _(u"Загрузите название могилы:")})
+        return render_to_response('mobile_upload_grave.html', {'message': _("Загрузите название могилы:")})
 
     @transaction.atomic
     def post(self, request) :
@@ -776,7 +777,7 @@ class ApiGraveUpload(APIView):
                 dt_free = dtFree,
             )
             grave.save()
-            write_log(request, place, _(u"Могила '%s' создана через мобильное приложение") % grave.grave_number )
+            write_log(request, place, _("Могила '%s' создана через мобильное приложение") % grave.grave_number )
             listInsertedGrave.append(grave)            
         serializer = GraveSerializer(listInsertedGrave, many=True)
         return Response(serializer.data)
@@ -888,7 +889,7 @@ class ApiBindBurialGrave(APIView):
 
     permission_classes = (IsAuthenticated,)
     def get(self, request) :
-        return render_to_response('mobile_bind_burial_grave.html', {'message': _(u"Загрузите захоронение:")})
+        return render_to_response('mobile_bind_burial_grave.html', {'message': _("Загрузите захоронение:")})
     def post(self, request) :
         graveId = int(request.POST['graveId'])
         burialId = int(request.POST['burialId'])
@@ -899,7 +900,7 @@ class ApiBindBurialGrave(APIView):
             grave = Grave.objects.get(pk = graveId)
             burial = Burial.objects.get(pk = burialId)
             if burial.status != Burial.STATUS_APPROVED :
-                raise CustomException(detail = _(u"Привязать данное захоронение невозможно к могиле."))
+                raise CustomException(detail = _("Привязать данное захоронение невозможно к могиле."))
             burial.place_number = grave.place.place
             burial.grave_number = grave.grave_number
             burial.row = grave.place.row
@@ -914,7 +915,7 @@ class ApiBindBurialGrave(APIView):
                 request,
                 burial,
                 operation=LogOperation.BURIAL_TO_GRAVE_MOBILE,
-                msg=_(u"Могила: %(grave_name)s\nФакт. дата: %(fact_date)s") % dict(
+                msg=_("Могила: %(grave_name)s\nФакт. дата: %(fact_date)s") % dict(
                     grave_name=grave.full_name(),
                     fact_date=burial.fact_date,
             ))
@@ -978,7 +979,7 @@ class ApiPlacePhotoUpload(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) :
-        return render_to_response('mobile_upload_placephoto.html', {'message': _(u"Загрузите фотографию к месту")})
+        return render_to_response('mobile_upload_placephoto.html', {'message': _("Загрузите фотографию к месту")})
 
     def post(self, request) :
         placeId = request.POST['place']
@@ -1013,7 +1014,7 @@ class ApiPlacePhotoUpload(APIView):
             ).generate()
             if not photo_content:
                 raise CustomException(
-                    detail=_(u"Загружаемый файл не является изображением"),
+                    detail=_("Загружаемый файл не является изображением"),
                     status=400,
                 )
             # -------------------
@@ -1025,15 +1026,15 @@ class ApiPlacePhotoUpload(APIView):
             msg = request.build_absolute_uri(photo.bfile.url)
             if lat is not None and lng is not None:
                 msg = _(
-                    u"%(msg)s\n"
-                    u"Изменены координаты места\n"
-                    u"Широта:  '%(old_lat)s' -> '%(lat)s'\n"
-                    u"Долгота: '%(old_lng)s' -> '%(lng)s'"
+                    "%(msg)s\n"
+                    "Изменены координаты места\n"
+                    "Широта:  '%(old_lat)s' -> '%(lat)s'\n"
+                    "Долгота: '%(old_lng)s' -> '%(lng)s'"
                 ) % dict(
                     msg=msg,
-                    old_lat=_(u"пусто") if place.lat is None else place.lat,
+                    old_lat=_("пусто") if place.lat is None else place.lat,
                     lat=lat,
-                    old_lng=_(u"пусто") if place.lng is None else place.lng,
+                    old_lng=_("пусто") if place.lng is None else place.lng,
                     lng=lng,
                 )
                 place.lat = lat
@@ -1061,7 +1062,7 @@ class ApiPlacePhotoDelete(APIView):
 
     permission_classes = (PermitIfUgh,)
     def get(self, request) :
-        return render_to_response('mobile_remove_placephoto.html', {'message': _(u"Удалить фотографию места")})
+        return render_to_response('mobile_remove_placephoto.html', {'message': _("Удалить фотографию места")})
 
     def post(self, request) :
         placePhotoId = request.POST['placePhotoId']
@@ -1069,7 +1070,7 @@ class ApiPlacePhotoDelete(APIView):
             placePhoto = get_object_or_404(PlacePhoto, pk=placePhotoId)
             if placePhoto.place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
                 raise PermissionDenied
-            msg = _(u"Удалено фото места:\n%s") % request.build_absolute_uri(placePhoto.bfile.url)
+            msg = _("Удалено фото места:\n%s") % request.build_absolute_uri(placePhoto.bfile.url)
             placePhoto.delete()
             write_log(request, placePhoto.place, msg)
             return Response("Ok")
@@ -1081,16 +1082,13 @@ placephoto_delete = ApiPlacePhotoDelete.as_view()
 class ApiMobilekeeperVersion(APIView):
 
     def get(self, request):
-        try:
-            ap = apk.APK(os.path.join(settings.MEDIA_ROOT, settings.MOBILEKEEPER_MEDIA_PATH))
-            return Response(status=200, data=dict(
-                versionName=ap.get_androidversion_name(),
-                versionCode=ap.get_androidversion_code(),
-                url=request.build_absolute_uri(os.path.join(settings.MEDIA_URL, settings.MOBILEKEEPER_MEDIA_PATH)),
-                utctime=utcisoformat(datetime.now(), remove_mcsec=False),
-            ))
-        except:
-            return Response(status=400, data={'status': 'error', 'message': None})
+        ap = apk.APK(os.path.join(settings.MEDIA_ROOT, settings.MOBILEKEEPER_MEDIA_PATH))
+        return Response(status=200, data=dict(
+            versionName=ap.get_androidversion_name(),
+            versionCode=ap.get_androidversion_code(),
+            url=request.build_absolute_uri(os.path.join(settings.MEDIA_URL, settings.MOBILEKEEPER_MEDIA_PATH)),
+            utctime=utcisoformat(datetime.now(), remove_mcsec=False),
+        ))
 
 api_mobilekeeper_version = ApiMobilekeeperVersion.as_view()
 

@@ -1,4 +1,3 @@
-# coding=utf-8
 import datetime
 
 from django import forms
@@ -36,11 +35,11 @@ class DeadPersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
         super(DeadPersonForm, self).__init__(*args, **kwargs)
 
     def is_valid_data(self):
-        return self.is_valid() and len([k for k,v in self.cleaned_data.items() if v]) > 1 # more than just death date
+        return self.is_valid() and len([k for k,v in list(self.cleaned_data.items()) if v]) > 1 # more than just death date
     
 class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
-    flag_no_applicant_doc_required = forms.BooleanField(label=_(u'Документ не обязателен'), required=False)
-    source = forms.CharField(label=_(u'Кем выдан'), required=False)
+    flag_no_applicant_doc_required = forms.BooleanField(label=_('Документ не обязателен'), required=False)
+    source = forms.CharField(label=_('Кем выдан'), required=False)
 
     class Meta:
         model = PersonID
@@ -61,7 +60,7 @@ class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
         today = datetime.date.today()
         release_date = self.cleaned_data.get('date')
         if release_date and release_date > today:
-            msg = _(u'Неверная дата выдачи')
+            msg = _('Неверная дата выдачи')
             raise forms.ValidationError(msg)
         return release_date
 
@@ -69,7 +68,7 @@ class PersonIDForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):
         date = self.cleaned_data.get('date')
         date_expire = self.cleaned_data.get('date_expire')
         if date_expire and date and date_expire < date:
-            msg = _(u'Срок действия истек до даты выдачи')
+            msg = _('Срок действия истек до даты выдачи')
             raise forms.ValidationError(msg)
         return date_expire
 
@@ -120,15 +119,15 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
             try:
                 zags = Org.objects.filter(name=zags_str, type=type_)[0]
             except IndexError:
-                raise forms.ValidationError(_(u'Нет такого ЗАГСа') if type_ == DeathCertificate.PROFILE_ZAGS \
-                                            else _(u'Нет такого мед. учреждения'))
+                raise forms.ValidationError(_('Нет такого ЗАГСа') if type_ == DeathCertificate.PROFILE_ZAGS \
+                                            else _('Нет такого мед. учреждения'))
         return zags
 
     def clean_release_date(self):
         today = datetime.date.today()
         release_date = self.cleaned_data.get('release_date')
         if release_date and release_date > today:
-            msg = _(u'Неверная дата выдачи')
+            msg = _('Неверная дата выдачи')
             raise forms.ValidationError(msg)
         return release_date
 
@@ -150,12 +149,12 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
                                                     *args, **kwargs)
         if commit and self.scan_form.is_valid():
             burial = dc.get_burial()
-            log_prefix = _(u"Усопший") + u", " + unicode(_(u"СоС")) + u" "
+            log_prefix = _("Усопший") + ", " + str(_("СоС")) + " "
             if self.scan_form.instance.pk:
                 if scan_clear and not scan_uploaded:
                     self.scan_form.instance.delete()
                     if burial:
-                        write_log(self.request, burial, log_prefix + _(u'скан удален'))
+                        write_log(self.request, burial, log_prefix + _('скан удален'))
                     return dc
                 if scan_clear or scan_uploaded:
                     DeathCertificateScan.objects.get(pk=self.scan_form.instance.pk).delete_from_media()
@@ -164,7 +163,7 @@ class DeathCertificateForm(StrippedStringsMixin, BaseModelForm):
                 scan.deathcertificate = dc
                 scan.save()
                 if burial:
-                    write_log(self.request, burial,  log_prefix + _(u'прикреплен скан: %s') % scan.original_name)
+                    write_log(self.request, burial,  log_prefix + _('прикреплен скан: %s') % scan.original_name)
         return dc
 
 class AlivePersonForm(ValidDataMixin, StrippedStringsMixin, forms.ModelForm):

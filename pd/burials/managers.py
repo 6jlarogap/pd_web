@@ -1,11 +1,9 @@
-# coding=utf-8
-
 from django.conf import settings
 from django.db import models
 from django.db.models.query_utils import Q
 
 from logs.models import write_log
-import models as burials_models
+from . import models as burials_models
 from django.utils.translation import ugettext as _
 
 
@@ -17,5 +15,5 @@ class PlaceManager(models.Manager):
             for row in qs.all():
                 row.place = burial.place
                 row.delete()
-            write_log(request, burial, _(u'Эксгумация отменена'))        
+            write_log(request, burial, _('Эксгумация отменена'))        
             return True

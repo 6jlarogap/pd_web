@@ -20,7 +20,7 @@ class ThumbnailBase(object):
 
     @property
     def size_string(self):
-        return u'x'.join(map(str, self.size))
+        return 'x'.join(map(str, self.size))
 
     @property
     def secret(self):

@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-
-import sys, os, codecs, urllib2, json
+import sys, os, codecs, urllib.request, urllib.error, urllib.parse, json
 
 from django.core.management.base import BaseCommand
 from django.template import loader, Context
@@ -29,8 +27,8 @@ from geo.models import Country, Location
 #       вся информация будет в вых sitemap_XX, где XX - указанный домен
 
 DOMAINS_ = dict(
-    ru=dict(name=u'Россия', obj_country=None,),
-    by=dict(name=u'Беларусь', obj_country=None,),
+    ru=dict(name='Россия', obj_country=None,),
+    by=dict(name='Беларусь', obj_country=None,),
 )
 YANDEX_GEOCODE_URL = "http://geocode-maps.yandex.ru/1.x/?geocode=%s,%s&format=json&results=1"
     
@@ -72,12 +70,12 @@ class Command(BaseCommand):
                  off_address__gps_y__isnull=False,
                  ).order_by('slug').distinct():
             try:
-                r = urllib2.urlopen(YANDEX_GEOCODE_URL % (
+                r = urllib.request.urlopen(YANDEX_GEOCODE_URL % (
                     s.off_address.gps_x,
                     s.off_address.gps_y,
                 ))
-                raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
-            except (urllib2.HTTPError, urllib2.URLError):
+                raw_data = r.read().decode(r.headers.get_content_charset('utf-8'))
+            except (urllib.error.HTTPError, urllib.error.URLError):
                 continue
             try:
                 data = json.loads(raw_data)
@@ -106,10 +104,10 @@ class Command(BaseCommand):
             suppliers = Org.objects.filter(q_suppliers & q_domain_suppliers).order_by('slug').distinct()
             
             t = loader.get_template('sitemap.xml')
-            xml = unicode(t.render({
+            xml = str(t.render({
                 'products': products,
                 'suppliers': suppliers,
-                'url': u"%s.%s/" % (url, domain),
+                'url': "%s.%s/" % (url, domain),
             }))
             
             sitemap = os.path.join(settings.MEDIA_ROOT, 'sitemap_%s.xml' % domain)

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os, shutil
 import pytils
 import datetime
@@ -75,9 +73,9 @@ class UnclearDate:
         return self.d
 
     def __repr__(self):
-        return u'<UnclearDate: %s>' % self.strftime('%d.%m.%Y')
+        return '<UnclearDate: %s>' % self.strftime('%d.%m.%Y')
 
-    def __unicode__(self):
+    def __str__(self):
         return self.strftime('%d.%m.%Y')
 
     def str_safe(self, format=''):
@@ -218,7 +216,7 @@ class UnclearDate:
         Может возвратить непустое сообщение об ошибке
         """
         message = ''
-        if isinstance(s, basestring):
+        if isinstance(s, str):
             s = s.strip()
             if s.lower() == 'null':
                 s = None
@@ -230,13 +228,13 @@ class UnclearDate:
                         year, month, day = cls.from_str_dmy(s)
                     except ValueError:
                         raise ServiceException(_(
-                            u"Неверный формат даты. "
-                            u"Допускается ММ.ДД.ГГГГ, ММ.ГГГГ, ГГГГ. Точки можно опустить или вместо них - или /"))
+                            "Неверный формат даты. "
+                            "Допускается ММ.ДД.ГГГГ, ММ.ГГГГ, ГГГГ. Точки можно опустить или вместо них - или /"))
 
                 else:
                     m = re.search(cls.SAFE_STR_REGEX, s)
                     if not m:
-                        raise ServiceException(_(u"Неверный формат даты. Допускается ГГГГ-ММ-ДД, ГГГГ-ММ, ГГГГ"))
+                        raise ServiceException(_("Неверный формат даты. Допускается ГГГГ-ММ-ДД, ГГГГ-ММ, ГГГГ"))
                     year = m.group(1)
                     month = m.group(2)
                     day = m.group(3)
@@ -252,23 +250,23 @@ class UnclearDate:
                         day = None
 
                 if not year:
-                    raise ServiceException(_(u"Неверный год"))
+                    raise ServiceException(_("Неверный год"))
                 if month is not None and not (1 <= month <= 12):
-                    raise ServiceException(_(u"Неверный месяц"))
+                    raise ServiceException(_("Неверный месяц"))
                 if day is not None and not (1 <= day <= 31):
-                    raise ServiceException(_(u"Неверный день"))
+                    raise ServiceException(_("Неверный день"))
 
                 if month and day:
                     try:
                         datetime.datetime.strptime("%04d-%02d-%02d" % (year, month, day), "%Y-%m-%d")
                     except ValueError:
-                        raise ServiceException(_(u"Неверная дата"))
+                        raise ServiceException(_("Неверная дата"))
 
                 if check_today:
                     t_month = month if month else 1
                     t_day = day if day else 1
                     if datetime.date.today() < datetime.date(year, t_month, t_day):
-                        raise ServiceException(_(u"Дата больше текущей"))
+                        raise ServiceException(_("Дата больше текущей"))
             except ServiceException as excpt:
                 message = excpt.message
         return message
@@ -280,7 +278,7 @@ class UnclearDate:
         Результат: relativedelta: словарь, включающий years, months, days
         """
         if not self or not d:
-            raise ValueError(_(u'Одна или обе даты для сравнения не заданы'))
+            raise ValueError(_('Одна или обе даты для сравнения не заданы'))
         last = self.d
         if self.no_month:
             try:
@@ -308,7 +306,7 @@ class UnclearDate:
         elif isinstance(d, datetime.datetime) or isinstance(d, datetime.date):
             first = d
         else:
-            raise ValueError(_(u'Неверный тип данного для даты для сравнения'))
+            raise ValueError(_('Неверный тип данного для даты для сравнения'))
         return relativedelta(last, first)
 
 class UnclearDateCreator(object):
@@ -316,8 +314,8 @@ class UnclearDateCreator(object):
 
     def __init__(self, field):
         self.field = field
-        self.no_day_name = u'%s_no_day' % self.field.name
-        self.no_month_name = u'%s_no_month' % self.field.name
+        self.no_day_name = '%s_no_day' % self.field.name
+        self.no_month_name = '%s_no_month' % self.field.name
 
     def __get__(self, obj, type=None):
         if obj is None:
@@ -354,8 +352,8 @@ class UnclearDateModelField(models.DateField):
         no_day_field = models.BooleanField(editable=False, default=False)
         no_month_field.creation_counter = self.creation_counter
         no_day_field.creation_counter = self.creation_counter
-        cls.add_to_class(u'%s_no_month' % name, no_month_field)
-        cls.add_to_class(u'%s_no_day' % name, no_day_field)
+        cls.add_to_class('%s_no_month' % name, no_month_field)
+        cls.add_to_class('%s_no_day' % name, no_day_field)
 
         super(UnclearDateModelField, self).contribute_to_class(cls, name)
         setattr(cls, self.name, UnclearDateCreator(self))
@@ -391,8 +389,8 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
         
-    dt_created = models.DateTimeField(_(u"Дата/время создания"), auto_now_add=True)
-    dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
+    dt_created = models.DateTimeField(_("Дата/время создания"), auto_now_add=True)
+    dt_modified = models.DateTimeField(_("Дата/время модификации"), auto_now=True)
 
 class BaseModelManualDtCreated(models.Model):
     """
@@ -405,8 +403,8 @@ class BaseModelManualDtCreated(models.Model):
     class Meta:
         abstract = True
 
-    dt_created = models.DateTimeField(_(u"Дата/время создания"))
-    dt_modified = models.DateTimeField(_(u"Дата/время модификации"), auto_now=True)
+    dt_created = models.DateTimeField(_("Дата/время создания"))
+    dt_modified = models.DateTimeField(_("Дата/время модификации"), auto_now=True)
 
     def fill_dt_created(self):
         if not self.dt_created:
@@ -421,7 +419,7 @@ def upload_slugified(instance, filename):
     Нелатинские символы и знаки препинания преобразуются в такое,
     что не вызывает 'нареканий' у Django
     """
-    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    fname = '.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     if isinstance(instance, get_model('orders', 'Product')):
         return os.path.join('product-photo', fname)
     if isinstance(instance, get_model('orders', 'ProductCategory')) or \
@@ -433,7 +431,7 @@ def files_upload_to(instance, filename):
         instance.original_name = filename
     elif hasattr(instance, 'original_filename'):
         instance.original_filename = filename
-    fname = u'.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
+    fname = '.'.join(map(pytils.translit.slugify, filename.rsplit('.', 1)))
     today = datetime.date.today()
     
     # Путь к сохраняемому файлу:
@@ -565,10 +563,10 @@ class Files(FilesMixin, models.Model):
     class Meta:
         abstract = True
         
-    bfile = models.FileField(u"Файл", max_length=255, upload_to=files_upload_to, blank=True)
-    comment = models.CharField(u"Описание", max_length=255, blank=True)
+    bfile = models.FileField("Файл", max_length=255, upload_to=files_upload_to, blank=True)
+    comment = models.CharField("Описание", max_length=255, blank=True)
     original_name = models.CharField(max_length=255, editable=False)
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
+    creator = models.ForeignKey('auth.User', verbose_name=_("Создатель"), editable=False, null=True,
                                 on_delete=models.PROTECT)
     date_of_creation = models.DateTimeField(auto_now_add=True)
 
@@ -582,23 +580,23 @@ class PhotoModel(FilesMixin, models.Model):
     class Meta:
         abstract = True
 
-    photo = models.ImageField(u"Фото", max_length=255, upload_to=files_upload_to, blank=True, null=True)
+    photo = models.ImageField("Фото", max_length=255, upload_to=files_upload_to, blank=True, null=True)
     original_filename = models.CharField(max_length=255, editable=False, null=True)
 
 class PhotoFiles(PhotoModel, BaseModel):
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"), editable=False, null=True,
+    creator = models.ForeignKey('auth.User', verbose_name=_("Создатель"), editable=False, null=True,
                                 on_delete=models.PROTECT)
     class Meta:
         abstract = True
 
 def validate_gt0(value):
     if value <= 0:
-        raise ValidationError(_(u'Должно быть больше нуля'))
+        raise ValidationError(_('Должно быть больше нуля'))
 
 def validate_username(value):
     if not re.match(r'^[A-Za-z0-9@_-]{1,30}$', value):
-        raise ValidationError(_(u"Может быть до 30 латинских букв, "
-                                u"цифр, знаков подчеркивания, дефисов, @"
+        raise ValidationError(_("Может быть до 30 латинских букв, "
+                                "цифр, знаков подчеркивания, дефисов, @"
         ))
 
 def validate_phone_as_number(value):
@@ -607,9 +605,9 @@ def validate_phone_as_number(value):
     """
     min_digits = 10
     max_digits = 12
-    if not re.search(r'^\+?[1-79]\d{%d,%d}$' % (min_digits-1, max_digits-1, ), unicode(value)):
+    if not re.search(r'^\+?[1-79]\d{%d,%d}$' % (min_digits-1, max_digits-1, ), str(value)):
         raise ValidationError(
-            _(u'Неверный номер телефона в международном формате, надо от %(min_digits)d до %(max_digits)d цифр') % dict(
+            _('Неверный номер телефона в международном формате, надо от %(min_digits)d до %(max_digits)d цифр') % dict(
                 min_digits=min_digits, max_digits=max_digits, 
         ))
 
@@ -655,23 +653,23 @@ class CheckLifeDatesMixin(object):
         fact_date,  req_fact_date  = self.get_parm_(person, 'factDate', 'fact_date')
         message = UnclearDate.check_safe_str(birth_date, check_today=True, format=format)
         if message:
-            return _(u"Дата рождения: %s") % message
+            return _("Дата рождения: %s") % message
         message = UnclearDate.check_safe_str(death_date, check_today=True, format=format)
         if message:
-            return _(u"Дата смерти: %s") % message
+            return _("Дата смерти: %s") % message
         message = UnclearDate.check_safe_str(fact_date, check_today=True, format=format)
         if message:
-            return _(u"Дата захоронения: %s") % message
-        msg_dates = _(u"Дата смерти раньше даты рождения")
+            return _("Дата захоронения: %s") % message
+        msg_dates = _("Дата смерти раньше даты рождения")
         birth_date = UnclearDate.from_str_safe(birth_date, format=format)
         death_date = UnclearDate.from_str_safe(death_date, format=format)
         fact_date  = UnclearDate.from_str_safe(fact_date, format=format)
         if birth_date and death_date and birth_date > death_date:
             return msg_dates
-        msg_fact_lt_birth = _(u"Дата захоронения меньше даты рождения")
+        msg_fact_lt_birth = _("Дата захоронения меньше даты рождения")
         if fact_date and birth_date and birth_date > fact_date:
             return msg_fact_lt_birth
-        msg_fact_lt_death = _(u"Дата захоронения меньше даты смерти")
+        msg_fact_lt_death = _("Дата захоронения меньше даты смерти")
         if fact_date and death_date and death_date > fact_date:
             return msg_fact_lt_death
         if instance:

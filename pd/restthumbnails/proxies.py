@@ -3,7 +3,7 @@ from django.utils.encoding import filepath_to_uri
 
 from restthumbnails.base import ThumbnailBase
 
-import urlparse
+import urllib.parse
 
 
 class ThumbnailProxyBase(ThumbnailBase):
@@ -34,7 +34,7 @@ class ThumbnailProxy(ThumbnailProxyBase):
             'method': self.method,
             'secret': self.secret,
             'extension': self.extension}
-        return urlparse.urljoin(self.base_url, url)
+        return urllib.parse.urljoin(self.base_url, url)
 
 
 class DummyImageProxy(ThumbnailBase):
