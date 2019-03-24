@@ -1,5 +1,3 @@
-# coding: utf-8
-
 import os, time
 from django.conf import settings
 from pd.views import get_front_end_url

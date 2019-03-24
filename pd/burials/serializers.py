@@ -1,5 +1,3 @@
-# coding=utf-8
-
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
@@ -76,7 +74,7 @@ class CemeteryClientSiteSerializer(AddressLatLonMixin, CemeteryPhotoMixin, seria
 
     def executive_func(self, obj):
         if obj.caretaker:
-            return dict(fullName=u"%s" % obj.caretaker.profile)
+            return dict(fullName="%s" % obj.caretaker.profile)
         else:
             return None
 
@@ -263,7 +261,7 @@ class GraveSerializer(serializers.ModelSerializer):
 class BurialListSerializer(serializers.ModelSerializer):
     grave = serializers.PrimaryKeyRelatedField(read_only=True)
     deadman = DeadPersonSerializer()
-    plan_date = serializers.DateField(format=u"%d.%m.%Y")
+    plan_date = serializers.DateField(format="%d.%m.%Y")
     fact_date = UnclearDateFieldSerializer()
     class Meta:
         model = Burial
@@ -283,7 +281,7 @@ class BurialSerializer(serializers.ModelSerializer):
     applicant = AlivePersonSerializer()
     # applicant_organization dover agent_director
     fact_date = UnclearDateFieldSerializer()
-    plan_date = serializers.DateField(format=u"%d.%m.%Y")
+    plan_date = serializers.DateField(format="%d.%m.%Y")
     
     class Meta:
         model = Burial
@@ -302,7 +300,7 @@ class BurialPutGraveSerializer(serializers.ModelSerializer):
 
 class AreaPhotoSerializer(serializers.ModelSerializer):
     area = serializers.PrimaryKeyRelatedField(read_only=True)
-    date_of_creation = serializers.DateField(format=u"%d.%m.%Y")
+    date_of_creation = serializers.DateField(format="%d.%m.%Y")
     class Meta:
         model = AreaPhoto
         fields = ('id', 'area', 'bfile', 'comment', 'original_name', 'lat', 'lng', 'date_of_creation') 

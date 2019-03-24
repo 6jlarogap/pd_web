@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # coding=utf-8
 
@@ -22,6 +22,8 @@ def email_(partition, usage, size, used, avail):
     host = CDS_EMAIL_HOST if CDS_EMAIL_HOST else 'localhost'
     port = CDS_EMAIL_PORT if CDS_EMAIL_PORT else 25
     smtp.connect(host, port)
+    if CDS_EMAIL_PORT == 587:
+        smtp.starttls()
 
     username = CDS_EMAIL_HOST_USER if CDS_EMAIL_HOST_USER else None
     password = CDS_EMAIL_HOST_PASSWORD if CDS_EMAIL_HOST_PASSWORD else None
@@ -52,18 +54,18 @@ for partition in CDS_THRESHOLD:
         r"df -H | egrep ' %s'$" % partition,
         stderr=subprocess.STDOUT,
         shell=True
-    )
-    print "Checking %s" % partition
+    ).decode('utf-8')
+    print("Checking %s" % partition)
     splitted = outp.split()
     usage = int(splitted[4].rstrip('%'))
     size = splitted[1]
     used = splitted[2]
     avail = splitted[3]
     if usage >= CDS_THRESHOLD[partition]:
-        print " - reached the threshold! Sending mail"
+        print(" - reached the threshold! Sending mail")
         email_(partition, usage, size, used, avail)
     else:
-        print " - OK: usage, %s%%, is not more than the threshold, %s%%, yet" % (
+        print(" - OK: usage, %s%%, is not more than the threshold, %s%%, yet" % (
             usage,
             CDS_THRESHOLD[partition],
-        )
+        ))

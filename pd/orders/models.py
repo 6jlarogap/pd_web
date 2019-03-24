@@ -1,5 +1,4 @@
-# coding=utf-8
-from __builtin__ import property
+from builtins import property
 import datetime, time
 import os, shutil, decimal
 from autoslug import AutoSlugField
@@ -30,9 +29,9 @@ class Service(models.Model):
     SERVICE_PHOTO = 'photo'
     SERVICE_DELIVERY = 'delivery'
 
-    name = models.CharField(_(u"Название"), max_length=255, unique=True)
-    title = models.CharField(_(u"Заглавие"), max_length=255)
-    description = models.TextField(_(u"Описание"), default='')
+    name = models.CharField(_("Название"), max_length=255, unique=True)
+    title = models.CharField(_("Заглавие"), max_length=255)
+    description = models.TextField(_("Описание"), default='')
 
 class Measure(models.Model):
     """
@@ -40,9 +39,9 @@ class Measure(models.Model):
 
     Перечисляются в fixtures
     """
-    service = models.ForeignKey(Service, verbose_name=_(u"Сервис"), on_delete=models.PROTECT)
-    name = models.CharField(_(u"Название"), max_length=255)
-    title = models.CharField(_(u"Заглавие"), max_length=255)
+    service = models.ForeignKey(Service, verbose_name=_("Сервис"), on_delete=models.PROTECT)
+    name = models.CharField(_("Название"), max_length=255)
+    title = models.CharField(_("Заглавие"), max_length=255)
 
     class Meta:
         unique_together = (
@@ -53,9 +52,9 @@ class OrgService(models.Model):
     """
     Сервисы, на которые подписалась организация-продавец товаров/услуг
     """
-    org = models.ForeignKey(Org, verbose_name=_(u"Поставщик"), on_delete=models.PROTECT)
-    service = models.ForeignKey(Service, verbose_name=_(u"Тип сервиса"), on_delete=models.PROTECT)
-    enabled = models.BooleanField(_(u"Включен"), default=True)
+    org = models.ForeignKey(Org, verbose_name=_("Поставщик"), on_delete=models.PROTECT)
+    service = models.ForeignKey(Service, verbose_name=_("Тип сервиса"), on_delete=models.PROTECT)
+    enabled = models.BooleanField(_("Включен"), default=True)
 
     class Meta:
         unique_together = (
@@ -69,9 +68,9 @@ class OrgServicePrice(models.Model):
     """
     Цены сервисов организации-продавца товаров/услуг
     """
-    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Служба"), on_delete=models.PROTECT)
-    measure = models.ForeignKey(Measure, verbose_name=_(u"Единица измерения"), on_delete=models.PROTECT)
-    price = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, default='0.00')
+    orgservice = models.ForeignKey(OrgService, verbose_name=_("Служба"), on_delete=models.PROTECT)
+    measure = models.ForeignKey(Measure, verbose_name=_("Единица измерения"), on_delete=models.PROTECT)
+    price = models.DecimalField(_("Цена"), max_digits=20, decimal_places=2, default='0.00')
 
     class Meta:
         unique_together = (
@@ -97,34 +96,34 @@ class ProductCategory(models.Model):
         29,   # Лампады
     )
 
-    name = models.CharField(_(u"Название"), max_length=255)
-    sorting = models.CharField(_(u"Порядок сортировки"), max_length=2, editable=False, default=u'ZZ')
-    icon = models.ImageField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
+    name = models.CharField(_("Название"), max_length=255)
+    sorting = models.CharField(_("Порядок сортировки"), max_length=2, editable=False, default='ZZ')
+    icon = models.ImageField("Иконка", upload_to=upload_slugified, blank=True, null=True)
 
     class Meta:
-        verbose_name = _(u"Категория")
-        verbose_name_plural = _(u"Категории")
+        verbose_name = _("Категория")
+        verbose_name_plural = _("Категории")
         ordering = ('name', )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 class ProductGroup(models.Model):
-    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"))
-    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
-    name = models.CharField(_(u"Название"), max_length=255)
-    description = models.TextField(_(u"Описание"), blank=True, default='')
-    icon = models.FileField(u"Иконка", upload_to=upload_slugified, blank=True, null=True)
+    loru = models.ForeignKey(Org, verbose_name=_("ЛОРУ"))
+    productcategory = models.ForeignKey(ProductCategory, verbose_name=_("Категория"), on_delete=models.PROTECT)
+    name = models.CharField(_("Название"), max_length=255)
+    description = models.TextField(_("Описание"), blank=True, default='')
+    icon = models.FileField("Иконка", upload_to=upload_slugified, blank=True, null=True)
 
     class Meta:
-        verbose_name = _(u"Подкатегория")
-        verbose_name_plural = _(u"Подкатегории")
+        verbose_name = _("Подкатегория")
+        verbose_name_plural = _("Подкатегории")
         ordering = ('name', )
         unique_together = (
             ('loru', 'productcategory', 'name', ),
         )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 class Product(BaseModel):
@@ -135,46 +134,46 @@ class Product(BaseModel):
     PRODUCT_SIGN = 'SIGN'
     PRODUCT_VIP = 'VIP'
     PRODUCT_TYPES = (
-        (PRODUCT_CATAFALQUE, _(u"Автокатафалк")),
-        (PRODUCT_CATAFALQUE_COMFORT, _(u"Катафалк повыш. комфортности")),
-        (PRODUCT_LOADERS, _(u"Грузчики")),
-        (PRODUCT_DIGGERS, _(u"Рытье могилы")),
-        (PRODUCT_SIGN, _(u"Написание надмогильной таблички")),
-        (PRODUCT_VIP, _(u"ВИП бригада послепохоронного обслуживания")),
+        (PRODUCT_CATAFALQUE, _("Автокатафалк")),
+        (PRODUCT_CATAFALQUE_COMFORT, _("Катафалк повыш. комфортности")),
+        (PRODUCT_LOADERS, _("Грузчики")),
+        (PRODUCT_DIGGERS, _("Рытье могилы")),
+        (PRODUCT_SIGN, _("Написание надмогильной таблички")),
+        (PRODUCT_VIP, _("ВИП бригада послепохоронного обслуживания")),
     )
     
     PRODUCT_NAME_MAXLEN = 60
 
-    loru = models.ForeignKey(Org, null=True, verbose_name=_(u"Поставщик"))
-    name = models.CharField(_(u"Название"), max_length=255)
+    loru = models.ForeignKey(Org, null=True, verbose_name=_("Поставщик"))
+    name = models.CharField(_("Название"), max_length=255)
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
-    description = models.TextField(_(u"Описание"), blank=True, default='')
-    measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
-    price = models.DecimalField(_(u"Цена розничная"), max_digits=20, decimal_places=2)
-    price_wholesale = models.DecimalField(_(u"Цена оптовая"), max_digits=20, decimal_places=2)
-    ptype = models.CharField(_(u"Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
-    default = models.BooleanField(_(u"По умолчанию"), default=False, blank=True)
+    description = models.TextField(_("Описание"), blank=True, default='')
+    measure = models.CharField(_("Ед. изм."), max_length=255, default=_("шт"))
+    price = models.DecimalField(_("Цена розничная"), max_digits=20, decimal_places=2)
+    price_wholesale = models.DecimalField(_("Цена оптовая"), max_digits=20, decimal_places=2)
+    ptype = models.CharField(_("Тип"), max_length=255, choices=PRODUCT_TYPES, null=True, blank=True)
+    default = models.BooleanField(_("По умолчанию"), default=False, blank=True)
     # True: товар, False: услуга
-    stockable = models.BooleanField(_(u"Товар"), default=True, blank=True)
-    photo = models.ImageField(u"Фото", max_length=255, upload_to=upload_slugified, blank=True, null=True)
-    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"), on_delete=models.PROTECT)
-    productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True, editable=False,
+    stockable = models.BooleanField(_("Товар"), default=True, blank=True)
+    photo = models.ImageField("Фото", max_length=255, upload_to=upload_slugified, blank=True, null=True)
+    productcategory = models.ForeignKey(ProductCategory, verbose_name=_("Категория"), on_delete=models.PROTECT)
+    productgroup = models.ForeignKey(ProductGroup, verbose_name=_("Подкатегория"), null=True, editable=False,
                                      on_delete=models.PROTECT)
-    sku = models.CharField(_(u"Артикул"), max_length=255, blank=True, default='')
-    is_public_catalog = models.BooleanField(_(u"Показать в публичном каталоге"), default=False)
-    is_wholesale = models.BooleanField(_(u"Показать в каталоге оптовикам"), default=False)
-    is_for_visit = models.BooleanField(_(u"Доступно для посещения места захоронения"), default=False)
-    is_archived = models.BooleanField(_(u"Архивирован"), default=False)
+    sku = models.CharField(_("Артикул"), max_length=255, blank=True, default='')
+    is_public_catalog = models.BooleanField(_("Показать в публичном каталоге"), default=False)
+    is_wholesale = models.BooleanField(_("Показать в каталоге оптовикам"), default=False)
+    is_for_visit = models.BooleanField(_("Доступно для посещения места захоронения"), default=False)
+    is_archived = models.BooleanField(_("Архивирован"), default=False)
 
     class Meta:
-        verbose_name = _(u"Товар")
-        verbose_name_plural = _(u"Товары")
+        verbose_name = _("Товар")
+        verbose_name_plural = _("Товары")
         ordering = ['name']
 
-    def __unicode__(self):
-        currency_one_char = self.loru and self.loru.currency.one_char_name() or u'р'
-        return u'%s (%s %s.)' % (self.name, self.price, currency_one_char)
+    def __str__(self):
+        currency_one_char = self.loru and self.loru.currency.one_char_name() or 'р'
+        return '%s (%s %s.)' % (self.name, self.price, currency_one_char)
 
     def is_burial(self):
         return self.ptype == self.PRODUCT_BURIAL
@@ -211,16 +210,16 @@ class Order(GetLogsMixin, BaseModel):
     # Заказ на сервисы, т.е. инмцируемый пользователем- физ-лицом
     TYPE_CUSTOMER = 'customer'
     ORDER_TYPES = (
-        (TYPE_BURIAL, _(u'Заказ на захоронение')),
-        (TYPE_TRADE, _(u'Оптовый заказ')),
-        (TYPE_CUSTOMER, _(u'Заказ пользователя')),
+        (TYPE_BURIAL, _('Заказ на захоронение')),
+        (TYPE_TRADE, _('Оптовый заказ')),
+        (TYPE_CUSTOMER, _('Заказ пользователя')),
     )
 
     PAYMENT_CASH = 'cash'
     PAYMENT_WIRE = 'wire'
     PAYMENT_CHOICES = (
-        (PAYMENT_CASH, _(u'Наличный')),
-        (PAYMENT_WIRE, _(u'Безналичный')),
+        (PAYMENT_CASH, _('Наличный')),
+        (PAYMENT_WIRE, _('Безналичный')),
     )
 
     STATUS_POSTED = 'posted'
@@ -230,64 +229,64 @@ class Order(GetLogsMixin, BaseModel):
     STATUS_DONE = 'done'
 
     STATUS_TYPES = (
-        (STATUS_POSTED, _(u"Размещен")),
-        (STATUS_ACCEPTED, _(u"Принят")),
-        (STATUS_ADVANCED, _(u"Выплачен аванс")),
-        (STATUS_PAID, _(u"Оплачен")),
-        (STATUS_DONE, _(u"Выполнен")),
+        (STATUS_POSTED, _("Размещен")),
+        (STATUS_ACCEPTED, _("Принят")),
+        (STATUS_ADVANCED, _("Выплачен аванс")),
+        (STATUS_PAID, _("Оплачен")),
+        (STATUS_DONE, _("Выполнен")),
     )
 
-    type = models.CharField(_(u"Тип Заказ"), max_length=255, choices=ORDER_TYPES, default=TYPE_BURIAL, editable=False)
+    type = models.CharField(_("Тип Заказ"), max_length=255, choices=ORDER_TYPES, default=TYPE_BURIAL, editable=False)
 
-    loru = models.ForeignKey(Org, null=True, verbose_name=_(u"ЛОРУ"))
-    loru_number = models.PositiveIntegerField(_(u"Номер в переделах исполнителя заказа"), null=True, editable=False)
-    number = models.PositiveIntegerField(_(u"Номер в переделах исполнителя заказа и года"), null=True, editable=False)
-    payment = models.CharField(_(u"Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
-    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_(u"Заказчик-ФЛ"), null=True, blank=True,
+    loru = models.ForeignKey(Org, null=True, verbose_name=_("ЛОРУ"))
+    loru_number = models.PositiveIntegerField(_("Номер в переделах исполнителя заказа"), null=True, editable=False)
+    number = models.PositiveIntegerField(_("Номер в переделах исполнителя заказа и года"), null=True, editable=False)
+    payment = models.CharField(_("Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
+    applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_("Заказчик-ФЛ"), null=True, blank=True,
                                   on_delete=models.PROTECT)
-    applicant_organization = models.ForeignKey(Org, verbose_name=_(u"Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders')
-    agent_director = models.BooleanField(_(u"Директор-Агент"), default=False, blank=True)
-    agent = models.ForeignKey('users.Profile', verbose_name=_(u"Агент"), null=True, blank=True,
+    applicant_organization = models.ForeignKey(Org, verbose_name=_("Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders')
+    agent_director = models.BooleanField(_("Директор-Агент"), default=False, blank=True)
+    agent = models.ForeignKey('users.Profile', verbose_name=_("Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
-    dover = models.ForeignKey('users.Dover', verbose_name=_(u"Доверенность"), null=True, blank=True,
+    dover = models.ForeignKey('users.Dover', verbose_name=_("Доверенность"), null=True, blank=True,
                               on_delete=models.PROTECT)
-    annulated = models.BooleanField(_(u'Аннулирован'), editable=False, default=False)
-    archived = models.BooleanField(_(u'Архивирован'), editable=False, default=False)
-    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=False)
-    dt = models.DateField(_(u"Дата заказа"))
+    annulated = models.BooleanField(_('Аннулирован'), editable=False, default=False)
+    archived = models.BooleanField(_('Архивирован'), editable=False, default=False)
+    cost = models.DecimalField(_("Цена"), max_digits=20, decimal_places=2, editable=False)
+    dt = models.DateField(_("Дата заказа"))
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
 
-    customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_(u"Место захоронения"),
+    customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_("Место захоронения"),
                                     null=True, editable=False, on_delete=models.PROTECT)
-    status = models.CharField(_(u"Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_POSTED, editable=False,)
-    applicant_approved = models.NullBooleanField(_(u"Одобрено заказчиком"), null=True, editable=False,)
+    status = models.CharField(_("Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_POSTED, editable=False,)
+    applicant_approved = models.NullBooleanField(_("Одобрено заказчиком"), null=True, editable=False,)
 
     # При создании оптового заказа исполнителем, когда заказчик обращении к нему по телефону
     # (applicant == applicant_organization = None):
-    title = models.CharField(_(u"Наименование покупателя"), max_length=255, default='', editable=False)
-    phones = models.TextField(_(u"Телефоны"), null=True, editable=False)
-    address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"), null=True, editable=False)
+    title = models.CharField(_("Наименование покупателя"), max_length=255, default='', editable=False)
+    phones = models.TextField(_("Телефоны"), null=True, editable=False)
+    address = models.ForeignKey('geo.Location', verbose_name=_("Адрес"), null=True, editable=False)
 
     # Для заказа похорон
-    dt_due = models.DateField(_(u"Дата похорон"), editable=False, null=True)
+    dt_due = models.DateField(_("Дата похорон"), editable=False, null=True)
 
-    burial_plan_time = models.TimeField(_(u"План. время захоронения"), null=True, editable=False)
-    initial_place = models.CharField(_(u"Место подачи катафалка"), max_length=255, editable=False, default='')
-    initial_time = models.TimeField(_(u"Время подачи катафалка"), null=True, editable=False)
-    service_place = models.CharField(_(u"Место отпевания"), max_length=255, editable=False, default='')
-    service_time = models.TimeField(_(u"Время отпевания"), null=True, editable=False)
-    repast_place = models.CharField(_(u"Место отпевания"), max_length=255, editable=False, default='')
-    repast_time = models.TimeField(_(u"Время отпевания"), null=True, editable=False)
+    burial_plan_time = models.TimeField(_("План. время захоронения"), null=True, editable=False)
+    initial_place = models.CharField(_("Место подачи катафалка"), max_length=255, editable=False, default='')
+    initial_time = models.TimeField(_("Время подачи катафалка"), null=True, editable=False)
+    service_place = models.CharField(_("Место отпевания"), max_length=255, editable=False, default='')
+    service_time = models.TimeField(_("Время отпевания"), null=True, editable=False)
+    repast_place = models.CharField(_("Место отпевания"), max_length=255, editable=False, default='')
+    repast_time = models.TimeField(_("Время отпевания"), null=True, editable=False)
 
     class Meta:
-        verbose_name = _(u"Заказ")
-        verbose_name_plural = _(u"Заказы")
+        verbose_name = _("Заказ")
+        verbose_name_plural = _("Заказы")
         # unique_together = (
         #     ('loru_number', 'loru'),
         # )
 
-    def __unicode__(self):
-        return u'%s от %s' % (self.loru_number or _(u"б/н"), self.dt.strftime('%d.%m.%Y'))
+    def __str__(self):
+        return '%s от %s' % (self.loru_number or _("б/н"), self.dt.strftime('%d.%m.%Y'))
 
     def save(self, *args, **kwargs):
         if not self.cost:
@@ -299,7 +298,7 @@ class Order(GetLogsMixin, BaseModel):
                     existing = existing.exclude(pk=self.pk)
                 try:
                     self.loru_number = int(existing[0].loru_number) + 1
-                except (IndexError, TypeError), e:
+                except (IndexError, TypeError) as e:
                     self.loru_number = 1
             if not self.number:
                 year = self.dt and self.dt.year or datetime.date.today().year
@@ -308,7 +307,7 @@ class Order(GetLogsMixin, BaseModel):
                     existing = existing.exclude(pk=self.pk)
                 try:
                     self.number = int(existing[0].number) + 1
-                except (IndexError, TypeError), e:
+                except (IndexError, TypeError) as e:
                     self.number = 1
         return super(Order, self).save(*args, **kwargs)
 
@@ -364,12 +363,12 @@ class Order(GetLogsMixin, BaseModel):
     def get_formal_org(self):
         org = self.applicant_organization
         if self.agent_director:
-            return _(u"%(org)s, в лице директора %(director)s") % dict(
+            return _("%(org)s, в лице директора %(director)s") % dict(
                 org=org, director=org.director
             )
         else:
-            return _(u"\"%(org)s\", в лице агента %(agent)s, "
-                     u"действующего на основании доверенности %(dover)s") % dict(
+            return _("\"%(org)s\", в лице агента %(agent)s, "
+                     "действующего на основании доверенности %(dover)s") % dict(
                          org=org, agent=self.agent, dover=self.dover.number
             )
 
@@ -464,7 +463,7 @@ class Order(GetLogsMixin, BaseModel):
         """
         Автогенерируемый номер заказа
         """
-        return u"%d-%d-%d" % (
+        return "%d-%d-%d" % (
             self.dt.year,
             self.loru.pk,
             self.number or 0,
@@ -642,8 +641,8 @@ class OrderItemMixin(object):
 
 class ServiceItem(OrderItemMixin, models.Model):
     order = models.ForeignKey(Order)
-    orgservice = models.ForeignKey(OrgService, verbose_name=_(u"Услуга"), on_delete=models.PROTECT)
-    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2)
+    orgservice = models.ForeignKey(OrgService, verbose_name=_("Услуга"), on_delete=models.PROTECT)
+    cost = models.DecimalField(_("Цена"), max_digits=20, decimal_places=2)
 
 class OrderComment(BaseModel):
 
@@ -651,15 +650,15 @@ class OrderComment(BaseModel):
     TYPE_SHARED = 'shared'
     TYPE_PUBLIC = 'public'
     COMMENT_TYPES = (
-        (TYPE_PRIVATE, _(u"Личный")),
-        (TYPE_SHARED, _(u"Доступный автору и собеседнику")),
-        (TYPE_PUBLIC, _(u"Общедоступный")),
+        (TYPE_PRIVATE, _("Личный")),
+        (TYPE_SHARED, _("Доступный автору и собеседнику")),
+        (TYPE_PUBLIC, _("Общедоступный")),
     )
 
-    order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
-    user = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь"), )
-    type = models.CharField(_(u"Тип"), max_length=255, choices=COMMENT_TYPES, default=TYPE_SHARED)
-    comment = models.TextField(_(u"Комментарий"), )
+    order = models.ForeignKey(Order, verbose_name=_("Заказ"), )
+    user = models.ForeignKey('auth.User', verbose_name=_("Пользователь"), )
+    type = models.CharField(_("Тип"), max_length=255, choices=COMMENT_TYPES, default=TYPE_SHARED)
+    comment = models.TextField(_("Комментарий"), )
 
 class OrderWebPay(BaseModel):
     """
@@ -669,8 +668,8 @@ class OrderWebPay(BaseModel):
     METHOD_TEST = 'test'
     METHOD_CARD = 'cc'
     PAYMENT_METHODS = (
-        (METHOD_TEST, _(u"Тест, без реального платежа")),
-        (METHOD_CARD, _(u"Платежная карточка")),
+        (METHOD_TEST, _("Тест, без реального платежа")),
+        (METHOD_CARD, _("Платежная карточка")),
     )
 
     PAY_TYPE_COMPLETED = '1'
@@ -682,14 +681,14 @@ class OrderWebPay(BaseModel):
     PAY_TYPE_VOIDED = '7'
     PAY_TYPE_FAILED = '8'
     TRANSACTION_TYPES = (
-        (PAY_TYPE_COMPLETED, _(u"Completed (Завершенная)")),
-        (PAY_TYPE_DECLINED, _(u"Declined (Отклоненная)")),
-        (PAY_TYPE_PENDING, _(u"Pending (В обработке)")),
-        (PAY_TYPE_AUTHORIZED, _(u"Authorized (Авторизованная)")),
-        (PAY_TYPE_REFUNDED, _(u"Refunded (Возвращенная)")),
-        (PAY_TYPE_SYSTEM, _(u"System (Системная))")),
-        (PAY_TYPE_VOIDED, _(u"Voided (Сброшенная после авторизации)")),
-        (PAY_TYPE_FAILED, _(u"Failed (Ошибка в проведении транзакции)")),
+        (PAY_TYPE_COMPLETED, _("Completed (Завершенная)")),
+        (PAY_TYPE_DECLINED, _("Declined (Отклоненная)")),
+        (PAY_TYPE_PENDING, _("Pending (В обработке)")),
+        (PAY_TYPE_AUTHORIZED, _("Authorized (Авторизованная)")),
+        (PAY_TYPE_REFUNDED, _("Refunded (Возвращенная)")),
+        (PAY_TYPE_SYSTEM, _("System (Системная))")),
+        (PAY_TYPE_VOIDED, _("Voided (Сброшенная после авторизации)")),
+        (PAY_TYPE_FAILED, _("Failed (Ошибка в проведении транзакции)")),
     )
 
     # Успешной оплате соответствуют следующие типы PAY_TYPE
@@ -698,7 +697,7 @@ class OrderWebPay(BaseModel):
         PAY_TYPE_AUTHORIZED,
     )
 
-    order = models.ForeignKey(Order, verbose_name=_(u"Заказ"))
+    order = models.ForeignKey(Order, verbose_name=_("Заказ"))
 
     # Этот номер, wsb_order_num, "наш" номер заказа, формируемый функцией
     # Order.number_verbose(), отправляется в WebPay, чтобы тот попросил заказчика
@@ -710,21 +709,21 @@ class OrderWebPay(BaseModel):
     # В колонке wsb_order_num держим этот номер в целях протоколирования.
     # Возможно, по нему будет производится поиск
     # 
-    wsb_order_num = models.CharField(_(u"Номер заказа"), max_length=255, db_index=True)
+    wsb_order_num = models.CharField(_("Номер заказа"), max_length=255, db_index=True)
 
     # Имена этих полей -- в соответствии с полями ответа от WebPay
     # (кроме order_id (WebPay) == order_ident в этой модели)
     # Заполняются, когда придет ответ
     #
-    transaction_id = models.CharField(_(u"Номер транзакции"), max_length=255, null=True)
-    batch_timestamp = models.CharField(_(u"Время совершения транзакции"), max_length=255, null=True)
-    currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255, null=True)
-    amount = models.CharField(_(u"Сумма"), max_length=255, null=True)
-    payment_method = models.CharField(_(u"Метод платежа"), max_length=255, choices=PAYMENT_METHODS, null=True)
-    payment_type = models.CharField(_(u"Тип транзакции"), max_length=255, choices=TRANSACTION_TYPES, null=True)
-    order_ident = models.CharField(_(u"Номер заказа в системе WebPay (order_id)"), max_length=255, null=True)
-    rrn = models.CharField(_(u"Номер транзакции в системе Visa/MasterCard"), max_length=255, null=True)
-    wsb_signature = models.CharField(_(u"Электронная подпись"), max_length=255, null=True)
+    transaction_id = models.CharField(_("Номер транзакции"), max_length=255, null=True)
+    batch_timestamp = models.CharField(_("Время совершения транзакции"), max_length=255, null=True)
+    currency_id = models.CharField(_("Код валюты согласно ISO4271"), max_length=255, null=True)
+    amount = models.CharField(_("Сумма"), max_length=255, null=True)
+    payment_method = models.CharField(_("Метод платежа"), max_length=255, choices=PAYMENT_METHODS, null=True)
+    payment_type = models.CharField(_("Тип транзакции"), max_length=255, choices=TRANSACTION_TYPES, null=True)
+    order_ident = models.CharField(_("Номер заказа в системе WebPay (order_id)"), max_length=255, null=True)
+    rrn = models.CharField(_("Номер транзакции в системе Visa/MasterCard"), max_length=255, null=True)
+    wsb_signature = models.CharField(_("Электронная подпись"), max_length=255, null=True)
 
 class ResultFile(Files):
     """
@@ -733,16 +732,16 @@ class ResultFile(Files):
     TYPE_IMAGE = 'image'
     TYPE_VIDEO = 'video'
     RESULT_TYPES = (
-        (TYPE_IMAGE, _(u"Изображение")),
-        (TYPE_VIDEO, _(u"Видео")),
+        (TYPE_IMAGE, _("Изображение")),
+        (TYPE_VIDEO, _("Видео")),
     )
 
     # Мегабайт:
     MAX_IMAGE_SIZE = 10
 
-    order = models.ForeignKey(Order, verbose_name=_(u"Заказ"), )
-    type = models.CharField(_(u"Тип"), max_length=255, choices=RESULT_TYPES, default=TYPE_IMAGE)
-    is_title = models.BooleanField(_(u"Титульное фото"), default=False, editable=False)
+    order = models.ForeignKey(Order, verbose_name=_("Заказ"), )
+    type = models.CharField(_("Тип"), max_length=255, choices=RESULT_TYPES, default=TYPE_IMAGE)
+    is_title = models.BooleanField(_("Титульное фото"), default=False, editable=False)
 
     def save(self, *args, **kwargs):
         customplace = None
@@ -779,10 +778,10 @@ class ResultFile(Files):
 
 class OrderItem(OrderItemMixin, models.Model):
     order = models.ForeignKey(Order, editable=False)
-    product = models.ForeignKey(Product, verbose_name=_(u"Товар"))
-    quantity = models.DecimalField(_(u"Кол-во"), max_digits=20, decimal_places=2, default=1)
-    cost = models.DecimalField(_(u"Цена"), max_digits=20, decimal_places=2, editable=True)
-    discount = models.DecimalField(_(u"Скидка"), max_digits=4, decimal_places=2, editable=False, default='0.00')
+    product = models.ForeignKey(Product, verbose_name=_("Товар"))
+    quantity = models.DecimalField(_("Кол-во"), max_digits=20, decimal_places=2, default=1)
+    cost = models.DecimalField(_("Цена"), max_digits=20, decimal_places=2, editable=True)
+    discount = models.DecimalField(_("Скидка"), max_digits=4, decimal_places=2, editable=False, default='0.00')
 
     # name, description, productcategory, productcategory_name,
     # productgroup, productgroup_name, measure:
@@ -790,25 +789,25 @@ class OrderItem(OrderItemMixin, models.Model):
     # is_wholesale_with_vat:
     #    содержит копию сооответствующего параметра лору в момент создания заказа
 
-    name = models.CharField(_(u"Название"), max_length=255, editable=False)
-    measure = models.CharField(_(u"Ед. изм."), max_length=255, default=_(u"шт"))
-    description = models.TextField(_(u"Описание"), blank=True, default='')
-    productcategory = models.ForeignKey(ProductCategory, verbose_name=_(u"Категория"),
+    name = models.CharField(_("Название"), max_length=255, editable=False)
+    measure = models.CharField(_("Ед. изм."), max_length=255, default=_("шт"))
+    description = models.TextField(_("Описание"), blank=True, default='')
+    productcategory = models.ForeignKey(ProductCategory, verbose_name=_("Категория"),
                                         editable=False, on_delete=models.PROTECT)
-    productcategory_name = models.CharField(_(u"Название категории"), max_length=255, editable=False)
-    productgroup = models.ForeignKey(ProductGroup, verbose_name=_(u"Подкатегория"), null=True,
+    productcategory_name = models.CharField(_("Название категории"), max_length=255, editable=False)
+    productgroup = models.ForeignKey(ProductGroup, verbose_name=_("Подкатегория"), null=True,
                                      editable=False, on_delete=models.PROTECT)
-    productgroup_name = models.CharField(_(u"Название подкатегории"), max_length=255, default='', editable=False)
-    productgroup_description = models.TextField(_(u"Описание подкатегории"), blank=True, default='', editable=False)
-    comment = models.TextField(_(u"Комментарий"), blank=True, default='', editable=False)
-    is_wholesale_with_vat = models.BooleanField(_(u"Цена с НДС"), default=False, editable=False)
+    productgroup_name = models.CharField(_("Название подкатегории"), max_length=255, default='', editable=False)
+    productgroup_description = models.TextField(_("Описание подкатегории"), blank=True, default='', editable=False)
+    comment = models.TextField(_("Комментарий"), blank=True, default='', editable=False)
+    is_wholesale_with_vat = models.BooleanField(_("Цена с НДС"), default=False, editable=False)
 
     class Meta:
-        verbose_name = _(u"Позиция")
-        verbose_name_plural = _(u"Позиции")
+        verbose_name = _("Позиция")
+        verbose_name_plural = _("Позиции")
 
-    def __unicode__(self):
-        return u'%s - %s' % (self.order, self.product)
+    def __str__(self):
+        return '%s - %s' % (self.order, self.product)
     
     def save(self, *args, **kwargs):
         if not self.cost:
@@ -852,19 +851,19 @@ class OrderItem(OrderItemMixin, models.Model):
 class CatafalqueData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)
 
-    route = models.TextField(_(u"Маршрут"))
-    start_time = models.TimeField(_(u"Время подачи"))
-    start_place = models.TextField(_(u"Место подачи"), null=True)
-    end_time = models.TimeField(_(u"Время отпуска клиентом"), null=True)
-    cemetery_time = models.TimeField(_(u"Время заезда на кладбище"), null=True)
+    route = models.TextField(_("Маршрут"))
+    start_time = models.TimeField(_("Время подачи"))
+    start_place = models.TextField(_("Место подачи"), null=True)
+    end_time = models.TimeField(_("Время отпуска клиентом"), null=True)
+    cemetery_time = models.TimeField(_("Время заезда на кладбище"), null=True)
 
 class AddInfoData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)
-    add_info = models.TextField(_(u"Доп.инфо"), blank=True)
+    add_info = models.TextField(_("Доп.инфо"), blank=True)
 
 class CoffinData(models.Model):
     order = models.OneToOneField('orders.Order', editable=False)
-    size = models.TextField(_(u"Размер"))
+    size = models.TextField(_("Размер"))
 
 class Route(PointsModel):
     order = models.ForeignKey(Order)

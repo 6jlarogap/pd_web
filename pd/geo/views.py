@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import json
 
 from django.http import HttpResponse
@@ -12,13 +10,10 @@ from geo.models import Country, Street, City, Region, Location
 from geo.serializers import CountrySerializer, RegionSerializer, CitySerializer, StreetSerializer, \
     LocationSerializer, LocationStaticSerializer
 
-# REST import
 from rest_framework import generics, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-# EOF REST import
-
 
 def autocomplete_countries(request):
     query = request.GET['query']

@@ -1,7 +1,5 @@
-# coding=utf-8
-
 import re, datetime, os
-from LatLon import LatLon, Latitude, Longitude
+from LatLon23 import LatLon, Latitude, Longitude
 import geohash, uuid
 
 from django.conf import settings
@@ -57,7 +55,7 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 
 from django.db import transaction
 
-from serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
+from .serializers import CemeterySerializer, AreaSerializer, PlaceSerializer, AreaPurposeSerializer, \
     GraveSerializer, BurialSerializer, BurialListSerializer, BurialPutGraveSerializer, \
     AreaPhotoSerializer, PlaceSizeSerializer, \
     ApiOmsPlacesSerializer, ApiCatalogPlacesSerializer, PlaceLockSerializer, \
@@ -79,7 +77,7 @@ class EditCemeteryObjectsMixin(object):
         try:
             # PUT request issue
             cemetery_id = int(request.GET.get('cemetery_id'))
-            assert cemetery_id>0, u'Wrong id'
+            assert cemetery_id>0, 'Wrong id'
         except:
             raise Http404()
         else:
@@ -89,7 +87,7 @@ class EditCemeteryObjectsMixin(object):
         try:
             # PUT request issue
             area_id = int(request.GET.get('area_id'))
-            assert area_id>0, u'Wrong id'
+            assert area_id>0, 'Wrong id'
         except:
             raise Http404()
         else:
@@ -99,14 +97,14 @@ class EditCemeteryObjectsMixin(object):
         try:
             # PUT request issue
             place_id = int(request.GET.get('place_id'))
-            assert place_id>0, u'Wrong id'
+            assert place_id>0, 'Wrong id'
         except:
             raise Http404()
         else:
             return get_object_or_404(Place, id=place_id, cemetery__ugh=request.user.profile.org)
 
     def make_error_data(self, messages):
-        if isinstance(messages, basestring):
+        if isinstance(messages, str):
             errors = (messages,)
         else:
             errors = messages
@@ -140,7 +138,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
     serializer_class = CemeterySerializer
     permission_classes = (PermitIfUgh,)
 
-    MSG_ALREADY_EXISTS = _(u"Кладбище с таким названием уже существует")
+    MSG_ALREADY_EXISTS = _("Кладбище с таким названием уже существует")
 
     def get_queryset(self):
         return  Cemetery.objects.filter(ugh=self.request.user.profile.org).all()
@@ -157,9 +155,9 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
                 obj.save(force_insert=True)
         except IntegrityError:
             return Response(status=400, data=self.make_error_data(self.MSG_ALREADY_EXISTS))
-        write_log(self.request, obj, _(u"Кладбище создано"))
+        write_log(self.request, obj, _("Кладбище создано"))
         write_log(self.request, self.request.user.profile.org,
-                    _(u"Создано кладбище '%s'") % obj.name)
+                    _("Создано кладбище '%s'") % obj.name)
         serializer = self.get_serializer(obj)
         return Response(serializer.data, status=201)
 
@@ -200,12 +198,12 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
         obj.address.save()
         obj.save()
         
-        write_log(self.request, obj,_(u'Кладбище изменено'))
+        write_log(self.request, obj,_('Кладбище изменено'))
         if coords_by_address:
             write_log(
                 self.request,
                 obj,
-                _(u"Назначены координаты по адресу\n широта: %(lat)s, долгота: %(lng)s") % dict(
+                _("Назначены координаты по адресу\n широта: %(lat)s, долгота: %(lng)s") % dict(
                     lat=obj.address.gps_y,
                     lng=obj.address.gps_x,
             ))
@@ -213,7 +211,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
             write_log(
                 self.request,
                 obj,
-                _(u"Изменены координаты\n широта: %(lat)s, долгота: %(lng)s") % dict(
+                _("Изменены координаты\n широта: %(lat)s, долгота: %(lng)s") % dict(
                     lat=obj.address.gps_y,
                     lng=obj.address.gps_x,
             ))
@@ -235,7 +233,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
             res.obj_id = obj.pk
             res.save()
             id_binds[res.id] = 1
-        obj.phone_set.exclude(pk__in=id_binds.keys()).delete()
+        obj.phone_set.exclude(pk__in=list(id_binds.keys())).delete()
 
     @action(detail=True, methods=['GET'])
     def getform(self, request, pk=None):
@@ -348,10 +346,10 @@ class CemeteryEditorsView(APIView):
         
         for profile in to_delete:
             profile.cemeteries.remove(cemetery)
-            write_log(request, profile, _(u"Отменен доступ к кладбищу '%s'") % cemetery)
+            write_log(request, profile, _("Отменен доступ к кладбищу '%s'") % cemetery)
         for profile in to_add:
             profile.cemeteries.add(cemetery)
-            write_log(request, profile, _(u"Добавлен доступ к кладбищу '%s'") % cemetery)
+            write_log(request, profile, _("Добавлен доступ к кладбищу '%s'") % cemetery)
         return Response({}, status=200)
 
 api_cemeteries_editors = CemeteryEditorsView.as_view()
@@ -380,7 +378,7 @@ class AreaViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSe
         area.cemetery = self.getCemetery(self.request)
         area.save(force_insert=True)
         serializer = self.check_new_area(area)
-        write_log(request, area.cemetery, _(u'Создан участок: %s') % area)
+        write_log(request, area.cemetery, _('Создан участок: %s') % area)
         return Response(serializer.data, status=201)
 
     @transaction.atomic
@@ -389,13 +387,13 @@ class AreaViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSe
         kind = request.data.get('kind')
         if area and kind and kind != Area.KIND_GRAVES and \
         Place.objects.filter(area=area, kind_crypt=True).exists():
-            data = self.make_error_data(_(u"Здесь есть склеп(ы): нельзя в колумбарии"))
+            data = self.make_error_data(_("Здесь есть склеп(ы): нельзя в колумбарии"))
             return Response(status=400, data=data)
         serializer = self.get_serializer(area, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         serializer = self.check_new_area(area)
-        write_log(request, area, _(u'Участок изменен'))
+        write_log(request, area, _('Участок изменен'))
         return Response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
@@ -428,8 +426,8 @@ class ApiCatalogPlacesViewSet(viewsets.ReadOnlyModelViewSet):
             lng__isnull=False,
         )
         statuses = self.request.GET.getlist('filter[status]')
-        while statuses.count(u''):
-            statuses.remove(u'')
+        while statuses.count(''):
+            statuses.remove('')
         qs = None
         for status in statuses:
             if status in Place.STATUS_LIST:
@@ -504,7 +502,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
             try:
                 validate_phone_as_number(responsible['login_phone'])
             except (TypeError, ValidationError, ):
-                raise ServiceException(_(u"Неверный формат телефона ответственного"))
+                raise ServiceException(_("Неверный формат телефона ответственного"))
 
         if place.lat is not None and place.lng is not None:
             # Если у места есть CustomPlace, а координаты в CustomPlace
@@ -531,9 +529,9 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
                 self.request,
                 b,
                 _(
-                    u"Изменение ряда и/или номера места при правке места\n"
-                    u"Ряд: '%(old_row)s' -> '%(new_row)s'\n"
-                    u"Номер места: '%(old_place)s' -> '%(new_place)s'\n"
+                    "Изменение ряда и/или номера места при правке места\n"
+                    "Ряд: '%(old_row)s' -> '%(new_row)s'\n"
+                    "Номер места: '%(old_place)s' -> '%(new_place)s'\n"
                     ) % dict(
                         old_row=b.row,
                         new_row=place.row,
@@ -550,7 +548,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
         if responsible:
             responsible_serializer =  AlivePersonSerializer(place.responsible, data=responsible, partial=True)
             if not responsible_serializer.is_valid():
-                raise ServiceException(_(u"Неверные данные ответственного"))
+                raise ServiceException(_("Неверные данные ответственного"))
             place.responsible = responsible_serializer.save()
             place.responsible.save()
             place.save()
@@ -560,17 +558,17 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
                 try:
                     customerprofile = CustomerProfile.objects.get(login_phone=place.responsible.login_phone)
                     user = customerprofile.user
-                    text=_(u'Место %s прикреплено.') % place.pk
-                    email_error_text = _(u"Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
+                    text=_('Место %s прикреплено.') % place.pk
+                    email_error_text = _("Пользователь %s (телефон %s) не смог получить СМС после прикрепления места %s" % \
                                         (customerprofile.user.username, place.responsible.login_phone, place.pk,))
                 except CustomerProfile.DoesNotExist:
                     user, password = CustomerProfile.create_cabinet(place.responsible, self.request)
-                    text=_(u'%s login: %s parol: %s') % (
+                    text=_('%s login: %s parol: %s') % (
                         get_front_end_url(self.request).rstrip('/'),
                         place.responsible.login_phone,
                         password,
                     )
-                    email_error_text = _(u"Пользователь %s не смог получить пароль после закрытия захоронения" % \
+                    email_error_text = _("Пользователь %s не смог получить пароль после закрытия захоронения" % \
                                         (place.responsible.login_phone,))
                 customplace, created_ = CustomPlace.get_or_create_from_place(user=user, place=place)
                 if not place.responsible.user:
@@ -590,7 +588,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
                 place.responsible.address = address_serializer.save()
                 place.responsible.address.set_related_addr(data=address)
             else:
-                raise ServiceException(_(u"Неверные данные адреса ответственного"))
+                raise ServiceException(_("Неверные данные адреса ответственного"))
             place.responsible.save()
 
             phone = data.get('obj_responsible_phones', [])
@@ -609,28 +607,28 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
                     res.obj_id = place.responsible.pk
                     res.save()                
                     id_binds[res.id] = 1
-            place.responsible.phone_set.exclude(pk__in=id_binds.keys()).delete()
+            place.responsible.phone_set.exclude(pk__in=list(id_binds.keys())).delete()
 
             old_phones = [i for i in self.old_responsible.phone_set.all()] if self.old_responsible else []
             phone_set = place.responsible.phone_set.all()
-            new_msg += prepare_m2m_log(_(u'Телефон ответственного'), old_phones,  phone_set)
+            new_msg += prepare_m2m_log(_('Телефон ответственного'), old_phones,  phone_set)
 
-            if unicode(self.old_responsible_address)!= unicode(place.responsible.address):
-                new_msg += [compare_obj(_(u'Адрес ответственного'), self.old_responsible_address, place.responsible.address)]
+            if str(self.old_responsible_address)!= str(place.responsible.address):
+                new_msg += [compare_obj(_('Адрес ответственного'), self.old_responsible_address, place.responsible.address)]
 
         responsible_changed = False
-        if unicode(self.old_responsible) != unicode(place.responsible):
-            new_msg += [compare_obj(_(u'Ответственный'), self.old_responsible, place.responsible)]
+        if str(self.old_responsible) != str(place.responsible):
+            new_msg += [compare_obj(_('Ответственный'), self.old_responsible, place.responsible)]
             if self.old_responsible:
                 responsible_changed = True
 
-        log_object(self.request, obj=place, old=self.old_place, new=place, reason=_(u'Изменено'), new_msg=new_msg)
+        log_object(self.request, obj=place, old=self.old_place, new=place, reason=_('Изменено'), new_msg=new_msg)
 
         if place.responsible and (not self.old_responsible or responsible_changed):
             write_log(self.request, place, operation=LogOperation.PLACE_PASSPORT_ISSUED)
             
         if data.get('delete_responsible') and self.old_responsible:
-            write_log(self.request, place, _(u'Ответственный %s откреплен') % self.old_responsible.full_name_complete())
+            write_log(self.request, place, _('Ответственный %s откреплен') % self.old_responsible.full_name_complete())
             self.safe_delete('responsible', place)
         
         return place
@@ -727,7 +725,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
         placePhoto = get_object_or_404(PlacePhoto, place=pk, pk=photo_id)
         if placePhoto.place.cemetery not in Cemetery.editable_ugh_cemeteries(request.user):
             raise HttpResponseForbidden
-        msg = _(u"Удалено фото места:\n%s") % request.build_absolute_uri(placePhoto.bfile.url)
+        msg = _("Удалено фото места:\n%s") % request.build_absolute_uri(placePhoto.bfile.url)
         placePhoto.delete()
         write_log(request, placePhoto.place, msg)
         return Response(status=200)
@@ -769,11 +767,11 @@ class GraveViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         super(GraveViewSet, self).perform_create(serializer)
         grave = self.model(**serializer.validated_data)
-        msg = _(u"Могила %d создана") % grave.grave_number
+        msg = _("Могила %d создана") % grave.grave_number
         if grave.is_wrong_fio:
-            msg = u"%s, %s" % (msg, _(u"Неверное ФИО"),)
+            msg = "%s, %s" % (msg, _("Неверное ФИО"),)
         if grave.is_military:
-            msg = u"%s, %s" % (msg, _(u"Воинская могила"),)
+            msg = "%s, %s" % (msg, _("Воинская могила"),)
         write_log(self.request, grave.place, msg)
     
     def destroy(self, request, pk=None):
@@ -837,7 +835,7 @@ class BurialViewSet(EditCemeteryObjectsMixin, viewsets.ModelViewSet):
             write_log(
                 self.request,
                 burial,
-                _(u'Могила %(old_grave_number)s -> %(new_grave_number)s') % dict(
+                _('Могила %(old_grave_number)s -> %(new_grave_number)s') % dict(
                     old_grave_number=old_grave_number,
                     new_grave_number=burial.grave_number,
             ))
@@ -871,20 +869,20 @@ class AddDoverView(UghOrLoruRequiredMixin, View):
         try:
             agent = Profile.objects.get(pk=request.GET['agent'], is_agent=True)
         except Profile.DoesNotExist:
-            return HttpResponse(_(u'Агент не существует'), content_type='text/plain')
+            return HttpResponse(_('Агент не существует'), content_type='text/plain')
         except KeyError:
-            return HttpResponse(_(u'Ошибка'), content_type='text/plain')
+            return HttpResponse(_('Ошибка'), content_type='text/plain')
         if f.is_valid():
             dover = f.save(commit=False)
             dover.target_org = request.user.profile.org
             dover.agent = agent
             dover.save()
-            return HttpResponse(json.dumps({'pk': dover.pk, 'label': u'%s' % dover}), content_type='application/json')
+            return HttpResponse(json.dumps({'pk': dover.pk, 'label': '%s' % dover}), content_type='application/json')
         else:
-            err_str = _(u'Ошибка:\n%s')
-            errors = '\n'.join([u'%s' % v for v in f.non_field_errors()])
+            err_str = _('Ошибка:\n%s')
+            errors = '\n'.join(['%s' % v for v in f.non_field_errors()])
             if "\n" in errors:
-                err_str = _(u'Ошибки:\n%s')
+                err_str = _('Ошибки:\n%s')
             return HttpResponse(err_str % errors, content_type='text/plain')
 
 add_dover = AddDoverView.as_view()
@@ -899,13 +897,13 @@ class AddAgentView(UghOrLoruRequiredMixin, View):
         elif request.GET.get('org_name'):
             q = Q(name=request.GET['org_name'])
         else:
-            return HttpResponse(_(u'Ошибка'), content_type='text/plain')
+            return HttpResponse(_('Ошибка'), content_type='text/plain')
         try:
             org = Org.objects.get(q)
         except KeyError:
-            return HttpResponse(_(u'Ошибка'), content_type='text/plain')
+            return HttpResponse(_('Ошибка'), content_type='text/plain')
         except Org.DoesNotExist:
-            return HttpResponse(_(u'Нет такой организации'), content_type='text/plain')
+            return HttpResponse(_('Нет такой организации'), content_type='text/plain')
         if fa.is_valid() and fd.is_valid():
             agent = fa.save(org=org)
             dover = fd.save(commit=False)
@@ -914,15 +912,15 @@ class AddAgentView(UghOrLoruRequiredMixin, View):
             dover.save()
             return HttpResponse(json.dumps({
                 'org_pk': org.pk,
-                'pk': agent.pk, 'label': u'%s' % agent,
-                'dover_pk': dover.pk, 'dover_label': u'%s' % dover
+                'pk': agent.pk, 'label': '%s' % agent,
+                'dover_pk': dover.pk, 'dover_label': '%s' % dover
             }), content_type='application/json')
         else:
-            err_str = _(u'Ошибка:\n%s')
-            errors = '\n'.join([u'%s' % v for v in fa.non_field_errors()] + \
-                               [u'%s' % v for v in fd.non_field_errors()])
+            err_str = _('Ошибка:\n%s')
+            errors = '\n'.join(['%s' % v for v in fa.non_field_errors()] + \
+                               ['%s' % v for v in fd.non_field_errors()])
             if "\n" in errors:
-                err_str = _(u'Ошибки:\n%s')
+                err_str = _('Ошибки:\n%s')
             return HttpResponse(err_str % errors, content_type='text/plain')
 
 add_agent = AddAgentView.as_view()
@@ -940,19 +938,19 @@ class AddOrgView(UghOrLoruRequiredMixin, View):
         if f.is_valid():
             new_org = f.save()
             if new_org:
-                f.put_log_data(msg=_(u'Данные сохранены'))
+                f.put_log_data(msg=_('Данные сохранены'))
                 if request.user.profile.is_ugh() and new_org.type == Org.PROFILE_LORU:
                     new_org.ugh_list.create(ugh=request.user.profile.org)
-                return HttpResponse(json.dumps({'pk': new_org.pk, 'label': u'%s' % new_org}), content_type='application/json')
+                return HttpResponse(json.dumps({'pk': new_org.pk, 'label': '%s' % new_org}), content_type='application/json')
             else:
                 # Случай, который не удалось воспроизвести: duplicate auto-slug field
-                f_errors = dict(error=_(u"Есть такая организация"))
+                f_errors = dict(error=_("Есть такая организация"))
         else:
             f_errors = f.errors
-        err_str = _(u'Ошибка:\n%s')
-        errors = '\n'.join([u'%s' % v[0] for k,v in f_errors.items()])
+        err_str = _('Ошибка:\n%s')
+        errors = '\n'.join(['%s' % v[0] for k,v in list(f_errors.items())])
         if "\n" in errors:
-            err_str = _(u'Ошибки:\n%s')
+            err_str = _('Ошибки:\n%s')
         return HttpResponse(err_str % errors, content_type='text/plain')
 
 add_org = AddOrgView.as_view()
@@ -962,12 +960,12 @@ class AddDocTypeView(SupervisorRequiredMixin, View):
         f = AddDocTypeForm(data=request.POST, prefix='doctype')
         if f.is_valid():
             dt = f.save()
-            return HttpResponse(json.dumps({'pk': dt.pk, 'label': u'%s' % dt}), content_type='application/json')
+            return HttpResponse(json.dumps({'pk': dt.pk, 'label': '%s' % dt}), content_type='application/json')
         else:
-            err_str = _(u'Ошибка:\n%s')
-            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
+            err_str = _('Ошибка:\n%s')
+            errors = '\n'.join(['%s' % v[0] for k,v in list(f.errors.items())])
             if "\n" in errors:
-                err_str = _(u'Ошибки:\n%s')
+                err_str = _('Ошибки:\n%s')
             return HttpResponse(err_str % errors, content_type='text/plain')
 
 add_doctype = AddDocTypeView.as_view()
@@ -986,20 +984,20 @@ class AddGravesView(UGHRequiredMixin, View):
                 for i in range(graves_count, graves_number, -1):
                     try:
                         Grave.objects.filter(place=place, grave_number=i).delete()
-                        write_log(request, place, _(u"Удалена могила %s") % i)
+                        write_log(request, place, _("Удалена могила %s") % i)
                     except IntegrityError:
                         pass
             elif graves_number > graves_count:
                 for i in range(graves_count+1, graves_number+1):
                     grave, created_ = Grave.objects.get_or_create(place=place, grave_number=i)
                     if created_:
-                        write_log(request, place, _(u"Создана могила %s") % i)
+                        write_log(request, place, _("Создана могила %s") % i)
             return HttpResponse(json.dumps({'place_grave_choice': graves_number}), content_type='application/json')
         else:
-            err_str = _(u'Ошибка:\n%s')
-            errors = '\n'.join([u'%s' % v[0] for k,v in f.errors.items()])
+            err_str = _('Ошибка:\n%s')
+            errors = '\n'.join(['%s' % v[0] for k,v in list(f.errors.items())])
             if "\n" in errors:
-                err_str = _(u'Ошибки:\n%s')
+                err_str = _('Ошибки:\n%s')
             return HttpResponse(err_str % errors, content_type='text/plain')
 
 add_graves = AddGravesView.as_view()
@@ -1084,7 +1082,7 @@ class CommentView(BurialsListGenericMixin, UghOrLoruRequiredMixin, DetailView):
         burial = self.get_object()
         comment = request.POST.get('comment').strip()
         if comment:
-            write_log(request, burial, _(u'Комментарий: %s') % comment)
+            write_log(request, burial, _('Комментарий: %s') % comment)
             BurialComment.objects.create(
                 creator=request.user,
                 burial=burial,
@@ -1121,7 +1119,7 @@ class BurialEditComments(UGHRequiredMixin, View):
                 if f.instance.pk:
                     str_dt_modified = localize(f.instance.dt_modified, use_l10n=settings.USE_L10N)
                     if f['DELETE'].value() or not f_data:
-                        write_log(request, burial, _(u"Комментарий от %s удален") % str_dt_modified)
+                        write_log(request, burial, _("Комментарий от %s удален") % str_dt_modified)
                         f.instance.delete()
                     elif 'comment' in f.changed_data:
                         if f.instance.owner() != request.user:
@@ -1129,13 +1127,13 @@ class BurialEditComments(UGHRequiredMixin, View):
                         write_log(
                             request,
                             burial,
-                            _(u"Комментарий от %(dt_modified)s изменен:\n%(comment)s") % dict(
+                            _("Комментарий от %(dt_modified)s изменен:\n%(comment)s") % dict(
                                 dt_modified=str_dt_modified,
                                 comment=f_data,
                         ))
                         f.save()
                 elif f_data:
-                        write_log(request, burial, _(u"Комментарий: %s") % f_data)
+                        write_log(request, burial, _("Комментарий: %s") % f_data)
                         BurialComment.objects.create(
                             burial=burial,
                             comment=f_data,
@@ -1145,7 +1143,7 @@ class BurialEditComments(UGHRequiredMixin, View):
 
             return redirect(reverse('burials_comments_edit', args=[self.kwargs['pk']]))
         else:
-            messages.error(self.request, _(u"Обнаружены ошибки"))
+            messages.error(self.request, _("Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
@@ -1248,47 +1246,47 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
         data = super(PlaceCertificateView, self).get_context_data(**kwargs)
         place = self.object
         if place.is_columbarium():
-            title1 = _(u'ПАСПОРТ МЕСТА В КОЛУМБАРИИ')
-            title2 = _(u'ОТВЕТСТВЕННЫЙ ЗА МЕСТО В КОЛУМБАРИИ')
-            title3 = _(u'АДРЕС МЕСТА В КОЛУМБАРИИ')
+            title1 = _('ПАСПОРТ МЕСТА В КОЛУМБАРИИ')
+            title2 = _('ОТВЕТСТВЕННЫЙ ЗА МЕСТО В КОЛУМБАРИИ')
+            title3 = _('АДРЕС МЕСТА В КОЛУМБАРИИ')
         else:
-            title1 = _(u'ПАСПОРТ МЕСТА')
-            title2 = _(u'ОТВЕТСТВЕННЫЙ ЗА МЕСТО')
-            title3 = _(u'АДРЕС МЕСТА')
+            title1 = _('ПАСПОРТ МЕСТА')
+            title2 = _('ОТВЕТСТВЕННЫЙ ЗА МЕСТО')
+            title3 = _('АДРЕС МЕСТА')
             
         ugh = place.cemetery.ugh
         left = [ ugh, ]
         if ugh.off_address:
-            left.append(u"%s: %s" % (_(u'Адрес'), ugh.off_address, ))
+            left.append("%s: %s" % (_('Адрес'), ugh.off_address, ))
         if ugh.phones:
-            left.append(u"%s: %s" % (
-                _(u'Телефоны') if re.search(r'\s+', ugh.phones) else _(u'Телефон'),
+            left.append("%s: %s" % (
+                _('Телефоны') if re.search(r'\s+', ugh.phones) else _('Телефон'),
                 ", ".join(ugh.phones.split()),
             ))
         if ugh.worktime:
-            left.append(u"%s: %s" % (_(u'Время работы'), ugh.worktime, ))
+            left.append("%s: %s" % (_('Время работы'), ugh.worktime, ))
 
         right = []
         for burial in place.burials_available():
             if burial.deadman and (burial.deadman.birth_date or burial.deadman.death_date):
-                lived = u"%s — %s" % (
-                    burial.deadman.birth_date or u"...",
-                    burial.deadman.death_date or u"...",
+                lived = "%s — %s" % (
+                    burial.deadman.birth_date or "...",
+                    burial.deadman.death_date or "...",
                 )
             else:
-                lived = _(u"годы жизни неизвестны")
+                lived = _("годы жизни неизвестны")
             if burial.fact_date:
-                fact_date = _(u"похоронен %s") % burial.fact_date
+                fact_date = _("похоронен %s") % burial.fact_date
             else:
-                fact_date = _(u"дата похорон неизвестна")
-            right.append(_(u"№: %(pk)s, %(deadman)s, %(lived)s, %(fact_date)s") % dict(
+                fact_date = _("дата похорон неизвестна")
+            right.append(_("№: %(pk)s, %(deadman)s, %(lived)s, %(fact_date)s") % dict(
                             pk=burial.pk,
-                            deadman=burial.deadman or _(u"Неизвестный"),
+                            deadman=burial.deadman or _("Неизвестный"),
                             lived=lived,
                             fact_date=fact_date
             ))
         if not right:
-            right.append(_(u"Нет захоронений"))
+            right.append(_("Нет захоронений"))
         table1 = make_table(left, right)
 
         left = []
@@ -1299,26 +1297,26 @@ class PlaceCertificateView(UGHRequiredMixin, DetailView):
             if place.responsible.middle_name:
                 left.append(place.responsible.middle_name)
             if place.responsible.user:
-                left.append(_(u"Вход на сайт %s, логин: %s") % (
+                left.append(_("Вход на сайт %s, логин: %s") % (
                     get_front_end_url(self.request),
                     place.responsible.user.username,
                 ))
         else:
-            left.append(_(u"не указан"))
-        right=[u"%s: %s" % (_(u'Кладбище'), place.cemetery, ), ]
+            left.append(_("не указан"))
+        right=["%s: %s" % (_('Кладбище'), place.cemetery, ), ]
         if place.cemetery.address:
-            right.append(u"%s: %s" % (_(u'Адрес'), place.cemetery.address, ))
-        urm = u"%s: %s" % (_(u'Участок'), place.area and place.area.name or _(u"не указан"), )
+            right.append("%s: %s" % (_('Адрес'), place.cemetery.address, ))
+        urm = "%s: %s" % (_('Участок'), place.area and place.area.name or _("не указан"), )
         if place.row:
-            urm = u"%s, %s: %s" % (urm, _(u"ряд"), place.row, )
+            urm = "%s, %s: %s" % (urm, _("ряд"), place.row, )
         if place.place:
-            urm = u"%s, %s: %s" % (urm, _(u"место в колумбарии") if place.is_columbarium() else _(u"место"), place.place, )
+            urm = "%s, %s: %s" % (urm, _("место в колумбарии") if place.is_columbarium() else _("место"), place.place, )
         right.append(urm)
 
         yandex_api_key = None
         if place.cemetery.address and \
            place.cemetery.address.gps_x is not None and place.cemetery.address.gps_y is not None:
-            right.append(_(u"Координаты GPS/ГЛОНАСС: ш. %(lat)s, д. %(lng)s") % dict(
+            right.append(_("Координаты GPS/ГЛОНАСС: ш. %(lat)s, д. %(lng)s") % dict(
                 lat=place.cemetery.address.gps_y,
                 lng=place.cemetery.address.gps_x,
             ))
@@ -1369,17 +1367,17 @@ class ApiOmsPhotoPlaces(APIView):
                     ).order_by('pk')[0]
                 if place.cemetery not in cemeteries:
                     return Response(status=400, data=dict(
-                        message=_(u"Вы не закончили обрабатывать место на кладбище, "
-                                  u"доступ к которому после этого был Вам отменен. "
-                                  u"Обратитесь к администратору, чтобы возобновил Вам доступ "
-                                  u"к кладбищу %s") % place.cemetery.name
+                        message=_("Вы не закончили обрабатывать место на кладбище, "
+                                  "доступ к которому после этого был Вам отменен. "
+                                  "Обратитесь к администратору, чтобы возобновил Вам доступ "
+                                  "к кладбищу %s") % place.cemetery.name
                 ))
             except IndexError:
                 message = None
                 if not request.user.profile.is_registrator_or_caretaker():
-                    message = _(u"У вас нет прав вносить захоронения. Обратитесь к администратору")
+                    message = _("У вас нет прав вносить захоронения. Обратитесь к администратору")
                 elif not request.user.profile.cemeteries.count():
-                    message = _(u"Вам не назначены кладбища для ввода захоронений. Обратитесь к администратору")
+                    message = _("Вам не назначены кладбища для ввода захоронений. Обратитесь к администратору")
                 if message:
                     return Response(status=400, data=dict(message=message))
 
@@ -1446,7 +1444,7 @@ class ApiPlacePhotoUpload(EditCemeteryObjectsMixin, APIView):
                 msg=msg,
             )
         else:
-            data = self.make_error_data(_(u"Загружаемый файл не является изображением"))
+            data = self.make_error_data(_("Загружаемый файл не является изображением"))
             status = 400
         return Response(status=status, data=data)
 
@@ -1487,10 +1485,10 @@ class ApiOmsPhotoPlacesChange(ApiOmsPhotoPlacesDetail):
                 log_operations.append(LogOperation.PLACE_PHOTO_REJECT)
                 remake_photo_comment = request.data.get('remakePhotoComment')
                 if remake_photo_comment:
-                    log_messages.append(_(u'Комментарий к повторному фото места: %s') % remake_photo_comment)
+                    log_messages.append(_('Комментарий к повторному фото места: %s') % remake_photo_comment)
             else:
                 place.dt_wrong_fio = None
-                log_messages.append(_(u'Отменен признак повторного фото места'))
+                log_messages.append(_('Отменен признак повторного фото места'))
 
         if 'processed' in request.data:
             do_save = True
@@ -1502,7 +1500,7 @@ class ApiOmsPhotoPlacesChange(ApiOmsPhotoPlacesDetail):
                 place.dt_processed = None
                 place.user_processed = None
                 place.is_inprocess = False
-                log_messages.append(_(u'Фотографии места могут быть обработаны повторно'))
+                log_messages.append(_('Фотографии места могут быть обработаны повторно'))
 
         with transaction.atomic():
             if do_save:
@@ -1571,7 +1569,7 @@ class ApiOmsAreaMsAccessSync(APIView):
                 'cemetery', 'area', 'deadman', 'applicant', 'applicant__address',
             ).order_by('dt_modified').iterator():
 
-            burial_comments = u""
+            burial_comments = ""
             for comment in BurialComment.objects.filter(burial=b).order_by('dt_created'):
                 burial_comments += comment.dt_created.strftime("%Y-%m-%d") + "\r\n"
                 burial_comments += comment.comment + "\r\n"
@@ -1579,12 +1577,12 @@ class ApiOmsAreaMsAccessSync(APIView):
             applicant = b.applicant and b.applicant.full_human_name() or ''
             applicant_phones = b.applicant and b.applicant.phones or ''
             if applicant or applicant_phones:
-                applicant = u"%s\r\n%s" % (applicant, applicant_phones,)
+                applicant = "%s\r\n%s" % (applicant, applicant_phones,)
 
             burial_type = b.get_burial_type_display() or ''
             burial_container = b.get_burial_container_display() or ''
             if burial_type or burial_container:
-                burial_type = u"%s\r\n%s" % (burial_type, burial_container)
+                burial_type = "%s\r\n%s" % (burial_type, burial_container)
 
             data.append(dict(
                 cemetery=b.cemetery.name,
@@ -1770,7 +1768,7 @@ class ApiOmsPlacesClusters(APIView):
                 bounds,
             )
             if not m:
-                raise ServiceException(u"Invalid or absent 'bounds' GET parm")
+                raise ServiceException("Invalid or absent 'bounds' GET parm")
             w_ = m.group(1)
             s_ = m.group(2)
             e_ = m.group(3)
@@ -1871,7 +1869,7 @@ class ApiOmsPlacesClusters(APIView):
             columns = [col[0] for col in cursor.description]
             stata = Place.status_dict()
             for row in cursor.fetchall():
-                row_dict = dict(zip(columns, row))
+                row_dict = dict(list(zip(columns, row)))
                 res = dict()
                 res['id'] = str(uuid.uuid1())
                 if row_dict['quantity'] == 1:
@@ -1881,15 +1879,15 @@ class ApiOmsPlacesClusters(APIView):
                         coordinates=[row_dict['avg_lng'], row_dict['avg_lat'],],
                     )
                     res['properties'] = dict(
-                        balloonContent=u"",
-                        clusterCaption=_(u"Место"),
-                        hintContent=u""
+                        balloonContent="",
+                        clusterCaption=_("Место"),
+                        hintContent=""
                     )
                     for status in stata:
                         if row_dict["cnt_%s" % status]:
-                            res['properties']['hintContent'] += u"%s, " % stata[status]
+                            res['properties']['hintContent'] += "%s, " % stata[status]
                     if res['properties']['hintContent']:
-                        res['properties']['hintContent'] = _(u"Признак(и) места: %s") % \
+                        res['properties']['hintContent'] = _("Признак(и) места: %s") % \
                             res['properties']['hintContent'][:-2]
                 else:
                     res['type'] = 'Cluster'
@@ -2168,9 +2166,9 @@ class BurialDoublesView(UGHRequiredMixin, TemplateView):
             ])
             d['fio'] = d['last_name']
             if d['first_name']:
-                d['fio'] += u" %s" % d['first_name']
+                d['fio'] += " %s" % d['first_name']
                 if d['middle_name']:
-                    d['fio'] += u" %s" % d['middle_name']
+                    d['fio'] += " %s" % d['middle_name']
             d['birthdate'] = self.date_str(d, 'birth')
             d['deathdate'] = self.date_str(d, 'death')
             d['factdate'] = self.date_str(d, 'fact')
@@ -2263,9 +2261,9 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                     n_responsibles += 1
         one_responsible = n_responsibles == 1
         if burials_count < 1:
-            message = _(u"Не найдены одни и те же захороненные по заданным параметрам поиска")
+            message = _("Не найдены одни и те же захороненные по заданным параметрам поиска")
         elif burials_count == 1:
-            message = _(u"Найдено только одно не-аннулированное захоронение.")
+            message = _("Найдено только одно не-аннулированное захоронение.")
         else:
             put_controls = True
 
@@ -2336,9 +2334,9 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                 write_log(
                     request,
                     b_dest,
-                    _(u"Изменено место при объединении дублируемых захоронений\n"
-                      u"'%(old_place)s' -->\n"
-                      u"'%(new_place)s'"
+                    _("Изменено место при объединении дублируемых захоронений\n"
+                      "'%(old_place)s' -->\n"
+                      "'%(new_place)s'"
                      ) % dict(
                          old_place = p_dest.full_name(),
                          new_place = p_source.full_name(),
@@ -2356,15 +2354,15 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
             if r_source and r_source != b_dest.place.responsible:
                 old_responsible = b_dest.place.responsible
                 old_responsible_str = old_responsible and \
-                    old_responsible.full_human_name() or _(u"<отсутствовал>")
+                    old_responsible.full_human_name() or _("<отсутствовал>")
                 b_dest.place.responsible = r_source.deep_copy()
                 b_dest.place.save()
                 write_log(
                     request,
                     b_dest.place,
-                    _(u"Изменен ответственный при объединении дублируемых захоронений\n"
-                      u"'%(old_responsible)s' -->\n"
-                      u"'%(new_responsible)s'"
+                    _("Изменен ответственный при объединении дублируемых захоронений\n"
+                      "'%(old_responsible)s' -->\n"
+                      "'%(new_responsible)s'"
                      ) % dict(
                          old_responsible = old_responsible_str,
                          new_responsible = b_dest.place.responsible and \
@@ -2437,10 +2435,10 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                         write_log(
                             request,
                             b_dest.place,
-                            _(u"Прикреплено фото из другого места\n"
-                              u"(%(old_place)s)\n"
-                              u"при объединении дублируемых захоронений\n"
-                              u"%(url)s") % dict(
+                            _("Прикреплено фото из другого места\n"
+                              "(%(old_place)s)\n"
+                              "при объединении дублируемых захоронений\n"
+                              "%(url)s") % dict(
                                   old_place=p.full_name(),
                                   url=url,
                         ))
@@ -2452,7 +2450,7 @@ class BurialDoubleView(UGHRequiredMixin, TemplateView):
                     b.annulated = True
                     b.save()
                     write_log(request, b,
-                            _(u"Захоронение аннулировано при объединении дублируемых захоронений"))
+                            _("Захоронение аннулировано при объединении дублируемых захоронений"))
 
         return redirect(request.get_full_path())
 
