@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from django.views.generic.base import TemplateView
 from rest_framework.views import APIView
 from rest_framework.response import Response

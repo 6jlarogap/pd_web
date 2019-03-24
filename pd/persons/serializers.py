@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import re
 
 from rest_framework import serializers
@@ -62,7 +61,7 @@ class CustomPlaceListSerializer(CreatedAtMixin, serializers.ModelSerializer):
 
     def address_func(self, customplace):
         if customplace.address:
-            address = unicode(customplace.address)
+            address = str(customplace.address)
         elif customplace.place:
             address = customplace.place.address()
         else:
@@ -202,7 +201,7 @@ class CustomPersonPermissionsMixin(object):
             if permitted.email:
                 result.append(permitted.email)
             if permitted.login_phone:
-                result.append(unicode(permitted.login_phone))
+                result.append(str(permitted.login_phone))
         return result
 
 class BaseCustomPersonSerializer(
@@ -320,7 +319,7 @@ class MemoryGallery2Serializer(MemoryGallerySerializer, UserProfileMixin):
             if permitted.email:
                 result.append(permitted.email)
             if permitted.login_phone:
-                result.append(unicode(permitted.login_phone))
+                result.append(str(permitted.login_phone))
         return result
 
 class CustomPerson3Serializer(

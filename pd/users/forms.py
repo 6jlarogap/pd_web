@@ -1,4 +1,3 @@
-# coding=utf-8
 import sys, re
 
 from django.conf import settings
@@ -50,7 +49,7 @@ class LoruItemForm(forms.ModelForm):
             if f is not self and \
             f['loru'].value() == self['loru'].value() and \
             self not in passed_forms:
-                raise forms.ValidationError(_(u'Уже есть выше это ЛОРУ:'))
+                raise forms.ValidationError(_('Уже есть выше это ЛОРУ:'))
             else:
                 passed_forms.append(f)
         return self.cleaned_data
@@ -84,18 +83,18 @@ class UserPhotoForm(CustomUploadModelForm):
     def __init__(self, *args, **kwargs):
         super(UserPhotoForm, self).__init__(*args, **kwargs)
         self.init_bfile()
-        self.fields['bfile'].label = _(u'Фото пользователя')
+        self.fields['bfile'].label = _('Фото пользователя')
         self.MAX_UPLOAD_SIZE_MB = 5
         self.CHECK_IF_IMAGE = True
 
 class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
 
-    username = forms.CharField(label=_(u"Логин"), required=True)
+    username = forms.CharField(label=_("Логин"), required=True)
     is_active = forms.BooleanField(required=False)
     email = forms.EmailField(required=False)
 
-    password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput(), required=False)
-    password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput(), required=False)
+    password1 = forms.CharField(label=_("Пароль"), widget=forms.PasswordInput(), required=False)
+    password2 = forms.CharField(label=_("Пароль (повторите)"), widget=forms.PasswordInput(), required=False)
 
     class Meta:
         model = Profile
@@ -209,7 +208,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         if self.instance.pk:
             f_username = f_username.exclude(pk=self.instance.user.pk)
         if f_username.exists():
-            raise forms.ValidationError(_(u"Этот логин уже используется"))
+            raise forms.ValidationError(_("Этот логин уже используется"))
         return username
 
     def clean_email(self):
@@ -219,7 +218,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             if self.instance.pk:
                 f_email = f_email.exclude(pk=self.instance.user.pk)
             if f_email.exists():
-                raise forms.ValidationError(_(u"Этот email уже используется"))
+                raise forms.ValidationError(_("Этот email уже используется"))
         return email
     
     def clean_role(self):
@@ -231,7 +230,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                     org=self.instance.org,
                     role=role_admin,
                 ).exclude(pk=self.instance.pk).exists():
-                raise forms.ValidationError(_(u"Нельзя удалять последнего администратора в организации"))
+                raise forms.ValidationError(_("Нельзя удалять последнего администратора в организации"))
         return role
 
     def is_valid(self):
@@ -240,11 +239,11 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
     def clean(self):
         if self.is_valid():
             if self.cleaned_data['password1'] != self.cleaned_data['password2']:
-                raise forms.ValidationError(_(u"Пароли не совпадают"))
+                raise forms.ValidationError(_("Пароли не совпадают"))
             cemetery = self.cleaned_data.get('cemetery')
             cemeteries = self.cleaned_data.get('cemeteries')
             if cemeteries is not None and cemetery and cemetery not in cemeteries:
-                raise forms.ValidationError(_(u"Кладбище по умолчанию не из доступных для пользователя"))
+                raise forms.ValidationError(_("Кладбище по умолчанию не из доступных для пользователя"))
         return self.cleaned_data
 
     @transaction.atomic
@@ -271,22 +270,22 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                     # метод form_valid из view покажет message.error
                     return None
             self.put_log_data(
-                msg=_(u'Изменены данные пользователя %(fio)s (%(username)s)') % dict(
+                msg=_('Изменены данные пользователя %(fio)s (%(username)s)') % dict(
                     fio=profile,
                     username=profile.user.username,
                 ),
                 log_instance=profile.org,
             )
             self.put_log_data(
-                msg=_(u'Изменены данные'),
+                msg=_('Изменены данные'),
                 log_instance=profile,
             )
             if self.cleaned_data['password1']:
-                write_log(self.request, profile, _(u'Установлен пароль'))
+                write_log(self.request, profile, _('Установлен пароль'))
                 write_log(
                     self.request,
                     profile.org,
-                    _(u'Установлен пароль пользователя %(fio)s (%(username)s)') % dict(
+                    _('Установлен пароль пользователя %(fio)s (%(username)s)') % dict(
                         fio=profile,
                         username=profile.user.username,
                 ))
@@ -313,7 +312,7 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             cemeteries = self.cleaned_data.get('cemeteries', [])
             for cemetery in cemeteries:
                 profile.cemeteries.add(cemetery)
-            write_log(self.request, profile.org, _(u'Добавлен пользователь %s') % user.username)
+            write_log(self.request, profile.org, _('Добавлен пользователь %s') % user.username)
 
         photo_uploaded = photo_clear = False
         if self.photo_form.is_valid():
@@ -326,11 +325,11 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             if self.photo_form.instance.pk:
                 if photo_clear and not photo_uploaded:
                     self.photo_form.instance.delete()
-                    write_log(self.request, self.instance.user, _(u'Фото удалено'))
+                    write_log(self.request, self.instance.user, _('Фото удалено'))
                     write_log(
                         self.request,
                         self.instance.user.profile.org,
-                        _(u'Изменены данные пользователя %(fio)s (%(username)s)\nФото удалено') % dict(
+                        _('Изменены данные пользователя %(fio)s (%(username)s)\nФото удалено') % dict(
                             fio=profile,
                             username=profile.user.username,
                     ))
@@ -341,11 +340,11 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
                 photo = self.photo_form.save(commit=False)
                 photo.user = self.instance.user
                 photo.save()
-                write_log(self.request, self.instance.user, _(u'Прикреплено фото: %s') % photo.original_name)
+                write_log(self.request, self.instance.user, _('Прикреплено фото: %s') % photo.original_name)
                 write_log(
                     self.request,
                     self.instance.user.profile.org,
-                    _(u'Изменены данные пользователя %(fio)s (%(username)s)\nПрикреплено фото: %(photo)s') % dict(
+                    _('Изменены данные пользователя %(fio)s (%(username)s)\nПрикреплено фото: %(photo)s') % dict(
                         fio=profile,
                         username=profile.user.username,
                         photo=photo.original_name,
@@ -367,15 +366,15 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
         country_code = host_country_code(request)
         if country_code == 'by':
             if 'inn' in self.fields:
-                self.fields['inn'].label = _(u'УНП')
+                self.fields['inn'].label = _('УНП')
             if 'ogrn' in self.fields:
-                self.fields['ogrn'].label = _(u'ОКПО')
+                self.fields['ogrn'].label = _('ОКПО')
         if self.is_own_org or add_org_with_type:
             del self.fields['type']
             self.fields['type_'] = forms.CharField(widget=forms.TextInput(attrs={'readonly':'readonly'}),
                                                    initial = self.instance.get_type_display(),
                                                    required = False)
-            self.fields['type_'].label = u'Тип'
+            self.fields['type_'].label = 'Тип'
             self.fields = reorder_form_fields(self.fields, old_pos=-1, new_pos=0)
         else:
             choices = []
@@ -411,7 +410,7 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
             if self.instance and self.instance.pk:
                 orgs = orgs.exclude(pk=self.instance.pk)
             if orgs.exists():
-                raise forms.ValidationError(_(u"ИНН уже зарегистрирован"))
+                raise forms.ValidationError(_("ИНН уже зарегистрирован"))
         return inn
 
     def clean_name(self):
@@ -421,7 +420,7 @@ class BaseOrgForm(LoggingFormMixin, forms.ModelForm):
             if self.instance and self.instance.pk:
                 orgs = orgs.exclude(pk=self.instance.pk)
             if orgs.exists():
-                raise forms.ValidationError(_(u"Есть уже такая организация"))
+                raise forms.ValidationError(_("Есть уже такая организация"))
         return name
 
 PlaceSizeFormset = inlineformset_factory(Org, PlaceSize, fields='__all__', formset=BaseInlineFormSet, can_delete=True, extra=2)
@@ -438,7 +437,7 @@ class OrgCertificateForm(CustomUploadModelForm):
     def __init__(self, *args, **kwargs):
         super(OrgCertificateForm, self).__init__(*args, **kwargs)
         self.init_bfile()
-        self.fields['bfile'].label = _(u'Скан свидетельства о регистрации')
+        self.fields['bfile'].label = _('Скан свидетельства о регистрации')
         self.MAX_UPLOAD_SIZE_MB = 5
 
 class OrgForm(StrippedStringsMixin, BaseOrgForm):
@@ -516,9 +515,9 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
                  Q(places_algo_archive=Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER)
                 )
             if Cemetery.objects.filter(q).exists():
-                raise forms.ValidationError(_(u"Указанный способ недопустим, т.к. есть кладбища "
-                                              u"с расстановкой номеров мест (в т.ч. архивных) "
-                                              u"по рег. номеру захоронения"))
+                raise forms.ValidationError(_("Указанный способ недопустим, т.к. есть кладбища "
+                                              "с расстановкой номеров мест (в т.ч. архивных) "
+                                              "по рег. номеру захоронения"))
         return numbers_algo
 
     def is_valid(self):
@@ -550,14 +549,14 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
             if self.scan_form.instance.pk:
                 if scan_clear and not scan_uploaded:
                     self.scan_form.instance.delete()
-                    write_log(self.request, org, _(u'Скан свидетельства о регистрации удален'))
+                    write_log(self.request, org, _('Скан свидетельства о регистрации удален'))
                 if scan_uploaded:
                     OrgCertificate.objects.get(pk=self.scan_form.instance.pk).delete_from_media()
             if scan_uploaded:
                 scan = self.scan_form.save(commit=False)
                 scan.org = org
                 scan.save()
-                write_log(self.request, org, _(u'Прикреплен скан свидетельства о регистрации: %s') % scan.original_name)
+                write_log(self.request, org, _('Прикреплен скан свидетельства о регистрации: %s') % scan.original_name)
 
         if commit:
             org.save()
@@ -566,7 +565,7 @@ class OrgForm(StrippedStringsMixin, BaseOrgForm):
                     old_addr.delete()
                 except IntegrityError:
                     pass
-            self.put_log_data(msg=_(u'Изменены данные организации'))
+            self.put_log_data(msg=_('Изменены данные организации'))
         return org
 
 class FromToPageForm(forms.Form):
@@ -578,15 +577,15 @@ class FromToPageForm(forms.Form):
         (100, 100),
     )
 
-    date_from = forms.DateField(required=False, label=_(u"С"))
-    date_to = forms.DateField(required=False, label=_(u"по"))
-    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+    date_from = forms.DateField(required=False, label=_("С"))
+    date_to = forms.DateField(required=False, label=_("по"))
+    per_page = forms.ChoiceField(label=_("На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
 OrgLogOrgForm = FromToPageForm
 
 class OrgLogForm(FromToPageForm):
 
-    users = forms.MultipleChoiceField(label=_(u"Пользователи"),choices=())
+    users = forms.MultipleChoiceField(label=_("Пользователи"),choices=())
 
 # Никакой разницы в этих формах пока нет.
 LoginLogForm = FromToPageForm
@@ -613,8 +612,8 @@ class RegisterForm(forms.ModelForm):
                  )
 
     captcha = NoReCaptchaField(label='')
-    password1 = forms.CharField(label=_(u"Пароль"), widget=forms.PasswordInput())
-    password2 = forms.CharField(label=_(u"Пароль (повторите)"), widget=forms.PasswordInput())
+    password1 = forms.CharField(label=_("Пароль"), widget=forms.PasswordInput())
+    password2 = forms.CharField(label=_("Пароль (повторите)"), widget=forms.PasswordInput())
 
     def __init__(self, *args, **kwargs):
         super(RegisterForm, self).__init__(*args, **kwargs)
@@ -626,29 +625,29 @@ class RegisterForm(forms.ModelForm):
     def clean_org_name(self):
         org_name=self.cleaned_data.get('org_name', '').strip()
         if not org_name:
-            raise forms.ValidationError(_(u"Пустое название организации"))
+            raise forms.ValidationError(_("Пустое название организации"))
         if re.search(r'^[\d\s]+$', org_name):
-            raise forms.ValidationError(_(u"Невозможное название организации (только из цифр)"))
+            raise forms.ValidationError(_("Невозможное название организации (только из цифр)"))
         return org_name
 
     def clean_user_name(self):
         user_name=self.cleaned_data['user_name']
         if User.objects.filter(username=user_name).exists():
-            raise forms.ValidationError(_(u"Это имя уже используется в системе"))
+            raise forms.ValidationError(_("Это имя уже используется в системе"))
         q = Q(user_name=user_name) & \
             ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
         if RegisterProfile.objects.filter(q).exists():
-            raise forms.ValidationError(_(u"Это имя уже используется среди кандидатов на регистрацию"))
+            raise forms.ValidationError(_("Это имя уже используется среди кандидатов на регистрацию"))
         return user_name
 
     def clean_user_email(self):
         user_email=self.cleaned_data['user_email']
         if User.objects.filter(email=user_email).exists():
-            raise forms.ValidationError(_(u"Этот почтовый адрес уже используется в системе"))
+            raise forms.ValidationError(_("Этот почтовый адрес уже используется в системе"))
         q = Q(user_email=user_email) & \
             ~Q(status__in=(RegisterProfile.STATUS_DECLINED, RegisterProfile.STATUS_APPROVED, ))
         if RegisterProfile.objects.filter(q).exists():
-            raise forms.ValidationError(_(u"Этот почтовый адрес уже используется среди кандидатов на регистрацию"))
+            raise forms.ValidationError(_("Этот почтовый адрес уже используется среди кандидатов на регистрацию"))
         return user_email
 
     def clean(self):
@@ -656,10 +655,10 @@ class RegisterForm(forms.ModelForm):
         password1 = self.cleaned_data.get('password1')
         password2 = self.cleaned_data.get('password2')
         if password1 and password2 and password1 != password2:
-            raise forms.ValidationError(_(u"Пароли не совпадают"))
+            raise forms.ValidationError(_("Пароли не совпадают"))
         for field in cleaned_data:
             if field not in ('password1', 'password2') and \
-              isinstance(cleaned_data[field], basestring):
+              isinstance(cleaned_data[field], str):
                 cleaned_data[field] = cleaned_data[field].strip()
         return cleaned_data
 
@@ -668,29 +667,29 @@ class RegisterForm(forms.ModelForm):
 
 class OrgBurialStatsForm(forms.Form):
 
-    EMPTY = (('', _(u'Закрытые и эксгумированные')),)
+    EMPTY = (('', _('Закрытые и эксгумированные')),)
 
-    date_from = forms.DateField(required=False, label=_(u"С"))
-    date_to = forms.DateField(required=False, label=_(u"по"))
-    status = forms.TypedChoiceField(required=False, label=_(u"Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
+    date_from = forms.DateField(required=False, label=_("С"))
+    date_to = forms.DateField(required=False, label=_("по"))
+    status = forms.TypedChoiceField(required=False, label=_("Статус"), choices=EMPTY + Burial.STATUS_CHOICES)
 
 class LoruOrdersStatsForm(forms.Form):
 
-    date_from = forms.DateField(required=False, label=_(u"С"))
-    date_to = forms.DateField(required=False, label=_(u"по"))
-    supplier = forms.CharField(required=False, max_length=60, label=_(u"Поставщик"))
+    date_from = forms.DateField(required=False, label=_("С"))
+    date_to = forms.DateField(required=False, label=_("по"))
+    supplier = forms.CharField(required=False, max_length=60, label=_("Поставщик"))
 
 class SupportForm(forms.Form):
-    user_last_name = forms.CharField(label=_(u"Фамилия"), max_length=100, required=True)
-    user_first_name = forms.CharField(label=_(u"Имя"), max_length=100, required=False)
-    user_middle_name = forms.CharField(label=_(u"Отчество"), max_length=255, required=False)
-    subject = forms.CharField(label=_(u'Тема'), max_length=100, required=False)
-    message = forms.CharField(label=_(u'Вопрос'), widget=forms.Textarea, required=False)
-    sender = forms.EmailField(label=_(u'Email для получения ответа'), required=False)
-    callback = forms.BooleanField(label=_(u"Заказать обратный звонок"), required=False)
+    user_last_name = forms.CharField(label=_("Фамилия"), max_length=100, required=True)
+    user_first_name = forms.CharField(label=_("Имя"), max_length=100, required=False)
+    user_middle_name = forms.CharField(label=_("Отчество"), max_length=255, required=False)
+    subject = forms.CharField(label=_('Тема'), max_length=100, required=False)
+    message = forms.CharField(label=_('Вопрос'), widget=forms.Textarea, required=False)
+    sender = forms.EmailField(label=_('Email для получения ответа'), required=False)
+    callback = forms.BooleanField(label=_("Заказать обратный звонок"), required=False)
     phone = forms.CharField(
-        label=_(u"Телефон"),
-        help_text=_(u'В международном формате: +код-страны-код-города-номер-телефона'),
+        label=_("Телефон"),
+        help_text=_('В международном формате: +код-страны-код-города-номер-телефона'),
         required=False,
     )
     captcha = NoReCaptchaField(label='', required=True)
@@ -707,30 +706,30 @@ class SupportForm(forms.Form):
                                      not is_cabinet_user(request.user) and request.user.profile.org.email or \
                                      ''
             if not self.initial['sender']:
-                self.fields['sender'].label = _(u'Email для получения ответа (будет сохранен как Ваш контактный)')
+                self.fields['sender'].label = _('Email для получения ответа (будет сохранен как Ваш контактный)')
                 self.save_user_email = not request.user.email
             self.initial['phone'] = re.split(r'\s+', request.user.profile.org.phones or '')[0]
             if not self.initial['phone']:
-                self.fields['phone'].label = _(u'Телефон (будет сохранен как телефон Вашей организации)')
+                self.fields['phone'].label = _('Телефон (будет сохранен как телефон Вашей организации)')
                 self.save_org_phone = True
             for f in self.fio:
                 self.initial[f] = getattr(request.user.profile, f)
             user_request = request.GET.get('request')
-            if user_request and user_request == u'add_doctype':
-                self.initial['subject'] = _(u'Добавить тип документа')
-                self.initial['message'] = _(u'Прошу добавить следующий тип документа:\n'
-                                            u'________________________.\n\n'
-                                            u'Пока новый тип не добавлен, вношу запись о документе '
-                                            u'физического лица как об удостоверении.\n'
+            if user_request and user_request == 'add_doctype':
+                self.initial['subject'] = _('Добавить тип документа')
+                self.initial['message'] = _('Прошу добавить следующий тип документа:\n'
+                                            '________________________.\n\n'
+                                            'Пока новый тип не добавлен, вношу запись о документе '
+                                            'физического лица как об удостоверении.\n'
                 )
                 burial_path = request.GET.get('burial_path')
                 if burial_path:
-                    burial_path = u"%s://%s%s" % (
+                    burial_path = "%s://%s%s" % (
                         'https' if request.is_secure() else 'http',
                         request.get_host(),
                         burial_path,
                     )
-                    self.initial['message'] = u"%sПравилось захоронение:\n%s\n" % \
+                    self.initial['message'] = "%sПравилось захоронение:\n%s\n" % \
                         (self.initial['message'], burial_path, )
 
     def clean(self):
@@ -739,19 +738,19 @@ class SupportForm(forms.Form):
                 try:
                     validate_phone_as_number(self.cleaned_data.get('phone', '').lstrip('+'))
                 except ValidationError:
-                    raise forms.ValidationError(_(u"Не указан или неверен телефон для обратного звонка"))
+                    raise forms.ValidationError(_("Не указан или неверен телефон для обратного звонка"))
             elif not self.cleaned_data.get('message') or not self.cleaned_data.get('sender'):
-                raise forms.ValidationError(_(u"Если не требуется обратный звонок, то задайте вопрос и укажите Email"))
+                raise forms.ValidationError(_("Если не требуется обратный звонок, то задайте вопрос и укажите Email"))
             if not self.cleaned_data.get('user_first_name', '').strip() and \
                self.cleaned_data.get('user_middle_name', '').strip():
-                raise forms.ValidationError(_(u"Не указано имя при указанном отчестве"))
+                raise forms.ValidationError(_("Не указано имя при указанном отчестве"))
         return self.cleaned_data
         
     def save(self):
         if self.cleaned_data.get('subject'):
             email_subject = self.cleaned_data['subject']
         else:
-            email_subject = _(u'Вопрос в поддержку')
+            email_subject = _('Вопрос в поддержку')
         email_from = self.cleaned_data.get('sender')
         if self.save_user_email and email_from:
             self.request.user.email = email_from
@@ -775,16 +774,16 @@ class SupportForm(forms.Form):
                 self.request.user.profile.user_middle_name = self.cleaned_data.get('user_middle_name', '')
                 self.request.user.profile.save()
         email_text = self.cleaned_data.get('message', '')
-        email_text += u"\n----------\n\n%s: %s %s %s" % (
-                        _(u'Запрос от'),
+        email_text += "\n----------\n\n%s: %s %s %s" % (
+                        _('Запрос от'),
                         self.cleaned_data.get('user_last_name', ''),
                         self.cleaned_data.get('user_first_name', ''),
                         self.cleaned_data.get('user_middle_name', ''),
                       )
         if self.cleaned_data.get('callback'):
-            email_text += u"\n\n%s\n%s %s" % (
-                _(u'ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
-                _(u'телефон'),
+            email_text += "\n\n%s\n%s %s" % (
+                _('ЗАКАЗАН ОБРАТНЫЙ ЗВОНОК'),
+                _('телефон'),
                 self.cleaned_data['phone'],
             )
         email_text += get_mail_footer(self.request.user)
@@ -797,7 +796,7 @@ class SupportForm(forms.Form):
         # в заголовке, что письмо пришло не от yandex, так и в спам может попасть.
         # Посему реальный отправитель будет в Reply-To:
         #
-        email_from = _(u"Вопрос в поддержку <%s>") % settings.DEFAULT_FROM_EMAIL
+        email_from = _("Вопрос в поддержку <%s>") % settings.DEFAULT_FROM_EMAIL
         EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
 
 class TestCaptcha2Form(forms.Form):
@@ -811,7 +810,7 @@ class VideoSearchForm(forms.Form):
         (50, 50),
     )
 
-    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=25, required=False)
+    per_page = forms.ChoiceField(label=_("На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
 class ThanksForm(forms.Form):
     PAGE_CHOICES = (
@@ -821,8 +820,8 @@ class ThanksForm(forms.Form):
         (50, 50),
     )
 
-    thanked = forms.ChoiceField(label=_(u"Кому выражают благодарность"), required=True)
-    per_page = forms.ChoiceField(label=_(u"На странице"), choices=PAGE_CHOICES, initial=50, required=False)
+    thanked = forms.ChoiceField(label=_("Кому выражают благодарность"), required=True)
+    per_page = forms.ChoiceField(label=_("На странице"), choices=PAGE_CHOICES, initial=50, required=False)
 
     def __init__(self, *args, **kwargs):
         super(ThanksForm, self).__init__(*args, **kwargs)
@@ -830,5 +829,5 @@ class ThanksForm(forms.Form):
         for p in CustomPerson.objects.filter(token__gte='').order_by(
             'last_name', 'first_name', 'middle_name'
             ):
-            choices.append((p.pk, u"%s" % p))
+            choices.append((p.pk, "%s" % p))
         self.fields['thanked'].choices = choices

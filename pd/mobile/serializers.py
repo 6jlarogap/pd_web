@@ -1,4 +1,3 @@
-# coding=utf-8
 from geo.models import CoordinatesModel 
 from rest_framework import serializers
 

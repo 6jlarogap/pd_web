@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+
 
 from django.db import models, migrations
 
@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 ('obj_id', models.PositiveIntegerField(verbose_name='ID \u043e\u0431\u044a\u0435\u043a\u0442\u0430', null=True, editable=False, db_index=True)),
                 ('dt', models.DateTimeField(auto_now_add=True, verbose_name='\u0412\u0440\u0435\u043c\u044f', db_index=True)),
                 ('msg', models.TextField(verbose_name='\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435', editable=False)),
-                ('code', models.CharField(default=b'', verbose_name='\u0421\u043f\u0435\u0446. \u043a\u043e\u0434', max_length=255, editable=False)),
+                ('code', models.CharField(default='', verbose_name='\u0421\u043f\u0435\u0446. \u043a\u043e\u0434', max_length=255, editable=False)),
                 ('operation', models.PositiveIntegerField(verbose_name='\u041a\u043e\u0434 \u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0438', null=True, editable=False, db_index=True)),
             ],
             options={
