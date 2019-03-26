@@ -39,10 +39,10 @@ for model in (PlacePhoto, AreaPhoto, Product):
             if tags and 'Image Orientation' in tags:
                 orientation = tags['Image Orientation'].values[0]
                 if orientation in rotate_howto:
-                    print "%s to rotate at %d degrees" % (photo_file.path, rotate_howto[orientation], )
+                    print("%s to rotate at %d degrees" % (photo_file.path, rotate_howto[orientation], ))
                     im1 = Image.open(photo_file.path)
                     im2 = im1.rotate(rotate_howto[orientation])
                     im2.save(photo_file.path)
                     cnt_rotated += 1
             f.close()
-print "%d of total %d photos rotated" % (cnt_rotated, cnt_total, )
+print("%d of total %d photos rotated" % (cnt_rotated, cnt_total, ))

@@ -1,9 +1,8 @@
-# coding=utf-8
 import datetime
 import decimal
 import random
 import string
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import json, re
 import hashlib
 
@@ -68,42 +67,42 @@ class Role(models.Model):
     #
     ROLE_REGISTRY = 'registry_handler'
 
-    name = models.CharField(_(u"Код"), max_length=255, editable=False)
-    title = models.CharField(_(u"Название"), max_length=255, editable=False)
+    name = models.CharField(_("Код"), max_length=255, editable=False)
+    title = models.CharField(_("Название"), max_length=255, editable=False)
 
     class Meta:
-        verbose_name = _(u'Роль пользователя')
+        verbose_name = _('Роль пользователя')
         ordering = ('title', )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
 class CommonProfile(BaseModel):
-    USERNAME_HELPTEXT = _(u'До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')
+    USERNAME_HELPTEXT = _('До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')
 
     user = models.OneToOneField('auth.User', null=True)
-    user_last_name = models.CharField(_(u"Фамилия"), max_length=255, blank=True, default='')
-    user_first_name = models.CharField(_(u"Имя"), max_length=255, blank=True, default='')
-    user_middle_name = models.CharField(_(u"Отчество"), max_length=255, blank=True, default='')
-    phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
-    birthday = models.DateField(_(u"Дата рождения у провайдера"), null=True, editable=False)
-    site = models.URLField(_(u"Сайт пользователя"), max_length=255, default='', editable=False)
+    user_last_name = models.CharField(_("Фамилия"), max_length=255, blank=True, default='')
+    user_first_name = models.CharField(_("Имя"), max_length=255, blank=True, default='')
+    user_middle_name = models.CharField(_("Отчество"), max_length=255, blank=True, default='')
+    phones = models.TextField(_("Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
+    birthday = models.DateField(_("Дата рождения у провайдера"), null=True, editable=False)
+    site = models.URLField(_("Сайт пользователя"), max_length=255, default='', editable=False)
 
     class Meta:
         abstract = True
         ordering = ('user_last_name', 'user_first_name', 'user_middle_name', )
 
-    def __unicode__(self):
-        return self.user and (self.full_name() or self.user.username) or u'%s' % self.pk
+    def __str__(self):
+        return self.user and (self.full_name() or self.user.username) or '%s' % self.pk
 
     def full_name(self, put_middle_name=True):
         name = ""
         if self.user_last_name:
             name = self.user_last_name
             if self.user_first_name:
-                name = u"{0} {1}".format(name, self.user_first_name)
+                name = "{0} {1}".format(name, self.user_first_name)
                 if put_middle_name and self.user_middle_name:
-                    name = u"{0} {1}".format(name, self.user_middle_name)
+                    name = "{0} {1}".format(name, self.user_middle_name)
         if not name:
             name = self.user.get_full_name()
         return name
@@ -116,10 +115,10 @@ class CommonProfile(BaseModel):
         if self.user_last_name:
             name = self.user_last_name
             if self.user_first_name:
-                name = u"{0} {1}.".format(name, self.user_first_name[0])
+                name = "{0} {1}.".format(name, self.user_first_name[0])
                 if self.user_middle_name:
-                    name = u"{0}{1}.".format(name, self.user_middle_name[0])
-        return self.user and (name or self.user.username) or u'%s' % self.pk
+                    name = "{0}{1}.".format(name, self.user_middle_name[0])
+        return self.user and (name or self.user.username) or '%s' % self.pk
 
     def phone_list(self):
         return phones_from_text(self.phones)
@@ -152,10 +151,10 @@ class CommonProfile(BaseModel):
 
 class CustomerProfile(CommonProfile):
     # Дата/время согласия с пользовательским соглашением, служит еще как BooleanField:
-    tc_confirmed = models.DateTimeField(_(u"Подтверждено пользовательское соглашение"), null=True, editable=False)
-    login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"), max_digits=15, decimal_places=0,
+    tc_confirmed = models.DateTimeField(_("Подтверждено пользовательское соглашение"), null=True, editable=False)
+    login_phone = models.DecimalField(_("Мобильный телефон для входа в кабинет"), max_digits=15, decimal_places=0,
                   blank=True, null=True, db_index=True,
-                  help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
+                  help_text=_('В международном формате, начиная с кода страны, без "+", например 79101234567'),
                   validators = [validate_phone_as_number, ])
 
     class Meta:
@@ -166,7 +165,7 @@ class CustomerProfile(CommonProfile):
         assert responsible and \
                hasattr(responsible, 'login_phone') and \
                responsible.login_phone, \
-               u'Cannot create cabinet user for the specified responsible'
+               'Cannot create cabinet user for the specified responsible'
         user, created = User.objects.get_or_create(username=responsible.login_phone)
         if created:
             user.is_active = True
@@ -187,9 +186,9 @@ class CustomerProfile(CommonProfile):
             request,
             user,
             _(
-                u"Создан пользователь кабинета\n"
-                u"логин: %(username)s\n"
-                u"ФИО: %(full_name)s"
+                "Создан пользователь кабинета\n"
+                "логин: %(username)s\n"
+                "ФИО: %(full_name)s"
             ) % dict(
                 username=user.username,
                 full_name=customprofile.full_name(),
@@ -201,20 +200,20 @@ class CustomerProfile(CommonProfile):
 class Profile(CommonProfile):
     org = models.ForeignKey('users.Org', null=True)
 
-    is_agent = models.BooleanField(_(u"Агент"), default=False, blank=True)
-    out_of_staff = models.BooleanField(_(u"Внештатный сотрудник"), default=False, blank=True)
-    title = models.CharField(_(u"Должность"), max_length=255, blank=True)
+    is_agent = models.BooleanField(_("Агент"), default=False, blank=True)
+    out_of_staff = models.BooleanField(_("Внештатный сотрудник"), default=False, blank=True)
+    title = models.CharField(_("Должность"), max_length=255, blank=True)
 
-    cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_(u"Кладбище"), blank=True, null=True)
-    area = models.ForeignKey('burials.Area', verbose_name=_(u"Участок"), blank=True, null=True)
+    cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_("Кладбище"), blank=True, null=True)
+    area = models.ForeignKey('burials.Area', verbose_name=_("Участок"), blank=True, null=True)
 
-    role = models.ManyToManyField(Role, verbose_name=_(u"Роли в организации"), blank=True)
+    role = models.ManyToManyField(Role, verbose_name=_("Роли в организации"), blank=True)
     cemeteries = models.ManyToManyField('burials.Cemetery',
-                 verbose_name=_(u"Доступные кладбища"), related_name='rw_profiles', blank=True)
+                 verbose_name=_("Доступные кладбища"), related_name='rw_profiles', blank=True)
 
-    store = models.ForeignKey('users.Store', verbose_name=_(u"Подразделение"), blank=True, null=True)
+    store = models.ForeignKey('users.Store', verbose_name=_("Подразделение"), blank=True, null=True)
 
-    phones_publish = models.BooleanField(_(u"Публиковать телефоны?"), default=False, blank=True)
+    phones_publish = models.BooleanField(_("Публиковать телефоны?"), default=False, blank=True)
 
     lat = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
     lng = models.DecimalField(max_digits=30, decimal_places=27, blank=True, null=True)
@@ -372,9 +371,9 @@ def get_mail_footer(user):
     if user.is_authenticated:
         is_customer = is_cabinet_user(user)
         pr = user.customerprofile if is_customer else user.profile
-        footer = _(     u'\n\n'
-                        u'Пользователь: %(username)s %(slash)s %(full_name)s\n'
-                        u'Email: %(email)s\n'
+        footer = _(     '\n\n'
+                        'Пользователь: %(username)s %(slash)s %(full_name)s\n'
+                        'Email: %(email)s\n'
                   ) % dict(
                         username=user.username,
                         slash='/' if pr.full_name() else '',
@@ -382,9 +381,9 @@ def get_mail_footer(user):
                         email=user.email or '',
                        )
         if not is_customer:
-            footer += _(    u'\n\n'
-                            u'Организация: %(org)s\n'
-                            u'Email организации: %(email)s\n'
+            footer += _(    '\n\n'
+                            'Организация: %(org)s\n'
+                            'Email организации: %(email)s\n'
                         ) % dict(
                                 org=pr.org and pr.org or '',
                                 email=pr.org and pr.org.email or '',
@@ -396,11 +395,11 @@ def get_default_currency():
     return Currency.objects.only('pk').get(code=settings.CURRENCY_DEFAULT_CODE)
 
 class YoutubeVideo(BaseModel):
-    yid = models.CharField(_(u"Youtube ID"), max_length=255, unique=True)
-    url = models.URLField(_(u"URL"), max_length=255, default='')
-    title = models.CharField(_(u"Заголовок"), max_length=255, default='')
-    title_photo_url = models.URLField(_(u"Preview URL"), max_length=255, default='')
-    is_hidden = models.BooleanField(_(u"Скрыто в списке видео"), default=False)
+    yid = models.CharField(_("Youtube ID"), max_length=255, unique=True)
+    url = models.URLField(_("URL"), max_length=255, default='')
+    title = models.CharField(_("Заголовок"), max_length=255, default='')
+    title_photo_url = models.URLField(_("Preview URL"), max_length=255, default='')
+    is_hidden = models.BooleanField(_("Скрыто в списке видео"), default=False)
 
     def delete(self, *args, **kwargs):
         YoutubeCaptionVote.objects.filter(
@@ -415,10 +414,10 @@ class YoutubeCaption(models.Model):
     Субтритры
     """
     youtubevideo = models.ForeignKey('users.YoutubeVideo')
-    num = models.PositiveIntegerField(_(u"Порядковый номер субтитра"))
-    start = models.FloatField(_(u"Старт субтитра"))
-    stop = models.FloatField(_(u"Стоп субтитра"))
-    text = models.TextField(_(u"Текст"))
+    num = models.PositiveIntegerField(_("Порядковый номер субтитра"))
+    start = models.FloatField(_("Старт субтитра"))
+    stop = models.FloatField(_("Стоп субтитра"))
+    text = models.TextField(_("Текст"))
 
 class YoutubeVote(BaseModel):
     """
@@ -427,20 +426,20 @@ class YoutubeVote(BaseModel):
     LIKE_UP = 'up'
     LIKE_DOWN = 'down'
     LIKES = (
-        (LIKE_UP, _(u"Нравится")),
-        (LIKE_UP, _(u"Не нравится")),
+        (LIKE_UP, _("Нравится")),
+        (LIKE_UP, _("Не нравится")),
     )
 
     youtubevideo = models.ForeignKey('users.YoutubeVideo')
     user = models.ForeignKey('auth.User')
-    time = models.PositiveIntegerField(_(u"Время реакции"), default=0)
-    like = models.CharField(_(u"Реакция"), max_length=100, choices=LIKES, default=LIKE_UP)
+    time = models.PositiveIntegerField(_("Время реакции"), default=0)
+    like = models.CharField(_("Реакция"), max_length=100, choices=LIKES, default=LIKE_UP)
 
 class YoutubeCaptionVote(BaseModel):
 
     youtubecaption = models.ForeignKey('users.YoutubeCaption')
     user = models.ForeignKey('auth.User')
-    like = models.CharField(_(u"Реакция"),
+    like = models.CharField(_("Реакция"),
                 max_length=100, choices=YoutubeVote.LIKES, default=YoutubeVote.LIKE_UP)
 
 class Oauth(BaseModel):
@@ -451,19 +450,19 @@ class Oauth(BaseModel):
     PROVIDER_ODNOKLASSNIKI = 'odnoklassniki'
 
     OAUTH_PROVIDERS = (
-        (PROVIDER_YANDEX, _(u"Яндекс")),
-        (PROVIDER_FACEBOOK, _(u"Facebook")),
-        (PROVIDER_GOOGLE, _(u"Google")),
-        (PROVIDER_VKONTAKTE, _(u"ВКонтакте")),
-        (PROVIDER_ODNOKLASSNIKI, _(u"Одноклассники")),
+        (PROVIDER_YANDEX, _("Яндекс")),
+        (PROVIDER_FACEBOOK, _("Facebook")),
+        (PROVIDER_GOOGLE, _("Google")),
+        (PROVIDER_VKONTAKTE, _("ВКонтакте")),
+        (PROVIDER_ODNOKLASSNIKI, _("Одноклассники")),
     )
 
     PROVIDER_PROFILE_URL = {
-        PROVIDER_YANDEX: u"",
-        PROVIDER_FACEBOOK: u"https://www.facebook.com/%s",
-        PROVIDER_GOOGLE: u"https://plus.google.com/u/0/%s",
-        PROVIDER_VKONTAKTE: u"https://vk.com/id%s",
-        PROVIDER_ODNOKLASSNIKI: u"https://ok.ru/profile/%s",
+        PROVIDER_YANDEX: "",
+        PROVIDER_FACEBOOK: "https://www.facebook.com/%s",
+        PROVIDER_GOOGLE: "https://plus.google.com/u/0/%s",
+        PROVIDER_VKONTAKTE: "https://vk.com/id%s",
+        PROVIDER_ODNOKLASSNIKI: "https://ok.ru/profile/%s",
     }
 
     # Куда идти для получения данных от провайдера и имена возвращаемых полей,
@@ -484,7 +483,7 @@ class Oauth(BaseModel):
             'birthday': 'birthday',
             'birthday_format': '%Y-%m-%d',
             'photo': 'default_avatar_id',
-            'photo_template': u'https://avatars.yandex.net/get-yapic/%(photo_id)s/islands-200'
+            'photo_template': 'https://avatars.yandex.net/get-yapic/%(photo_id)s/islands-200'
         },
         PROVIDER_FACEBOOK: {
             'url': "https://graph.facebook.com/me?"
@@ -546,17 +545,17 @@ class Oauth(BaseModel):
     }
 
     user = models.ForeignKey('auth.User')
-    provider = models.CharField(_(u"Провайдер"), max_length=100, choices=OAUTH_PROVIDERS)
-    uid = models.CharField(_(u"Ид пользователя у провайдера"), max_length=255,)
-    last_name = models.CharField(_(u"Фамилия у провайдера"), max_length=255, default='')
-    first_name = models.CharField(_(u"Имя у провайдера"), max_length=255, default='')
-    middle_name = models.CharField(_(u"Отчество у провайдера"), max_length=255, default='')
-    display_name = models.CharField(_(u"Отображаемое имя у провайдера"), max_length=255, default='')
-    email = models.EmailField(_(u"Email у провайдера"), max_length=255, default='')
-    photo = models.URLField(_(u"Фото у провайдера"), max_length=255, default='')
-    birthday = models.DateField(_(u"Дата рождения у провайдера"), null=True)
-    phones = models.TextField(_(u"Телефоны (если несколько, то через ; или ,)"), null=True)
-    site = models.URLField(_(u"Сайт пользователя"), max_length=255, default='')
+    provider = models.CharField(_("Провайдер"), max_length=100, choices=OAUTH_PROVIDERS)
+    uid = models.CharField(_("Ид пользователя у провайдера"), max_length=255,)
+    last_name = models.CharField(_("Фамилия у провайдера"), max_length=255, default='')
+    first_name = models.CharField(_("Имя у провайдера"), max_length=255, default='')
+    middle_name = models.CharField(_("Отчество у провайдера"), max_length=255, default='')
+    display_name = models.CharField(_("Отображаемое имя у провайдера"), max_length=255, default='')
+    email = models.EmailField(_("Email у провайдера"), max_length=255, default='')
+    photo = models.URLField(_("Фото у провайдера"), max_length=255, default='')
+    birthday = models.DateField(_("Дата рождения у провайдера"), null=True)
+    phones = models.TextField(_("Телефоны (если несколько, то через ; или ,)"), null=True)
+    site = models.URLField(_("Сайт пользователя"), max_length=255, default='')
 
     class Meta:
         # Не может быть двух пользователей с одним uid у того же провайдера!
@@ -646,18 +645,18 @@ class Oauth(BaseModel):
                         user.email = email
                         user.save()
                 except IntegrityError:
-                    raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
+                    raise ServiceException(_('Есть уже пользователь с таким email: %s') % email)
 
         user = oauth = error_code = None
         message = {}
         provider = oauth_dict['provider']
-        msg_intergrity_error = _(u'Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
+        msg_intergrity_error = _('Есть уже пользователь, прикрепленный к этой учетной записи %s') % provider
         err_intergrity_error = 'another_user_bound_to_oauth'
         try:
             try:
                 provider_details = Oauth.PROVIDER_DETAILS[provider]
             except KeyError:
-                raise ServiceException(_(u'Провайдер Oauth, %s, не поддерживается') % provider)
+                raise ServiceException(_('Провайдер Oauth, %s, не поддерживается') % provider)
 
             if provider == Oauth.PROVIDER_ODNOKLASSNIKI:
                 oauth_dict['public_key'] = settings.OAUTH_PROVIDERS_KEYS[provider]['public_key']
@@ -684,28 +683,26 @@ class Oauth(BaseModel):
 
             for parm in ('accessToken', 'public_key', 'signature', ):
                 if oauth_dict.get(parm):
-                    if isinstance(oauth_dict[parm], unicode):
-                        oauth_dict[parm] = oauth_dict[parm].encode('utf-8')
-                    oauth_dict[parm] = urllib2.quote(oauth_dict[parm])
+                    oauth_dict[parm] = urllib.parse.quote(oauth_dict[parm])
             url = provider_details['url'] % oauth_dict
 
             try:
-                msg_debug = u", url: %s" % url if settings.DEBUG else ""
-                r = urllib2.urlopen(url)
-                raw_data = r.read().decode(r.info().getparam('charset') or 'utf-8')
-            except urllib2.HTTPError as excpt:
+                msg_debug = ", url: %s" % url if settings.DEBUG else ""
+                r = urllib.request.urlopen(url)
+                raw_data = r.read().decode(r.headers.get_content_charset('utf-8'))
+            except urllib.error.HTTPError as excpt:
                 raise ServiceException(
-                    _(u'Ошибка в ответе от провайдера %(provider)s, '
-                      u'код: %(code)s, статус: %(reason)s%(msg_debug)s') % dict(
+                    _('Ошибка в ответе от провайдера %(provider)s, '
+                      'код: %(code)s, статус: %(reason)s%(msg_debug)s') % dict(
                         provider=provider,
                         code=excpt.getcode(),
                         reason=excpt.reason,
                         msg_debug=msg_debug
                 ))
-            except urllib2.URLError as excpt:
-                reason = u": %s" % excpt.reason if excpt.reason else ''
+            except urllib.error.URLError as excpt:
+                reason = ": %s" % excpt.reason if excpt.reason else ''
                 raise ServiceException(
-                    _(u'Ошибка связи с провайдером%(reason)s%(msg_debug)s') % dict(
+                    _('Ошибка связи с провайдером%(reason)s%(msg_debug)s') % dict(
                         reason=reason,
                         msg_debug=msg_debug,
             ))
@@ -716,16 +713,16 @@ class Oauth(BaseModel):
                     data = data['response'][0]
                 uid = data[provider_details['uid']]
             except (KeyError, ValueError, IndexError):
-                msg_debug = u" DEBUG: Request: %s. Response: %s" % (url, raw_data, ) \
-                            if settings.DEBUG else u""
+                msg_debug = " DEBUG: Request: %s. Response: %s" % (url, raw_data, ) \
+                            if settings.DEBUG else ""
                 raise ServiceException(
-                    _(u"Ошибка интерпретации ответа от провайдера %(provider)s.%(msg_debug)s") % dict(
+                    _("Ошибка интерпретации ответа от провайдера %(provider)s.%(msg_debug)s") % dict(
                         provider=provider, msg_debug=msg_debug,
                 ))
             if not uid:
-                raise ServiceException(_(u'Получен пустой %s от провайдера') % provider_details['uid'])
+                raise ServiceException(_('Получен пустой %s от провайдера') % provider_details['uid'])
 
-            uid = unicode(uid)
+            uid = str(uid)
             user_details = {}
             for key in (
                     'first_name',
@@ -740,7 +737,7 @@ class Oauth(BaseModel):
                 real_key = provider_details.get(key)
                 if real_key:
                     user_details[key] = data.get(real_key, '')
-                    if isinstance(user_details[key], basestring):
+                    if isinstance(user_details[key], str):
                         user_details[key] = user_details[key].strip()
                     if user_details[key]:
                         if key == 'birthday':
@@ -764,7 +761,7 @@ class Oauth(BaseModel):
                                 if re.search(provider_details['no_photo_re'], user_details[key]):
                                     del user_details[key]
                             elif provider == Oauth.PROVIDER_GOOGLE:
-                                user_details[key] = u"%s?sz=200" % user_details[key]
+                                user_details[key] = "%s?sz=200" % user_details[key]
                             elif provider == Oauth.PROVIDER_FACEBOOK:
                                 try:
                                     user_details[key] = user_details[key]['data']['url']
@@ -772,7 +769,7 @@ class Oauth(BaseModel):
                                     del user_details[key]
                         elif key == 'site':
                             if not re.search(r'^\w+\://', user_details[key]):
-                                user_details[key] = u"http://%s" % user_details[key]
+                                user_details[key] = "http://%s" % user_details[key]
                             validate = URLValidator()
                             try:
                                 validate(user_details[key])
@@ -781,9 +778,9 @@ class Oauth(BaseModel):
                     else:
                         del user_details[key]
             if provider == Oauth.PROVIDER_VKONTAKTE:
-                user_details['phones'] = u';'.join(
+                user_details['phones'] = ';'.join(
                                 [ data.get(key, '') for key in ('mobile_phone', 'home_phone')]
-                ).strip(u';').strip()
+                ).strip(';').strip()
                 if not user_details['phones']:
                     del user_details['phones']
             if signup_dict:
@@ -814,9 +811,9 @@ class Oauth(BaseModel):
                                 }
                             )
                             if not created:
-                                raise ServiceException(_(u'Такой пользователь, %s, уже имеется') % username)
+                                raise ServiceException(_('Такой пользователь, %s, уже имеется') % username)
                     except IntegrityError:
-                        raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
+                        raise ServiceException(_('Есть уже пользователь с таким email: %s') % email)
                 else:
                     chars = string.ascii_lowercase + string.digits
                     while True:
@@ -839,7 +836,7 @@ class Oauth(BaseModel):
                         if User.objects.filter(email=email).exists():
                             if profile.get('email'):
                                 # задана была почта пользователем
-                                raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
+                                raise ServiceException(_('Есть уже пользователь с таким email: %s') % email)
                             #else:
                                 # Не устанавливаю user.email: Человек авторизовался из соц сети,
                                 # была подхвачена его почта, но записывать эту почту в User нельзя,
@@ -850,7 +847,7 @@ class Oauth(BaseModel):
                                     user.email = email
                                     user.save()
                             except IntegrityError:
-                                raise ServiceException(_(u'Есть уже пользователь с таким email: %s') % email)
+                                raise ServiceException(_('Есть уже пользователь с таким email: %s') % email)
                     password = CommonProfile.generate_password()
                 try:
                     with transaction.atomic():
@@ -917,8 +914,8 @@ class Oauth(BaseModel):
                     refresh_oauth_data(oauth, user_details)
                     user = oauth.user
                 except IndexError:
-                    error_code = u"oauth_provider_not_attached"
-                    raise ServiceException(_(u'Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
+                    error_code = "oauth_provider_not_attached"
+                    raise ServiceException(_('Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
         except ServiceException as excpt:
             transaction.set_rollback(True)
             message['message'] = excpt.message
@@ -930,7 +927,7 @@ class Oauth(BaseModel):
         """
         Ссылка на профиль пользователя
         """
-        result = u""
+        result = ""
         try:
             result = Oauth.PROVIDER_PROFILE_URL[self.provider] % self.uid
         except (KeyError, TypeError,):
@@ -941,10 +938,10 @@ class ThankUser(models.Model):
     """
     Пользователь- кандидат на выражение благодарности
     """
-    login_phone = models.DecimalField(_(u"Мобильный телефон для входа в кабинет"),
+    login_phone = models.DecimalField(_("Мобильный телефон для входа в кабинет"),
                                       max_digits=15, decimal_places=0, editable=False,
                                       unique=True)
-    password = models.CharField(_(u"Пароль"), max_length=255, editable=False)
+    password = models.CharField(_("Пароль"), max_length=255, editable=False)
 
 class Thank(BaseModel):
     """
@@ -952,8 +949,8 @@ class Thank(BaseModel):
 
     Благодарности выносят пользователи (auth.User) по отношению к persons.CustomPerson
     """
-    user = models.ForeignKey('auth.User', verbose_name=_(u"Пользователь"),)
-    customperson = models.ForeignKey('persons.CustomPerson', verbose_name=_(u"Персона"),)
+    user = models.ForeignKey('auth.User', verbose_name=_("Пользователь"),)
+    customperson = models.ForeignKey('persons.CustomPerson', verbose_name=_("Персона"),)
 
     class Meta:
         unique_together = ('user', 'customperson')
@@ -993,13 +990,13 @@ class OrgAbility(models.Model):
     ABILITY_TRADE = 'trade'
     ABILITY_PERSONAL_DATA = 'personal-data'
     ORG_ABILITIES = (
-        (ABILITY_TRADE, _(u'Торговля')),
-        (ABILITY_PERSONAL_DATA, _(u'Персональные данные')),
+        (ABILITY_TRADE, _('Торговля')),
+        (ABILITY_PERSONAL_DATA, _('Персональные данные')),
     )
-    name = models.CharField(_(u"Название"), max_length=255, unique=True, choices=ORG_ABILITIES)
-    title = models.CharField(_(u"Заглавие"), max_length=255)
+    name = models.CharField(_("Название"), max_length=255, unique=True, choices=ORG_ABILITIES)
+    title = models.CharField(_("Заглавие"), max_length=255)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
 class Org(GetLogsMixin, BaseModel):
@@ -1010,12 +1007,12 @@ class Org(GetLogsMixin, BaseModel):
     NUM_YEAR_MONTH_UGH = 'year_month_ugh'
     NUM_YEAR_MONTH_CEMETERY = 'year_month_cemetery'
     NUM_TYPES = (
-        (NUM_EMPTY, _(u'Оставить пустым')),
-        (NUM_MANUAL, _(u'Вручную')),
-        (NUM_YEAR_UGH, _(u'Год + порядковый (в пределах организации)')),
-        (NUM_YEAR_CEMETERY, _(u'Год + порядковый (в пределах кладбища)')),
-        (NUM_YEAR_MONTH_UGH, _(u'Год + месяц + порядковый (в пределах организации)')),
-        (NUM_YEAR_MONTH_CEMETERY, _(u'Год + месяц + порядковый (в пределах кладбища)')),
+        (NUM_EMPTY, _('Оставить пустым')),
+        (NUM_MANUAL, _('Вручную')),
+        (NUM_YEAR_UGH, _('Год + порядковый (в пределах организации)')),
+        (NUM_YEAR_CEMETERY, _('Год + порядковый (в пределах кладбища)')),
+        (NUM_YEAR_MONTH_UGH, _('Год + месяц + порядковый (в пределах организации)')),
+        (NUM_YEAR_MONTH_CEMETERY, _('Год + месяц + порядковый (в пределах кладбища)')),
     )
 
     PROFILE_ZAGS = 'zags'
@@ -1024,20 +1021,20 @@ class Org(GetLogsMixin, BaseModel):
     PROFILE_COMPANY = 'company'
     PROFILE_MEDIC = 'medic'
     PROFILE_TYPES = (
-        (PROFILE_COMPANY, _(u"Юрлицо")),
-        (PROFILE_ZAGS, _(u"ЗАГС")),
-        (PROFILE_MEDIC, _(u"Мед. учреждение")),
-        (PROFILE_LORU, _(u"ЛОРУ")),
-        (PROFILE_UGH, _(u"ОМС")),
+        (PROFILE_COMPANY, _("Юрлицо")),
+        (PROFILE_ZAGS, _("ЗАГС")),
+        (PROFILE_MEDIC, _("Мед. учреждение")),
+        (PROFILE_LORU, _("ЛОРУ")),
+        (PROFILE_UGH, _("ОМС")),
     )
 
     OPF_EMPTY = 'empty'
     OPF_ORG = 'org'
     OPF_PERSON = 'person'
     OPF_CHOICES = (
-        (OPF_EMPTY, _(u'Без заказчика')),
-        (OPF_ORG, _(u'ЮЛ')),
-        (OPF_PERSON, _(u'ФЛ')),
+        (OPF_EMPTY, _('Без заказчика')),
+        (OPF_ORG, _('ЮЛ')),
+        (OPF_PERSON, _('ФЛ')),
     )
    
     BASIS_CHARTER = 'charter'
@@ -1045,72 +1042,72 @@ class Org(GetLogsMixin, BaseModel):
     BASIS_CERTIFICATE = 'certificate'
     BASIS_PROXY = 'proxy'
     BASIS_CHOICES = (
-        (BASIS_CHARTER, _(u'устава')),
-        (BASIS_CONDITION, _(u'положения')),
-        (BASIS_CERTIFICATE, _(u'свидетельства')),
-        (BASIS_PROXY, _(u'доверенности')),
+        (BASIS_CHARTER, _('устава')),
+        (BASIS_CONDITION, _('положения')),
+        (BASIS_CERTIFICATE, _('свидетельства')),
+        (BASIS_PROXY, _('доверенности')),
     )
     
-    type = models.CharField(_(u"Тип"), max_length=255, choices=PROFILE_TYPES)
+    type = models.CharField(_("Тип"), max_length=255, choices=PROFILE_TYPES)
     ability = models.ManyToManyField(OrgAbility, editable=False)
-    name = models.CharField(_(u"Название организации"), max_length=255, default='')
+    name = models.CharField(_("Название организации"), max_length=255, default='')
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
-    client_site_token = models.CharField(_(u"Токен клиентского сайта"), max_length=255, 
+    client_site_token = models.CharField(_("Токен клиентского сайта"), max_length=255, 
                         null=True, editable=False)
-    full_name = models.CharField(_(u"Полное название"), max_length=255, default='', blank=True)
-    description = models.TextField(_(u"Описание, направление деятельности"), blank=True, null=True)
-    inn = models.CharField(_(u"ИНН"), max_length=255, default='', blank=True)
-    kpp = models.CharField(_(u"КПП"), max_length=255, default='', blank=True)
-    ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
-    director = models.CharField(_(u"Директор"),
+    full_name = models.CharField(_("Полное название"), max_length=255, default='', blank=True)
+    description = models.TextField(_("Описание, направление деятельности"), blank=True, null=True)
+    inn = models.CharField(_("ИНН"), max_length=255, default='', blank=True)
+    kpp = models.CharField(_("КПП"), max_length=255, default='', blank=True)
+    ogrn = models.CharField(_("ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
+    director = models.CharField(_("Директор"),
                                 max_length=255, default='', blank=True)
-    basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
+    basis = models.CharField(_("Основание действия директора"), max_length=255, 
                              choices=BASIS_CHOICES, default=BASIS_CHARTER)
-    email = models.EmailField(_(u"Email"), null=True, blank=True)
-    phones = models.TextField(_(u"Телефоны"), blank=True, null=True)
-    fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
-    sms_phone = models.DecimalField(_(u"Мобильный телефон для СМС- уведомлений"), max_digits=15, decimal_places=0,
+    email = models.EmailField(_("Email"), null=True, blank=True)
+    phones = models.TextField(_("Телефоны"), blank=True, null=True)
+    fax = models.CharField(_("Факс"), max_length=20, default='', blank=True)
+    sms_phone = models.DecimalField(_("Мобильный телефон для СМС- уведомлений"), max_digits=15, decimal_places=0,
                   blank=True, null=True,
-                  help_text=_(u'В международном формате, начиная с кода страны, без "+", например 79101234567'),
+                  help_text=_('В международном формате, начиная с кода страны, без "+", например 79101234567'),
                   validators = [validate_phone_as_number, ])
-    worktime = models.CharField(_(u"Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
-    site = models.URLField(_(u"Сайт"), default='', blank=True)
-    shop_site = models.URLField(_(u"Сайт магазина"), default='', blank=True)
-    currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency,
-                                 help_text=_(u' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
-    is_wholesale_with_vat = models.BooleanField(_(u"Оптовые цены продуктов с НДС"), default=False)
-    off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, blank=True)
-    subdomain = models.CharField(_(u"Поддомен"), max_length=255, null=True, editable=False)
+    worktime = models.CharField(_("Время работы (ЧЧ:ММ - ЧЧ:ММ)"), max_length=255, default='', blank=True)
+    site = models.URLField(_("Сайт"), default='', blank=True)
+    shop_site = models.URLField(_("Сайт магазина"), default='', blank=True)
+    currency = models.ForeignKey('billing.Currency', verbose_name=_("Валюта"), default=get_default_currency,
+                                 help_text=_(' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
+    is_wholesale_with_vat = models.BooleanField(_("Оптовые цены продуктов с НДС"), default=False)
+    off_address = models.ForeignKey('geo.Location', verbose_name=_("Юр. адрес"), null=True, blank=True)
+    subdomain = models.CharField(_("Поддомен"), max_length=255, null=True, editable=False)
 
     # Блок настроек умолчаний по заказам у ЛОРУ -----------------------------
-    opf_order_customer_mandatory = models.BooleanField(_(u"Данные заказчика при оформлении заказа обязательны"),
+    opf_order_customer_mandatory = models.BooleanField(_("Данные заказчика при оформлении заказа обязательны"),
                                     default=True)
-    opf_order = models.CharField(_(u"Заказчик по умолчанию в заказе"), max_length=255,
+    opf_order = models.CharField(_("Заказчик по умолчанию в заказе"), max_length=255,
                                     choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
     # ----------------------------------------------------------------------
 
     # Блок настроек умолчаний по захоронениям -------------------------------
-    numbers_algo = models.CharField(_(u"Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
+    numbers_algo = models.CharField(_("Заполнение номера захоронения"), max_length=255, choices=NUM_TYPES,
                                     default=NUM_MANUAL)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
-    opf_burial = models.CharField(_(u"Заявитель по умолчанию в захоронении"), max_length=255,
+    opf_burial = models.CharField(_("Заявитель по умолчанию в захоронении"), max_length=255,
                                     choices=list(OPF_CHOICES)[1:], default=OPF_ORG)
-    death_date_offer = models.BooleanField(_(u"Предлагать дату смерти в новом захоронении"), default=False)
-    hide_deadman_address = models.BooleanField(_(u"Скрыть адрес усопшего"), default=False)
-    plan_time_required = models.BooleanField(_(u"Плановое время захоронения обязательно"), default=True)
+    death_date_offer = models.BooleanField(_("Предлагать дату смерти в новом захоронении"), default=False)
+    hide_deadman_address = models.BooleanField(_("Скрыть адрес усопшего"), default=False)
+    plan_time_required = models.BooleanField(_("Плановое время захоронения обязательно"), default=True)
     # название поля не заканчивается на date, чтоб не угодить под специфический datePicker widget для дат:
-    plan_date_days_before = models.PositiveIntegerField(_(u"Кол-во дней для ввода плановой даты захоронения в прошлом"), default=3)
-    max_graves_count = models.PositiveIntegerField(_(u"Максимальное число могил в месте"), default=5,
+    plan_date_days_before = models.PositiveIntegerField(_("Кол-во дней для ввода плановой даты захоронения в прошлом"), default=3)
+    max_graves_count = models.PositiveIntegerField(_("Максимальное число могил в месте"), default=5,
                                 validators=[validate_gt0])
     # ----------------------------------------------------------------------
 
     class Meta:
-        verbose_name = _(u'Организация')
-        verbose_name_plural = _(u'Организации')
+        verbose_name = _('Организация')
+        verbose_name_plural = _('Организации')
         unique_together = ('subdomain', )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def is_inactive(self):
@@ -1174,11 +1171,11 @@ class Org(GetLogsMixin, BaseModel):
         """
         Вернуть две строки полного названия, вторая строка в кавычках
         """
-        m = re.search(ur'^\s*(.+)\s+(["«].+["»])$', self.full_name)
+        m = re.search(r'^\s*(.+)\s+(["«].+["»])$', self.full_name)
         if m:
             return (m.group(1), m.group(2),)
         else:
-            return (self.full_name, u'',)
+            return (self.full_name, '',)
 
     def phone_list(self):
         return phones_from_text(self.phones)
@@ -1192,7 +1189,7 @@ class Org(GetLogsMixin, BaseModel):
         def favorite_item(loru):
             name = loru.name.strip()
             if len(name) > 50:
-                name = u"%s..." % name[:47]
+                name = "%s..." % name[:47]
             return dict(name=name, pk=loru.pk)
 
         result = []
@@ -1227,21 +1224,21 @@ class Org(GetLogsMixin, BaseModel):
 
     def phones_str(self):
         phones = self.phones or ''
-        return u"; ".join(phones_from_text(phones))
+        return "; ".join(phones_from_text(phones))
 
 class OrgWebPay(BaseModel):
     """
     Данные, в том числе секретные, поставщика в платежной системе WebPay
     """
     org = models.OneToOneField(Org)
-    wsb_storeid = models.CharField(_(u"Идентификатор организации в системе WebPay"), max_length=255)
-    secret = models.CharField(_(u"Секретный ключ"), max_length=255)
+    wsb_storeid = models.CharField(_("Идентификатор организации в системе WebPay"), max_length=255)
+    secret = models.CharField(_("Секретный ключ"), max_length=255)
 
     # Это название должно совпадать с org.name, но в WebPay заказчик может ввести другое название.
     # Не исключено, что WebPay проверяет или будет проверять совпадение wsb_store в запросе
     # на оплату и наименование организации, каким оно прописано в WebPay
     #
-    wsb_store = models.CharField(_(u"Название организации на форме оплаты WebPay"), max_length=255)
+    wsb_store = models.CharField(_("Название организации на форме оплаты WebPay"), max_length=255)
 
     # WebPay сейчас работает только с BYN; кроме того, валюта есть свойство организации,
     # так что поле wsb_currency_id может оказаться избыточным.
@@ -1250,15 +1247,15 @@ class OrgWebPay(BaseModel):
     # - при возможности конвертации валюта организации может отличаться от WebPay
     # Посему, несмотря на избыточность поля, храним его в этой таблице
     #
-    wsb_currency_id = models.CharField(_(u"Код валюты согласно ISO4271"), max_length=255, default='BYN')
+    wsb_currency_id = models.CharField(_("Код валюты согласно ISO4271"), max_length=255, default='BYN')
 
     #  Версия формы оплаты, сейчас "2", но могут появляться новые
     #
-    wsb_version = models.CharField(_(u"Версия формы оплаты"), max_length=255)
+    wsb_version = models.CharField(_("Версия формы оплаты"), max_length=255)
 
     # Будет устанавливаться в False по окончании тестирования
     #
-    wsb_test = models.BooleanField(_(u"Тестовая среда"), default=True)
+    wsb_test = models.BooleanField(_("Тестовая среда"), default=True)
 
 class OrgCertificate(Files):
     """
@@ -1277,13 +1274,13 @@ class OrgReview(BaseModel):
     Отзывы об организации. Для поставщиков
     """
     org = models.ForeignKey(Org, editable=False, on_delete=models.PROTECT)
-    subject = models.CharField(_(u"Тема отзыва"), max_length=255, blank=True)
-    is_positive = models.NullBooleanField(_(u"Оценка положительная/отрицательна/без оценки"),
+    subject = models.CharField(_("Тема отзыва"), max_length=255, blank=True)
+    is_positive = models.NullBooleanField(_("Оценка положительная/отрицательна/без оценки"),
                                            null=True)
-    common_text = models.TextField(_(u"Текст"), blank=True, null=True)
-    positive_text = models.TextField(_(u"Текст положительной оценки"), blank=True, null=True)
-    negative_text = models.TextField(_(u"Текст отрицательной оценки"), blank=True, null=True)
-    creator = models.ForeignKey('auth.User', verbose_name=_(u"Создатель"),
+    common_text = models.TextField(_("Текст"), blank=True, null=True)
+    positive_text = models.TextField(_("Текст положительной оценки"), blank=True, null=True)
+    negative_text = models.TextField(_("Текст отрицательной оценки"), blank=True, null=True)
+    creator = models.ForeignKey('auth.User', verbose_name=_("Создатель"),
                                 on_delete=models.PROTECT, editable=False)
 
 class OrgContract(Files):
@@ -1296,12 +1293,12 @@ class Store(models.Model, PhonesMixin):
     """
     Склады, магазины у ЛОРУ
     """
-    name = models.CharField(_(u"Название"), max_length=255, default='')
-    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"), on_delete=models.PROTECT)
-    address = models.ForeignKey('geo.Location', verbose_name=_(u"Адрес"))
+    name = models.CharField(_("Название"), max_length=255, default='')
+    loru = models.ForeignKey(Org, verbose_name=_("ЛОРУ"), on_delete=models.PROTECT)
+    address = models.ForeignKey('geo.Location', verbose_name=_("Адрес"))
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def delete(self):
@@ -1331,9 +1328,9 @@ class FavoriteSupplier(models.Model):
     """
     Избранные поставщики у ЛОРУ
     """
-    loru = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"),
+    loru = models.ForeignKey(Org, verbose_name=_("ЛОРУ"),
         related_name='favorite_loru', on_delete=models.PROTECT, )
-    supplier = models.ForeignKey(Org, verbose_name=_(u"ЛОРУ"),
+    supplier = models.ForeignKey(Org, verbose_name=_("ЛОРУ"),
         related_name='favorite_supplier_list', on_delete=models.PROTECT, )
 
     class Meta:
@@ -1346,25 +1343,25 @@ class BankAccountCommon(models.Model):
     class Meta:
         abstract = True
         
-    rs = models.CharField(u"Расчетный счет", max_length=20, validators=[DigitsValidator(), LengthValidator(20), ])
-    ks = models.CharField(u"Корреспондентский счет", max_length=20, blank=True, validators=[DigitsValidator(), LengthValidator(20), ])
-    bik = models.CharField(u"БИК", max_length=9, validators=[DigitsValidator(), LengthValidator(9), ])
-    bankname = models.CharField(u"Наименование банка", max_length=64, validators=[NotEmptyValidator(1), ])
-    ls = models.CharField(u"Л/с", max_length=11, blank=True, validators=[LengthValidator(11), ], default='')
-    off_address = models.ForeignKey('geo.Location', verbose_name=_(u"Юр. адрес"), null=True, editable=False)
+    rs = models.CharField("Расчетный счет", max_length=20, validators=[DigitsValidator(), LengthValidator(20), ])
+    ks = models.CharField("Корреспондентский счет", max_length=20, blank=True, validators=[DigitsValidator(), LengthValidator(20), ])
+    bik = models.CharField("БИК", max_length=9, validators=[DigitsValidator(), LengthValidator(9), ])
+    bankname = models.CharField("Наименование банка", max_length=64, validators=[NotEmptyValidator(1), ])
+    ls = models.CharField("Л/с", max_length=11, blank=True, validators=[LengthValidator(11), ], default='')
+    off_address = models.ForeignKey('geo.Location', verbose_name=_("Юр. адрес"), null=True, editable=False)
 
 class BankAccount(BankAccountCommon):
     """
     Банковские реквизиты организации
     """
-    organization = models.ForeignKey(Org, verbose_name=u"Организация")
+    organization = models.ForeignKey(Org, verbose_name="Организация")
 
 class ProfileLORU(models.Model):
-    ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_(u"ОМС"))
-    loru = models.ForeignKey(Org, related_name='ugh_list', limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_(u"ЛОРУ"))
+    ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_("ОМС"))
+    loru = models.ForeignKey(Org, related_name='ugh_list', limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_("ЛОРУ"))
 
     class Meta:
-        verbose_name = _(u'ЛОРУ у ОМС')
+        verbose_name = _('ЛОРУ у ОМС')
         unique_together = ('ugh', 'loru')
 
 
@@ -1379,27 +1376,27 @@ def add_loru_to_public_catalog(sender, instance, created, **kwargs):
 models.signals.post_save.connect(add_loru_to_public_catalog, sender=Org)
 
 class Dover(models.Model):
-    agent = models.ForeignKey(Profile, verbose_name=_(u"Агент"), limit_choices_to={'is_agent': True})
+    agent = models.ForeignKey(Profile, verbose_name=_("Агент"), limit_choices_to={'is_agent': True})
     target_org = models.ForeignKey(Org, null=True, editable=False)
-    number = models.CharField(_(u"Номер"), max_length=255)
-    begin = models.DateField(_(u"Начало"))
-    end = models.DateField(_(u"Окончание"))
-    document = models.FileField(_(u"Скан доверенности"), upload_to='dover', blank=True, null=True)
+    number = models.CharField(_("Номер"), max_length=255)
+    begin = models.DateField(_("Начало"))
+    end = models.DateField(_("Окончание"))
+    document = models.FileField(_("Скан доверенности"), upload_to='dover', blank=True, null=True)
 
     class Meta:
-        verbose_name = _(u'Доверенность')
-        verbose_name_plural = _(u'Доверенности')
+        verbose_name = _('Доверенность')
+        verbose_name_plural = _('Доверенности')
 
-    def __unicode__(self):
-        return u'%s (%s - %s)' % (self.number, self.begin.strftime('%d.%m.%Y'), self.end.strftime('%d.%m.%Y'))
+    def __str__(self):
+        return '%s (%s - %s)' % (self.number, self.begin.strftime('%d.%m.%Y'), self.end.strftime('%d.%m.%Y'))
 
 class RegisterProfile(SafeDeleteMixin, BaseModel):
 
     REG_ORG_UGH = Org.PROFILE_UGH
     REG_ORG_LORU = Org.PROFILE_LORU
     REG_ORG_TYPES = (
-        (REG_ORG_UGH, _(u"Учет захоронений")),
-        (REG_ORG_LORU, _(u"Учет заказов")),
+        (REG_ORG_UGH, _("Учет захоронений")),
+        (REG_ORG_LORU, _("Учет заказов")),
     )
     
     STATUS_TO_CONFIRM = 'to_confirm'
@@ -1407,10 +1404,10 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
     STATUS_APPROVED = 'approved'
     STATUS_DECLINED = 'declined'
     STATUS_CHOICES = (
-        (STATUS_TO_CONFIRM, _(u"Ожидание подтверждения")),
-        (STATUS_CONFIRMED, _(u"Заявка подтверждена")),
-        (STATUS_DECLINED, _(u"В регистрации отказано")),
-        (STATUS_APPROVED, _(u"Пользователь в системе")),
+        (STATUS_TO_CONFIRM, _("Ожидание подтверждения")),
+        (STATUS_CONFIRMED, _("Заявка подтверждена")),
+        (STATUS_DECLINED, _("В регистрации отказано")),
+        (STATUS_APPROVED, _("Пользователь в системе")),
     )
     
     # При подтверждении очередной заявки, существующие заявки, которые
@@ -1419,38 +1416,38 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
     #
     CLEAR_PROCESSED = 30
 
-    status = models.CharField(_(u"Статус заявки"), max_length=255, choices=STATUS_CHOICES, editable=False)
-    user_name = models.CharField(_(u"Имя для входа в систему (login)"), max_length=30,
+    status = models.CharField(_("Статус заявки"), max_length=255, choices=STATUS_CHOICES, editable=False)
+    user_name = models.CharField(_("Имя для входа в систему (login)"), max_length=30,
                                  validators=[validate_username], help_text=Profile.USERNAME_HELPTEXT)
-    user_last_name = models.CharField(_(u"Фамилия"), max_length=255)
-    user_first_name = models.CharField(_(u"Имя"), max_length=255)
-    user_middle_name = models.CharField(_(u"Отчество (необязательно)"), max_length=255, blank=True, default='')
-    user_email = models.EmailField(_(u"Email"))
+    user_last_name = models.CharField(_("Фамилия"), max_length=255)
+    user_first_name = models.CharField(_("Имя"), max_length=255)
+    user_middle_name = models.CharField(_("Отчество (необязательно)"), max_length=255, blank=True, default='')
+    user_email = models.EmailField(_("Email"))
     # Сразу hash (django.contrib.auth.hashers.make_password(raw_password)):
-    user_password = models.CharField(_(u"Пароль"), max_length=255, editable=False, default='')
-    user_activation_key = models.CharField(_(u'Ключ активации'), max_length=40, editable=False)
-    org_type = models.CharField(_(u"Тип организации"), max_length=255, choices=REG_ORG_TYPES, default=REG_ORG_UGH)
-    org_name = models.CharField(_(u"Краткое название организации"), max_length=255, default='')
-    org_full_name = models.CharField(_(u"Полное название организации"), max_length=255, default='')
-    org_currency = models.ForeignKey('billing.Currency', verbose_name=_(u"Валюта"), default=get_default_currency)
-    org_inn = models.CharField(_(u"ИНН"), max_length=255, default='')
-    org_ogrn = models.CharField(_(u"ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
-    org_director = models.CharField(_(u"Директор"),
+    user_password = models.CharField(_("Пароль"), max_length=255, editable=False, default='')
+    user_activation_key = models.CharField(_('Ключ активации'), max_length=40, editable=False)
+    org_type = models.CharField(_("Тип организации"), max_length=255, choices=REG_ORG_TYPES, default=REG_ORG_UGH)
+    org_name = models.CharField(_("Краткое название организации"), max_length=255, default='')
+    org_full_name = models.CharField(_("Полное название организации"), max_length=255, default='')
+    org_currency = models.ForeignKey('billing.Currency', verbose_name=_("Валюта"), default=get_default_currency)
+    org_inn = models.CharField(_("ИНН"), max_length=255, default='')
+    org_ogrn = models.CharField(_("ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
+    org_director = models.CharField(_("Директор"),
                                     max_length=255, default='')
-    org_basis = models.CharField(_(u"Основание действия директора"), max_length=255, 
+    org_basis = models.CharField(_("Основание действия директора"), max_length=255, 
                              choices=Org.BASIS_CHOICES, default=Org.BASIS_CHARTER)
-    org_phones = models.TextField(_(u"Телефоны"),
-                                  help_text=_(u'В международном формате: +код-страны-код-города-номер-телефона')
+    org_phones = models.TextField(_("Телефоны"),
+                                  help_text=_('В международном формате: +код-страны-код-города-номер-телефона')
                                  )
-    org_fax = models.CharField(_(u"Факс"), max_length=20, default='', blank=True)
+    org_fax = models.CharField(_("Факс"), max_length=20, default='', blank=True)
     org_address = models.ForeignKey(Location, editable=False, null=True)
-    org_subdomain = models.CharField(_(u"Поддомен"), max_length=255, null=True, editable=False)
+    org_subdomain = models.CharField(_("Поддомен"), max_length=255, null=True, editable=False)
 
-    def __unicode__(self):
-        fio = u'%s %s.' % (self.user_last_name, self.user_first_name[0].upper(), )
+    def __str__(self):
+        fio = '%s %s.' % (self.user_last_name, self.user_first_name[0].upper(), )
         if self.user_middle_name:
-            fio += u'%s.' % self.user_middle_name[0].upper()
-        return _(u'Заявка: %(type)s/"%(org_name)s"/%(fio)s/%(user_name)s/%(user_email)s') % dict(
+            fio += '%s.' % self.user_middle_name[0].upper()
+        return _('Заявка: %(type)s/"%(org_name)s"/%(fio)s/%(user_name)s/%(user_email)s') % dict(
             type=self.get_org_type_display(),
             org_name=self.org_name,
             fio=fio,
@@ -1522,5 +1519,5 @@ class BankAccountRegister(BankAccountCommon):
     """
     Банковские реквизиты кандидата на регистрацию
     """
-    registerprofile = models.ForeignKey(RegisterProfile, verbose_name=u"Организация")
+    registerprofile = models.ForeignKey(RegisterProfile, verbose_name="Организация")
 

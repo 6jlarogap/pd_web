@@ -8,11 +8,6 @@
 import datetime, piexif, exifread
 
 try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
-try:
     from PIL import Image, ImageChops, ImageFilter
 except ImportError:
     import Image
@@ -30,7 +25,7 @@ for ph in PlacePhoto.objects.filter(dt_modified__lt=d_final).iterator():
     if not ph.bfile:
         continue
     try:
-        f = open(unicode(ph.bfile.path), 'rb')
+        f = open(str(ph.bfile.path), 'rb')
         tags = exifread.process_file(f, details=False)
         try:
             exifread_orientation = tags['Image Orientation'].values[0]
@@ -39,22 +34,22 @@ for ph in PlacePhoto.objects.filter(dt_modified__lt=d_final).iterator():
         f.close()
         if exifread_orientation:
             count_exif += 1
-            im = Image.open(unicode(ph.bfile.path))
+            im = Image.open(str(ph.bfile.path))
             exif_dict = piexif.load(im.info["exif"])
             try:
                 piexif_orientation = exif_dict["0th"][piexif.ImageIFD.Orientation]
             except KeyError:
-                print u"piexif: orientation not found: %s" % ph.bfile.path
+                print("piexif: orientation not found: %s" % ph.bfile.path)
             im.close()
             if piexif_orientation != exifread_orientation:
-                print " piexif_orientation (%s) != exifread_orientation (%s): %s" % (
+                print(" piexif_orientation (%s) != exifread_orientation (%s): %s" % (
                     piexif_orientation,
                     exifread_orientation,
-                )
-                print "url", ph.place.url()
-                print "ugh", ph.place.cemetery.ugh.name
+                ))
+                print("url", ph.place.url())
+                print("ugh", ph.place.cemetery.ugh.name)
                 break
     except IOError:
-        print u"Not found: %s" % ph.bfile.path
+        print("Not found: %s" % ph.bfile.path)
 
-print "\n", "count all", count, ", count with exif", count_exif
+print("\n", "count all", count, ", count with exif", count_exif)

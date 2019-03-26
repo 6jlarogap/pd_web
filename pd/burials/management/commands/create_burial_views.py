@@ -1,12 +1,9 @@
-# -*- coding: utf-8 -*-
-
 # create_burial_views.py
-# ------------------
-
+#
 # Запуск: : ./manage.py create_burial_views yes
 #
 # Параметр yes нужен, чтобы сдуру лишний раз не запускали
-
+#
 # Список создаваемых/изменяемых представлений с командами:
 #   create_or_replace:  создать или заменить представление
 #   drop:               удалить представление
@@ -108,7 +105,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         yes_word = kwargs['yes_word']
         if yes_word.lower() != 'yes':
-            print "Give 'yes' as a single parameter if you mean to create/replace burial view(s)"
+            print("Give 'yes' as a single parameter if you mean to create/replace burial view(s)")
             quit()
         with connection.cursor() as cursor:
             for view in VIEWS:

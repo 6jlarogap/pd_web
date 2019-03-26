@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # gora_default_counter.py
 #
 # Положить в index.html, файл, заданный параметром, значение счетчика по умолчанию
@@ -14,7 +12,7 @@ from persons.models import CustomPerson
 from users.models import Thank
 
 REGEX = r'^(.+)\<script\>window\.defaultUsersCount\s*=\s*(\d+)\;\<\/script\>(.+)$'
-LINE = u'<script>window.defaultUsersCount = %s;</script>'
+LINE = '<script>window.defaultUsersCount = %s;</script>'
 
 class Command(BaseCommand):
     help = 'Fill index.html with default count of thanked person with token'
@@ -28,7 +26,7 @@ class Command(BaseCommand):
         token = kwargs['token']
         try:
             with open(index_html, "r") as f:
-                data = f.read().decode('utf-8')
+                data = f.read()
         except IOError:
             quit()
         m = re.match(REGEX, data, flags=re.DOTALL | re.I)
@@ -44,11 +42,11 @@ class Command(BaseCommand):
             quit()
         current_counter = Thank.objects.filter(customperson=cp).count()
         if current_counter != file_counter:
-            data_new = u"%s%s%s" % (
+            data_new = "%s%s%s" % (
                 m.group(1),
                 LINE % current_counter,
                 m.group(3),
             )
             with open(index_html, "w") as f:
-                f.write(data_new.encode('utf-8'))
+                f.write(data_new)
  

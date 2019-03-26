@@ -1,17 +1,13 @@
-# coding=utf-8
-
 DEBUG = True
 
 ADMIN_ENABLED = True
 SUPERVISOR_ORG_INN = '12345'
+PRODUCTION_SITE = True
 
 ADMINS = (
     ('Ivan Ivanov', 'ivan.ivanov@org.com'),
 )
 MANAGERS = ADMINS
-
-# Настройка на production server (раскомментировать)
-# REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = (  'rest_framework.renderers.JSONRenderer' , )
 
 DATABASES = {
     'default': {
@@ -24,12 +20,14 @@ DATABASES = {
         },
 }
 
-SENTRY_DSN = ''
+MEDIA_ROOT = '/home/www-data/django/MEDIA/pd/'
 
 # Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
 
-NORECAPTCHA_SITE_KEY = 'public-norecaptcha-key'
-NORECAPTCHA_SECRET_KEY = 'secret-norecaptcha-key'
+# Раскомментировать, указав действительные значения
+#
+#NORECAPTCHA_SITE_KEY = 'public-norecaptcha-key'
+#NORECAPTCHA_SECRET_KEY = 'secret-norecaptcha-key'
 
 # Для отправки кода активации и прочей почты.
 #
@@ -63,26 +61,13 @@ DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
 # накладываемых почтовым сервером EMAIL_HOST
 #
 #
-SERVER_EMAIL =  = 'EMAIL-HOST-USER@gmail.com'
+SERVER_EMAIL = 'EMAIL-HOST-USER@gmail.com'
 
 # На этот адрес доставляются скрытые копии всех писем, отправленных
 # с этого сервера. Если не задан (None), то такие копии не
 # доставляются
 #
 BCC_OUR_MAIL = None 
-
-# Учетные записи для SMS- службы рассылки СМС-сообщений,
-# на разные страны могут быть разные учетные записи
-# в службе рассылки сообщений. Если кода страны получателя
-# сообщения нет в словарях списка SMS_SERVICE, то действует
-# учетная запись с 'country_code': 'default'.
-# Если и таковой нет, то отправка будет невозможна.
-# Подлежат замене в local_settings.py production сервера:
-SMS_SERVICE = [
-    { 'country_code': '7', 'user': 'user7@email.org', 'password': 'secret7', },
-    { 'country_code': '375', 'user': 'user375@email.org', 'password': 'secret375', },
-    { 'country_code': 'default', 'user': 'default@email.org', 'password': 'default-secret', },
-]
 
 # На production, а также на разработческих серверах,
 # где налажена связка frontend - backend,
@@ -92,30 +77,79 @@ REDIRECT_LOGIN_TO_FRONT_END = False
 
 # Если стоит redis сервер, то можно задать django cache на него:
 #
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
-    }
-}
+#CACHES = {
+    #"default": {
+        #"BACKEND": "django_redis.cache.RedisCache",
+        #"LOCATION": "redis://127.0.0.1:6379/1",
+        #"OPTIONS": {
+            #"CLIENT_CLASS": "django_redis.client.DefaultClient",
+        #}
+    #}
+#}
+
+# Для производственного https://pohoronnoedelo.ru ------------------------
+
+# Раскомментировать, указав действительные значения
+#
+# SENTRY_DSN = 'some-sentry-code'
+
+# Учетные записи для SMS- службы рассылки СМС-сообщений,
+# на разные страны могут быть разные учетные записи
+# в службе рассылки сообщений. Если кода страны получателя
+# сообщения нет в словарях списка SMS_SERVICE, то действует
+# учетная запись с 'country_code': 'default'.
+# Если и таковой нет, то отправка будет невозможна.
+# Подлежат замене в local_settings.py production сервера:
+#
+#SMS_SERVICE = [
+    #{ 'country_code': '7', 'user': 'user7@email.org', 'password': 'secret7', },
+    #{ 'country_code': '375', 'user': 'user375@email.org', 'password': 'secret375', },
+    #{ 'country_code': 'default', 'user': 'default@email.org', 'password': 'default-secret', },
+#]
+
+
+#ORG_AD_PAY_RECIPIENT = {
+    #'name': 'Интеграция возможностей',
+    #'inn': '7725676913',
+    #'share': 0.33,
+#}
+
+#ORG_AD_PAY_RECIPIENT_PK = 1
+
+#ORG_PD_FUND = {
+    #'name': 'Фонд похоронного дела',
+    #'inn': '9999999992',
+    #'share': 0.34,
+#}
+
+#UHOD_MOGIL_URL = "http://uhodmogil.ru/places"
+#HRAM_PREDKOV_URL = "http://hrampredkov.ru/persons"
+
+# Для oauth login через ok.ru
+#
+#OAUTH_PROVIDERS_KEYS = {
+    #'odnoklassniki': {
+        #'public_key': 'CCCCCCCCCCCCCCCCCCCCCCC',
+        #'private_key': 'DDDDDDDDDDDDDDDDDDDDDDD',
+    #},
+#}
 
 # Для CallBackApi Vkontakte
 
-VK_BOT = dict(
-    group1 = dict(
-        confirmationToken='004eec27',
-        token=u'Ваш ключ',
-        secretKey='testSecureKey',
-        log_file='/home/user/vk/testgroup.log',
+#VK_BOT = dict(
+    #group1 = dict(
+        #confirmationToken='004eec27',
+        #token='Ваш ключ',
+        #secretKey='testSecureKey',
+        #log_file='/home/user/vk/testgroup.log',
 
-        # Перед msg_join, msg_leave подставляется
-        # "<first_name пользователя>! ", если таковое имеется
-        # ! Разделитель строк - не "\n", а "<br>"
+        ## Перед msg_join, msg_leave подставляется
+        ## "<first_name пользователя>! ", если таковое имеется
+        ## ! Разделитель строк - не "\n", а "<br>"
 
-        msg_join=u"Добро пожаловать в Однополчане, Друг!",
-        msg_leave=u"Доброго пути, до встречи! Однополчане.",
-    ),
-)
+        #msg_join="Добро пожаловать в Однополчане, Друг!",
+        #msg_leave="Доброго пути, до встречи! Однополчане.",
+    #),
+#)
+
+# ------------------------------------------------------------------------

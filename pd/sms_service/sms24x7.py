@@ -1,7 +1,7 @@
 """ Implements SMS push via api.sms24x7.ru """
 
 import pycurl
-from urllib import urlencode, quote
+from urllib.parse import urlencode, quote
 from json import JSONDecoder
 
 api_target = "https://api.sms24x7.ru/"
@@ -72,7 +72,7 @@ class smsapi:
 		curl=pycurl.Curl()
 		if self.debug:
 			def echof(a,b):
-				print a,b
+				print(a,b)
 			curl.setopt(pycurl.DEBUGFUNCTION, echof)
 			curl.setopt(pycurl.VERBOSE, True)
 		curl.setopt(pycurl.URL, api_target)
@@ -173,7 +173,7 @@ class smsapi:
 		if type(text) == str:
 			# OK
 			pass
-		elif type(text) == unicode:
+		elif type(text) == str:
 			text = text.encode("UTF-8")
 		else:
 			raise ValueError("text variable is of improper type")

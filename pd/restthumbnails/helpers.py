@@ -1,5 +1,3 @@
-# coding=utf-8
-
 from django.conf import settings
 from django.utils.crypto import salted_hmac
 
@@ -32,7 +30,7 @@ def parse_size(size):
     if not match or not any(match.groups()):
         raise exceptions.InvalidSizeError(
             "'%s' is not a valid size string." % size)
-    return map(lambda x: 0 if not x else int(x), match.groups())
+    return [0 if not x else int(x) for x in match.groups()]
 
 
 def parse_method(method):
