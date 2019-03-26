@@ -2265,7 +2265,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     )
                 try:
                     fname = registrant.registerprofilescan.bfile.path
-                    f = open(fname, 'r')
+                    f = open(fname, 'rb')
                     s = f.read()
                     f.close()
                     cert = OrgCertificate.objects.create(
@@ -2277,7 +2277,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     pass
                 try:
                     fname = registrant.registerprofilecontract.bfile.path
-                    f = open(fname, 'r')
+                    f = open(fname, 'rb')
                     s = f.read()
                     f.close()
                     contract = OrgContract.objects.create(
@@ -2845,7 +2845,12 @@ class ApiEducation(APIView):
             type_ = 'oms' if request.user.profile.is_ugh() else 'loru'
             host = "%s://%s" % ('https' if request.is_secure() else 'http', request.get_host(), )
             try:
-                f_description = open(os.path.join(settings.MEDIA_ROOT, cls.FOLDER_EDU, 'description.csv'), "r")
+                f_description = open(
+                    os.path.join(settings.MEDIA_ROOT, cls.FOLDER_EDU, 'description.csv'),
+                    "r",
+                    newline='',
+                    encoding='utf-8'
+                )
                 csv_reader = csv.reader(f_description)
                 # 
                 order_titles = 0

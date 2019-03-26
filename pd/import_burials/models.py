@@ -302,7 +302,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
     f.close()
    
     total = 0
-    f = open(tmp_file, 'r', newline='')
+    f = open(tmp_file, 'r', newline='', encoding='utf-8')
     csvreader = csv.reader(f, dialect="4minsk")
     print('1-st step: new burials: burials, kid burials, honour burials')
     n = 0
@@ -321,7 +321,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         print('Processed', n)
     f.close()
 
-    f = open(tmp_file, 'r', newline='')
+    f = open(tmp_file, 'r', newline='', encoding='utf-8')
     csvreader = csv.reader(f, dialect="4minsk")
     print('2-nd step: burials to add to existing place')
     n = 0
@@ -340,7 +340,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         print('Processed', n)
     f.close()
 
-    f = open(tmp_file, 'r', newline='')
+    f = open(tmp_file, 'r', newline='', encoding='utf-8')
     csvreader = csv.reader(f, dialect="4minsk")
     print('3-rd step: burials to existing graves, including urns')
     n = 0
