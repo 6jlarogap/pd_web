@@ -64,7 +64,7 @@ class Command(BaseCommand):
         if from_time > to_time:
             print('ERROR! From_time > to_time. Type --help to get help')
             quit()
-        f = open(output_file, 'w')
+        f = open(output_file, 'w', encoding='utf-8')
 
         ct = ContentType.objects.get(app_label="burials", model="place")
         previous = None
