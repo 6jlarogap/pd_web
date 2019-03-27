@@ -144,6 +144,12 @@ install-readme.txt, utf8 code page
             # Во избежание ошибок: premature end of script headers wsgi.py
             WSGIApplicationGroup %{GLOBAL}
 
+            # По умолчанию это 300 (5 мин), пусть так и остается,
+            # но для запуска длительных процессов, например, при импорте
+            # желательно увеличить, при этом sudo service apache2 reload
+            #
+            # TimeOut 3000
+
             <Directory /home/www-data/static/pd_web>
                 # ВНИМАНИЕ!
                 # Каталог static должен быть доступен пользователю,

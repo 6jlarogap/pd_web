@@ -174,7 +174,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
         try:
             result = super(CemeteryViewSet, self).update(request, *args, **kwargs)
         except ServiceException as excpt:
-            result = Response(status=400, data=self.make_error_data(excpt.message))
+            result = Response(status=400, data=self.make_error_data(excpt.args[0]))
         return result
 
     def post_update(self, obj):
@@ -482,7 +482,7 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
             serializer = self.get_serializer(place)
             return Response(serializer.data)
         except ServiceException as excpt:
-            result = Response(status=400, data=self.make_error_data(excpt.message))
+            result = Response(status=400, data=self.make_error_data(excpt.args[0]))
         return result
 
     def pre_update(self, place):
@@ -1915,7 +1915,7 @@ class ApiOmsPlacesClusters(APIView):
                 data['features'].append(res)
 
         except ServiceException as excpt:
-            data.update(dict(message=excpt.message))
+            data.update(dict(message=excpt.args[0]))
             status_code = 400
         return Response(data, status=status_code)
 
