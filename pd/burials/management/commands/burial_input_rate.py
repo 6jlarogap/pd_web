@@ -62,7 +62,7 @@ class Command(BaseCommand):
         if from_time > to_time:
             print('ERROR! From_time > to_time. Type --help to get help')
             quit()
-        f = open(output_file, 'w')
+        f = open(output_file, 'w', encoding='utf-8')
 
         previous = None
         for b in Burial.objects.filter(

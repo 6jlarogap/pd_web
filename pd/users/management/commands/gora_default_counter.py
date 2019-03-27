@@ -25,7 +25,7 @@ class Command(BaseCommand):
         index_html = kwargs['index_html']
         token = kwargs['token']
         try:
-            with open(index_html, "r") as f:
+            with open(index_html, "r", encoding='utf-8') as f:
                 data = f.read()
         except IOError:
             quit()
