@@ -3046,7 +3046,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
                 raise ServiceException(_('Неверное имя пользователя для входа в систему: '
                                          '%(username)s. %(message)s') % dict(
                     username=username,
-                    message=e.messages and e.messages[0] or '',
+                    message=e.args and e.args[0] or '',
                 ))
             if User.objects.filter(username__iexact=username).exists():
                 raise ServiceException(_("Имя  %s уже используется в системе") % username)
@@ -4094,7 +4094,7 @@ class ApiVkBotHandlerView(APIView):
                     pass
             string += "\n"
             try:
-                f = open(bot_settings['log_file'], 'a+')
+                f = open(bot_settings['log_file'], 'a+', encoding='utf-8')
                 f.write(string)
                 f.close()
             except IOError:
