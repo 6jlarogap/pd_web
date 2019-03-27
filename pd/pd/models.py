@@ -268,7 +268,7 @@ class UnclearDate:
                     if datetime.date.today() < datetime.date(year, t_month, t_day):
                         raise ServiceException(_("Дата больше текущей"))
             except ServiceException as excpt:
-                message = excpt.message
+                message = excpt.args[0]
         return message
 
     def diff(self, d):

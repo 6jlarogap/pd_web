@@ -297,7 +297,7 @@ def do_import_burials_minsk(csv_fileobj, cemetery, user):
         
     # Будут несколько проходов по считанному файлу импорта, надо бы сохранить
     tmp_file = os.path.join(settings.MEDIA_ROOT, 'csv_minsk.tmp')
-    f = open(tmp_file, 'w')
+    f = open(tmp_file, 'w', encoding='utf-8')
     f.write(csv_fileobj.read().decode('utf-8'))
     f.close()
    
