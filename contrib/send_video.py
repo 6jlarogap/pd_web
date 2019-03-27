@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # coding=utf-8
 #
 # send_video.py
@@ -33,9 +33,9 @@
 #   *: текст диктора, если это пункт
 #   *: имя_файла.mp4 с видеороликом
 #
-# Требования:
+# Требования (применительно к openSuse Leap 15.0, где сценарий успешно работает):
 # -----------
-# * python-odfpy
+# * python3-odfpy
 # * ffmpeg, для конвертации mp4 в webm, ogg
 # * ssh connect to remote host via openssl keys
 
@@ -60,7 +60,7 @@ def main():
         doc = load(os.path.join(folder, DESCRIPTION_ODS,)).spreadsheet
     except IOError:
         scram('%s not found in %s' % os.path.join(folder, DESCRIPTION_ODS,))
-    ofile  = open(os.path.join(folder, DESCRIPTION_CSV,), "wb")
+    ofile  = open(os.path.join(folder, DESCRIPTION_CSV,), "w", encoding='utf-8')
     csv_writer = csv.writer(ofile)
     rows = doc.getElementsByType(TableRow)
     for row in rows:
@@ -77,16 +77,16 @@ def main():
             fname = ods_cell(cells[4])
         except IndexError:
             fname = ''
-        csv_writer.writerow(map(lambda u: u.encode("utf8").strip(),[
+        csv_writer.writerow([u.strip() for u in [
             type_,
             title,
             text,
             fname,
-        ]))
+        ]])
         if fname:
             if not re.search(r'\.mp4$', fname, flags=re.IGNORECASE):
                 fname += '.mp4'
-            print 'Processing %s' % fname
+            print('Processing %s' % fname)
             fname = os.path.join(folder, 'video', type_, fname)
             if not os.path.exists(fname):
                 scram('Failed to stat %s' % fname)
@@ -118,17 +118,17 @@ def main():
     )
 
 def ods_cell(cell):
-    return "".join([unicode(data) for data in cell.getElementsByType(P)])
+    return "".join([str(data) for data in cell.getElementsByType(P)])
 
 def do_cmd(cmd):
     outp = subprocess.check_output(cmd,
                                    stderr=subprocess.STDOUT,
-                                   shell=True)
-    print '> %s\n%s' % (cmd, outp,)
+                                   shell=True).decode('utf-8')
+    print('> %s\n%s' % (cmd, outp,))
     return outp
 
 def scram(message, rc=1):
-    print message
+    print(message)
     exit(rc)
 
 main()
