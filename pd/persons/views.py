@@ -496,7 +496,7 @@ class ApiCustompersonDetailView(
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
     @transaction.atomic
     def delete(self, request, pk):
@@ -601,7 +601,7 @@ class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
                 status=200,
             )
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
     def get_qs(self, request, pk, memory_pk=None):
         customperson = get_object_or_404(CustomPerson, pk=pk)
@@ -817,7 +817,7 @@ class ApiClientPersonsView(ApiClientPlacesMixin, ApiSelectedPermissionsMixin, AP
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
 api_client_persons = ApiClientPersonsView.as_view()
 
@@ -866,7 +866,7 @@ class ApiClientPersonsDetailView(
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
     def delete(self, request, pk):
         return self.delete_customperson(pk)

@@ -394,7 +394,7 @@ class ApiCabinetGetcodeView(ApiThankMixin, APIView):
                 thankuser.save()
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            data = dict(message=excpt.message)
+            data = dict(message=excpt.args[0])
             status_code = 400
         return Response(data=data, status=status_code)
 
@@ -525,7 +525,7 @@ class ApiCabinetTokensView(ApiThankMixin, APIView):
             status_code = 200
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            data = excpt.message
+            data = excpt.args[0]
             if isinstance(data, str):
                 data = dict(message=data)
             status_code = 400
@@ -647,7 +647,7 @@ class ApiAuthSignupView(CheckRecaptcha2Mixin, ApiAuthSigninView):
             else:
                 raise ServiceException(_('Регистрация пользователя без captcha или стороннего провайдера не предусмотрена'))
         except ServiceException as excpt:
-            data['message'] = excpt.message
+            data['message'] = excpt.args[0]
         return Response(data=data, status=status_code)
 
 api_auth_signup = ApiAuthSignupView.as_view()
@@ -887,7 +887,7 @@ class ApiSettings(APIView):
         except ServiceException as excpt:
             transaction.set_rollback(True)
             data = { 'status': 'error',
-                     'message': excpt.message,
+                     'message': excpt.args[0],
                    }
             status_code = 400
         else:
@@ -985,7 +985,7 @@ class ApiCabinetUsersView(ApiThankMixin, APIView):
             status_code = 200
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            data = dict(message=excpt.message)
+            data = dict(message=excpt.args[0])
             status_code = 400
         return Response(data=data, status=status_code)
 
@@ -1009,7 +1009,7 @@ class ApiThankUsersCount(ApiThankMixin, APIView):
             }
             status_code = 200
         except ServiceException as excpt:
-            data = dict(message=excpt.message)
+            data = dict(message=excpt.args[0])
             status_code = 400
         return Response(data=data, status=status_code)
 
@@ -1041,7 +1041,7 @@ class ApiThankUsers(ApiThankMixin, APIView):
                 data.append(item)
             status_code = 200
         except ServiceException as excpt:
-            data = dict(message=excpt.message)
+            data = dict(message=excpt.args[0])
             status_code = 400
         return Response(data=data, status=status_code)
 
@@ -1277,7 +1277,7 @@ class ApiFeedBack(CheckRecaptcha2Mixin, APIView):
             status_code = 200
         except ServiceException as excpt:
             data = { 'status': 'error',
-                     'message': excpt.message,
+                     'message': excpt.args[0],
                    }
             status_code = 400
         return Response(data=data, status=status_code)
@@ -2304,7 +2304,7 @@ class RegistrantApprove(SupervisorRequiredMixin, View):
                     profile.role.add(role)
             except ServiceException as excpt:
                 transaction.set_rollback(True)
-                messages.error(request, excpt.message)
+                messages.error(request, excpt.args[0])
             else:
                 host = get_front_end_url(request)
                 # Пользователю должно прийти письмо, в котором домен адреса Похоронного Дела
@@ -2942,7 +2942,7 @@ class FavoriteSupplierEdit(APIView):
                 supplier=supplier,
             )
         except ServiceException as excpt:
-            data = dict(status='error', message=excpt.message)
+            data = dict(status='error', message=excpt.args[0])
             status_code = 400
         else:
             data = dict()
@@ -3267,7 +3267,7 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
 
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(dict(status='error', message=excpt.message), status=400)
+            return Response(dict(status='error', message=excpt.args[0]), status=400)
 
 api_org_signup = ApiOrgSignupView.as_view()
 
@@ -3422,7 +3422,7 @@ class ApiShopsGalleryView(ApiShopsMixin, APIView):
                 status=200
             )
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
 api_shops_gallery = ApiShopsGalleryView.as_view()
 
@@ -3481,7 +3481,7 @@ class ApiShopsReviewsView(ApiShopsMixin, APIView):
                 status=200
             )
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
 api_shops_reviews = ApiShopsReviewsView.as_view()
 
@@ -3601,7 +3601,7 @@ class ApiClientSiteMessagesView(ApiClientSiteMixin, APIView):
             status_code = 200
         except ServiceException as excpt:
             data = { 'status': 'error',
-                     'message': excpt.message,
+                     'message': excpt.args[0],
                    }
             status_code = 400
         return Response(data=data, status=status_code)
@@ -3819,7 +3819,7 @@ class ApiVideosView(ApiVideoMixin, APIView):
                 raise ServiceException(_("Ошибка идентификатора или URL Youtube видео"))
             data = YoutubeVideoSerializer(youtubevideo).data
         except ServiceException as excpt:
-            data = dict(message=excpt.message)
+            data = dict(message=excpt.args[0])
             status_code = 400
         return Response(data=data, status=status_code)
 
@@ -4180,7 +4180,7 @@ class ApiVkBotHandlerView(APIView):
             status_code = 200
         except ServiceException as excpt:
             status_code = 400
-            message = excpt.message
+            message = excpt.args[0]
         return HttpResponse(message, content_type=content_type, status=status_code)
 
 api_vk_bot_handler = ApiVkBotHandlerView.as_view()

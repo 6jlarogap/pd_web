@@ -304,7 +304,7 @@ class ServiceException(Exception):
             raise ServiceException('Condition 2 failed')
         # all good, going further
     except ServiceException as excpt:
-        print excpt.message
+        print excpt.args[0]
     else:
         # all good
     """

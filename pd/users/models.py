@@ -918,7 +918,7 @@ class Oauth(BaseModel):
                     raise ServiceException(_('Пользователь не найден среди зарегистрированных у провайдера %s') % provider)
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            message['message'] = excpt.message
+            message['message'] = excpt.args[0]
             if error_code:
                 message['errorCode'] = error_code
         return user, oauth, message

@@ -1357,7 +1357,7 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
             transaction.set_rollback(True)
             status_code=400
             data['status'] = 'error'
-            data['message'] = excpt.message
+            data['message'] = excpt.args[0]
         else:
             self.email_notifications(order, is_new_opt_order=True)
         return Response(data=data, status=status_code)
@@ -1443,7 +1443,7 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
             transaction.set_rollback(True)
             status_code=400
             data['status'] = 'error'
-            data['message'] = excpt.message
+            data['message'] = excpt.args[0]
         else:
             self.email_notifications(order, is_new_opt_order=False)
         return Response(data=data, status=status_code)
@@ -1513,7 +1513,7 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
-            return Response(data={'status': 'error', 'message': excpt.message}, status=400)
+            return Response(data={'status': 'error', 'message': excpt.args[0]}, status=400)
 
 api_product_list = ApiProductList.as_view()
 
@@ -1545,7 +1545,7 @@ class ApiProductDetail(APIView):
                 serializer.save()
                 return Response(serializer.data, status=200)
             except ServiceException as excpt:
-                return Response(data={'status': 'error', 'message': excpt.message}, status=400)
+                return Response(data={'status': 'error', 'message': excpt.args[0]}, status=400)
         return Response(serializer.errors, status=400)
 
 api_product_detail = ApiProductDetail.as_view()
@@ -1804,7 +1804,7 @@ class ApiServicePriceMixin(object):
                     
 
         except ServiceException as excpt:
-            return excpt.message
+            return excpt.args[0]
         return ''
 
     def get_price_service(self, org, service):
@@ -2002,7 +2002,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
         except ServiceException as excpt:
             status_code = 400
             response_data['status'] = 'error'
-            response_data['message'] = excpt.message
+            response_data['message'] = excpt.args[0]
         return Response(data=response_data, status=status_code)
 
 api_shops_places = ApiShopPlacesView.as_view()
@@ -2261,7 +2261,7 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
             order.save()
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
         return Response(data=OrderResultsSerializer(resultfile, context=dict(request=request)).data, status=200)
 
 api_orders_results = ApiOrderResultView.as_view()
@@ -2376,7 +2376,7 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
 
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
     def delete(self, request, pk):
         order = self.get_order(pk=pk)
@@ -2467,7 +2467,7 @@ class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                     wsb_order_num=data['wsb_order_num'],
                 )
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
         return Response(data=data, status=200)
 
 api_orders_payments = ApiOrderPaymentsView.as_view()
@@ -2557,7 +2557,7 @@ class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                 order.save()
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
         return Response(data={}, status=201)
 
 api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
@@ -2618,7 +2618,7 @@ class ApiLoruOrdersView(
                     try:
                         validate_phone_as_number(login_phone_str)
                     except ValidationError as excpt:
-                        raise ServiceException("Создать кабинет. %s" % excpt.messages[0])
+                        raise ServiceException("Создать кабинет. %s" % excpt.args[0]s[0])
                     login_phone = decimal.Decimal(login_phone_str)
                 if customer.get('address'):
                     address = Location.objects.create(addr_str=customer['address'])
@@ -2770,7 +2770,7 @@ class ApiLoruOrdersView(
                         )
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
         write_log(request, order, _('Заказ создан'))
         data = LoruOrderSerializer(order, context=dict(request=request)).data
         if settings.DEBUG and debug_text:
@@ -3045,7 +3045,7 @@ class ApiLoruOrdersDetailView(
                 order.save()
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
         write_log(request, order, _('Заказ изменен'))
         return Response(
             data=LoruOrderSerializer(order,
