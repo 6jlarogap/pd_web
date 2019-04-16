@@ -8,32 +8,22 @@ install-readme.txt, utf8 code page
         - ~/projects/pd_web:    проект, в соответствии с именем на bitbucket.org
         - USERNAME:             имя пользователя на bitbucket.org
 
-        - ubuntu:               ubuntu 14.04, 16.04, если не уточняется
+        - ubuntu:               ubuntu 16.04 или 18.04, если не уточняется
  
     * Д.б. установлено на Linux:
         - средства разработки:
-            * python, не ниже 2.6
-              - пакеты python, которые могут не быть в его "стандартной поставке":
-                  * (ubuntu 18.04) python-minimal
-                  * (ubuntu) python-all-dev
-                    - (ubuntu 14.04) это автоматически установит c/c++, g++
-                  * ubuntu 16.04, 18.04: sudo apt install g++
-                  * (ubuntu) python-virtualenv
-                  * (ubuntu) python-pycurl
-                  * (ubuntu) python-tz
-                    - это временнЫе зоны, они меняются. Так что, если сервер
-                      регулярно обновляется, то можно брать python-tz из
-                      репозитариев дистрибутива Linux. Иначе периодически
-                      выполнять sudo pip install pytz --upgrade
+            * python3, не ниже 3.5
+                  * sudo apt install python3-all-dev
+                  * sudo apt install g++
+                  * sudo apt python3-virtualenv python3-pycurl
 
          - postgresql,
-            * в т.ч. для разработчика (ubuntu:
-              sudo apt-get install postgresql postgresql-server-dev-all)
+            * в т.ч. для разработчика, ubuntu:
+              sudo apt-get install postgresql postgresql-server-dev-all
             полагаем, что используется база postgresql на localhost,
             в которой пользователю postgres всё дозволено. Это достигается
-            правкой pg_hba.conf (на ubuntu 14.04 в /etc/postgresql/9.3/main/,
-            ubuntu 16.04 в /etc/postgresql/9.5/main/,
-            ubuntu 18.04 в /etc/postgresql/10/main/)
+            (ubuntu 16.04) в /etc/postgresql/9.5/main/,
+            (ubuntu 18.04) в /etc/postgresql/10/main/)
 
             заменой строки:
                 local all postgres peer
@@ -55,18 +45,8 @@ install-readme.txt, utf8 code page
 
         - программы:
             * wkhtmltopdf (конвертация в pdf, от Google):
-                (хорошая программа, но тянет за собой Qt & X Server)
-                 Однако разработчик поддерживает static- compiled
-                 - для саммых популярных и поддерживаемых дистрибутивов
-                   (включая debian wheezy и ubuntu 14.04)
-                    * http://wkhtmltopdf.org/downloads.html,
-                      скачать соответствующий deb- файл, например для ubuntu 14.04
-                      wkhtmltox-0.12.1_linux-trusty-amd64.deb
-                    * sudo apt-get install fontconfig
-                    * sudo apt-get install libxrender1
-                    * sudo dpkg -i wkhtmltox-0.12.1_linux-trusty-amd64.deb
-                - для ubuntu 16.04, придется довольствоваться
-                  архивной версией 0.12.0, в которой распространяется архив, который
+                - для ubuntu 16.04 можно довольствоваться
+                  архивной версией 0.12.0, в которой распространяется архив, его
                   распаковываешь куда-то и программа готова к запуску.
                     * (ubuntu 16.04) sudo apt-get install fontconfig
                     * (ubuntu 16.04) sudo apt-get install libxrender1
@@ -76,7 +56,7 @@ install-readme.txt, utf8 code page
                     * sudo rsync -a wkhtmltox /usr/local/bin && rm -rf wkhtmltox
                     * sudo ln -s /usr/local/bin/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
                 ! На ubuntu 18.04:
-                    (приходится таки ставить wkhtmltopdf из дистрибутива, и это всё тануло кучу
+                    (приходится таки ставить wkhtmltopdf из дистрибутива, и это всё потянуло кучу
                      инсталяций для X server'a):
                     sudo -i
                     apt-get install wkhtmltopdf
@@ -86,17 +66,18 @@ install-readme.txt, utf8 code page
                     ln -s /usr/local/bin/wkhtmltopdf.sh /usr/local/bin/wkhtmltopdf
                     logout
                 - Проверка:
-                    /usr/local/bin/wkhtmltopdf http://www.google.com musor.pdf
-                    musor.pdf должен демонстрировать начальную страницу Google
+                    /usr/local/bin/wkhtmltopdf http://www.google.com ~/musor.pdf
+                    ~/musor.pdf должен демонстрировать начальную страницу Google
 
          - web сервер apache2:
             (ubuntu: sudo apt-get install apache2  apache2-utils)
 
          -git (ubuntu: sudo apt-get install git)
 
-    * Д.б. запущен postgresql сервер
+    * Должен быть запущен postgresql сервер
 
-    * mkdir ~/venv; cd ~/venv; virtualenv --no-site-packages pdweb
+    * mkdir ~/venv; cd ~/venv
+    * virtualenv -p `which python3` pdweb
     * mkdir ~/projects; cd ~/projects
     * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
     * cd ~/projects/pd_web
@@ -108,9 +89,6 @@ install-readme.txt, utf8 code page
         ! --no-cache-dir :  избегает проблему с локалью, когда стандартные
                             сообщения django (например, "пароль")
                             вдруг печатаются по английски (password)
-        !!! У нас заложено в базе данных, что не может быть одного email
-            у двух и более пользователей, а если email не задан, то user.email == None.
-
     * cd ~/projects/pd_web/pd/pd
     * cp local_settings.py.example local_settings.py
     * внести правки в local_settings.py, но если почти без правок, то:
@@ -119,15 +97,12 @@ install-readme.txt, utf8 code page
           (пусть это: pd.psql.gz)
             createdb pd
             zcat pd.psql.gz | psql -U postgres pd
-
-           (create database '<database>' encoding 'UTF-8' owned by '<user>';)
-
         - MEDIA_ROOT:
             это дело вкуса, но в соответствии с local_settings.py.example:
             mkdir -p ~/projects/MEDIA/pd_web
 
     * cd ~/projects/pd_web
-      ln -s /home/sev/venv/pdweb ENV
+      ln -s /home/LINUX-USER-NAME/venv/pdweb ENV
             : virtual env, запускаемое из ./manage.py
     * deactivate
     !!! Можно запускать и отлаживать:
@@ -137,8 +112,8 @@ install-readme.txt, utf8 code page
 Настройка сервера Apache:
 
     * Должен быть установлен Apache mod_wsgi и mod_xsendfile.
-        - В Debian/Ubuntu выполнить:
-            sudo apt-get install libapache2-mod-wsgi libapache2-mod-xsendfile
+        - В ubuntu выполнить:
+            sudo apt-get install libapache2-mod-xsendfile libapache2-mod-wsgi-py3
 
     * При использовании ssl: sudo a2enmod ssl
     * sudo a2enmod rewrite
@@ -156,8 +131,6 @@ install-readme.txt, utf8 code page
 
             # Для свежих версий mod_xsendfile:
             XSendFilePath /home/www-data/media/pd_web
-            # Для версий ниже 1.0 (на "старом" Debian):
-            # XSendFileAllowAbove on
 
             Alias /static/          /home/www-data/static/pd_web/
             Alias /robots.txt       /home/www-data/static/pd_web/system/robots.txt
@@ -171,6 +144,12 @@ install-readme.txt, utf8 code page
             # Во избежание ошибок: premature end of script headers wsgi.py
             WSGIApplicationGroup %{GLOBAL}
 
+            # По умолчанию это 300 (5 мин), пусть так и остается,
+            # но для запуска длительных процессов, например, при импорте
+            # желательно увеличить, при этом sudo service apache2 reload
+            #
+            # TimeOut 3000
+
             <Directory /home/www-data/static/pd_web>
                 # ВНИМАНИЕ!
                 # Каталог static должен быть доступен пользователю,
@@ -183,7 +162,7 @@ install-readme.txt, utf8 code page
             </FilesMatch>
         </VirtualHost>
 
-    * Добавить в конфигурацию (/etc/apache2/conf-enabled, Ubuntu 14.04) .conf-файл, например,
+    * Добавить в конфигурацию (/etc/apache2/conf-enabled) .conf-файл, например,
       с именем reqtimeout.conf следующего содержания:
 
         # Minimize IOError request data read exeptions when posting data
@@ -195,18 +174,14 @@ install-readme.txt, utf8 code page
 
         - выполнить sudo a2enmod reqtimeout
 
-    * При такой конфигурации (Debian/Ubuntu):
+    * При такой конфигурации (ubuntu):
         sudo chown -R www-data:www-data /home/www-data/media /home/www-data/pw_web
         cd /home/www-data/pd_web/pd
         sudo -u www-data ./manage.py collectstatic --noinput
 
-    * sitemap.xml (в особенности для production site):
+    * sitemap.xml (для production site):
         - обеспечить периодическую регенерацию, например, строчкой в /etc/crontab:
             19 1 * * *   www-data cd /home/www-data/django/pd_prod/pd && ./manage.py create_sitemap https://pohoronnoedelo all
-            В конфигурационном файле для pohoronnoedelo.ru:
-                Alias /sitemap.xml      /home/www-data/django/MEDIA/pd_prod/sitemap_ru.xml
-            В конфигурационном файле для pohoronnoedelo.by:
-                Alias /sitemap.xml      /home/www-data/django/MEDIA/pd_prod/sitemap_by.xml
         - submit sitemap посредством google webmaster tools, см. инструкцию
             https://support.google.com/webmasters/answer/183669?hl=en&ref_topic=4581713
         - обеспечить resubmit sitemap, после того как меняется sitemap, например, строчкой в /etc/crontab:
@@ -226,7 +201,7 @@ install-readme.txt, utf8 code page
             * пересылает почту только от localhost
         Установка:
             - sudo apt-get install postfix
-              (На Ubuntu 14.4 спросит, в какой конфигурации, выбираем local only)
+              (Если спросит, в какой конфигурации, выбираем local only)
             - подправить /etc/postfix в соответствии с contrib/email-server/postfix/main.cf,
               для сравнения там есть оригинальный mail.cf.Orig
         ВАЖНО:
@@ -259,3 +234,9 @@ install-readme.txt, utf8 code page
         параметр local_settings.GOOGLE_SERVER_API_KEY, серверный ключ приложения Google.
         Применяется при доступе к видео youtube.
         Среди API пользователя должно быть включено Youtube API.
+
+    * Очистка "мусора"
+        на производственном серверею
+      В /etc/crontab такого типа строки:
+          15 2 * * * www-data   cd /home/www-data/django/pd_prod/pd && ./manage.py clearsessions
+          16 5 * * 0 www-data   rm -rf /home/www-data/django/MEDIA/pd_prod/thumbnails/*

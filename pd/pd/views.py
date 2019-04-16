@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import re
 import mimetypes
@@ -83,21 +82,21 @@ class PaginateListView(ListView):
         # Учтем запросы типа ?choice=choice1&choice=choice2
         # request.GET.items возвращает лишь последний такой choice
         items = []
-        for k in self.request.GET.keys():
+        for k in list(self.request.GET.keys()):
             values = self.request.GET.getlist(k)
             for v in values:
                 items.append((k,v))
 
         data = super(PaginateListView, self).get_context_data(**kwargs)
-        get_for_paginator = u'&'.join([u'%s=%s' %  (k, v) for k,v in items if k not in self.DISPLAY_OPTIONS])
+        get_for_paginator = '&'.join(['%s=%s' %  (k, v) for k,v in items if k not in self.DISPLAY_OPTIONS])
 
         sort = self.request.GET.get('sort', self.SORT_DEFAULT)
-        if get_for_paginator and sort and 'sort' not in self.request.GET.items():
-            get_for_paginator += u'&sort=%s' % sort
+        if get_for_paginator and sort and 'sort' not in list(self.request.GET.items()):
+            get_for_paginator += '&sort=%s' % sort
 
         page = self.request.GET.get('page', 1)
-        if get_for_paginator and 'page' not in self.request.GET.items():
-            get_for_paginator += u'&page=%s' % page
+        if get_for_paginator and 'page' not in list(self.request.GET.items()):
+            get_for_paginator += '&page=%s' % page
 
         if hasattr(self, 'get_form'):
             if callable(self.get_form):
@@ -239,7 +238,7 @@ def media_xsendfile(request, path, document_root):
         response['Content-Type'] = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
         # Так в любом случае идет предложение или сохранить, или открыть файл, но
         # не открытие его в браузере:
-        # response['Content-Disposition']='attachment;filename="%s"' % os.path.basename(filename).encode('utf-8')
+        # response['Content-Disposition']='attachment;filename="%s"' % os.path.basename(filename)
         response['X-Sendfile'] = filename
         response['Content-length'] = os.stat(filename).st_size
         return response
@@ -256,7 +255,7 @@ class FormInvalidMixin(BaseFormView):
     ВНИМАНИЕ: Объект представления должен иметь атрибут self.request !
     """
     def form_invalid(self, form, *args, **kwargs):
-        messages.error(self.request, _(u'Обнаружены ошибки, их необходимо исправить'))
+        messages.error(self.request, _('Обнаружены ошибки, их необходимо исправить'))
         return super(FormInvalidMixin, self).form_invalid(form, *args, **kwargs)
 
 def get_front_end_host(request):
@@ -286,7 +285,7 @@ def get_front_end_url(request):
     return result
 
 def get_host_url(request):
-        return u"%s://%s/" % (
+        return "%s://%s/" % (
             'https' if request.is_secure() else 'http',
             request.get_host(),
         )
@@ -305,7 +304,7 @@ class ServiceException(Exception):
             raise ServiceException('Condition 2 failed')
         # all good, going further
     except ServiceException as excpt:
-        print excpt.message
+        print excpt.args[0]
     else:
         # all good
     """

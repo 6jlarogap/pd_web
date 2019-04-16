@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
-
 # burial_input_rate.py
-# ------------------
-
+#
 # Замер производительности при вводе захоронений
-
+#
 # Запуск: : ./manage.py burial_input_rate username from_time to_time output_file
 #
 #       from_time, to_time  - с какого по какое время,
@@ -32,7 +29,7 @@ class Command(BaseCommand):
         parser.add_argument('username', type=str, help='username')
         parser.add_argument('from_time', type=str, help='from_time (%s)' % TEMPLATE_DATE_TIME_HELP)
         parser.add_argument('to_time', type=str, help='to_time (%s)' % TEMPLATE_DATE_TIME_HELP)
-        parser.add_argument('output_file', type=str, help='output_time')
+        parser.add_argument('output_file', type=str, help='output_file')
 
     def trunc_msec(self, d):
         """
@@ -54,18 +51,18 @@ class Command(BaseCommand):
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
-            print u"ERROR! User %s not found" % username
+            print("ERROR! User %s not found" % username)
             quit()
         try:
             from_time = datetime.datetime.strptime(from_time, TEMPLATE_DATE_TIME)
             to_time = datetime.datetime.strptime(to_time, TEMPLATE_DATE_TIME)
         except ValueError:
-            print 'ERROR! Invalid from_time or/and to_time. Type --help to get help'
+            print('ERROR! Invalid from_time or/and to_time. Type --help to get help')
             quit()
         if from_time > to_time:
-            print 'ERROR! From_time > to_time. Type --help to get help'
+            print('ERROR! From_time > to_time. Type --help to get help')
             quit()
-        f = open(output_file, 'w')
+        f = open(output_file, 'w', encoding='utf-8')
 
         previous = None
         for b in Burial.objects.filter(

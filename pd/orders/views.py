@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import datetime
 import decimal
 import json
@@ -26,7 +24,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.shortcuts import get_object_or_404
 
-from LatLon import LatLon, Latitude, Longitude
+from LatLon23 import LatLon, Latitude, Longitude
 
 from logs.models import write_log
 from geo.models import Location
@@ -67,6 +65,7 @@ from pd.utils import EmailMessage, str_to_bool_or_None, get_image, is_video, re_
 from pd.models import validate_phone_as_number, CheckLifeDatesMixin, SafeDeleteMixin
 
 from sms_service.utils import send_sms
+from functools import reduce
 
 class ProductCategoryQsMixin(object):
     
@@ -118,8 +117,8 @@ class ProductCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
         if not self.object.sku or not self.object.sku.strip():
             self.object.sku = str(self.object.pk)
             self.object.save()
-        write_log(self.request, self.object, _(u'Создание: %s') % self.object.name)
-        msg = _(u"<a href='%(manage_products_edit)s'>Товар %(name)s</a> создан") % dict(
+        write_log(self.request, self.object, _('Создание: %s') % self.object.name)
+        msg = _("<a href='%(manage_products_edit)s'>Товар %(name)s</a> создан") % dict(
             manage_products_edit=reverse('manage_products_edit', args=[self.object.pk]),
             name=self.object.name,
         )
@@ -140,8 +139,8 @@ class ProductEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
         if not self.object.sku or not self.object.sku.strip():
             self.object.sku = str(self.object.pk)
         self.object.save()
-        write_log(self.request, self.object, _(u'Изменение: %s') % self.object.name)
-        msg = _(u"<a href='%(manage_products_edit)s'>Товар %(name)s</a> изменен") % dict(
+        write_log(self.request, self.object, _('Изменение: %s') % self.object.name)
+        msg = _("<a href='%(manage_products_edit)s'>Товар %(name)s</a> изменен") % dict(
             manage_products_edit=reverse('manage_products_edit', args=[self.object.pk]),
             name=self.object.name,
         )
@@ -337,7 +336,7 @@ class OrderList(LORURequiredMixin, PaginateListView):
     def q_by_name(self, search_by, name_string):
         import operator
         values = [re_search(f) for f in name_string.split()]
-        predicates = zip(search_by, values)
+        predicates = list(zip(search_by, values))
         query = [Q(p) for p in predicates]
         q = reduce(operator.and_, query)
         return q
@@ -357,18 +356,18 @@ class OrderList(LORURequiredMixin, PaginateListView):
             if no_dates:
                 return render_to_response(
                     'simple_message.html',
-                    dict(message=_(u"Не задан интервал дат захоронения"))
+                    dict(message=_("Не задан интервал дат захоронения"))
                 )
             if burial_date_from > burial_date_to:
                 return render_to_response(
                     'simple_message.html',
-                    dict(message=_(u'"Дата захоронений: с" больше "Дата захоронений: по"'))
+                    dict(message=_('"Дата захоронений: с" больше "Дата захоронений: по"'))
                 )
             orders = self.filtered_orders()
             if not orders:
                 return render_to_response(
                     'simple_message.html',
-                    dict(message=_(u'Не найдены заказы по выбранным критериям'))
+                    dict(message=_('Не найдены заказы по выбранным критериям'))
                 )
             # Это почистит предыдущий order_by
             orders = orders.order_by('dt_due', 'burial__plan_date')
@@ -390,13 +389,13 @@ class OrderList(LORURequiredMixin, PaginateListView):
             return render_to_response('reports/burial_plan.html', context)
         if not request.GET and request.user.profile.org.inn == '9103078189':
             form = self.get_form()
-            get_attrs = u'?'
-            for k in form.fields.keys():
-                get_attrs += u'%s=%s&' % (
+            get_attrs = '?'
+            for k in list(form.fields.keys()):
+                get_attrs += '%s=%s&' % (
                     k,
                     '25' if k == 'per_page' else '',
                 )
-            get_attrs += u"sort=%s" % u"-order_num"
+            get_attrs += "sort=%s" % "-order_num"
             return redirect(reverse('order_list') + get_attrs)
         return super(OrderList, self).get(request, *args, **kwargs)
 
@@ -444,8 +443,8 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
         for p in Product.objects.filter(loru=self.request.user.profile.org, default=True, is_archived=False):
             OrderItem.objects.create(order=self.object, product=p)
 
-        write_log(self.request, self.object, _(u'Заказ сохранен'))
-        msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+        write_log(self.request, self.object, _('Заказ сохранен'))
+        msg = _("<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
             order_edit=reverse('order_edit', args=[self.object.pk]),
             pk=self.object.pk,
         )
@@ -497,11 +496,11 @@ class OrderEdit(LORURequiredMixin, RequestToFormMixin, UpdateView):
         self.object = form.save()
         go_next = '_save_next' in self.request.POST
 
-        write_log(self.request, self.object, _(u'Заказ сохранен'))
+        write_log(self.request, self.object, _('Заказ сохранен'))
         if go_next:
             return redirect('order_products', self.object.pk)
         else:
-            msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+            msg = _("<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
                 order_edit=reverse('order_edit', args=[self.object.pk]),
                 pk=self.object.pk,
             )
@@ -543,7 +542,7 @@ class OrderEditProducts(LORURequiredMixin, View):
                 do_photo=instance.has_photo(),
                 price_photo=str(price_photo),
             ))
-            form.fields['do_photo'].label += u", %s%s. " % (
+            form.fields['do_photo'].label += ", %s%s. " % (
                 price_photo,
                 instance.loru.currency.one_char_name(),
             )
@@ -589,18 +588,18 @@ class OrderEditProducts(LORURequiredMixin, View):
                     self.object.serviceitem_set. \
                         filter(orgservice__service__name=Service.SERVICE_PHOTO).delete()
 
-            write_log(self.request, self.object, _(u'Заказ сохранен'))
+            write_log(self.request, self.object, _('Заказ сохранен'))
             if go_next:
                 return redirect('order_burial', self.object.pk)
             else:
-                msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+                msg = _("<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
                     order_edit=reverse('order_edit', args=[self.object.pk]),
                     pk=self.object.pk,
                 )
                 messages.success(self.request, msg)
                 return redirect('.')
         else:
-            messages.error(self.request, _(u"Обнаружены ошибки"))
+            messages.error(self.request, _("Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
@@ -678,18 +677,18 @@ class OrderEditServices(OrderEditProducts):
                 coffin.order = self.object
                 coffin.save()
 
-            write_log(self.request, self.object, _(u'Заказ сохранен'))
+            write_log(self.request, self.object, _('Заказ сохранен'))
             if '_save_next' in request.POST:
                 return redirect('order_info', self.object.pk)
             else:
-                msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
+                msg = _("<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
                     order_edit=reverse('order_edit', args=[self.object.pk]),
                     pk=self.object.pk,
                 )
                 messages.success(self.request, msg)
                 return redirect('.')
         else:
-            messages.error(self.request, _(u"Обнаружены ошибки"))
+            messages.error(self.request, _("Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)
 
 order_services = OrderEditServices.as_view()
@@ -727,13 +726,13 @@ class PrintOrderView(LORURequiredMixin, DetailView):
             deadman = order.burial.deadman
             person = deadman.baseperson_ptr
             if not CustomPerson.objects.filter(person=person):
-                addr = _(u'Кладбище: %s') % burial.cemetery.name
+                addr = _('Кладбище: %s') % burial.cemetery.name
                 if burial.area:
-                    addr = _(u"%(addr)s, участок: %(area)s") % dict(addr=addr, area=burial.area.name)
+                    addr = _("%(addr)s, участок: %(area)s") % dict(addr=addr, area=burial.area.name)
                 if burial.row:
-                    addr = _(u"%(addr)s, ряд: %(row)s") % dict(addr=addr, row=burial.row)
+                    addr = _("%(addr)s, ряд: %(row)s") % dict(addr=addr, row=burial.row)
                 if burial.place_number:
-                    addr = _(u"%(addr)s, место: %(place)s") % dict(addr=addr, place=burial.place_number)
+                    addr = _("%(addr)s, место: %(place)s") % dict(addr=addr, place=burial.place_number)
                 location = Location.objects.create(addr_str=addr)
                 customplace = CustomPlace.objects.create(
                     user=customerprofile.user,
@@ -765,7 +764,7 @@ class PrintOrderView(LORURequiredMixin, DetailView):
         ))
         report = make_report(
             user=self.request.user,
-            msg=_(u"Счет-заказ"),
+            msg=_("Счет-заказ"),
             obj=order,
             template='reports/order_yalta.html' \
                 if self.request.user.profile.org.inn == '9103078189' \
@@ -790,7 +789,7 @@ class PrintOrderReceiptView(LORURequiredMixin, DetailView):
         ))
         report = make_report(
             user=self.request.user,
-            msg=_(u"Квитанция покупателя"),
+            msg=_("Квитанция покупателя"),
             obj=order,
             template='reports/order_receipt.html',
             context=context,
@@ -810,7 +809,7 @@ class PrintContractView(LORURequiredMixin, DetailView):
         context['user'] = self.request.user
         report = make_report(
             user=self.request.user,
-            msg=_(u"Договор"),
+            msg=_("Договор"),
             obj=self.get_object(),
             template='reports/contract.html',
             context=context,
@@ -824,7 +823,7 @@ class CommentView(LORURequiredMixin, DetailView):
         return Order.objects.filter(loru=self.request.user.profile.org).distinct()
 
     def post(self, request, *args, **kwargs):
-        write_log(request, self.get_object(), _(u'Комментарий: %s') % request.POST.get('comment'))
+        write_log(request, self.get_object(), _('Комментарий: %s') % request.POST.get('comment'))
         return redirect('order_edit', self.get_object().pk)
 
 order_comment = CommentView.as_view()
@@ -839,16 +838,16 @@ class AnnulateOrder(LORURequiredMixin, DetailView):
         o = self.get_object()
         if request.GET.get('recover'):
             o.recover()
-            messages.success(self.request, _(u'Заказ восстановлен'))
-            write_log(request, o, _(u'Заказ восстановлен'))
+            messages.success(self.request, _('Заказ восстановлен'))
+            write_log(request, o, _('Заказ восстановлен'))
         else:
             b = o.burial
             old_annulated = b.annulated if b else None
             o.annulate()
-            messages.success(self.request, _(u'Заказ аннулирован'))
-            write_log(request, o, _(u'Заказ аннулирован'))
+            messages.success(self.request, _('Заказ аннулирован'))
+            write_log(request, o, _('Заказ аннулирован'))
             if b and b.annulated and not old_annulated:
-                write_log(request, b, _(u'Захоронение аннулировано'))
+                write_log(request, b, _('Захоронение аннулировано'))
         if referer == 'edit':
             return redirect('order_edit', o.pk)
         else:
@@ -871,19 +870,19 @@ class ApiOrderStatus(APIView):
         if what == Order.STATUS_ADVANCED and not o.is_paid():
             if o.is_advanced():
                 o.status = Order.STATUS_POSTED
-                msg = _(u'Заказ: отмена получения аванса')
+                msg = _('Заказ: отмена получения аванса')
             else:
                 o.status = Order.STATUS_ADVANCED
-                msg = _(u'Заказ: получен аванс')
+                msg = _('Заказ: получен аванс')
             o.save()
             write_log(request, o, msg)
         elif what == Order.STATUS_PAID:
             if o.is_paid():
                 o.status = Order.STATUS_POSTED
-                msg = _(u'Заказ: отмена получения оплаты')
+                msg = _('Заказ: отмена получения оплаты')
             else:
                 o.status = Order.STATUS_PAID
-                msg = _(u'Заказ: оплачен')
+                msg = _('Заказ: оплачен')
             o.save()
             write_log(request, o, msg)
         return Response(data={}, status=200)
@@ -913,9 +912,9 @@ class OrderBurialView(LORURequiredMixin, RequestToFormMixin, UpdateView):
     def form_valid(self, form):
         if self.object.burial:
             # - форма привязала к этому заказу захоронение
-            write_log(self.request, self.object.burial, _(u'Захоронение прикреплено к заказу %s') % self.object.pk)
-            write_log(self.request, self.object, _(u'Заказ: прикреплено захоронение %s') % self.object.burial.pk)
-            msg = _(u"<a href='%(order_edit)s'>Заказ %(pk)s</a>: прикреплено захоронение") % dict(
+            write_log(self.request, self.object.burial, _('Захоронение прикреплено к заказу %s') % self.object.pk)
+            write_log(self.request, self.object, _('Заказ: прикреплено захоронение %s') % self.object.burial.pk)
+            msg = _("<a href='%(order_edit)s'>Заказ %(pk)s</a>: прикреплено захоронение") % dict(
                 order_edit=reverse('order_edit', args=[self.object.pk]),
                 pk=self.object.pk,
             )
@@ -930,8 +929,8 @@ class ProductCategories(APIView):
 
     def get(self, request):
         loru_ids = request.GET.getlist('filter[supplier]')
-        while loru_ids.count(u''):
-            loru_ids.remove(u'')
+        while loru_ids.count(''):
+            loru_ids.remove('')
         if loru_ids:
             qs = Q(product__loru__pk__in=loru_ids)
         else:
@@ -966,14 +965,14 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
         qs = Q(is_archived=False)
 
         store_ids = self.request.GET.getlist('filter[supplierStore]')
-        while store_ids.count(u''):
-            store_ids.remove(u'')
+        while store_ids.count(''):
+            store_ids.remove('')
         if store_ids:
             qs &= Q(loru__store__pk__in=store_ids)
 
         loru_ids = self.request.GET.getlist('filter[supplier]')
-        while loru_ids.count(u''):
-            loru_ids.remove(u'')
+        while loru_ids.count(''):
+            loru_ids.remove('')
         if loru_ids:
             qs &= Q(loru__pk__in=loru_ids)
 
@@ -1124,7 +1123,7 @@ class ApiLoruProductPlaces(APIView):
                             write_log(
                                 request,
                                 product,
-                                _(u"Добавлен в публичный каталог") if product.is_public_catalog else _(u"Изъят из публичного каталога"),
+                                _("Добавлен в публичный каталог") if product.is_public_catalog else _("Изъят из публичного каталога"),
                             )
                             data.append(data_p)
                         except IndexError:
@@ -1187,15 +1186,15 @@ class OptOrderMixin(APIView):
         number_verbose = order.number_verbose()
         if order.applicant_organization and order.applicant_organization.email:
             email_to = (order.applicant_organization.email, )
-            email_subject = u"%s: %s %s" % (
-                _(u"Похоронное Дело"),
-                _(u"создан заказ") if is_new_opt_order else _(u"изменен заказ"),
+            email_subject = "%s: %s %s" % (
+                _("Похоронное Дело"),
+                _("создан заказ") if is_new_opt_order else _("изменен заказ"),
                 number_verbose,
             )
             email_text = render_to_string(
                             'opt_order_notification.txt',
                             {
-                                'preambule': _(u"Создан") if is_new_opt_order else _(u"Изменен"),
+                                'preambule': _("Создан") if is_new_opt_order else _("Изменен"),
                                 'front_end_url': get_front_end_url(self.request),
                                 'order': order,
                                 'to_customer': True,
@@ -1205,15 +1204,15 @@ class OptOrderMixin(APIView):
             EmailMessage(email_subject, email_text, email_from, email_to,).send()
         if order.loru.email:
             email_to = (order.loru.email, )
-            email_subject = u"%s: %s %s" % (
-                _(u"Похоронное Дело"),
-                _(u"поступил заказ") if is_new_opt_order else _(u"изменен заказ"),
+            email_subject = "%s: %s %s" % (
+                _("Похоронное Дело"),
+                _("поступил заказ") if is_new_opt_order else _("изменен заказ"),
                 number_verbose,
             )
             email_text = render_to_string(
                             'opt_order_notification.txt',
                             {
-                                'preambule': _(u"Поступил") if is_new_opt_order else _(u"Изменен"),
+                                'preambule': _("Поступил") if is_new_opt_order else _("Изменен"),
                                 'front_end_url': get_front_end_url(self.request),
                                 'order': order,
                                 'to_customer': False,
@@ -1224,17 +1223,17 @@ class OptOrderMixin(APIView):
         if not settings.DEBUG:
             # Отправка смс поставщику
             if order.loru.sms_phone:
-                supplier_email = u" (email: %s)" % order.loru.email if order.loru.email else ""
-                text =  _(u"%s zakaz N %s summa %s") % (
+                supplier_email = " (email: %s)" % order.loru.email if order.loru.email else ""
+                text =  _("%s zakaz N %s summa %s") % (
                     get_front_end_url(self.request).rstrip('/'),
                     number_verbose,
                     order.total_float(),
                 )
                 if is_new_opt_order:
-                    email_error_text = u"Поставщик %s%s не получил СМС- уведомление о новом заказе" % \
+                    email_error_text = "Поставщик %s%s не получил СМС- уведомление о новом заказе" % \
                                         (order.loru.name, supplier_email,)
                 else:
-                    email_error_text = _(u"Поставщик %s%s не получил СМС- уведомление об изменении заказа %s") % \
+                    email_error_text = _("Поставщик %s%s не получил СМС- уведомление об изменении заказа %s") % \
                                         (order.loru.name, supplier_email, number_verbose, )
                 send_sms(
                     phone_number=order.loru.sms_phone,
@@ -1243,16 +1242,16 @@ class OptOrderMixin(APIView):
                 )
             elif order.loru.email:
                 EmailMessage(
-                    subject=_(u'Похоронное Дело: телефон смс- уведомений'),
+                    subject=_('Похоронное Дело: телефон смс- уведомений'),
                     body=_(
-                        u'Невозможно доставить СМС %s заказе № %s.\n'
-                        u'\n'
-                        u'В свойствах вашей организации: %s\n'
-                        u'не указан телефон для СМС- уведомлений.\n'
-                        u'\n'
-                        u'Это можно исправить: %s\n'
+                        'Невозможно доставить СМС %s заказе № %s.\n'
+                        '\n'
+                        'В свойствах вашей организации: %s\n'
+                        'не указан телефон для СМС- уведомлений.\n'
+                        '\n'
+                        'Это можно исправить: %s\n'
                     ) % (
-                        _(u'о новом') if is_new_opt_order else _(u'об измененном'),
+                        _('о новом') if is_new_opt_order else _('об измененном'),
                         number_verbose,
                         order.loru.name,
                         get_host_url(self.request) + reverse('edit_org', args=(order.loru.pk,)).lstrip('/'),
@@ -1310,16 +1309,16 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
                         customer = Org.objects.get(pk=customer_input['id'])
                     except Org.DoesNotExist:
                         raise ServiceException(
-                            _(u"Покупатель с сustomer['id']==%s отсутствует") % customer_input['id']
+                            _("Покупатель с сustomer['id']==%s отсутствует") % customer_input['id']
                         )
-                elif set(('title', 'phoneNumber', 'address',)).intersection(customer_input.keys()):
+                elif set(('title', 'phoneNumber', 'address',)).intersection(list(customer_input.keys())):
                     title = customer_input.get('title', '')
                     phones = customer_input.get('phoneNumber')
                     addr_str = customer_input.get('address')
                     if addr_str:
                         address = Location.objects.create(addr_str=addr_str)
                 else:
-                    raise ServiceException(_(u'Невозможно определить покупателя'))
+                    raise ServiceException(_('Невозможно определить покупателя'))
             else:
                 customer = request.user.profile.org
             supplier = None
@@ -1349,16 +1348,16 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
                             )
                     else:
                         if product.loru != supplier:
-                            raise ServiceException(_(u'В списке товаров таковые от разных поставщиков'))
+                            raise ServiceException(_('В списке товаров таковые от разных поставщиков'))
                     self.put_item(order, product, p['count'], p.get('comment'))
                     data['id'] = order.pk
                 except Product.DoesNotExist:
-                    raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
+                    raise ServiceException(_('Не найден товар/услуга Id=%s') % p['id'])
         except ServiceException as excpt:
             transaction.set_rollback(True)
             status_code=400
             data['status'] = 'error'
-            data['message'] = excpt.message
+            data['message'] = excpt.args[0]
         else:
             self.email_notifications(order, is_new_opt_order=True)
         return Response(data=data, status=status_code)
@@ -1413,18 +1412,18 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
         data = dict(status='success')
         products = request.data.get("products")
         if products is None:
-            raise ServiceException(_(u'Не задан список товаров, пусть даже пустой'))
+            raise ServiceException(_('Не задан список товаров, пусть даже пустой'))
         try:
             OrderItem.objects.filter(order=order).delete()
             for p in products:
                 try:
                     product = Product.objects.get(pk=p['id'])
                     if product.loru != order.loru:
-                        raise ServiceException(_(u'Товара Id=%s нет среди товаров поставщика заказа') % p['id'])
+                        raise ServiceException(_('Товара Id=%s нет среди товаров поставщика заказа') % p['id'])
                     if p.get('count'):
                         self.put_item(order, product, p['count'], p.get('comment'))
                 except Product.DoesNotExist:
-                    raise ServiceException(_(u'Не найден товар/услуга Id=%s') % p['id'])
+                    raise ServiceException(_('Не найден товар/услуга Id=%s') % p['id'])
             comment = request.data.get("comment")
             if comment is not None:
                 try:
@@ -1444,7 +1443,7 @@ class OptOrderderInfoView(OptOrderMixin, APIView):
             transaction.set_rollback(True)
             status_code=400
             data['status'] = 'error'
-            data['message'] = excpt.message
+            data['message'] = excpt.args[0]
         else:
             self.email_notifications(order, is_new_opt_order=False)
         return Response(data=data, status=status_code)
@@ -1458,7 +1457,7 @@ class ApiLoruProductTypesView(APIView):
         return Response(
             data=[ dict(
                     id=pt[0],
-                    name =unicode(pt[1]),
+                    name =str(pt[1]),
                    )
                     for pt in Product.PRODUCT_TYPES
             ],
@@ -1503,7 +1502,7 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
                 if not request.data.get(f):
                     required_not_got.append(f)
             if required_not_got:
-                raise ServiceException(_(u"Не заданы параметры: %s") % ", ".join(required_not_got))
+                raise ServiceException(_("Не заданы параметры: %s") % ", ".join(required_not_got))
             serializer = ProductEditSerializer(data=request.data, context={ 'request': request, })
             if serializer.is_valid():
                 product = serializer.save()
@@ -1514,7 +1513,7 @@ class ApiProductList(ProductCategoryQsMixin, APIView):
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
-            return Response(data={'status': 'error', 'message': excpt.message}, status=400)
+            return Response(data={'status': 'error', 'message': excpt.args[0]}, status=400)
 
 api_product_list = ApiProductList.as_view()
 
@@ -1546,7 +1545,7 @@ class ApiProductDetail(APIView):
                 serializer.save()
                 return Response(serializer.data, status=200)
             except ServiceException as excpt:
-                return Response(data={'status': 'error', 'message': excpt.message}, status=400)
+                return Response(data={'status': 'error', 'message': excpt.args[0]}, status=400)
         return Response(serializer.errors, status=400)
 
 api_product_detail = ApiProductDetail.as_view()
@@ -1571,7 +1570,7 @@ class ApiOrgServicesMixin(object):
     def check_org_id(self, request, org_id):
         org, message = request.user.profile.org, ''
         if str(org.pk) != str(org_id):
-            message = _(u"Org_id %s не соответствует организации, выполняющей запрос") % org_id
+            message = _("Org_id %s не соответствует организации, выполняющей запрос") % org_id
         return org, message
     
     def check_input_message(self, request, org_id, service_name=None):
@@ -1587,25 +1586,25 @@ class ApiOrgServicesMixin(object):
         try:
             self.data.service = Service.objects.get(name=service_name)
         except Service.DoesNotExist:
-            return _(u"Сервис %s неизвестен в системе") % service_name
+            return _("Сервис %s неизвестен в системе") % service_name
 
         try:
             self.data.orgservice = OrgService.objects.get(org=org, service=self.data.service)
         except OrgService.DoesNotExist:
             if request.method == 'POST' and not self.data.measures_get:
-                return _(u"У организации нет цен по сервису %s. Нельзя его активировать, не указав цены") % service_name
+                return _("У организации нет цен по сервису %s. Нельзя его активировать, не указав цены") % service_name
             # - put (задать цены):          сервис будет создан у организации
             # - delete (де-активировать):   нет сервиса, не будет и после запроса,
             #                               т.е. сервис останется неактивированным у организации
 
         if request.method == 'PUT' and not self.data.measures_get:
-            return _(u"Изменение цен по сервису. Не указаны цены")
+            return _("Изменение цен по сервису. Не указаны цены")
 
         self.data.measures = Measure.objects.filter(service=self.data.service)
         measure_names = [v['name'] for v in self.data.measures.values('name')]
         for m in self.data.measures_get:
             if m['name'] not in measure_names:
-                return _(u"Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
+                return _("Нет единицы измерения %s у услуги %s") % (m['name'], service_name)
         return ''
 
     def put_prices(self, request):
@@ -1738,7 +1737,7 @@ class ApiServicePriceMixin(object):
             except Service.DoesNotExist:
                 self.data.service = None
             if not self.data.service:
-                raise ServiceException(_(u'Сервис не задан или неизвестен'))
+                raise ServiceException(_('Сервис не задан или неизвестен'))
 
             if request.method == 'POST':
                 org = req_dict.get('performerId')
@@ -1747,9 +1746,9 @@ class ApiServicePriceMixin(object):
                 except Org.DoesNotExist:
                     pass
                 if not org:
-                    raise ServiceException(_(u"Id исполнителя не задан или не найден среди организаций"))
+                    raise ServiceException(_("Id исполнителя не задан или не найден среди организаций"))
                 if org.type not in (Org.PROFILE_LORU, ):
-                    raise ServiceException(_(u"performerId %s - не ЛОРУ (поставщик услуг)") % org.pk)
+                    raise ServiceException(_("performerId %s - не ЛОРУ (поставщик услуг)") % org.pk)
                 try:
                     self.data.orgservice = OrgService.objects.get(
                         org=org,
@@ -1757,7 +1756,7 @@ class ApiServicePriceMixin(object):
                         enabled=True
                     )
                 except OrgService.DoesNotExist:
-                    raise ServiceException(_(u"Сервис %s не активирован у организации Id=%s") % (
+                    raise ServiceException(_("Сервис %s не активирован у организации Id=%s") % (
                           self.data.service_name,
                           org.pk,
                     ))
@@ -1769,9 +1768,9 @@ class ApiServicePriceMixin(object):
             except CustomPlace.DoesNotExist:
                 self.data.customplace = None
             if not self.data.customplace:
-                raise ServiceException(_(u'Не задан placeId или не найдено место'))
+                raise ServiceException(_('Не задан placeId или не найдено место'))
             if self.data.customplace.user != request.user:
-                raise ServiceException(_(u'Пользователь %s не имеет прав на запрос по этому месту') % request.user.username)
+                raise ServiceException(_('Пользователь %s не имеет прав на запрос по этому месту') % request.user.username)
             
             self.data.need_delivery = self.data.service_name in (Service.SERVICE_PHOTO, Service.SERVICE_DELIVERY, )
             if self.data.need_delivery:
@@ -1788,7 +1787,7 @@ class ApiServicePriceMixin(object):
                         latitude = place_location['latitude']
                         longitude = place_location['longitude']
                 if latitude is None or longitude is None:
-                    raise ServiceException(_(u'Не заданы или не удалось выяснить координаты места'))
+                    raise ServiceException(_('Не заданы или не удалось выяснить координаты места'))
                 self.data.latitude = float(latitude)
                 self.data.longitude = float(longitude)
                 if request.method == 'POST' and self.data.service_name != Service.SERVICE_DELIVERY:
@@ -1799,13 +1798,13 @@ class ApiServicePriceMixin(object):
                             enabled=True
                         )
                     except OrgService.DoesNotExist:
-                        raise ServiceException(_(u'Услуга %s требует еще активной услуги доставки у организации') % (
+                        raise ServiceException(_('Услуга %s требует еще активной услуги доставки у организации') % (
                             self.data.service_name,
                         ))
                     
 
         except ServiceException as excpt:
-            return excpt.message
+            return excpt.args[0]
         return ''
 
     def get_price_service(self, org, service):
@@ -1948,7 +1947,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
             customplace = get_object_or_404(CustomPlace, pk=customplace_pk)
             place_location = customplace.location()
             if not place_location:
-                raise ServiceException(_(u"Место не имеет координат"))
+                raise ServiceException(_("Место не имеет координат"))
 
             service_name = Service.SERVICE_PHOTO
             service = Service.objects.get(name=service_name)
@@ -1959,7 +1958,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
                     enabled=True
                 )
             except OrgService.DoesNotExist:
-                raise ServiceException(_(u"Сервис %s не активирован у организации Id=%s") % (
+                raise ServiceException(_("Сервис %s не активирован у организации Id=%s") % (
                         service_name,
                         org.pk,
                 ))
@@ -1971,7 +1970,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
                     enabled=True
                 )
             except OrgService.DoesNotExist:
-                raise ServiceException(_(u'Услуга %s требует еще активной услуги доставки у организации') % (
+                raise ServiceException(_('Услуга %s требует еще активной услуги доставки у организации') % (
                     service_name,
                 ))
 
@@ -1981,7 +1980,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
                 address__gps_y__isnull=False,
             )
             if not store_qs.count():
-                raise ServiceException(_(u'У организации нет складов с координатами'))
+                raise ServiceException(_('У организации нет складов с координатами'))
             place_latlon = LatLon(Latitude(place_location['latitude']), Longitude(place_location['longitude']))
 
             price_org = self.get_price_service(org, service)
@@ -2003,7 +2002,7 @@ class ApiShopPlacesView(ApiServicePriceMixin, APIView):
         except ServiceException as excpt:
             status_code = 400
             response_data['status'] = 'error'
-            response_data['message'] = excpt.message
+            response_data['message'] = excpt.args[0]
         return Response(data=response_data, status=status_code)
 
 api_shops_places = ApiShopPlacesView.as_view()
@@ -2051,7 +2050,7 @@ class ApiClientOrdersView(ApiServicePriceMixin, APIView):
         login_phone = request.user.customerprofile.login_phone
         applicant = AlivePerson.objects.create(
             user=request.user,
-            phones=u"+%s" % login_phone if login_phone else None,
+            phones="+%s" % login_phone if login_phone else None,
             login_phone=login_phone,
             last_name=request.user.customerprofile.user_last_name,
             first_name=request.user.customerprofile.user_first_name,
@@ -2175,7 +2174,7 @@ class ApiOrderCommentsView(ApiOrderMixin, APIView):
             if is_cabinet_user(request.user):
                 email_to = order.loru.email
                 if email_to:
-                    order_url = u"%s/%s" % (
+                    order_url = "%s/%s" % (
                         get_host_url(request).rstrip('/'),
                         reverse('order_edit', args=[order.pk]).lstrip('/'),
                     )
@@ -2187,7 +2186,7 @@ class ApiOrderCommentsView(ApiOrderMixin, APIView):
                 if email_to:
                     order_url = order.loru.shop_site
                     if order_url:
-                        order_url = u"%s/%s" % (order_url.rstrip('/'), order.pk)
+                        order_url = "%s/%s" % (order_url.rstrip('/'), order.pk)
                     profile = request.user.profile
                     org = profile.org
             if email_to:
@@ -2199,7 +2198,7 @@ class ApiOrderCommentsView(ApiOrderMixin, APIView):
                                     profile=profile,
                                     org=org,
                 ))
-                email_subject = _(u"Комментарий к заказу № %s") % order.number_verbose()
+                email_subject = _("Комментарий к заказу № %s") % order.number_verbose()
                 email_from = settings.DEFAULT_FROM_EMAIL
                 headers = dict()
                 if request.user.email:
@@ -2231,23 +2230,23 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
                 raise PermissionDenied
             type_ = request.data.get('type')
             if not type_:
-                raise ServiceException(_(u"Не задан тип загружаемого файла"))
+                raise ServiceException(_("Не задан тип загружаемого файла"))
             for tp in ResultFile.RESULT_TYPES:
                 if type_ == tp[0]:
                     break
             else:
-                raise ServiceException(_(u"Тип %s файла результата выполнения заказа не предусмотрен") % type_)
+                raise ServiceException(_("Тип %s файла результата выполнения заказа не предусмотрен") % type_)
             if 'file' not in request.data:
-                raise ServiceException(_(u"Не получен загружаемый файл 'file'"))
+                raise ServiceException(_("Не получен загружаемый файл 'file'"))
             uploaded_file = request.data['file']
             if type_ == ResultFile.TYPE_IMAGE:
                 if uploaded_file.size > ResultFile.MAX_IMAGE_SIZE * 1024 * 1024:
-                    raise ServiceException(_(u"Размер изображения превышает %d Мб") % ResultFile.MAX_IMAGE_SIZE)
+                    raise ServiceException(_("Размер изображения превышает %d Мб") % ResultFile.MAX_IMAGE_SIZE)
                 if not get_image(uploaded_file):
-                    raise ServiceException(_(u"Загруженный файл не является изображением"))
+                    raise ServiceException(_("Загруженный файл не является изображением"))
             elif type_ == ResultFile.TYPE_VIDEO:
                 if not is_video(uploaded_file):
-                    raise ServiceException(_(u"Загруженный файл не является видео"))
+                    raise ServiceException(_("Загруженный файл не является видео"))
             is_title = str_to_bool_or_None(request.data.get('isTitle'))
             if is_title is None:
                 is_title = True
@@ -2262,7 +2261,7 @@ class ApiOrderResultView(ApiOrderMixin, APIView):
             order.save()
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
         return Response(data=OrderResultsSerializer(resultfile, context=dict(request=request)).data, status=200)
 
 api_orders_results = ApiOrderResultView.as_view()
@@ -2327,7 +2326,7 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
                     if status == st[0]:
                         break
                 else:
-                    raise ServiceException(_(u"Статус %s не предусмотрен") % status)
+                    raise ServiceException(_("Статус %s не предусмотрен") % status)
                 if order.status != status:
                     kwargs.update(dict(status=status))
 
@@ -2341,7 +2340,7 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
             product_items = request.data.get('products')
             if product_items is not None:
                 if order.status not in (Order.STATUS_POSTED, Order.STATUS_ACCEPTED,):
-                    raise ServiceException(_(u"Набор товаров/услуг можно изменять только в размещенном заказе"))
+                    raise ServiceException(_("Набор товаров/услуг можно изменять только в размещенном заказе"))
                 for orderitem in order.orderitem_set.all():
                     orderitem.delete()
                 loru = order.loru
@@ -2349,9 +2348,9 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
                     try:
                         product = Product.objects.get(pk=item['id'])
                     except Product.DoesNotExist:
-                        raise ServiceException(_(u"Не найден товар/услуга, id = %s") % item['id'])
+                        raise ServiceException(_("Не найден товар/услуга, id = %s") % item['id'])
                     if product.loru != loru:
-                        raise ServiceException(_(u"Товар/услуга, id = %s, - не от исполнителя заказа") % item['id'])
+                        raise ServiceException(_("Товар/услуга, id = %s, - не от исполнителя заказа") % item['id'])
                     quantity = item.get('qty', 1.00)
                     OrderItem.objects.create(
                         order=order,
@@ -2377,7 +2376,7 @@ class ApiServiceOrderPutView(ApiOrderMixin, OptOrderMixin, APIView):
 
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
     def delete(self, request, pk):
         order = self.get_order(pk=pk)
@@ -2393,16 +2392,16 @@ class ApiOrderPaymentsMixin(object):
 
     def check_order_pay_system(self, order_pk, pay_system):
         if not pay_system:
-            raise ServiceException(_(u"Не задан тип платежной системы"))
+            raise ServiceException(_("Не задан тип платежной системы"))
         if pay_system not in self.PAY_SYSTEM_TYPES:
-            raise ServiceException(_(u"Платежная система %s не предусмотрена") % pay_system)
+            raise ServiceException(_("Платежная система %s не предусмотрена") % pay_system)
         try:
             order = Order.objects.get(pk=order_pk)
         except Order.DoesNotExist:
             raise Http404
         if not order.is_accessible(self.request.user):
             raise Http404
-        system_not_supported = _(u"Исполнитель заказа, %s, не поддерживает платежи в системе %s")
+        system_not_supported = _("Исполнитель заказа, %s, не поддерживает платежи в системе %s")
         if pay_system == self.PAY_SYSTEM_WEBPAY:
             try:
                 pay_data = OrgWebPay.objects.get(org=order.loru)
@@ -2444,7 +2443,7 @@ class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                     wsb_order_num=order.number_webpay(),
                     wsb_currency_id=orgwebpay.wsb_currency_id,
                     wsb_version=orgwebpay.wsb_version,
-                    wsb_language_id=u'russian',
+                    wsb_language_id='russian',
                     wsb_seed=''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(10)),
                     wsb_notify_url=get_host_url(self.request) + \
                                    reverse('api_orders_webpay_notify', args=(order.pk,)).strip('/'),
@@ -2468,7 +2467,7 @@ class ApiOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                     wsb_order_num=data['wsb_order_num'],
                 )
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
         return Response(data=data, status=200)
 
 api_orders_payments = ApiOrderPaymentsView.as_view()
@@ -2545,11 +2544,11 @@ class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
             if pay_system == self.PAY_SYSTEM_WEBPAY:
                 transaction_id = request.data.get('paymentToken')
                 if not transaction_id:
-                    raise ServiceException(_(u"Не задан параметр paymentToken (идентификатор транзакции webpay)"))
+                    raise ServiceException(_("Не задан параметр paymentToken (идентификатор транзакции webpay)"))
             try:
                 orderwebpay = OrderWebPay.objects.filter(order=order).order_by('-pk')[0]
             except IndexError:
-                raise ServiceException(_(u"Не была выставлена оплата за заказ"))
+                raise ServiceException(_("Не была выставлена оплата за заказ"))
             if not orderwebpay.transaction_id:
                 orderwebpay.transaction_id=transaction_id
                 orderwebpay.save()
@@ -2558,7 +2557,7 @@ class ApiClientOrderPaymentsView(ApiOrderPaymentsMixin, APIView):
                 order.save()
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
         return Response(data={}, status=201)
 
 api_client_orders_payments = ApiClientOrderPaymentsView.as_view()
@@ -2568,15 +2567,15 @@ class OrderItemCheckMixin(object):
     def checked_order_item(self, request, item):
         product_id = item.get('id')
         if not product_id:
-            raise ServiceException(_(u'Нет productId'))
+            raise ServiceException(_('Нет productId'))
 
         try:
             product = Product.objects.get(loru=request.user.profile.org, pk=product_id)
         except Product.DoesNotExist:
             raise ServiceException(
-                _(u'Не найден productId=%s вообще или у этого поставщика') % product_id)
+                _('Не найден productId=%s вообще или у этого поставщика') % product_id)
 
-        msg = _(u'Неверное количество у продукта/услуги: %s') % product.name
+        msg = _('Неверное количество у продукта/услуги: %s') % product.name
         try:
             quantity = decimal.Decimal(item.get('amount') or 1)
         except decimal.InvalidOperation:
@@ -2584,7 +2583,7 @@ class OrderItemCheckMixin(object):
         if quantity < 0:
             raise ServiceException(msg)
 
-        msg = _(u'Неверная скидка у продукта/услуги: %s') % product.name
+        msg = _('Неверная скидка у продукта/услуги: %s') % product.name
         try:
             discount = decimal.Decimal(item.get('discount') or 0)
         except decimal.InvalidOperation:
@@ -2605,8 +2604,8 @@ class ApiLoruOrdersView(
 
     @transaction.atomic
     def post(self, request):
-        msg_invalid_dt_due = _(u"Неверная дата похорон")
-        msg_invalid_dt = _(u"Неверная дата создания заказа")
+        msg_invalid_dt_due = _("Неверная дата похорон")
+        msg_invalid_dt = _("Неверная дата создания заказа")
         try:
             customer = request.data.get('customer')
             login_phone = None
@@ -2615,11 +2614,14 @@ class ApiLoruOrdersView(
                 if customer.get('createCabinet'):
                     login_phone_str = customer.get('phoneNumber', '').strip()
                     if not login_phone_str:
-                        raise ServiceException(_(u"Создать кабинет: не указан телефон"))
+                        raise ServiceException(_("Создать кабинет: не указан телефон"))
                     try:
                         validate_phone_as_number(login_phone_str)
                     except ValidationError as excpt:
-                        raise ServiceException(u"Создать кабинет. %s" % excpt.messages[0])
+                        raise ServiceException(
+                            "Создать кабинет. %s" % \
+                                excpt.args and excpt.args[0] or _('Не удалось по неизвестной причине')
+                        )
                     login_phone = decimal.Decimal(login_phone_str)
                 if customer.get('address'):
                     address = Location.objects.create(addr_str=customer['address'])
@@ -2656,7 +2658,7 @@ class ApiLoruOrdersView(
                     try:
                         other_keys[mapping[k]] = datetime.datetime.strptime(request.data[k], '%H:%M').time()
                     except ValueError:
-                        raise ServiceException(_(u"Неверное %s") %
+                        raise ServiceException(_("Неверное %s") %
                             Order._meta.get_field(mapping[k]).verbose_name.lower()
                         )
             mapping = dict(
@@ -2703,7 +2705,7 @@ class ApiLoruOrdersView(
                 if place.get('cemeteryId') or place.get('areaId'):
                     cemeteries = self.available_cemeteries(request.user)
                 if place.get('cemeteryId'):
-                    cemetery_msg = _(u"Нет такого кладбища среди доступных")
+                    cemetery_msg = _("Нет такого кладбища среди доступных")
                     try:
                         cemetery = Cemetery.objects.get(pk=place['cemeteryId'])
                     except Cemetery.DoesNotExist:
@@ -2712,7 +2714,7 @@ class ApiLoruOrdersView(
                         raise ServiceException(cemetery_msg)
                 area = None
                 if place.get('areaId'):
-                    area_msg = _(u"Нет такого участка на доступных кладбищах")
+                    area_msg = _("Нет такого участка на доступных кладбищах")
                     try:
                         area = Area.objects.get(pk=place['areaId'])
                     except Area.DoesNotExist:
@@ -2748,19 +2750,19 @@ class ApiLoruOrdersView(
                 try:
                     customerprofile = CustomerProfile.objects.get(login_phone=login_phone)
                     user = customerprofile.user
-                    debug_text = _(u"Заказ похорон с созданием кабинета. Пользователь %s (телефон %s) уже существует") % \
+                    debug_text = _("Заказ похорон с созданием кабинета. Пользователь %s (телефон %s) уже существует") % \
                                 (user.username, login_phone)
                     write_log(request, order, debug_text)
                 except CustomerProfile.DoesNotExist:
                     user, password = CustomerProfile.create_cabinet(applicant, request)
-                    text = _(u'%s login: %s parol: %s') % (
+                    text = _('%s login: %s parol: %s') % (
                         get_front_end_url(request).rstrip('/'),
                         login_phone,
                         password,
                     )
-                    email_error_text = _(u"Пользователь %s не смог получить пароль по СМС после создания заказа похорон") % \
+                    email_error_text = _("Пользователь %s не смог получить пароль по СМС после создания заказа похорон") % \
                                         login_phone
-                    debug_text = _(u"Создан кабинет. Пользователь %s, пароль %s") % \
+                    debug_text = _("Создан кабинет. Пользователь %s, пароль %s") % \
                                 (user.username, password)
                     if not settings.DEBUG:
                         sent, message = send_sms(
@@ -2771,8 +2773,8 @@ class ApiLoruOrdersView(
                         )
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(data=dict(status='error', message=excpt.message), status=400)
-        write_log(request, order, _(u'Заказ создан'))
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
+        write_log(request, order, _('Заказ создан'))
         data = LoruOrderSerializer(order, context=dict(request=request)).data
         if settings.DEBUG and debug_text:
             data.update(dict(debugMessage=debug_text))
@@ -2819,8 +2821,8 @@ class ApiLoruOrdersDetailView(
     @transaction.atomic
     def put(self, request, pk):
         order = get_object_or_404(Order, loru=request.user.profile.org, pk=pk)
-        msg_invalid_dt_due = _(u"Неверная дата похорон")
-        msg_invalid_dt = _(u"Неверная дата создания заказа")
+        msg_invalid_dt_due = _("Неверная дата похорон")
+        msg_invalid_dt = _("Неверная дата создания заказа")
         try:
             order_save = False
             if 'dueDate' in request.data:
@@ -2864,7 +2866,7 @@ class ApiLoruOrdersDetailView(
                         try:
                             f = datetime.datetime.strptime(f, '%H:%M').time()
                         except ValueError:
-                            raise ServiceException(_(u"Неверное %s") %
+                            raise ServiceException(_("Неверное %s") %
                                 Order._meta.get_field(mapping[k]).verbose_name.lower()
                             )
                     if f != getattr(order, mapping[k]):
@@ -2989,7 +2991,7 @@ class ApiLoruOrdersDetailView(
                     if place.get('cemeteryId') or place.get('areaId'):
                         cemeteries = self.available_cemeteries(request.user)
                     if place.get('cemeteryId'):
-                        cemetery_msg = _(u"Нет такого кладбища среди доступных")
+                        cemetery_msg = _("Нет такого кладбища среди доступных")
                         try:
                             cemetery = Cemetery.objects.get(pk=place['cemeteryId'])
                         except Cemetery.DoesNotExist:
@@ -2997,7 +2999,7 @@ class ApiLoruOrdersDetailView(
                         if cemetery not in cemeteries:
                             raise ServiceException(cemetery_msg)
                     if place.get('areaId'):
-                        area_msg = _(u"Нет такого участка на доступных кладбищах")
+                        area_msg = _("Нет такого участка на доступных кладбищах")
                         try:
                             area = Area.objects.get(pk=place['areaId'])
                         except Area.DoesNotExist:
@@ -3046,8 +3048,8 @@ class ApiLoruOrdersDetailView(
                 order.save()
         except ServiceException as excpt:
             transaction.set_rollback(True)
-            return Response(data=dict(status='error', message=excpt.message), status=400)
-        write_log(request, order, _(u'Заказ изменен'))
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
+        write_log(request, order, _('Заказ изменен'))
         return Response(
             data=LoruOrderSerializer(order,
                 context=dict(request=request),

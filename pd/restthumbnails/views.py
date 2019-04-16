@@ -19,7 +19,7 @@ class ThumbnailView(View):
         # Return appropriate status code on invalid requests
         try:
             thumbnail = get_thumbnail(**self.kwargs)
-        except ThumbnailError, e:
+        except ThumbnailError as e:
             # FIXME: Handle SourceDoesNotExist with a different,
             # cacheable response to keep bogus URLs from hitting
             # the backend all the time.

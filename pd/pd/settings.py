@@ -1,5 +1,3 @@
-# coding: utf-8
-
 import sys, os, datetime
 
 DEBUG = False
@@ -234,9 +232,6 @@ SESSION_COOKIE_NAME = 'pdsession'
 
 PAGINATION_USER_PER_PAGE_ALLOWED = True
 PAGINATION_PER_PAGE = 50
-
-# Кодировка для файлов обмена.
-CSV_ENCODING = "utf8"
 
 # Валюта по умолчанию, код:
 CURRENCY_DEFAULT_CODE = 'RUR'
@@ -502,7 +497,7 @@ SHOW_OPER_STATS = True
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
 try:
-    from local_settings import *
+    from .local_settings import *
 except ImportError:
     pass
 

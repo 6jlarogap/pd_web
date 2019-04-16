@@ -4,10 +4,7 @@
 
 import datetime, gc, piexif
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+from io import BytesIO
 
 try:
     from PIL import Image, ImageChops, ImageFilter
@@ -31,43 +28,43 @@ for ph in PlacePhoto.objects.filter(
     image = None
 
     if not ph.bfile:
-        print u"Empty bfile: %s" % ph.pk
+        print("Empty bfile: %s" % ph.pk)
         continue
 
     try:
-        f = open(unicode(ph.bfile.path), 'rb')
+        f = open(str(ph.bfile.path), 'rb')
     except IOError:
-        print u"Not found : %s" % ph.bfile.path
+        print("Not found : %s" % ph.bfile.path)
         continue
 
     buff = f.read()
     try:
-        image = Image.open(StringIO(buff))
+        image = Image.open(BytesIO(buff))
         image.load()
     except IOError:
-        print u"Not image file: %s" % ph.bfile.path
+        print("Not image file: %s" % ph.bfile.path)
         continue
 
     if image.size[0] * image.size[1] >= 1600*1200:
         image.close()
         image = None
-        f = open(unicode(ph.bfile.path), 'rb')
+        f = open(str(ph.bfile.path), 'rb')
         photo_content = ThumbnailContentFile(
             f,
             quality=30,
             minsize=1600*1200,
         ).generate()
         photo_content = photo_content.read()
-        f = open(unicode(ph.bfile.path), 'wb')
+        f = open(str(ph.bfile.path), 'wb')
         f.write(photo_content)
         f.close()
         PlacePhoto.objects.filter(pk=ph.pk).update(dt_modified=datetime.datetime.now())
         count_modified += 1
     else:
-        print u"Low resolution : %s x %s, %s" % (
+        print("Low resolution : %s x %s, %s" % (
             image.size[0], image.size[1],
             ph.bfile.path
-        )
+        ))
     if image:
         image.close()
     buff = image = None
@@ -80,6 +77,6 @@ for ph in PlacePhoto.objects.filter(
         break
 
     if count % 250 == 0:
-        print "count all", count, ", count modified", count_modified
+        print("count all", count, ", count modified", count_modified)
 
-print "\n", "count all", count, ", count modified", count_modified
+print("\n", "count all", count, ", count modified", count_modified)

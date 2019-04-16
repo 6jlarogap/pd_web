@@ -1,5 +1,3 @@
-# coding=utf-8
-
 from rest_framework import serializers
 
 from django.db.models.query_utils import Q
@@ -101,7 +99,7 @@ class StoreSerializer(RestoreObjectMixin, serializers.ModelSerializer):
         return store
 
     def address_func(self, instance):
-        return unicode(instance.address)
+        return str(instance.address)
 
     def has_wholesales_func(self, instance):
         return Product.objects.filter(loru=instance.loru, is_wholesale=True).exists()
@@ -332,7 +330,7 @@ class UserProfileMixin(object):
         if profile:
             return profile.full_name()
         else:
-            return (u"%s %s" % (user.first_name, user.user_last_name)).strip()
+            return ("%s %s" % (user.first_name, user.user_last_name)).strip()
 
     def userPhotoUrl_func(self, user):
         try:
@@ -394,7 +392,7 @@ class UserFioLoginSerializer(UserProfileMixin, serializers.ModelSerializer):
         if profile.user_last_name:
             return profile.full_name()
         else:
-            return u"(%s)" % user.username
+            return "(%s)" % user.username
 
 class ProfileFioLoginSerializer(serializers.ModelSerializer):
     fio = serializers.SerializerMethodField('fio_func')
@@ -407,7 +405,7 @@ class ProfileFioLoginSerializer(serializers.ModelSerializer):
         if profile.user_last_name:
             return profile.full_name()
         else:
-            return u"(%s)" % profile.user.username
+            return "(%s)" % profile.user.username
 
 class ProfileClientSiteSerializer(PhonesFromTextMixin, serializers.ModelSerializer):
     phones = serializers.SerializerMethodField('phones_published_func')

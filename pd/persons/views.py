@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import json
 import re, decimal
 
@@ -91,7 +89,7 @@ class AutocompleteFIO(View):
                 q &= Q(burial__cemetery__name=cemetery)
 
         persons = DeadPerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
-        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), content_type='application/json')
+        return HttpResponse(json.dumps([{'value': str(c)} for c in persons[:20]]), content_type='application/json')
 
 autocomplete_fio = AutocompleteFIO.as_view()
 
@@ -117,12 +115,12 @@ class AutocompleteFIOorder(View):
             q = Q(order__loru=loru)
             orderdeadpersons = OrderDeadPerson.objects.filter(q & q_fio). \
                 distinct('last_name', 'first_name', 'middle_name')[:self.NUM_RESULTS]
-            orderdeadpersons = [unicode(c) for c in orderdeadpersons]
+            orderdeadpersons = [str(c) for c in orderdeadpersons]
 
             q = Q(burial__loru = loru)
             burialdeadpersons = DeadPerson.objects.filter(q & q_fio). \
                 distinct('last_name', 'first_name', 'middle_name')[:self.NUM_RESULTS]
-            burialdeadpersons = [unicode(c) for c in burialdeadpersons]
+            burialdeadpersons = [str(c) for c in burialdeadpersons]
 
             persons = list(set(orderdeadpersons + burialdeadpersons))
             persons.sort()
@@ -146,7 +144,7 @@ class AutocompleteNamesMixin(object):
                         иначе имена/отчества ищутся среди всех, живых и мертвых
         """
         valid = True
-        if not query or not isinstance(query, basestring):
+        if not query or not isinstance(query, str):
             valid = False
         if valid:
             field_map = dict(firstname='first_name', middlename='middle_name')
@@ -211,7 +209,7 @@ class AutocompleteAlive(View):
             q &= Q(last_name__istartswith=fio[0])
 
         persons = AlivePerson.objects.filter(q).distinct('last_name', 'first_name', 'middle_name')
-        return HttpResponse(json.dumps([{'value': unicode(c)} for c in persons[:20]]), content_type='application/json')
+        return HttpResponse(json.dumps([{'value': str(c)} for c in persons[:20]]), content_type='application/json')
 
 autocomplete_alive = AutocompleteAlive.as_view()
 
@@ -219,7 +217,7 @@ class AutocompleteDocSources(View):
     def get(self, request, *args, **kwargs):
         query = request.GET['query']
         dcs = DocumentSource.objects.filter(name__icontains=query)
-        return HttpResponse(json.dumps([{'value': unicode(c)} for c in dcs[:20]]), content_type='application/json')
+        return HttpResponse(json.dumps([{'value': str(c)} for c in dcs[:20]]), content_type='application/json')
 
 autocomplete_docsources = AutocompleteDocSources.as_view()
 
@@ -315,9 +313,9 @@ class ApiClientPlacesDetailView(ApiClientPlacesMixin, APIView):
                 try:
                     favorite_performer = Org.objects.get(pk=favorite_performer_id)
                     if not favorite_performer.is_trade():
-                        message = _(u'Организация, performerId: %s, не может выполнять заказы') % favorite_performer_id
+                        message = _('Организация, performerId: %s, не может выполнять заказы') % favorite_performer_id
                 except Org.DoesNotExist:
-                        message = _(u'Оганизация, performerId: %s, не существует') % favorite_performer_id
+                        message = _('Оганизация, performerId: %s, не существует') % favorite_performer_id
                 if message:
                     return Response(dict(status='error', message=message), status=400)
                 context['favorite_performer'] = favorite_performer
@@ -348,14 +346,14 @@ class ApiSelectedPermissionsMixin(object):
         selected = request.data.get('selected')
         selected_perms = []
         if selected:
-            if isinstance(selected, basestring):
+            if isinstance(selected, str):
                 try:
                     selected = json.loads(selected)
                 except (ValueError, TypeError,):
                     pass
             if type(selected) != type(list()):
-                raise ServiceException(_(u"Разрешения (selected: '%s') - не список") % selected)
-            msg_invalid_item = _(u"%s в списке selected не является ни email, ни телефоном")
+                raise ServiceException(_("Разрешения (selected: '%s') - не список") % selected)
+            msg_invalid_item = _("%s в списке selected не является ни email, ни телефоном")
             for item in selected:
                 try:
                     item = decimal.Decimal(item)
@@ -366,7 +364,7 @@ class ApiSelectedPermissionsMixin(object):
                         raise ServiceException(msg_invalid_item % item)
                 except (decimal.InvalidOperation, TypeError):
                     try:
-                        item = unicode(item)
+                        item = str(item)
                         validate_email(item)
                         field = 'email'
                     except ValidationError:
@@ -461,7 +459,7 @@ class ApiCustompersonDetailView(
             context = dict(request=request)
             if 'placeId' in request.data:
                 customplace_id = request.data['placeId']
-                if isinstance(customplace_id, basestring) and customplace_id == 'null':
+                if isinstance(customplace_id, str) and customplace_id == 'null':
                     customplace_id = None
                 if customplace_id:
                     customplace = self.get_customplace(customplace_id)
@@ -474,15 +472,15 @@ class ApiCustompersonDetailView(
             is_dead = str_to_bool_or_None(request.data.get('isDead'))
             if is_dead == False:
                 if UnclearDate.from_str_safe(request.data.get('dod')):
-                    raise ServiceException(u'Нельзя задавать дату смерти для живого человека')
+                    raise ServiceException('Нельзя задавать дату смерти для живого человека')
                 if request.data.get('placeId'):
-                    raise ServiceException(u'Живой человек не может иметь место захоронения')
+                    raise ServiceException('Живой человек не может иметь место захоронения')
             photo = request.data.get('photo')
             if photo:
                 if photo.size > CustomPerson.MAX_PHOTO_SIZE * 1024 * 1024:
-                    raise ServiceException(_(u"Размер фото превышает %d Мб") % CustomPerson.MAX_PHOTO_SIZE)
+                    raise ServiceException(_("Размер фото превышает %d Мб") % CustomPerson.MAX_PHOTO_SIZE)
                 if not get_image(photo):
-                    raise ServiceException(_(u"Загруженное фото не является изображением"))
+                    raise ServiceException(_("Загруженное фото не является изображением"))
             serializer = CustomPerson3Serializer(
                 customperson,
                 data=request.data,
@@ -498,7 +496,7 @@ class ApiCustompersonDetailView(
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
     @transaction.atomic
     def delete(self, request, pk):
@@ -541,43 +539,43 @@ class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
 
             file_ = request.data.get('mediaContent')
             if not fields['type']:
-                raise ServiceException(_(u'Не задан тип (type)'))
+                raise ServiceException(_('Не задан тип (type)'))
             if fields['type'] not in [type_[0] for type_ in MemoryGallery.TYPE_CHOICES]:
-                raise ServiceException(_(u'Неверный тип (type)'))
+                raise ServiceException(_('Неверный тип (type)'))
             need_media = fields['type'] in (MemoryGallery.TYPE_IMAGE, MemoryGallery.TYPE_VIDEO)
             need_text = fields['type'] in (MemoryGallery.TYPE_TEXT, MemoryGallery.TYPE_LINK)
             if need_media and not file_:
-                raise ServiceException(_(u'Тип (type) %s требует загружаемого файла (mediaContent)') % fields['type'])
+                raise ServiceException(_('Тип (type) %s требует загружаемого файла (mediaContent)') % fields['type'])
             if not need_media and file_:
-                raise ServiceException(_(u'Тип (type) %s исключает загружаемый файл (mediaContent)') % fields['type'])
+                raise ServiceException(_('Тип (type) %s исключает загружаемый файл (mediaContent)') % fields['type'])
             if need_text and \
                (not fields['text'] or not fields['text'].strip()):
-                raise ServiceException(_(u'Тип (type) %s требует непустой текст') % fields['type'])
+                raise ServiceException(_('Тип (type) %s требует непустой текст') % fields['type'])
             if fields['type'] == MemoryGallery.TYPE_LINK:
                 validate = URLValidator()
                 if not re.search(r'^\w+\://', fields['text'], flags=re.I):
-                    fields['text'] = u"http://%s" % fields['text']
+                    fields['text'] = "http://%s" % fields['text']
                 try:
                     validate(fields['text'])
                 except ValidationError:
-                    raise ServiceException(_(u'Тип (type) %s требует правильную ссылку') % fields['type'])
+                    raise ServiceException(_('Тип (type) %s требует правильную ссылку') % fields['type'])
             if fields['type'] == MemoryGallery.TYPE_IMAGE:
                 if file_.size > MemoryGallery.MAX_IMAGE_SIZE * 1024 * 1024:
                     raise ServiceException(
-                        _(u"Размер изображения не должен превышать %sМб") % MemoryGallery.MAX_IMAGE_SIZE
+                        _("Размер изображения не должен превышать %sМб") % MemoryGallery.MAX_IMAGE_SIZE
                     )
                 file_content = ContentFile(file_.read())
                 if not get_image(file_content):
-                    raise ServiceException(_(u"Прикрепленный файл не является изображением"))
+                    raise ServiceException(_("Прикрепленный файл не является изображением"))
             elif fields['type'] == MemoryGallery.TYPE_VIDEO:
                 file_content = ContentFile(file_.read())
                 if not is_video(file_content):
-                    raise ServiceException(_(u"Загруженный файл не является видео"))
+                    raise ServiceException(_("Загруженный файл не является видео"))
             if fields['permission']:
-                known_permissions = [unicode(p[0]) for p in MemoryGallery.PERMISSION_CHOICES]
+                known_permissions = [str(p[0]) for p in MemoryGallery.PERMISSION_CHOICES]
                 if fields['permission'] not in known_permissions:
                     raise ServiceException(
-                        _(u"Неизвестное разрешение (permissions): %s") % fields['permission']
+                        _("Неизвестное разрешение (permissions): %s") % fields['permission']
                     )
             else:
                 # Будет по умолчанию: private
@@ -603,7 +601,7 @@ class ApiMemoryGalleryMixin(ApiSelectedPermissionsMixin):
                 status=200,
             )
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
     def get_qs(self, request, pk, memory_pk=None):
         customperson = get_object_or_404(CustomPerson, pk=pk)
@@ -819,7 +817,7 @@ class ApiClientPersonsView(ApiClientPlacesMixin, ApiSelectedPermissionsMixin, AP
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
 api_client_persons = ApiClientPersonsView.as_view()
 
@@ -868,7 +866,7 @@ class ApiClientPersonsDetailView(
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
         except ServiceException as excpt:
-            return Response(data=dict(status='error', message=excpt.message), status=400)
+            return Response(data=dict(status='error', message=excpt.args[0]), status=400)
 
     def delete(self, request, pk):
         return self.delete_customperson(pk)
@@ -978,9 +976,9 @@ class ApiOmsBurialsDetailView(CheckLifeDatesMixin, APIView):
         try:
             deadman = DeadPerson.objects.get(pk=pk)
         except DeadPerson.DoesNotExist:
-            message = _(u'Нет усопшего с id = %s') % pk
+            message = _('Нет усопшего с id = %s') % pk
         else:
-            message_noplace = _(u'Усопший с id = %s не имеет привязки к захоронению/месту') % pk
+            message_noplace = _('Усопший с id = %s не имеет привязки к захоронению/месту') % pk
             try:
                 burial = deadman.burial_set.all()[0]
             except IndexError:
@@ -1003,7 +1001,7 @@ class ApiOmsBurialsDetailView(CheckLifeDatesMixin, APIView):
         )
         if serializer.is_valid():
             serializer.save()
-            write_log(request, burial, _(u'Захоронение изменено при обработке фото места'))
+            write_log(request, burial, _('Захоронение изменено при обработке фото места'))
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
 

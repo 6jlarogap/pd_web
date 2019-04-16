@@ -1,4 +1,3 @@
-# coding=utf-8
 import json
 import datetime
 import re
@@ -39,7 +38,7 @@ class ChildrenJSONMixin:
                 p = getattr(c, ch_rel)
                 if not parents.get(p.pk):
                     parents[p.pk] = []
-                list_ = [c.pk, u'%s' % c]
+                list_ = [c.pk, '%s' % c]
                 if add_field:
                     # третий элемент, поле потомка в список
                     list_.append(getattr(c, add_field))
@@ -84,7 +83,7 @@ class ChildrenJSONMixin:
 
 class LoggingFormMixin:
     def get_prefix(self, form):
-        return u''
+        return ''
 
     def collect_log_data(self):
         self.changed_list = []
@@ -118,7 +117,7 @@ class LoggingFormMixin:
                         try:
                             old_value = old_value.strftime('%d.%m.%Y')
                         except ValueError:
-                            old_value = _(u"Неверная старая дата")
+                            old_value = _("Неверная старая дата")
                     elif isinstance(old_value, datetime.time):
                         old_value = old_value.strftime('%H:%M')
 
@@ -128,22 +127,22 @@ class LoggingFormMixin:
                         try:
                             new_value = new_value.strftime('%d.%m.%Y')
                         except ValueError:
-                            new_value = _(u"Неверная новая дата")
+                            new_value = _("Неверная новая дата")
                     elif isinstance(new_value, datetime.time):
                         new_value = new_value.strftime('%H:%M')
 
                     if isinstance(form.fields[f], django.forms.models.ModelMultipleChoiceField):
                         if not old_value:
-                            old_value = u"[]"
+                            old_value = "[]"
                         else:
                             if obj:
                                 old_value = form.initial.get(f)
-                            old_value = u", ".join([unicode(u) for u in old_value])
-                            old_value = u"[" + old_value + u"]"
+                            old_value = ", ".join([str(u) for u in old_value])
+                            old_value = "[" + old_value + "]"
                         if not new_value:
-                            new_value = u"[]"
+                            new_value = "[]"
                         else:
-                            new_value = u"[" + u", ".join([unicode(u) for u in new_value]) + u"]"
+                            new_value = "[" + ", ".join([str(u) for u in new_value]) + "]"
 
                     if getattr(form.fields[f], 'queryset', None):
                         pass
@@ -152,9 +151,9 @@ class LoggingFormMixin:
                         new_value = dict(form.fields[f].choices).get(new_value, new_value)
 
                     if old_value != new_value and form.fields[f].label:
-                        self.changed_list.append((u'%s%s' % (prefix, form.fields[f].label), old_value, new_value))
+                        self.changed_list.append(('%s%s' % (prefix, form.fields[f].label), old_value, new_value))
 
-    def put_log_data(self, msg=_(u'Захоронение сохранено'), log_instance=None):
+    def put_log_data(self, msg=_('Захоронение сохранено'), log_instance=None):
         """
         Поместить сведения об изменениях в объекте формы в журнал
 
@@ -167,16 +166,16 @@ class LoggingFormMixin:
         if not log_instance:
             log_instance = self.instance
         if self.changed_list:
-            changed_data_str = u'\n'.join([u'%s: %s -> %s' % cd for cd in self.changed_list])
+            changed_data_str = '\n'.join(['%s: %s -> %s' % cd for cd in self.changed_list])
             changed_data_str = changed_data_str. \
-                                replace(u'True -> False', _(u'выключ.')). \
-                                replace(u'False -> True', _(u'включ.'))
-            write_log(self.request, log_instance, msg + u'\n' + changed_data_str)
+                                replace('True -> False', _('выключ.')). \
+                                replace('False -> True', _('включ.'))
+            write_log(self.request, log_instance, msg + '\n' + changed_data_str)
 
 class PartialFormMixin:
     def _partial_html_output(self, fields=None, exclude=None, *args, **kwargs):
         old_fields = self.fields
-        self.fields = SortedDict([(k,v) for k,v in self.fields.items() if (fields and k in fields) or (exclude and not k in exclude) or (not fields and not exclude)])
+        self.fields = SortedDict([(k,v) for k,v in list(self.fields.items()) if (fields and k in fields) or (exclude and not k in exclude) or (not fields and not exclude)])
         result = self._html_output(*args, **kwargs)
         self.fields = old_fields
         return result
@@ -207,7 +206,7 @@ class StrippedStringsMixin(object):
     
    def clean(self):
        for field in self.cleaned_data:
-           if isinstance(self.cleaned_data[field], basestring):
+           if isinstance(self.cleaned_data[field], str):
                self.cleaned_data[field] = self.cleaned_data[field].strip()
        return self.cleaned_data
 
@@ -227,7 +226,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
     def __init__(self, attrs=None, years=None, required=True):
         if not years:
             # С 20 декабря будет показан и следующий год
-            years = range((datetime.date.today() + datetime.timedelta(days=12)).year, 1899, -1)
+            years = list(range((datetime.date.today() + datetime.timedelta(days=12)).year, 1899, -1))
         return super(UnclearSelectDateWidget, self).__init__(attrs, years, required)
 
     def render(self, name, value, attrs=None):
@@ -240,7 +239,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
             day_val = None if value.no_day else value.day
         except AttributeError:
             year_val = month_val = day_val = None
-            if isinstance(value, basestring):
+            if isinstance(value, str):
                 if settings.USE_L10N:
                     try:
                         input_format = get_format('DATE_INPUT_FORMATS')[0]
@@ -265,7 +264,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
                     'maxlength': '4',
         })
         # choices = zip(MONTHS.keys(), MONTHS.keys())
-        choices = MONTHS.items()
+        choices = list(MONTHS.items())
         month_html = self.create_select(name, self.month_field, value, month_val, choices, {'class': 'date-month'})
         choices = [(i, i) for i in range(1, 32)]
         day_html = self.create_select(name, self.day_field, value, day_val,  choices, {'class': 'date-day'})
@@ -278,7 +277,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
                 output.append(month_html)
             elif field == 'day':
                 output.append(day_html)
-        return mark_safe(u'\n'.join(output))
+        return mark_safe('\n'.join(output))
 
     def value_from_datadict(self, data, files, name):
 
@@ -326,7 +325,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
             id_ = 'id_%s' % name
         local_attrs = self.build_attrs(attrs, extra_attrs={'id': field % id_})
         s = Input(attrs=attrs)
-        input_html = s.render(field % name, unicode(val).rjust(4, '0') if val else val, local_attrs)
+        input_html = s.render(field % name, str(val).rjust(4, '0') if val else val, local_attrs)
         return input_html
 
 class UnclearDateField(forms.DateField):
@@ -354,21 +353,21 @@ class UnclearDateField(forms.DateField):
     def clean(self, value):
         if not value and self.required:
             raise forms.ValidationError(self.error_messages['required'])
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             if not re.search(r'^\d{1,4}\-\d{1,2}-\d{1,2}$', value):
                 raise forms.ValidationError(
-                    _(u'Была введена неверная дата (г-м-д): %s') % value
+                    _('Была введена неверная дата (г-м-д): %s') % value
                 )
             try:
                 datetime.datetime.strptime(value, "%Y-%m-%d")
             except ValueError:
                 y, m, d = value.split('-')
                 raise forms.ValidationError(
-                    _(u'Была введена неверная дата (дд-мм-гггг): %(day)s-%(month)s-%(year)s') % dict(
+                    _('Была введена неверная дата (дд-мм-гггг): %(day)s-%(month)s-%(year)s') % dict(
                     day=d.rjust(2,'0'), month=m.rjust(2,'0'), year=y.rjust(4,'0'),
                 ))
         elif isinstance(value, UnclearDate) and not value.no_day and value.no_month:
-            raise forms.ValidationError(_(u'Нет месяца в дате'))
+            raise forms.ValidationError(_('Нет месяца в дате'))
         return value
 
 class BaseModelForm(forms.ModelForm):
@@ -410,7 +409,7 @@ class CustomUploadModelForm(forms.ModelForm):
     # Вызывается после инициализации формы-потомка:
     #
     def init_bfile(self):
-        self.fields['bfile'].label = _(u'Скан')
+        self.fields['bfile'].label = _('Скан')
         # Это пришлось сделать, чтобы при ошибке file upload
         # показывать исходный файл:
         try:
@@ -430,7 +429,7 @@ class CustomUploadModelForm(forms.ModelForm):
         if bfile and not isinstance(bfile, FieldFile):
             if bfile.size > self.MAX_UPLOAD_SIZE_MB * 2**20:
                 raise forms.ValidationError(
-                    _(u'Попытка загрузки файла %(filename)s, превышен максимальный размер: %(max_size)s Мб.') % \
+                    _('Попытка загрузки файла %(filename)s, превышен максимальный размер: %(max_size)s Мб.') % \
                     dict(filename=bfile._name, max_size=self.MAX_UPLOAD_SIZE_MB)
                 )
             # К сожалению, разработчик поздно заметил, что есть тип поля в модели:
@@ -439,7 +438,7 @@ class CustomUploadModelForm(forms.ModelForm):
             # Посему проверка здесь, если необходимо.
             if hasattr(self, 'CHECK_IF_IMAGE') and self.CHECK_IF_IMAGE:
                 if not get_image(bfile):
-                    raise forms.ValidationError(_(u"Прикрепленный файл не являлся изображением"))
+                    raise forms.ValidationError(_("Прикрепленный файл не являлся изображением"))
         return bfile
 
 class CustomClearableFileInput(ClearableFileInput):
@@ -451,10 +450,10 @@ class CustomClearableFileInput(ClearableFileInput):
     def render(self, name, value, attrs=None):
 
         if self.show_clear_checkbox_:
-            self.template_with_initial = u'%(initial_text)s: %(initial)s<br />%(clear_template)s<br />%(input_text)s:<br /> %(input)s<br />'
-            self.template_with_clear = u'<label for="%(clear_checkbox_id)s">%(clear_checkbox_label)s:</label> %(clear)s'
+            self.template_with_initial = '%(initial_text)s: %(initial)s<br />%(clear_template)s<br />%(input_text)s:<br /> %(input)s<br />'
+            self.template_with_clear = '<label for="%(clear_checkbox_id)s">%(clear_checkbox_label)s:</label> %(clear)s'
         else:
-            self.template_with_initial = u'%(initial_text)s: %(initial)s<br />%(input_text)s:<br /> %(input)s<br />'
+            self.template_with_initial = '%(initial_text)s: %(initial)s<br />%(input_text)s:<br /> %(input)s<br />'
             self.template_with_clear = ''
 
         substitutions = {
@@ -463,16 +462,16 @@ class CustomClearableFileInput(ClearableFileInput):
             'clear_template': '',
             'clear_checkbox_label': self.clear_checkbox_label,
         }
-        template = u'%(input)s'
+        template = '%(input)s'
         substitutions['input'] = super(ClearableFileInput, self).render(name, value, attrs)
 
         url = value and hasattr(value, "url") and value.url or \
               hasattr(self, "url_") and self.url_
         if url:
             template = self.template_with_initial
-            substitutions['initial'] = (u'<a href="%s" target="_blank">%s</a>'
+            substitutions['initial'] = ('<a href="%s" target="_blank">%s</a>'
                                         % (escape(url),
-                                           "("+_(u"просмотр")+")"))
+                                           "("+_("просмотр")+")"))
 
             if self.show_clear_checkbox_ and not self.is_required:
                 checkbox_name = self.clear_checkbox_name(name)
@@ -489,9 +488,9 @@ class AppOrgFormMixin(object):
     def init_app_org_label(self):
         country_code = host_country_code(self.request)
         if country_code == 'by':
-            self.fields['applicant_organization'].label += _(u' (наименование или УНП)')
+            self.fields['applicant_organization'].label += _(' (наименование или УНП)')
         else:
-            self.fields['applicant_organization'].label += _(u' (наименование или ИНН)')
+            self.fields['applicant_organization'].label += _(' (наименование или ИНН)')
 
     def opf_valid(self, main_form_class):
         """
