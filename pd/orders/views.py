@@ -2620,7 +2620,7 @@ class ApiLoruOrdersView(
                     except ValidationError as excpt:
                         raise ServiceException(
                             "Создать кабинет. %s" % \
-                                excpt.args and excpt.args[0] or _('Не удалось по неизвестной причине')
+                                (excpt.args and excpt.args[0] or _('Не удалось по неизвестной причине'))
                         )
                     login_phone = decimal.Decimal(login_phone_str)
                 if customer.get('address'):
