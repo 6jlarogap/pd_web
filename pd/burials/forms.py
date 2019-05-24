@@ -1205,12 +1205,12 @@ class BurialCommitForm(BurialForm):
             if self.archived_burial:
                 if not acc_number.strip():
                     if not cemetery or cemetery.archive_burial_account_number_required:
-                        msg = _("Нельзя %s архивное захоронение без указания его номера в книге учета") % msg_complete
+                        msg = _("Нельзя %s архивное захоронение без указания его номера в книге учета для этого кладбища") % msg_complete
                         raise forms.ValidationError(msg)
                     if not place_number.strip() and \
                         cemetery and \
                         cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER:
-                        msg = _("Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
+                        msg = _("Номер места, если не задан, для этого кладбища формируется из учетного номера захоронения, а он пустой")
                         raise forms.ValidationError(msg)
             elif not place_number.strip() and \
                 cemetery and \
@@ -1249,7 +1249,7 @@ class BurialCommitForm(BurialForm):
             # чтобы не оказалось: номер зх оставить пустым, а есть кладбища
             # с расстановкой мест по номеру зх. Но fool-proof не помешает...
             if is_ugh or self.request.POST.get('ready'):
-                msg = _("Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
+                msg = _("Номер места, если не задан, для этого кладбища формируется из учетного номера захоронения, а он пустой)")
                 raise forms.ValidationError(msg)
         elif (row.strip() or place_number.strip()) and not area:
             msg = _("Указан ряд и/или место, но не указан участок")
