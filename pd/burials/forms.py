@@ -1255,7 +1255,7 @@ class BurialCommitForm(BurialForm):
             msg = _("Указан ряд и/или место, но не указан участок")
             raise forms.ValidationError(msg)
 
-        grave_number = self.cleaned_data.get('grave_number')
+        grave_number = self.cleaned_data.get('grave_number') or 1
         place = None
         if cemetery and area and place_number:
             try:

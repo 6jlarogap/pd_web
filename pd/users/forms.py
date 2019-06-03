@@ -118,7 +118,9 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
         super(ProfileDataForm, self).__init__(*args, **kwargs)
         self.request = request
         self.fields['phones'].widget = forms.TextInput()
-        if not request.user.profile.org.is_loru():
+        if request.user.profile.org.is_loru():
+            self.fields['is_agent'].label = _('Агент (можно указывать доверенность)')
+        else:
             del self.fields['is_agent']
         if not host_country_code(request) == 'ru':
             del self.fields['phones_publish']
