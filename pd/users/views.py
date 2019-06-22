@@ -3510,7 +3510,13 @@ class ApiClientEmployeesView(ApiClientSiteMixin, APIView):
 
         cemetery_id = request.GET.get('cemeteryId')
         if cemetery_id:
-            qs &= Q(cemeteries__pk=cemetery_id, role__name=Role.ROLE_REGISTRATOR)
+            qs &= Q(
+                cemeteries__pk=cemetery_id,
+                role__name__in=(
+                    Role.ROLE_REGISTRATOR,
+                    Role.ROLE_CARETAKER,
+                    Role.ROLE_CEMETERY_MANAGER,
+            ))
 
         return Response(
             status=200,
