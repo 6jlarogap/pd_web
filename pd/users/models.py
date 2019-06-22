@@ -60,6 +60,7 @@ class Role(models.Model):
     ROLE_ADMIN = 'admin'
     ROLE_REGISTRATOR = 'registrator'
     ROLE_CARETAKER = 'caretaker'
+    ROLE_CEMETERY_MANAGER = 'cemetery_manager'
 
     # Может выдавать данные в реестр.
     # Эту роль не надо вносить в таблицу, если на сайте
@@ -253,6 +254,9 @@ class Profile(CommonProfile):
     def is_admin(self):
         return self.role.filter(name=Role.ROLE_ADMIN).exists()
 
+    def is_cemetery_manager(self):
+        return self.role.filter(name=Role.ROLE_CEMETERY_MANAGER).exists()
+
     def get_roles(self):
         return self.role.values_list('name', flat=True)
 
@@ -260,7 +264,8 @@ class Profile(CommonProfile):
         result = False
         if self.is_ugh():
             roles = self.get_roles()
-            result = Role.ROLE_REGISTRATOR in roles
+            result = Role.ROLE_REGISTRATOR in roles or \
+                     Role.ROLE_CEMETERY_MANAGER in roles
         return result
 
     def is_registrator_or_caretaker(self):
@@ -268,6 +273,7 @@ class Profile(CommonProfile):
         if self.is_ugh():
             roles = self.get_roles()
             result = Role.ROLE_REGISTRATOR in roles or \
+                     Role.ROLE_CEMETERY_MANAGER in roles or \
                      Role.ROLE_CARETAKER in roles
         return result
 
@@ -276,7 +282,8 @@ class Profile(CommonProfile):
         if self.is_ugh():
             roles = self.get_roles()
             result = Role.ROLE_CARETAKER in roles and \
-                     Role.ROLE_REGISTRATOR not in roles
+                     Role.ROLE_REGISTRATOR not in roles and \
+                     Role.ROLE_CEMETERY_MANAGER not in roles
         return result
 
     def is_registry_handler(self):
