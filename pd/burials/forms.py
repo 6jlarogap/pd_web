@@ -26,7 +26,7 @@ from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Comm
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID, IDDocumentType, OrderDeadPerson
 from users.forms import BaseOrgForm
-from users.models import Org, Profile, Dover
+from users.models import Org, Profile, Dover, Role
 from logs.models import write_log
 from pd.models import SafeDeleteMixin
 from pd.utils import rus_to_lat, reorder_form_fields
@@ -1949,6 +1949,10 @@ class BaseBurialCommentEditFormSet(BaseInlineFormSet):
         super(BaseBurialCommentEditFormSet, self).__init__(*args, **kwargs)
         self.own_cemetery = not self.instance.cemetery or \
                             self.instance.cemetery in Cemetery.editable_ugh_cemeteries(request.user)
+        is_role_cemetery_manager_in_system = Role.objects.filter(name=Role.ROLE_CEMETERY_MANAGER).exists()
+        if is_role_cemetery_manager_in_system:
+            is_cemetery_manager = self.own_cemetery and request.user.profile.is_cemetery_manager()
+
         for f in self.forms:
             f.formset = self
             f.fields['comment'].required = False
@@ -1963,17 +1967,32 @@ class BaseBurialCommentEditFormSet(BaseInlineFormSet):
                 if owner == request.user:
                     f.owner_ = True
                     f.can_edit_ = self.own_cemetery
-                elif self.instance.cemetery and self.own_cemetery:
-                    #
-                    # Создал комментарий не этот пользователь
-                    # Если:
-                    # - захоронение имеет кладбище
-                    # - текущий пользователь имеет доступ к этому кладбищу
-                    # - создал комментарий уволенный или перешедший на другое кладбище сотрудник
-                    # то текущий пользователь может править/удалять комментарий
-                    #
-                    f.owner_retired_ = self.instance.cemetery not in Cemetery.editable_ugh_cemeteries(user=owner)
-                    f.can_edit_ = f.owner_retired_
+
+                # Комментарий захоронения без кладбища может править только
+                # создатель комментария
+
+                elif self.instance.cemetery:
+
+                #   Если текущий пользователь - не владелец комментария. Два варианта.
+                #   1. Есть роль заведующего кладбищем в системе.
+                #       Тогда править чужой комментарий
+                #       может только заведующий кладбищем, даже если владелец комментария
+                #       еще имеет права на кладбище.
+                #   2. Нет роли заведующего кладбищем в системе.
+                #       Тогда любой пользователь из тех, кто имеет права на кладбище,
+                #       может редактировать/удалять комментарий, если владелец комментария
+                #       уже не имеет прав на кладбище (уволен, ушел на другое кладбище,
+                #       потерял роль регистратора/смотрителя)
+                #
+
+                    if is_role_cemetery_manager_in_system:
+                        if is_cemetery_manager:
+                            f.owner_retired_ = self.instance.cemetery not in Cemetery.editable_ugh_cemeteries(user=owner)
+                            f.can_edit_ = True
+                    else:
+                        if self.own_cemetery:
+                            f.owner_retired_ = self.instance.cemetery not in Cemetery.editable_ugh_cemeteries(user=owner)
+                            f.can_edit_ = f.owner_retired_
                 if not f.can_edit_:
                     f.fields['comment'].widget.attrs.update({'readonly':'True'})
             f.fields['comment'].widget.attrs.update({'rows':'4'})

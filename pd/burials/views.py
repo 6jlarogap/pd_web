@@ -123,7 +123,11 @@ class CaretakerMixin(object):
                 for user in User.objects.filter(
                                 profile__org=ugh,
                                 profile__out_of_staff=False,
-                                profile__role__name__in=(Role.ROLE_REGISTRATOR, Role.ROLE_CARETAKER,),
+                                profile__role__name__in=(
+                                    Role.ROLE_REGISTRATOR,
+                                    Role.ROLE_CARETAKER,
+                                    Role.ROLE_CEMETERY_MANAGER,
+                                ),
                                 is_active=True,
                             ).order_by(
                                 'profile__user_last_name',
@@ -300,7 +304,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
         return [
                 ProfileFioLoginSerializer(p).data for p in Profile.objects.filter(
                     org=org,
-                    role__name=Role.ROLE_REGISTRATOR,
+                    role__name__in=(Role.ROLE_REGISTRATOR, Role.ROLE_CEMETERY_MANAGER,),
                 ).distinct()
         ]
 
@@ -312,7 +316,7 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
             return [
                     p.pk for p in Profile.objects.filter(
                         cemeteries=cemetery,
-                        role__name=Role.ROLE_REGISTRATOR,
+                        role__name__in=(Role.ROLE_REGISTRATOR, Role.ROLE_CEMETERY_MANAGER,),
                     ).distinct()
             ]
         else:
