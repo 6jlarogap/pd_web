@@ -92,7 +92,7 @@ class BurialSearchForm(forms.Form):
     loru_in_burials = forms.CharField(required=False, max_length=60, label=_("Посредник (ЛОРУ)"))
     responsible = forms.CharField(required=False, max_length=40, label=_("Ответственный"))
     operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_("Вид захоронения"))
-    burial_container = forms.TypedChoiceField(required=False, label=_("Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
+    burial_container = forms.TypedChoiceField(required=False, label=_("Тип захоронения"), choices=EMPTY + tuple(Burial.container_list_advanced()))
     cemeteries_editable = forms.BooleanField(label=_("Свои кладбища"), required=False, initial=True)
     cemetery = forms.CharField(required=False, label=_("Кладбище"))
     area = forms.CharField(required=False, label=_("Участок"))
