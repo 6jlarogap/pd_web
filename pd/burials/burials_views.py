@@ -657,8 +657,20 @@ class BurialsListView(PaginateListView):
                 if len(fio) > 0:
                     qa &= Q(applicant__last_name__iregex=re_search(fio[0]))
                     burials = burials.filter(qa)
-            if form.cleaned_data['burial_container']:
-                burials = burials.filter(burial_container=form.cleaned_data['burial_container'])
+
+            burial_container = form.cleaned_data['burial_container']
+            if burial_container:
+                if burial_container == Burial.CONTAINER_URN_IN_GRAVE:
+                    q_container = Q(burial_container=Burial.CONTAINER_URN)
+                    q_container &= Q(area__kind=Area.KIND_GRAVES)
+                    burials = burials.filter(q_container)
+                elif burial_container == Burial.CONTAINER_URN_IN_COLUMBARIUM:
+                    q_container = Q(burial_container=Burial.CONTAINER_URN)
+                    q_container &= ~Q(area__kind=Area.KIND_GRAVES)
+                    burials = burials.filter(q_container)
+                else:
+                    burials = burials.filter(burial_container=burial_container)
+
             if form.cleaned_data['annulated']:
                 burials = burials.filter(annulated=True)
             else:
