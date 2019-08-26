@@ -871,6 +871,12 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     CONTAINER_ASH = 'container_ash'
     CONTAINER_BIO = 'container_bio'
 
+    # Это для продвинутого списка select в поиске,
+    # но не для записи в поле таблицы в б.д.
+    #
+    CONTAINER_URN_IN_GRAVE = 'container_urn_in_grave'
+    CONTAINER_URN_IN_COLUMBARIUM = 'container_urn_in_columbarium'
+
     BURIAL_CONTAINERS = (
         (CONTAINER_COFFIN, _("Гроб")),
         (CONTAINER_URN, _("Урна")),
@@ -957,6 +963,19 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         по Burial, оставляем эту функцию-заглушку.
         """
         return self
+
+    @classmethod
+    def container_list_advanced(cls):
+        """
+        Добавить в список урны в колумбарии и могилах после 'урна'
+        """
+        result = []
+        for c in Burial.BURIAL_CONTAINERS:
+            result.append(c)
+            if c[0] == Burial.CONTAINER_URN:
+                result.append((Burial.CONTAINER_URN_IN_GRAVE, _("Урна в могиле")))
+                result.append((Burial.CONTAINER_URN_IN_COLUMBARIUM, _("Урна в колумбарии")))
+        return result
 
     def is_edit(self):
         return self.is_draft() or self.is_backed() or self.is_declined()
