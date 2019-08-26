@@ -26,7 +26,7 @@ from pd.forms import PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, Comm
 from persons.forms import DeadPersonForm, DeathCertificateForm, AlivePersonForm, PersonIDForm
 from persons.models import DeathCertificate, PersonID, IDDocumentType, OrderDeadPerson
 from users.forms import BaseOrgForm
-from users.models import Org, Profile, Dover
+from users.models import Org, Profile, Dover, Role
 from logs.models import write_log
 from pd.models import SafeDeleteMixin
 from pd.utils import rus_to_lat, reorder_form_fields
@@ -92,7 +92,7 @@ class BurialSearchForm(forms.Form):
     loru_in_burials = forms.CharField(required=False, max_length=60, label=_("Посредник (ЛОРУ)"))
     responsible = forms.CharField(required=False, max_length=40, label=_("Ответственный"))
     operation = forms.ChoiceField(required=False, choices=EMPTY + Burial.BURIAL_TYPES, label=_("Вид захоронения"))
-    burial_container = forms.TypedChoiceField(required=False, label=_("Тип захоронения"), choices=EMPTY + Burial.BURIAL_CONTAINERS)
+    burial_container = forms.TypedChoiceField(required=False, label=_("Тип захоронения"), choices=EMPTY + tuple(Burial.container_list_advanced()))
     cemeteries_editable = forms.BooleanField(label=_("Свои кладбища"), required=False, initial=True)
     cemetery = forms.CharField(required=False, label=_("Кладбище"))
     area = forms.CharField(required=False, label=_("Участок"))
@@ -1205,12 +1205,12 @@ class BurialCommitForm(BurialForm):
             if self.archived_burial:
                 if not acc_number.strip():
                     if not cemetery or cemetery.archive_burial_account_number_required:
-                        msg = _("Нельзя %s архивное захоронение без указания его номера в книге учета") % msg_complete
+                        msg = _("Нельзя %s архивное захоронение без указания его номера в книге учета для этого кладбища") % msg_complete
                         raise forms.ValidationError(msg)
                     if not place_number.strip() and \
                         cemetery and \
                         cemetery.places_algo_archive == Cemetery.PLACE_ARCHIVE_BURIAL_ACCOUNT_NUMBER:
-                        msg = _("Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
+                        msg = _("Номер места, если не задан, для этого кладбища формируется из учетного номера захоронения, а он пустой")
                         raise forms.ValidationError(msg)
             elif not place_number.strip() and \
                 cemetery and \
@@ -1249,13 +1249,13 @@ class BurialCommitForm(BurialForm):
             # чтобы не оказалось: номер зх оставить пустым, а есть кладбища
             # с расстановкой мест по номеру зх. Но fool-proof не помешает...
             if is_ugh or self.request.POST.get('ready'):
-                msg = _("Номер места не может быть пуст, если формируется из номера захоронения, а он пустой (см. свойства организации)")
+                msg = _("Номер места, если не задан, для этого кладбища формируется из учетного номера захоронения, а он пустой)")
                 raise forms.ValidationError(msg)
         elif (row.strip() or place_number.strip()) and not area:
             msg = _("Указан ряд и/или место, но не указан участок")
             raise forms.ValidationError(msg)
 
-        grave_number = self.cleaned_data.get('grave_number')
+        grave_number = self.cleaned_data.get('grave_number') or 1
         place = None
         if cemetery and area and place_number:
             try:
@@ -1949,6 +1949,10 @@ class BaseBurialCommentEditFormSet(BaseInlineFormSet):
         super(BaseBurialCommentEditFormSet, self).__init__(*args, **kwargs)
         self.own_cemetery = not self.instance.cemetery or \
                             self.instance.cemetery in Cemetery.editable_ugh_cemeteries(request.user)
+        is_role_cemetery_manager_in_system = Role.objects.filter(name=Role.ROLE_CEMETERY_MANAGER).exists()
+        if is_role_cemetery_manager_in_system:
+            is_cemetery_manager = self.own_cemetery and request.user.profile.is_cemetery_manager()
+
         for f in self.forms:
             f.formset = self
             f.fields['comment'].required = False
@@ -1963,17 +1967,32 @@ class BaseBurialCommentEditFormSet(BaseInlineFormSet):
                 if owner == request.user:
                     f.owner_ = True
                     f.can_edit_ = self.own_cemetery
-                elif self.instance.cemetery and self.own_cemetery:
-                    #
-                    # Создал комментарий не этот пользователь
-                    # Если:
-                    # - захоронение имеет кладбище
-                    # - текущий пользователь имеет доступ к этому кладбищу
-                    # - создал комментарий уволенный или перешедший на другое кладбище сотрудник
-                    # то текущий пользователь может править/удалять комментарий
-                    #
-                    f.owner_retired_ = self.instance.cemetery not in Cemetery.editable_ugh_cemeteries(user=owner)
-                    f.can_edit_ = f.owner_retired_
+
+                # Комментарий захоронения без кладбища может править только
+                # создатель комментария
+
+                elif self.instance.cemetery:
+
+                #   Если текущий пользователь - не владелец комментария. Два варианта.
+                #   1. Есть роль заведующего кладбищем в системе.
+                #       Тогда править чужой комментарий
+                #       может только заведующий кладбищем, даже если владелец комментария
+                #       еще имеет права на кладбище.
+                #   2. Нет роли заведующего кладбищем в системе.
+                #       Тогда любой пользователь из тех, кто имеет права на кладбище,
+                #       может редактировать/удалять комментарий, если владелец комментария
+                #       уже не имеет прав на кладбище (уволен, ушел на другое кладбище,
+                #       потерял роль регистратора/смотрителя)
+                #
+
+                    if is_role_cemetery_manager_in_system:
+                        if is_cemetery_manager:
+                            f.owner_retired_ = self.instance.cemetery not in Cemetery.editable_ugh_cemeteries(user=owner)
+                            f.can_edit_ = True
+                    else:
+                        if self.own_cemetery:
+                            f.owner_retired_ = self.instance.cemetery not in Cemetery.editable_ugh_cemeteries(user=owner)
+                            f.can_edit_ = f.owner_retired_
                 if not f.can_edit_:
                     f.fields['comment'].widget.attrs.update({'readonly':'True'})
             f.fields['comment'].widget.attrs.update({'rows':'4'})
