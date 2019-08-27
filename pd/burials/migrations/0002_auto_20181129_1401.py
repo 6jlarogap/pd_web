@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 from django.db import models, migrations
 import django.db.models.deletion
 from django.conf import settings
@@ -37,7 +34,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='placestatusfiles',
             name='placestatus',
-            field=models.ForeignKey(to='burials.PlaceStatus'),
+            field=models.ForeignKey(to='burials.PlaceStatus', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -49,7 +46,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='placestatus',
             name='place',
-            field=models.ForeignKey(verbose_name='\u041c\u0435\u0441\u0442\u043e', to='burials.Place'),
+            field=models.ForeignKey(verbose_name='\u041c\u0435\u0441\u0442\u043e', to='burials.Place', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -71,7 +68,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='placephoto',
             name='place',
-            field=models.ForeignKey(to='burials.Place'),
+            field=models.ForeignKey(to='burials.Place', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -111,25 +108,25 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='orderplace',
             name='area',
-            field=models.ForeignKey(verbose_name='\u0423\u0447\u0430\u0441\u0442\u043e\u043a', to='burials.Area', null=True),
+            field=models.ForeignKey(verbose_name='\u0423\u0447\u0430\u0441\u0442\u043e\u043a', to='burials.Area', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='orderplace',
             name='cemetery',
-            field=models.ForeignKey(verbose_name='\u041a\u043b\u0430\u0434\u0431\u0438\u0449\u0435', to='burials.Cemetery', null=True),
+            field=models.ForeignKey(verbose_name='\u041a\u043b\u0430\u0434\u0431\u0438\u0449\u0435', to='burials.Cemetery', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='orderplace',
             name='order',
-            field=models.OneToOneField(verbose_name='\u0417\u0430\u043a\u0430\u0437', to='orders.Order'),
+            field=models.OneToOneField(verbose_name='\u0417\u0430\u043a\u0430\u0437', to='orders.Order', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='grave',
             name='place',
-            field=models.ForeignKey(verbose_name='\u041c\u0435\u0441\u0442\u043e', to='burials.Place'),
+            field=models.ForeignKey(verbose_name='\u041c\u0435\u0441\u0442\u043e', to='burials.Place', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
@@ -157,7 +154,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='exhumationrequest',
             name='burial',
-            field=models.OneToOneField(editable=False, to='burials.Burial'),
+            field=models.OneToOneField(editable=False, to='burials.Burial', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -169,13 +166,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='exhumationrequest',
             name='place',
-            field=models.ForeignKey(editable=False, to='burials.Place', null=True),
+            field=models.ForeignKey(editable=False, to='burials.Place', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='cemeteryschema',
             name='cemetery',
-            field=models.OneToOneField(to='burials.Cemetery'),
+            field=models.OneToOneField(to='burials.Cemetery', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -187,7 +184,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='cemeteryphoto',
             name='cemetery',
-            field=models.OneToOneField(to='burials.Cemetery'),
+            field=models.OneToOneField(to='burials.Cemetery', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -209,7 +206,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='cemetery',
             name='address',
-            field=models.ForeignKey(editable=False, to='geo.Location', null=True),
+            field=models.ForeignKey(editable=False, to='geo.Location', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -237,7 +234,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='burialfiles',
             name='burial',
-            field=models.ForeignKey(to='burials.Burial'),
+            field=models.ForeignKey(to='burials.Burial', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -249,19 +246,19 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='burialcomment',
             name='burial',
-            field=models.ForeignKey(verbose_name='\u0417\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u0435', to='burials.Burial'),
+            field=models.ForeignKey(verbose_name='\u0417\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u0435', to='burials.Burial', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='burialcomment',
             name='creator',
-            field=models.ForeignKey(verbose_name='\u0421\u043e\u0437\u0434\u0430\u0442\u0435\u043b\u044c', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(verbose_name='\u0421\u043e\u0437\u0434\u0430\u0442\u0435\u043b\u044c', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='burialcomment',
             name='modifier',
-            field=models.ForeignKey(related_name='modified_by', verbose_name='\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u0438\u0437\u043c\u0435\u043d\u0438\u0432\u0448\u0438\u0439', to=settings.AUTH_USER_MODEL, null=True),
+            field=models.ForeignKey(related_name='modified_by', verbose_name='\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u0438\u0437\u043c\u0435\u043d\u0438\u0432\u0448\u0438\u0439', to=settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -357,7 +354,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='areaphoto',
             name='area',
-            field=models.ForeignKey(to='burials.Area'),
+            field=models.ForeignKey(to='burials.Area', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(

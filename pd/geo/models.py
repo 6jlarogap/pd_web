@@ -143,7 +143,7 @@ class Region(models.Model):
     Регион.
     """
 
-    country = models.ForeignKey(Country)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
     name = models.CharField(_("Название"), max_length=255, db_index=True)
 
     def __str__(self):
@@ -161,7 +161,7 @@ class City(models.Model):
     Город.
     """
 
-    region = models.ForeignKey(Region)
+    region = models.ForeignKey(Region, on_delete=models.CASCADE)
     name = models.CharField(_("Название"), max_length=255, db_index=True)
 
     def __str__(self):
@@ -179,7 +179,7 @@ class Street(models.Model):
     Улица.
     """
 
-    city = models.ForeignKey(City)
+    city = models.ForeignKey(City, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, db_index=True)
 
     class Meta:

@@ -52,8 +52,8 @@ class Log(models.Model):
     """
     Журнал различных событий
     """
-    user = models.ForeignKey('auth.User', null=True, editable=False, verbose_name=_("Пользователь"))
-    ct = models.ForeignKey('contenttypes.ContentType', null=True, editable=False, verbose_name=_("Тип"))
+    user = models.ForeignKey('auth.User', null=True, editable=False, verbose_name=_("Пользователь"), on_delete=models.CASCADE)
+    ct = models.ForeignKey('contenttypes.ContentType', null=True, editable=False, verbose_name=_("Тип"), on_delete=models.CASCADE)
     obj_id = models.PositiveIntegerField(null=True, editable=False, verbose_name=_("ID объекта"), db_index=True)
     obj = GenericForeignKey(ct_field='ct', fk_field='obj_id')
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_("Время"), db_index=True)
@@ -336,8 +336,8 @@ class LoginLog(models.Model):
     Журнал входа пользователей в систему
     """
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_("Время"))
-    user = models.ForeignKey('auth.User', verbose_name=_("Пользователь"))
-    org = models.ForeignKey('users.Org', verbose_name=_("Организация"), null=True)
+    user = models.ForeignKey('auth.User', verbose_name=_("Пользователь"), on_delete=models.CASCADE)
+    org = models.ForeignKey('users.Org', verbose_name=_("Организация"), null=True, on_delete=models.CASCADE)
     ip = models.GenericIPAddressField(unpack_ipv4=True, null=True)
 
     @classmethod
@@ -357,7 +357,7 @@ class DeleteLog(models.Model):
     """
     Журнал удаления объектов. Для синхронизации, например, с мобильным клиентом.
     """
-    ct = models.ForeignKey('contenttypes.ContentType', editable=False, verbose_name=_("Тип"))
+    ct = models.ForeignKey('contenttypes.ContentType', editable=False, verbose_name=_("Тип"), on_delete=models.CASCADE)
     obj_id = models.PositiveIntegerField(editable=False, verbose_name=_("ID объекта"))
     obj = GenericForeignKey(ct_field='ct', fk_field='obj_id')
     dt = models.DateTimeField(auto_now_add=True, verbose_name=_("Время"), db_index=True)
