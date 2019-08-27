@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 from django.db import models, migrations
 import django.db.models.deletion
 
@@ -64,7 +61,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('name', models.CharField(max_length=255, verbose_name='\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435', db_index=True)),
-                ('country', models.ForeignKey(to='geo.Country')),
+                ('country', models.ForeignKey(to='geo.Country', on_delete=models.CASCADE)),
             ],
             options={
                 'ordering': ['name'],
@@ -79,7 +76,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('name', models.CharField(max_length=255, db_index=True)),
-                ('city', models.ForeignKey(to='geo.City')),
+                ('city', models.ForeignKey(to='geo.City', on_delete=models.CASCADE)),
             ],
             options={
                 'ordering': ['name'],
@@ -111,7 +108,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='city',
             name='region',
-            field=models.ForeignKey(to='geo.Region'),
+            field=models.ForeignKey(to='geo.Region', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(

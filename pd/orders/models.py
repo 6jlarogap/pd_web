@@ -109,7 +109,7 @@ class ProductCategory(models.Model):
         return self.name
 
 class ProductGroup(models.Model):
-    loru = models.ForeignKey(Org, verbose_name=_("ЛОРУ"))
+    loru = models.ForeignKey(Org, verbose_name=_("ЛОРУ"), on_delete=models.CASCADE)
     productcategory = models.ForeignKey(ProductCategory, verbose_name=_("Категория"), on_delete=models.PROTECT)
     name = models.CharField(_("Название"), max_length=255)
     description = models.TextField(_("Описание"), blank=True, default='')
@@ -144,7 +144,7 @@ class Product(BaseModel):
     
     PRODUCT_NAME_MAXLEN = 60
 
-    loru = models.ForeignKey(Org, null=True, verbose_name=_("Поставщик"))
+    loru = models.ForeignKey(Org, null=True, verbose_name=_("Поставщик"), on_delete=models.CASCADE)
     name = models.CharField(_("Название"), max_length=255)
     slug = AutoSlugField(populate_from='name', max_length=255, editable=False,
                          unique=True, null=True, always_update=True)
@@ -238,13 +238,13 @@ class Order(GetLogsMixin, BaseModel):
 
     type = models.CharField(_("Тип Заказ"), max_length=255, choices=ORDER_TYPES, default=TYPE_BURIAL, editable=False)
 
-    loru = models.ForeignKey(Org, null=True, verbose_name=_("ЛОРУ"))
+    loru = models.ForeignKey(Org, null=True, verbose_name=_("ЛОРУ"), on_delete=models.CASCADE)
     loru_number = models.PositiveIntegerField(_("Номер в переделах исполнителя заказа"), null=True, editable=False)
     number = models.PositiveIntegerField(_("Номер в переделах исполнителя заказа и года"), null=True, editable=False)
     payment = models.CharField(_("Тип платежа"), max_length=255, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
     applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_("Заказчик-ФЛ"), null=True, blank=True,
                                   on_delete=models.PROTECT)
-    applicant_organization = models.ForeignKey(Org, verbose_name=_("Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders')
+    applicant_organization = models.ForeignKey(Org, verbose_name=_("Заказчик-ЮЛ"), null=True, blank=True, related_name='org_orders', on_delete=models.CASCADE)
     agent_director = models.BooleanField(_("Директор-Агент"), default=False, blank=True)
     agent = models.ForeignKey('users.Profile', verbose_name=_("Агент"), null=True, blank=True,
                               limit_choices_to={'is_agent': True}, on_delete=models.PROTECT)
@@ -254,7 +254,7 @@ class Order(GetLogsMixin, BaseModel):
     archived = models.BooleanField(_('Архивирован'), editable=False, default=False)
     cost = models.DecimalField(_("Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateField(_("Дата заказа"))
-    burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True)
+    burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True, on_delete=models.CASCADE)
 
     customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_("Место захоронения"),
                                     null=True, editable=False, on_delete=models.PROTECT)
@@ -265,7 +265,7 @@ class Order(GetLogsMixin, BaseModel):
     # (applicant == applicant_organization = None):
     title = models.CharField(_("Наименование покупателя"), max_length=255, default='', editable=False)
     phones = models.TextField(_("Телефоны"), null=True, editable=False)
-    address = models.ForeignKey('geo.Location', verbose_name=_("Адрес"), null=True, editable=False)
+    address = models.ForeignKey('geo.Location', verbose_name=_("Адрес"), null=True, editable=False, on_delete=models.CASCADE)
 
     # Для заказа похорон
     dt_due = models.DateField(_("Дата похорон"), editable=False, null=True)
@@ -640,7 +640,7 @@ class OrderItemMixin(object):
         return float(self.cost)
 
 class ServiceItem(OrderItemMixin, models.Model):
-    order = models.ForeignKey(Order)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
     orgservice = models.ForeignKey(OrgService, verbose_name=_("Услуга"), on_delete=models.PROTECT)
     cost = models.DecimalField(_("Цена"), max_digits=20, decimal_places=2)
 
@@ -655,8 +655,8 @@ class OrderComment(BaseModel):
         (TYPE_PUBLIC, _("Общедоступный")),
     )
 
-    order = models.ForeignKey(Order, verbose_name=_("Заказ"), )
-    user = models.ForeignKey('auth.User', verbose_name=_("Пользователь"), )
+    order = models.ForeignKey(Order, verbose_name=_("Заказ"), on_delete=models.CASCADE)
+    user = models.ForeignKey('auth.User', verbose_name=_("Пользователь"), on_delete=models.CASCADE)
     type = models.CharField(_("Тип"), max_length=255, choices=COMMENT_TYPES, default=TYPE_SHARED)
     comment = models.TextField(_("Комментарий"), )
 
@@ -697,7 +697,7 @@ class OrderWebPay(BaseModel):
         PAY_TYPE_AUTHORIZED,
     )
 
-    order = models.ForeignKey(Order, verbose_name=_("Заказ"))
+    order = models.ForeignKey(Order, verbose_name=_("Заказ"), on_delete=models.CASCADE)
 
     # Этот номер, wsb_order_num, "наш" номер заказа, формируемый функцией
     # Order.number_verbose(), отправляется в WebPay, чтобы тот попросил заказчика
@@ -739,7 +739,7 @@ class ResultFile(Files):
     # Мегабайт:
     MAX_IMAGE_SIZE = 10
 
-    order = models.ForeignKey(Order, verbose_name=_("Заказ"), )
+    order = models.ForeignKey(Order, verbose_name=_("Заказ"), on_delete=models.CASCADE)
     type = models.CharField(_("Тип"), max_length=255, choices=RESULT_TYPES, default=TYPE_IMAGE)
     is_title = models.BooleanField(_("Титульное фото"), default=False, editable=False)
 
@@ -777,8 +777,8 @@ class ResultFile(Files):
         return result
 
 class OrderItem(OrderItemMixin, models.Model):
-    order = models.ForeignKey(Order, editable=False)
-    product = models.ForeignKey(Product, verbose_name=_("Товар"))
+    order = models.ForeignKey(Order, editable=False, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, verbose_name=_("Товар"), on_delete=models.CASCADE)
     quantity = models.DecimalField(_("Кол-во"), max_digits=20, decimal_places=2, default=1)
     cost = models.DecimalField(_("Цена"), max_digits=20, decimal_places=2, editable=True)
     discount = models.DecimalField(_("Скидка"), max_digits=4, decimal_places=2, editable=False, default='0.00')
@@ -849,7 +849,7 @@ class OrderItem(OrderItemMixin, models.Model):
             return int(self.discount)
 
 class CatafalqueData(models.Model):
-    order = models.OneToOneField('orders.Order', editable=False)
+    order = models.OneToOneField('orders.Order', editable=False, on_delete=models.CASCADE)
 
     route = models.TextField(_("Маршрут"))
     start_time = models.TimeField(_("Время подачи"))
@@ -858,15 +858,15 @@ class CatafalqueData(models.Model):
     cemetery_time = models.TimeField(_("Время заезда на кладбище"), null=True)
 
 class AddInfoData(models.Model):
-    order = models.OneToOneField('orders.Order', editable=False)
+    order = models.OneToOneField('orders.Order', editable=False, on_delete=models.CASCADE)
     add_info = models.TextField(_("Доп.инфо"), blank=True)
 
 class CoffinData(models.Model):
-    order = models.OneToOneField('orders.Order', editable=False)
+    order = models.OneToOneField('orders.Order', editable=False, on_delete=models.CASCADE)
     size = models.TextField(_("Размер"))
 
 class Route(PointsModel):
-    order = models.ForeignKey(Order)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
 
     class Meta:
         unique_together = (

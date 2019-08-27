@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 from django.db import models, migrations
 import django.db.models.deletion
 from django.conf import settings
@@ -20,31 +17,31 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='deathcertificate',
             name='zags',
-            field=models.ForeignKey(verbose_name='\u0417\u0410\u0413\u0421', blank=True, to='users.Org', null=True),
+            field=models.ForeignKey(verbose_name='\u0417\u0410\u0413\u0421', blank=True, to='users.Org', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='customplace',
             name='address',
-            field=models.ForeignKey(verbose_name='\u0410\u0434\u0440\u0435\u0441', to='geo.Location', null=True),
+            field=models.ForeignKey(verbose_name='\u0410\u0434\u0440\u0435\u0441', to='geo.Location', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='customplace',
             name='favorite_performer',
-            field=models.ForeignKey(verbose_name='\u041f\u0440\u0435\u0434\u043f\u043e\u0447\u0442\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0438\u0441\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c', blank=True, to='users.Org', null=True),
+            field=models.ForeignKey(verbose_name='\u041f\u0440\u0435\u0434\u043f\u043e\u0447\u0442\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0439 \u0438\u0441\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c', blank=True, to='users.Org', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='customplace',
             name='place',
-            field=models.ForeignKey(verbose_name='\u041c\u0435\u0441\u0442\u043e', to='burials.Place', null=True),
+            field=models.ForeignKey(verbose_name='\u041c\u0435\u0441\u0442\u043e', to='burials.Place', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='customplace',
             name='user',
-            field=models.ForeignKey(verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0437\u0430 \u043c\u0435\u0441\u0442\u043e \u0438\u043b\u0438 \u0443\u043a\u0430\u0437\u0430\u0432\u0448\u0438\u0439 \u043c\u0435\u0441\u0442\u043e', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0437\u0430 \u043c\u0435\u0441\u0442\u043e \u0438\u043b\u0438 \u0443\u043a\u0430\u0437\u0430\u0432\u0448\u0438\u0439 \u043c\u0435\u0441\u0442\u043e', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
@@ -54,25 +51,25 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='custompersonpermission',
             name='customperson',
-            field=models.ForeignKey(to='persons.CustomPerson'),
+            field=models.ForeignKey(to='persons.CustomPerson', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='customperson',
             name='customplace',
-            field=models.ForeignKey(verbose_name='\u041c\u0435\u0441\u0442\u043e \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u044f', blank=True, to='persons.CustomPlace', null=True),
+            field=models.ForeignKey(verbose_name='\u041c\u0435\u0441\u0442\u043e \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u0438\u044f', blank=True, to='persons.CustomPlace', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='customperson',
             name='person',
-            field=models.ForeignKey(verbose_name='\u041b\u0438\u0446\u043e', to='persons.BasePerson', null=True),
+            field=models.ForeignKey(verbose_name='\u041b\u0438\u0446\u043e', to='persons.BasePerson', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='customperson',
             name='user',
-            field=models.ForeignKey(verbose_name='\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446 \u0438\u043b\u0438 \u0443\u043a\u0430\u0437\u0430\u0432\u0448\u0438\u0439 \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u043d\u043e\u0433\u043e', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(verbose_name='\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446 \u0438\u043b\u0438 \u0443\u043a\u0430\u0437\u0430\u0432\u0448\u0438\u0439 \u0437\u0430\u0445\u043e\u0440\u043e\u043d\u0435\u043d\u043d\u043e\u0433\u043e', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -84,7 +81,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='aliveperson',
             name='user',
-            field=models.ForeignKey(editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0437\u0430 \u043c\u0435\u0441\u0442\u043e \u0438\u043b\u0438 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c- \u0444\u0438\u0437. \u043b\u0438\u0446\u043e'),
+            field=models.ForeignKey(editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0437\u0430 \u043c\u0435\u0441\u0442\u043e \u0438\u043b\u0438 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c- \u0444\u0438\u0437. \u043b\u0438\u0446\u043e', on_delete=models.CASCADE),
             preserve_default=True,
         ),
     ]
