@@ -18,31 +18,31 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='loginlog',
             name='org',
-            field=models.ForeignKey(verbose_name='\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f', to='users.Org', null=True),
+            field=models.ForeignKey(verbose_name='\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f', to='users.Org', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='loginlog',
             name='user',
-            field=models.ForeignKey(verbose_name='\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(verbose_name='\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='log',
             name='ct',
-            field=models.ForeignKey(editable=False, to='contenttypes.ContentType', null=True, verbose_name='\u0422\u0438\u043f'),
+            field=models.ForeignKey(editable=False, to='contenttypes.ContentType', null=True, verbose_name='\u0422\u0438\u043f', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='log',
             name='user',
-            field=models.ForeignKey(editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c'),
+            field=models.ForeignKey(editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='deletelog',
             name='ct',
-            field=models.ForeignKey(editable=False, to='contenttypes.ContentType', verbose_name='\u0422\u0438\u043f'),
+            field=models.ForeignKey(editable=False, to='contenttypes.ContentType', verbose_name='\u0422\u0438\u043f', on_delete=models.CASCADE),
             preserve_default=True,
         ),
     ]

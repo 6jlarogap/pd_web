@@ -5,7 +5,8 @@ import sys
 activate_this = os.path.join(os.path.dirname(__file__), '..', 'ENV', 'bin', 'activate_this.py')
 if os.path.exists(activate_this):
     print("Activating %s" % activate_this)
-    exec(open(activate_this).read(), dict(__file__=activate_this))
+    with open(activate_this) as activate_this_file:
+        exec(activate_this_file.read(), dict(__file__=activate_this))
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pd.settings")
