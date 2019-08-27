@@ -53,7 +53,7 @@ class UserPhoto(Files):
     # Мин. ширина в пикселях
     MIN_SIZE_X = 200
 
-    user = models.OneToOneField(User, related_name='user_photo_list')
+    user = models.OneToOneField(User, related_name='user_photo_list', on_delete=models.CASCADE)
 
 class Role(models.Model):
 
@@ -81,7 +81,7 @@ class Role(models.Model):
 class CommonProfile(BaseModel):
     USERNAME_HELPTEXT = _('До 30 символов: латинские буквы, цифры, дефисы, знаки подчеркивания, @')
 
-    user = models.OneToOneField('auth.User', null=True)
+    user = models.OneToOneField('auth.User', null=True, on_delete=models.CASCADE)
     user_last_name = models.CharField(_("Фамилия"), max_length=255, blank=True, default='')
     user_first_name = models.CharField(_("Имя"), max_length=255, blank=True, default='')
     user_middle_name = models.CharField(_("Отчество"), max_length=255, blank=True, default='')
@@ -199,20 +199,20 @@ class CustomerProfile(CommonProfile):
         return user, password
 
 class Profile(CommonProfile):
-    org = models.ForeignKey('users.Org', null=True)
+    org = models.ForeignKey('users.Org', null=True, on_delete=models.CASCADE)
 
     is_agent = models.BooleanField(_("Агент"), default=False, blank=True)
     out_of_staff = models.BooleanField(_("Внештатный сотрудник"), default=False, blank=True)
     title = models.CharField(_("Должность"), max_length=255, blank=True)
 
-    cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_("Кладбище"), blank=True, null=True)
-    area = models.ForeignKey('burials.Area', verbose_name=_("Участок"), blank=True, null=True)
+    cemetery = models.ForeignKey('burials.Cemetery', verbose_name=_("Кладбище"), blank=True, null=True, on_delete=models.CASCADE)
+    area = models.ForeignKey('burials.Area', verbose_name=_("Участок"), blank=True, null=True, on_delete=models.CASCADE)
 
     role = models.ManyToManyField(Role, verbose_name=_("Роли в организации"), blank=True)
     cemeteries = models.ManyToManyField('burials.Cemetery',
                  verbose_name=_("Доступные кладбища"), related_name='rw_profiles', blank=True)
 
-    store = models.ForeignKey('users.Store', verbose_name=_("Подразделение"), blank=True, null=True)
+    store = models.ForeignKey('users.Store', verbose_name=_("Подразделение"), blank=True, null=True, on_delete=models.CASCADE)
 
     phones_publish = models.BooleanField(_("Публиковать телефоны?"), default=False, blank=True)
 
@@ -420,7 +420,7 @@ class YoutubeCaption(models.Model):
     """
     Субтритры
     """
-    youtubevideo = models.ForeignKey('users.YoutubeVideo')
+    youtubevideo = models.ForeignKey('users.YoutubeVideo', on_delete=models.CASCADE)
     num = models.PositiveIntegerField(_("Порядковый номер субтитра"))
     start = models.FloatField(_("Старт субтитра"))
     stop = models.FloatField(_("Стоп субтитра"))
@@ -437,15 +437,15 @@ class YoutubeVote(BaseModel):
         (LIKE_UP, _("Не нравится")),
     )
 
-    youtubevideo = models.ForeignKey('users.YoutubeVideo')
-    user = models.ForeignKey('auth.User')
+    youtubevideo = models.ForeignKey('users.YoutubeVideo', on_delete=models.CASCADE)
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     time = models.PositiveIntegerField(_("Время реакции"), default=0)
     like = models.CharField(_("Реакция"), max_length=100, choices=LIKES, default=LIKE_UP)
 
 class YoutubeCaptionVote(BaseModel):
 
-    youtubecaption = models.ForeignKey('users.YoutubeCaption')
-    user = models.ForeignKey('auth.User')
+    youtubecaption = models.ForeignKey('users.YoutubeCaption', on_delete=models.CASCADE)
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     like = models.CharField(_("Реакция"),
                 max_length=100, choices=YoutubeVote.LIKES, default=YoutubeVote.LIKE_UP)
 
@@ -551,7 +551,7 @@ class Oauth(BaseModel):
         },
     }
 
-    user = models.ForeignKey('auth.User')
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     provider = models.CharField(_("Провайдер"), max_length=100, choices=OAUTH_PROVIDERS)
     uid = models.CharField(_("Ид пользователя у провайдера"), max_length=255,)
     last_name = models.CharField(_("Фамилия у провайдера"), max_length=255, default='')
@@ -956,8 +956,8 @@ class Thank(BaseModel):
 
     Благодарности выносят пользователи (auth.User) по отношению к persons.CustomPerson
     """
-    user = models.ForeignKey('auth.User', verbose_name=_("Пользователь"),)
-    customperson = models.ForeignKey('persons.CustomPerson', verbose_name=_("Персона"),)
+    user = models.ForeignKey('auth.User', verbose_name=_("Пользователь"), on_delete=models.CASCADE)
+    customperson = models.ForeignKey('persons.CustomPerson', verbose_name=_("Персона"), on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ('user', 'customperson')
@@ -1082,9 +1082,10 @@ class Org(GetLogsMixin, BaseModel):
     site = models.URLField(_("Сайт"), default='', blank=True)
     shop_site = models.URLField(_("Сайт магазина"), default='', blank=True)
     currency = models.ForeignKey('billing.Currency', verbose_name=_("Валюта"), default=get_default_currency,
-                                 help_text=_(' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'))
+                                 help_text=_(' При смене валюты она будет заменена у всех товаров (услуг) без корректировки цен'),
+                                 on_delete=models.CASCADE)
     is_wholesale_with_vat = models.BooleanField(_("Оптовые цены продуктов с НДС"), default=False)
-    off_address = models.ForeignKey('geo.Location', verbose_name=_("Юр. адрес"), null=True, blank=True)
+    off_address = models.ForeignKey('geo.Location', verbose_name=_("Юр. адрес"), null=True, blank=True, on_delete=models.CASCADE)
     subdomain = models.CharField(_("Поддомен"), max_length=255, null=True, editable=False)
 
     # Блок настроек умолчаний по заказам у ЛОРУ -----------------------------
@@ -1237,7 +1238,7 @@ class OrgWebPay(BaseModel):
     """
     Данные, в том числе секретные, поставщика в платежной системе WebPay
     """
-    org = models.OneToOneField(Org)
+    org = models.OneToOneField(Org, on_delete=models.CASCADE)
     wsb_storeid = models.CharField(_("Идентификатор организации в системе WebPay"), max_length=255)
     secret = models.CharField(_("Секретный ключ"), max_length=255)
 
@@ -1268,13 +1269,13 @@ class OrgCertificate(Files):
     """
     Сканы свидетельств о регистрации
     """
-    org = models.OneToOneField(Org)
+    org = models.OneToOneField(Org, on_delete=models.CASCADE)
 
 class OrgGallery(Files):
     """
     Галерея организации. Для поставщиков товаров/услуг: образцы работ
     """
-    org = models.ForeignKey(Org)
+    org = models.ForeignKey(Org, on_delete=models.CASCADE)
 
 class OrgReview(BaseModel):
     """
@@ -1294,7 +1295,7 @@ class OrgContract(Files):
     """
     Сгенерированный pdf договора с заказчиком
     """
-    org = models.OneToOneField(Org)
+    org = models.OneToOneField(Org, on_delete=models.CASCADE)
 
 class Store(models.Model, PhonesMixin):
     """
@@ -1302,7 +1303,7 @@ class Store(models.Model, PhonesMixin):
     """
     name = models.CharField(_("Название"), max_length=255, default='')
     loru = models.ForeignKey(Org, verbose_name=_("ЛОРУ"), on_delete=models.PROTECT)
-    address = models.ForeignKey('geo.Location', verbose_name=_("Адрес"))
+    address = models.ForeignKey('geo.Location', verbose_name=_("Адрес"), on_delete=models.CASCADE)
     # phones: могут быть разных типов, пользуемся моделью persons.Phone
 
     def __str__(self):
@@ -1329,7 +1330,7 @@ class Store(models.Model, PhonesMixin):
             }} for dayindex in range(1,6)]
 
 class StorePhoto(PhotoFiles):
-    store = models.OneToOneField(Store)
+    store = models.OneToOneField(Store, on_delete=models.CASCADE)
 
 class FavoriteSupplier(models.Model):
     """
@@ -1355,17 +1356,17 @@ class BankAccountCommon(models.Model):
     bik = models.CharField("БИК", max_length=9, validators=[DigitsValidator(), LengthValidator(9), ])
     bankname = models.CharField("Наименование банка", max_length=64, validators=[NotEmptyValidator(1), ])
     ls = models.CharField("Л/с", max_length=11, blank=True, validators=[LengthValidator(11), ], default='')
-    off_address = models.ForeignKey('geo.Location', verbose_name=_("Юр. адрес"), null=True, editable=False)
+    off_address = models.ForeignKey('geo.Location', verbose_name=_("Юр. адрес"), null=True, editable=False, on_delete=models.CASCADE)
 
 class BankAccount(BankAccountCommon):
     """
     Банковские реквизиты организации
     """
-    organization = models.ForeignKey(Org, verbose_name="Организация")
+    organization = models.ForeignKey(Org, verbose_name="Организация", on_delete=models.CASCADE)
 
 class ProfileLORU(models.Model):
-    ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_("ОМС"))
-    loru = models.ForeignKey(Org, related_name='ugh_list', limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_("ЛОРУ"))
+    ugh = models.ForeignKey(Org, related_name='loru_list', limit_choices_to={'type': Org.PROFILE_UGH}, verbose_name=_("ОМС"), on_delete=models.CASCADE)
+    loru = models.ForeignKey(Org, related_name='ugh_list', limit_choices_to={'type': Org.PROFILE_LORU}, verbose_name=_("ЛОРУ"), on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = _('ЛОРУ у ОМС')
@@ -1383,8 +1384,8 @@ def add_loru_to_public_catalog(sender, instance, created, **kwargs):
 models.signals.post_save.connect(add_loru_to_public_catalog, sender=Org)
 
 class Dover(models.Model):
-    agent = models.ForeignKey(Profile, verbose_name=_("Агент"), limit_choices_to={'is_agent': True})
-    target_org = models.ForeignKey(Org, null=True, editable=False)
+    agent = models.ForeignKey(Profile, verbose_name=_("Агент"), limit_choices_to={'is_agent': True}, on_delete=models.CASCADE)
+    target_org = models.ForeignKey(Org, null=True, editable=False, on_delete=models.CASCADE)
     number = models.CharField(_("Номер"), max_length=255)
     begin = models.DateField(_("Начало"))
     end = models.DateField(_("Окончание"))
@@ -1436,7 +1437,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
     org_type = models.CharField(_("Тип организации"), max_length=255, choices=REG_ORG_TYPES, default=REG_ORG_UGH)
     org_name = models.CharField(_("Краткое название организации"), max_length=255, default='')
     org_full_name = models.CharField(_("Полное название организации"), max_length=255, default='')
-    org_currency = models.ForeignKey('billing.Currency', verbose_name=_("Валюта"), default=get_default_currency)
+    org_currency = models.ForeignKey('billing.Currency', verbose_name=_("Валюта"), default=get_default_currency, on_delete=models.CASCADE)
     org_inn = models.CharField(_("ИНН"), max_length=255, default='')
     org_ogrn = models.CharField(_("ОГРН/ОГРЮЛ"), max_length=255, default='', blank=True)
     org_director = models.CharField(_("Директор"),
@@ -1447,7 +1448,7 @@ class RegisterProfile(SafeDeleteMixin, BaseModel):
                                   help_text=_('В международном формате: +код-страны-код-города-номер-телефона')
                                  )
     org_fax = models.CharField(_("Факс"), max_length=20, default='', blank=True)
-    org_address = models.ForeignKey(Location, editable=False, null=True)
+    org_address = models.ForeignKey(Location, editable=False, null=True, on_delete=models.CASCADE)
     org_subdomain = models.CharField(_("Поддомен"), max_length=255, null=True, editable=False)
 
     def __str__(self):
@@ -1514,17 +1515,17 @@ class RegisterProfileScan(Files):
     """
     Файлы-сканы, прикрепляемые к заявкам на регистрацию
     """
-    registerprofile = models.OneToOneField(RegisterProfile)
+    registerprofile = models.OneToOneField(RegisterProfile, on_delete=models.CASCADE)
 
 class RegisterProfileContract(Files):
     """
     PDF файлы договоров с кандидатами на регистрацию
     """
-    registerprofile = models.OneToOneField(RegisterProfile)
+    registerprofile = models.OneToOneField(RegisterProfile, on_delete=models.CASCADE)
 
 class BankAccountRegister(BankAccountCommon):
     """
     Банковские реквизиты кандидата на регистрацию
     """
-    registerprofile = models.ForeignKey(RegisterProfile, verbose_name="Организация")
+    registerprofile = models.ForeignKey(RegisterProfile, verbose_name="Организация", on_delete=models.CASCADE)
 

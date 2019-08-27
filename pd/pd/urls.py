@@ -23,31 +23,31 @@ from logs.views import LogViewSet
 from orders.views import ProductsViewSet, ProductsOptViewSet, UghPublishedProductsViewSet
 
 # Burial
-router.register(r'^api/log', LogViewSet, base_name='api-log-viewset')
-router.register(r'^api/cemetery', CemeteryViewSet, base_name='api-cemetery-viewset')
-router.register(r'^api/area', AreaViewSet, base_name='api-area-viewset')
-router.register(r'^api/place', PlaceViewSet, base_name='api-place-viewset')
-router.register(r'^api/grave', GraveViewSet, base_name='api-grave-viewset')
-router.register(r'^api/burial', BurialViewSet, base_name='api-burial-viewset')
-router.register(r'^api/area-photo', AreaPhotoViewSet, base_name='api-areaphoto-viewset')
-router.register(r'^api/area-purpose', AreaPurposeViewSet, base_name='api-area-purpose-viewset')
-router.register(r'^api/oms/places', ApiOmsPlacesViewSet, base_name='api-oms-places-viewset')
-router.register(r'^api/catalog/places', ApiCatalogPlacesViewSet, base_name='api-catalog-place-viewset')
+router.register(r'^api/log', LogViewSet, basename='api-log-viewset')
+router.register(r'^api/cemetery', CemeteryViewSet, basename='api-cemetery-viewset')
+router.register(r'^api/area', AreaViewSet, basename='api-area-viewset')
+router.register(r'^api/place', PlaceViewSet, basename='api-place-viewset')
+router.register(r'^api/grave', GraveViewSet, basename='api-grave-viewset')
+router.register(r'^api/burial', BurialViewSet, basename='api-burial-viewset')
+router.register(r'^api/area-photo', AreaPhotoViewSet, basename='api-areaphoto-viewset')
+router.register(r'^api/area-purpose', AreaPurposeViewSet, basename='api-area-purpose-viewset')
+router.register(r'^api/oms/places', ApiOmsPlacesViewSet, basename='api-oms-places-viewset')
+router.register(r'^api/catalog/places', ApiCatalogPlacesViewSet, basename='api-catalog-place-viewset')
 
-router.register(r'^api/alive-person', AlivePersonViewSet, base_name='api-aliveperson-viewset')
-router.register(r'^api/dead-person', DeadPersonViewSet, base_name='api-deadperson-viewset')
+router.register(r'^api/alive-person', AlivePersonViewSet, basename='api-aliveperson-viewset')
+router.register(r'^api/dead-person', DeadPersonViewSet, basename='api-deadperson-viewset')
 
-router.register(r'^api/alive-person-phone', PhoneViewSet, base_name='api-aliveperson-phone-viewset')
-router.register(r'^api/placesize', PlaceSizeViewSet, base_name='api-placesize-viewset')
+router.register(r'^api/alive-person-phone', PhoneViewSet, basename='api-aliveperson-phone-viewset')
+router.register(r'^api/placesize', PlaceSizeViewSet, basename='api-placesize-viewset')
 
 # Orders
-router.register(r'^api/catalog/products/?$', ProductsViewSet, base_name='api-catalog-categories-viewset')
+router.register(r'^api/catalog/products/?$', ProductsViewSet, basename='api-catalog-categories-viewset')
 router.register(r'^api/loru/products', UghPublishedProductsViewSet)
-router.register(r'^api/optplaces/suppliers/(?P<loru_pk>\d+)/products/?$', ProductsOptViewSet, base_name='api-optplaces-suppliers-viewset')
+router.register(r'^api/optplaces/suppliers/(?P<loru_pk>\d+)/products/?$', ProductsOptViewSet, basename='api-optplaces-suppliers-viewset')
 
 # Geo
-router.register(r'^api/geo/location', LocationViewSet, base_name='api-geo-location-viewset')
-router.register(r'^api/geo/location/static', LocationStaticViewSet, base_name='api-geo-location-static-viewset')
+router.register(r'^api/geo/location', LocationViewSet, basename='api-geo-location-viewset')
+router.register(r'^api/geo/location/static', LocationStaticViewSet, basename='api-geo-location-static-viewset')
 
 urlpatterns = [
     url(r'^favicon\.ico$',

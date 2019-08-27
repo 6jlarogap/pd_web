@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 from django.db import models, migrations
 import django.db.models.deletion
 from django.conf import settings
@@ -21,7 +18,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='productgroup',
             name='loru',
-            field=models.ForeignKey(verbose_name='\u041b\u041e\u0420\u0423', to='users.Org'),
+            field=models.ForeignKey(verbose_name='\u041b\u041e\u0420\u0423', to='users.Org', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -37,7 +34,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='product',
             name='loru',
-            field=models.ForeignKey(verbose_name='\u041f\u043e\u0441\u0442\u0430\u0432\u0449\u0438\u043a', to='users.Org', null=True),
+            field=models.ForeignKey(verbose_name='\u041f\u043e\u0441\u0442\u0430\u0432\u0449\u0438\u043a', to='users.Org', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -87,19 +84,19 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='orderwebpay',
             name='order',
-            field=models.ForeignKey(verbose_name='\u0417\u0430\u043a\u0430\u0437', to='orders.Order'),
+            field=models.ForeignKey(verbose_name='\u0417\u0430\u043a\u0430\u0437', to='orders.Order', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='orderitem',
             name='order',
-            field=models.ForeignKey(editable=False, to='orders.Order'),
+            field=models.ForeignKey(editable=False, to='orders.Order', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='orderitem',
             name='product',
-            field=models.ForeignKey(verbose_name='\u0422\u043e\u0432\u0430\u0440', to='orders.Product'),
+            field=models.ForeignKey(verbose_name='\u0422\u043e\u0432\u0430\u0440', to='orders.Product', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -117,19 +114,19 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='ordercomment',
             name='order',
-            field=models.ForeignKey(verbose_name='\u0417\u0430\u043a\u0430\u0437', to='orders.Order'),
+            field=models.ForeignKey(verbose_name='\u0417\u0430\u043a\u0430\u0437', to='orders.Order', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='ordercomment',
             name='user',
-            field=models.ForeignKey(verbose_name='\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(verbose_name='\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='order',
             name='address',
-            field=models.ForeignKey(editable=False, to='geo.Location', null=True, verbose_name='\u0410\u0434\u0440\u0435\u0441'),
+            field=models.ForeignKey(editable=False, to='geo.Location', null=True, verbose_name='\u0410\u0434\u0440\u0435\u0441', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -147,13 +144,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='order',
             name='applicant_organization',
-            field=models.ForeignKey(related_name='org_orders', verbose_name='\u0417\u0430\u043a\u0430\u0437\u0447\u0438\u043a-\u042e\u041b', blank=True, to='users.Org', null=True),
+            field=models.ForeignKey(related_name='org_orders', verbose_name='\u0417\u0430\u043a\u0430\u0437\u0447\u0438\u043a-\u042e\u041b', blank=True, to='users.Org', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='order',
             name='burial',
-            field=models.ForeignKey(related_name='burial_orders', editable=False, to='burials.Burial', null=True),
+            field=models.ForeignKey(related_name='burial_orders', editable=False, to='burials.Burial', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -171,7 +168,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='order',
             name='loru',
-            field=models.ForeignKey(verbose_name='\u041b\u041e\u0420\u0423', to='users.Org', null=True),
+            field=models.ForeignKey(verbose_name='\u041b\u041e\u0420\u0423', to='users.Org', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -187,19 +184,19 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='coffindata',
             name='order',
-            field=models.OneToOneField(editable=False, to='orders.Order'),
+            field=models.OneToOneField(editable=False, to='orders.Order', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='catafalquedata',
             name='order',
-            field=models.OneToOneField(editable=False, to='orders.Order'),
+            field=models.OneToOneField(editable=False, to='orders.Order', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='addinfodata',
             name='order',
-            field=models.OneToOneField(editable=False, to='orders.Order'),
+            field=models.OneToOneField(editable=False, to='orders.Order', on_delete=models.CASCADE),
             preserve_default=True,
         ),
     ]
