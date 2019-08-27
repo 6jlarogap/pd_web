@@ -30,7 +30,8 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pd.settings")
 
 activate_this = os.path.join(os.path.dirname(__file__), '..', '..', 'ENV', 'bin', 'activate_this.py')
 if os.path.exists(activate_this):
-    exec(compile(open(activate_this).read(), activate_this, 'exec'), dict(__file__=activate_this))
+    with open(activate_this) as acivate_this_file:
+        exec(compile(acivate_this_file.read(), activate_this, 'exec'), dict(__file__=activate_this))
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
