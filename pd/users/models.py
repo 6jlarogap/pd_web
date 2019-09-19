@@ -58,9 +58,13 @@ class UserPhoto(Files):
 class Role(models.Model):
 
     ROLE_ADMIN = 'admin'
+
     ROLE_REGISTRATOR = 'registrator'
     ROLE_CARETAKER = 'caretaker'
     ROLE_CEMETERY_MANAGER = 'cemetery_manager'
+
+    ROLE_HALL_MANAGER = 'hall_manager'
+    ROLE_HALL_ADMIN = 'hall_admin'
 
     # Может выдавать данные в реестр.
     # Эту роль не надо вносить в таблицу, если на сайте
@@ -68,11 +72,13 @@ class Role(models.Model):
     #
     ROLE_REGISTRY = 'registry_handler'
 
-    name = models.CharField(_("Код"), max_length=255, editable=False)
-    title = models.CharField(_("Название"), max_length=255, editable=False)
+    name = models.CharField(_("Код"), max_length=255)
+    title = models.CharField(_("Название"), max_length=255)
 
     class Meta:
         verbose_name = _('Роль пользователя')
+        verbose_name_plural = _('Роли пользователей')
+
         ordering = ('title', )
 
     def __str__(self):
@@ -288,6 +294,18 @@ class Profile(CommonProfile):
 
     def is_registry_handler(self):
         return self.is_ugh() and self.role.filter(name=Role.ROLE_REGISTRY).exists()
+
+    def is_hall_manager(self):
+        result = self.is_loru()
+        if not result and self.is_ugh():
+            roles = self.get_roles()
+            result = Role.ROLE_HALL_MANAGER in roles or \
+                     Role.ROLE_HALL_ADMIN in roles
+        return result
+
+    def is_hall_admin(self):
+        return self.is_loru() or \
+            self.is_ugh() and self.role.filter(name=Role.ROLE_HALL_ADMIN).exists()
 
     def has_all_cemeteries(self):
         Cemetery = get_model('burials', 'Cemetery')
