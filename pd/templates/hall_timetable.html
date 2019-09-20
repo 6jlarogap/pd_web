@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+
+    <script>
+        function select_clear_halls(action) {
+            var obj = "select[name=halls]";
+            var selected = action == "select_all" ? "selected" : ""
+            $(obj).children().each(function () {
+                this.selected = selected;
+            });
+            return false;
+        }
+    </script>
+
+    <h1>{% trans "Зал(ы): расписание" %}</h1>
+    <br />
+
+    {% if invalid_hall_got %}
+        <h2><span style="color:red">{{ invalid_hall_got }}</span></h2>
+        <br />
+        <a href="{% url 'halls_timetable' %}"><big>{% trans "Залы" %}</big></a>
+    {% elif no_halls_in_system %}
+        <h2><span style="color:blue">{{ no_halls_in_system }}</span></h2>
+    {% else %}
+        <div class="no-print">
+            <form id="mainform" method="get" action="">
+                <table>
+                    <tr valign="top">
+                        <td>
+                            {{ form.date_from.errors }}
+                            <p>
+                                {{ form.date_from.label_tag }}
+                                {{ form.date_from }}
+                                <span class="helptext">{{ form.date_from.help_text }}</span>
+                            </p>
+                        </td>
+                        <td>
+                            &nbsp;&nbsp;&nbsp;
+                        </td>
+                        <td>
+                            {{ form.halls.errors }}
+                            <p>
+                                {{ form.halls.label_tag }}
+                                {{ form.halls }}
+                                <span class="helptext">{{ form.halls.help_text }}</span>
+                            </p>
+                        </td>
+                        <td>
+                            &nbsp;&nbsp;
+                        </td>
+                        <td>
+                            <p>
+                                <br />
+                                &nbsp;<span class="helptext">{% trans "Сtrl-Enter для выборки" %}
+                                <br />
+                                &nbsp;{% trans "нескольких залов" %}</span>
+                                <br /><br />
+                                &nbsp;<button onclick='return select_clear_halls("select_all")'>{% trans "Выделить всех" %}</button>
+                                &nbsp;&nbsp;&nbsp;<button onclick='return select_clear_halls("clear_all")'>{% trans "Очистить" %}</button>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <p class="buttons">
+                    <input type="submit" value="искать" class="btn btn-primary" />
+                </p>
+            </form>
+        </div>
+    {% endif %}
+
+    {% if halls %}
+        <table class="table table-bordered table-striped">
+            <tr>
+                <th>{% trans "Время" %}</th>
+                <th>{% trans "Примечания" %}</th>
+                <th></th>
+                <th>{% trans "Назначил" %}</th>
+            </tr>
+            {% for hall in hall %}
+                <tr>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+
+<form action="" method="POST" class="main-form">
+    {% csrf_token %}
+    <input type="hidden" name="GET_PARAMS" value="{{ GET_PARAMS }}" />
+    {% if is_hall_manager %}
+        <input type="submit" class="btn" value="{% trans "сохранить" %}" name="submit" class="btn"/>
+    {% endif %}
+<form/>
+
+{% endblock %}

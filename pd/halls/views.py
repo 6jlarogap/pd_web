@@ -2,7 +2,6 @@ import datetime, re
 
 from django.shortcuts import render, redirect
 from django.views.generic.base import View
-from django.views.generic.list import ListView
 from django.http import Http404, HttpResponseForbidden
 from django.contrib import messages
 from django.urls import reverse
@@ -74,36 +73,59 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
 
 halls_edit_view = HallsEdit.as_view()
 
-class HallsTimeTableView(UghOrLoruRequiredMixin, ListView):
+class HallsTimeTableView(UghOrLoruRequiredMixin, View):
     template_name = 'hall_timetable.html'
-    context_object_name = 'halls'
 
-    def get_queryset(self):
-        org=self.request.user.profile.org
-        self.date_from = datetime.date.today()
+    def get_context_data(self):
+        context = dict()
         self.choice_halls = []
-        for hall in Hall.objects.filter(org=org, is_active=True):
+        halls_pks = []
+        for hall in Hall.objects.filter(org=self.request.user.profile.org, is_active=True):
+            halls_pks.append(str(hall.pk))
             self.choice_halls.append((hall.pk, hall.title))
+        if not halls_pks:
+                context.update(
+                    no_halls_in_system=_('В организации нет залов. Обратитесь к администратору'),
+                )
+                return context
+        for h in self.request.GET.getlist('halls'):
+            if str(h) not in halls_pks:
+                context.update(
+                    invalid_hall_got=_('Указан не действующий или неверный зал в запросе'),
+                )
+                return context
+        items = []
+        for k in list(self.request.GET.keys()):
+            values = self.request.GET.getlist(k)
+            for v in values:
+                items.append((k,v))
+        get_params = '&'.join(['%s=%s' %  (k, v) for k,v in items])
 
-        form = self.get_form()
-        if not self.request.GET:
-            return []
-        halls = []
-        return halls
+        context.update(
+            is_hall_manager = self.request.user.profile.is_hall_manager(),
+            GET_PARAMS=get_params,
+            form=self.get_form(),
+        )
+        return context
 
     def get_form(self):
         data = self.request.GET
         form = HallTimeTableForm(data=data or None)
         form.fields['halls'].choices = self.choice_halls
         if not data:
-            form.initial['date_from'] = self.date_from
+            form.initial['date_from'] = datetime.date.today()
             form.initial['halls'] = [ h[0] for h in self.choice_halls ]
         return form
 
-    def get_context_data(self, **kwargs):
-        data = super(HallsTimeTableView, self).get_context_data(**kwargs)
-        form = self.get_form()
-        data.update(form=form)
-        return data
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        if not self.request.user.profile.is_hall_manager():
+            return HttpResponseForbidden()
+        get_params = request.POST.get('GET_PARAMS', '')
+        if get_params:
+            get_params = '?' + request.POST['GET_PARAMS']
+        return redirect(reverse('halls_timetable') + get_params)
 
 halls_timetable_view = HallsTimeTableView.as_view()
