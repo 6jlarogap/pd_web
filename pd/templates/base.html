@@ -235,6 +235,11 @@
                                 <li{% if request.path == '/burials/' %} class="active"{% endif %}>
                                     <a href="{% url 'burial_list' %}">{% trans "Захоронения" %}</a>
                                 </li>
+                                {% if request.user.profile.is_hall_manager %}
+                                    <li{% if request.path == '/halls/timetable/' %} class="active"{% endif %}>
+                                        <a href="{% url 'halls_timetable' %}">{% trans "Залы: расписание" %}</a>
+                                    </li>
+                                {% endif %}
                                 {% if global_context_REDIRECT_LOGIN_TO_FRONT_END or user.profile.is_registrator_or_caretaker and user.profile.cemeteries.count %}
                                     <li{% if request.path == '/burials/create/' and not request.GET.archive %} class="active"{% endif %}>
                                         <a href="{% url 'create_burial' %}">{% trans "Создать захоронение" %}</a>
