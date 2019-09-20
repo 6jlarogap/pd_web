@@ -5,7 +5,11 @@ from django.views.generic.base import View
 from django.http import Http404, HttpResponseForbidden
 from django.contrib import messages
 from django.urls import reverse
+from django.utils import formats
 from django.utils.translation import ugettext as _
+from django.utils.formats import date_format
+
+from django.conf import settings
 
 from halls.forms import HallFormset, HallTimeTableForm
 
@@ -76,32 +80,48 @@ halls_edit_view = HallsEdit.as_view()
 class HallsTimeTableView(UghOrLoruRequiredMixin, View):
     template_name = 'hall_timetable.html'
 
+    # После этого выводим расчет на завтра по умолчанию
+    #
+    TOMORROW_BEGINS_AT = '13:00'
 
-    def get_timetable(self, date, halls_pks):
+    def get_timetable(self, date):
+
+        # Собственно расчет, т.е. подготовка post формы в шаблоне,
+        # за дату date по залам self.halls_pks
+        #
         halls = []
         return halls
 
     def get_default_date(self):
-        return datetime.date.today()
+        """
+        Дата по умолчанию. До 13:00 сегодня, после 13:00 - завтра
+        """
+        result = datetime.date.today()
+        now = datetime.datetime.now()
+        if datetime.datetime.strftime(now, '%H:%M') > self.TOMORROW_BEGINS_AT:
+            result = result + datetime.timedelta(days=1)
+        return result
 
     def get_context_data(self):
         halls = []
         context = dict()
+
         self.choice_halls = []
-        halls_pks = []
+        self.halls_pks = []
         for hall in Hall.objects.filter(org=self.request.user.profile.org, is_active=True):
-            halls_pks.append(str(hall.pk))
+            self.halls_pks.append(str(hall.pk))
             self.choice_halls.append((hall.pk, hall.title))
-        if not halls_pks:
+        if not self.halls_pks:
                 context.update(
                     no_halls_in_system=_('В организации нет залов. Обратитесь к администратору'),
                 )
                 return context
 
         form=self.get_form()
+        date = None
         if form.is_valid() and form.data:
-            date = form.cleaned_data.get('date_from')
-            halls = self.get_timetable(date, halls_pks)
+            date = form.cleaned_data.get('hall_date_from')
+            halls = self.get_timetable(date)
 
         items = []
         for k in list(self.request.GET.keys()):
@@ -110,7 +130,17 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                 items.append((k,v))
         get_params = '&'.join(['%s=%s' %  (k, v) for k,v in items])
 
+        today_tomorrow = None
+        if date:
+            today = datetime.date.today()
+            if date == today:
+                today_tomorrow = _('сегодня')
+            elif date - today == datetime.timedelta(days=1):
+                today_tomorrow = _('завтра')
+
         context.update(
+            date=date,
+            today_tomorrow=today_tomorrow,
             is_hall_manager = self.request.user.profile.is_hall_manager(),
             halls=halls,
             GET_PARAMS=get_params,
@@ -123,12 +153,25 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
         form = HallTimeTableForm(data=data or None)
         form.fields['halls'].choices = self.choice_halls
         if not data:
-            form.initial['date_from'] = self.get_default_date()
+            form.initial['hall_date_from'] = self.get_default_date()
             form.initial['halls'] = [ h[0] for h in self.choice_halls ]
         return form
 
     def get(self, request, *args, **kwargs):
-        return render(request, self.template_name, self.get_context_data())
+        context_data = self.get_context_data()
+        if not self.request.GET and self.halls_pks:
+            # Сразу выведем все залы за self.get_default_date()
+            #
+            format_date = formats.get_format("SHORT_DATE_FORMAT", lang=settings.LANGUAGE_CODE)
+            date = self.get_default_date()
+            date_str = date_format(date, format=format_date)
+            get_params = '?hall_date_from=%s&%s' % (
+                date_str,
+                '&'.join(['halls=%s' %  pk for pk in self.halls_pks])
+            )
+            print(get_params)
+            return redirect(reverse('halls_timetable') + get_params)
+        return render(request, self.template_name, context_data)
 
     def post(self, request, *args, **kwargs):
         if not self.request.user.profile.is_hall_manager():

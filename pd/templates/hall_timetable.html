@@ -15,7 +15,7 @@
         }
     </script>
 
-    <h1>{% trans "Зал(ы): расписание" %}</h1>
+    <h2>{% trans "Зал(ы): расписание" %}{% if date %} на {% if today_tomorrow %}<span style="color:blue">{{ today_tomorrow }}</span>, {% endif %}{{ date }}{% endif %}</h2>
     <br />
 
     {% if no_halls_in_system %}
@@ -26,11 +26,11 @@
                 <table>
                     <tr valign="top">
                         <td>
-                            {{ form.date_from.errors }}
+                            {{ form.hall_date_from.errors }}
                             <p>
-                                {{ form.date_from.label_tag }}
-                                {{ form.date_from }}
-                                <span class="helptext">{{ form.date_from.help_text }}</span>
+                                {{ form.hall_date_from.label_tag }}
+                                {{ form.hall_date_from }}
+                                <span class="helptext">{{ form.hall_date_from.help_text }}</span>
                             </p>
                         </td>
                         <td>

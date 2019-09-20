@@ -64,5 +64,5 @@ HallFormset = inlineformset_factory(
 
 class HallTimeTableForm(forms.Form):
 
-    date_from = forms.DateField(label=_("Дата"))
+    hall_date_from = forms.DateField(label=_("Дата"))
     halls = forms.MultipleChoiceField(label=_("Залы"),choices=())
