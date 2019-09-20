@@ -18,11 +18,7 @@
     <h1>{% trans "Зал(ы): расписание" %}</h1>
     <br />
 
-    {% if invalid_hall_got %}
-        <h2><span style="color:red">{{ invalid_hall_got }}</span></h2>
-        <br />
-        <a href="{% url 'halls_timetable' %}"><big>{% trans "Залы" %}</big></a>
-    {% elif no_halls_in_system %}
+    {% if no_halls_in_system %}
         <h2><span style="color:blue">{{ no_halls_in_system }}</span></h2>
     {% else %}
         <div class="no-print">

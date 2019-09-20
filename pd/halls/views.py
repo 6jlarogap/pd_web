@@ -76,7 +76,16 @@ halls_edit_view = HallsEdit.as_view()
 class HallsTimeTableView(UghOrLoruRequiredMixin, View):
     template_name = 'hall_timetable.html'
 
+
+    def get_timetable(self, date, halls_pks):
+        halls = []
+        return halls
+
+    def get_default_date(self):
+        return datetime.date.today()
+
     def get_context_data(self):
+        halls = []
         context = dict()
         self.choice_halls = []
         halls_pks = []
@@ -88,12 +97,12 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     no_halls_in_system=_('В организации нет залов. Обратитесь к администратору'),
                 )
                 return context
-        for h in self.request.GET.getlist('halls'):
-            if str(h) not in halls_pks:
-                context.update(
-                    invalid_hall_got=_('Указан не действующий или неверный зал в запросе'),
-                )
-                return context
+
+        form=self.get_form()
+        if form.is_valid() and form.data:
+            date = form.cleaned_data.get('date_from')
+            halls = self.get_timetable(date, halls_pks)
+
         items = []
         for k in list(self.request.GET.keys()):
             values = self.request.GET.getlist(k)
@@ -103,8 +112,9 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
 
         context.update(
             is_hall_manager = self.request.user.profile.is_hall_manager(),
+            halls=halls,
             GET_PARAMS=get_params,
-            form=self.get_form(),
+            form=form,
         )
         return context
 
@@ -113,7 +123,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
         form = HallTimeTableForm(data=data or None)
         form.fields['halls'].choices = self.choice_halls
         if not data:
-            form.initial['date_from'] = datetime.date.today()
+            form.initial['date_from'] = self.get_default_date()
             form.initial['halls'] = [ h[0] for h in self.choice_halls ]
         return form
 
