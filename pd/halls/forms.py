@@ -1,7 +1,6 @@
 import datetime
 
 from django import forms
-from django.utils.safestring import mark_safe
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext as _
 
@@ -62,3 +61,8 @@ HallFormset = inlineformset_factory(
     formset=BaseHallFormset,
     extra=1
 )
+
+class HallTimeTableForm(forms.Form):
+
+    date_from = forms.DateField(required=False, label=_("Дата"))
+    halls = forms.MultipleChoiceField(label=_("Залы"),choices=())
