@@ -146,6 +146,9 @@
                                                     {% endif %}
                                                 {% endif %}
                                             {% endif %}
+                                            {% if user.profile.is_ugh and global_context_SHOW_HALLS %}
+                                                <li><a href="{% url 'halls_edit' %}">{% trans "Залы" %}</a></li>
+                                            {% endif %}
                                             {% if user.profile.org.pk %}
                                                 <li><a href="{% url 'org_log' %}">{% trans "Журнал" %}</a></li>
                                             {% endif %}

@@ -9,9 +9,9 @@ from halls.forms import HallFormset
 
 from logs.models import write_log
 from halls.models import Hall
-from users.models import Org, Profile
+from users.models import Org, Profile, UghOrLoruRequiredMixin
 
-class HallsEdit(View):
+class HallsEdit(UghOrLoruRequiredMixin, View):
     template_name = 'halls.html'
 
     def get_formset(self, instance=None):
@@ -35,7 +35,7 @@ class HallsEdit(View):
 
     def post(self, request, *args, **kwargs):
         org = self.get_object()
-        if not ( request.user.profile.is_loru() or request.user.profile.is_admin()):
+        if not (request.user.profile.is_loru() or request.user.profile.is_admin()):
             return HttpResponseForbidden()
         formset = self.get_formset()
         if formset.is_valid():
@@ -46,17 +46,18 @@ class HallsEdit(View):
                             messages.error(request, _("Попытка удаления зала с назначенным ему расписанием"))
                             return self.get(request, *args, **kwargs)
                         f.instance.delete()
-                        write_log(request, org, _("Удален зал %s") % f.instance.title)
+                        write_log(request, org, _("Удален зал: %s") % f.instance.title)
                     else:
                         f.save()
                 else:
+                    # fool-proof
                     do_create = True
                     for k in ('title', 'time_begin', 'time_end'):
                         if not f[k].data.strip():
                             do_create = False
                             break
                     if do_create:
-                        Hall.objects.create(
+                        hall = Hall.objects.create(
                             org=org,
                             title=f['title'].data.strip(),
                             time_begin=f['time_begin'].data.strip(),
@@ -64,9 +65,10 @@ class HallsEdit(View):
                             interval=f['interval'].data,
                             is_active=f['is_active'].data,
                         )
-            return redirect(reverse('halls'))
+                        write_log(request, org, _("Создан зал: %s") % hall)
+            return redirect(reverse('halls_edit'))
         else:
             messages.error(request, _("Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)
 
-halls_view = HallsEdit.as_view()
+halls_edit_view = HallsEdit.as_view()

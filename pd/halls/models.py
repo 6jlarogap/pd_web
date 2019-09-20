@@ -18,7 +18,7 @@ class Hall(models.Model):
     
     # Здесь для времен просто символьные поля. Будет проверять их вручную,
     # чтоб можно было игнорировать удаляемые объекты с неверно заданным,
-    # например, пустым временем
+    # например, пустым временем. Аналогично blank=true. Сами будем проверять.
     #
     time_begin = models.CharField(_("Начало работы"), max_length=255, blank=True)
     time_end = models.CharField(_("Окончание работы"), max_length=255, blank=True)
@@ -33,7 +33,7 @@ class Hall(models.Model):
         ordering = ('org', 'title', )
 
     def __str__(self):
-        return _("%s, зал: %s") % (self.org, self.title,)
+        return self.title
 
 class HallTimeTable(models.Model):
     hall = models.ForeignKey(Hall, verbose_name=_("Зал"), on_delete=models.CASCADE)
@@ -41,6 +41,7 @@ class HallTimeTable(models.Model):
     dt_end = models.DateTimeField(_("Время окончания"))
     user = models.ForeignKey('auth.User', verbose_name=_("Сотрудник"), on_delete=models.CASCADE)
     details =  models.TextField(_("Примечания"), blank=True)
+    dt_created = models.DateTimeField(_("Дата/время создания"), auto_now_add=True)
 
     class Meta:
         verbose_name = _('Назначенное время в зале')
