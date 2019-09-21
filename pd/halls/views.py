@@ -1,4 +1,5 @@
 import datetime, base64
+from urllib.parse import parse_qs
 
 from django.shortcuts import render, redirect
 from django.views.generic.base import View
@@ -129,7 +130,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
             values = self.request.GET.getlist(k)
             for v in values:
                 items.append((k,v))
-        get_params = '&'.join(['%s=%s' %  (k, v) for k,v in items if k not in ('post_error', )])
+        get_params = '&'.join(['%s=%s' %  (k, v) for k,v in items if k not in ('post_errors', )])
 
         today_tomorrow = None
         if date:
@@ -139,19 +140,19 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
             elif date - today == datetime.timedelta(days=1):
                 today_tomorrow = _('завтра')
 
-        post_error = self.request.GET.get('post_error')
-        if post_error:
+        post_errors = self.request.GET.get('post_errors')
+        if post_errors:
             try:
-                post_error = base64.urlsafe_b64decode(post_error).decode('utf8')
-                post_error = post_error.split('~')
+                post_errors = base64.urlsafe_b64decode(post_errors).decode('utf8')
+                post_errors = post_errors.split('~')
             except:
-                post_error = None
+                post_errors = None
 
         context.update(
             date=date,
             today_tomorrow=today_tomorrow,
             is_hall_manager = self.request.user.profile.is_hall_manager(),
-            post_error=post_error,
+            post_errors=post_errors,
             GET_PARAMS=get_params,
             form=form,
         )
@@ -184,16 +185,38 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         if not self.request.user.profile.is_hall_manager():
             return HttpResponseForbidden()
-        post_error = []
+        post_errors = []
 
         get_params = request.POST.get('GET_PARAMS', '')
-        if get_params:
-            get_params = '?' + request.POST['GET_PARAMS']
-            if post_error:
-                post_error = '~'.join(post_error)
-                post_error = base64.urlsafe_b64encode(post_error.encode('utf8')).decode('utf8')
-                post_error = post_error.replace('=', '%3D')
-                get_params += '&post_error=%s' % post_error
+        params = parse_qs(get_params)
+        try:
+            date_str = params['hall_date_from'][0]
+            halls_pks = params['halls']
+        except (KeyError, IndexError,):
+            raise Http404
+        org = request.user.profile.org
+        halls = []
+        for pk in halls_pks:
+            try:
+                halls.append(Hall.objects.get(pk=pk, org=org))
+            except Hall.DoesNotExist:
+                return HttpResponseForbidden()
+        date_formats = formats.get_format("DATE_INPUT_FORMATS", lang=settings.LANGUAGE_CODE)
+        for f in date_formats:
+            try:
+                date = datetime.datetime.strptime(date_str, f).date()
+                break
+            except ValueError:
+                pass
+        if not date:
+            raise Http404
+
+        get_params = '?' + get_params
+        if post_errors:
+            post_errors = '~'.join(post_errors)
+            post_errors = base64.urlsafe_b64encode(post_errors.encode('utf8')).decode('utf8')
+            post_errors = post_errors.replace('=', '%3D')
+            get_params += '&post_errors=%s' % post_errors
         return redirect(reverse('halls_timetable') + get_params)
 
 halls_timetable_view = HallsTimeTableView.as_view()

@@ -15,7 +15,7 @@
         }
     </script>
 
-    <h2>{% trans "Залы: расписание" %}{% if date %} на {% if today_tomorrow %}<span style="color:blue">{{ today_tomorrow }}</span>, {% endif %}{{ date }}{% endif %}</h2>
+    <h2>{% trans "Залы: расписание" %}{% if date %} на {% if today_tomorrow %}<span style="color:blue"><big>{{ today_tomorrow }}</big></span>, {% endif %}{{ date }}{% endif %}</h2>
     <br />
 
     {% if no_halls_in_system %}
@@ -68,8 +68,8 @@
         </div>
     {% endif %}
 
-    {% if post_error %}
-        {% for e in post_error %}
+    {% if post_errors %}
+        {% for e in post_errors %}
             <p><b>{{ e }}</b></p>
         {% endfor %}
     {% endif %}
