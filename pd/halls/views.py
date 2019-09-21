@@ -15,7 +15,7 @@ from django.conf import settings
 from halls.forms import HallFormset, HallTimeTableForm
 
 from logs.models import write_log
-from halls.models import Hall
+from halls.models import Hall, HallTimeTable
 from users.models import Org, Profile
 from users.views import UghOrLoruRequiredMixin
 
@@ -85,13 +85,137 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
     #
     TOMORROW_BEGINS_AT = '13:00'
 
+    # Так записываются начальные id input'ов в форме, в таблицах залов
+    #
+    DT_ID_FORMAT = "%Y_%m%_%d_%H_%M"
+    
+    def make_id_prefix(self, dt_start, dt_end):
+        start = datetime.datetime.strftime(dt_start, DT_ID_FORMAT)
+        end = datetime.datetime.strftime(dt_end, DT_ID_FORMAT)
+        return "id_%s__%s" % (start, end,)
+
     def get_timetable(self, date, halls_pks):
 
         # Собственно расчет, т.е. подготовка post формы в шаблоне,
         # за дату date по заказанным залам halls_pks
         #
-        halls = []
-        return halls
+        user = self.request.user
+
+        # По кажлому залу отдельный словарь,
+        # внутри которого массив сеансов
+        #
+        hall_timetables = []
+        
+        # Нашлись ли сеансы для редактирования (назначения или отмены назначения)
+        #
+        have_smth_to_edit = False
+
+        dt_now = datetime.datetime.now()
+        today = dt_now.date()
+        date_start = datetime.datetime(
+            date.year, date.month, date.day, 0, 0
+        )
+        date_end = date_start + datetime.timedelta(days=1)
+
+        for hall_pk in halls_pks:
+            hall = Hall.objects.get(pk=hall_pk)
+            hall_interval_timedelta = datetime.timedelta(seconds=hall.interval * 60)
+            hall_start = datetime.datetime.strptime(hall.time_begin, "%H:%M")
+            hall_start = datetime.datetime(
+                year=date.year, month=date.month, day=date.day,
+                hour=hall_start.hour, minute=hall_start.minute,
+            )
+            hall_end = datetime.datetime.strptime(hall.time_end, "%H:%M")
+            hall_end = datetime.datetime(
+                year=date.year, month=date.month, day=date.day,
+                hour=hall_end.hour, minute=hall_end.minute,
+            )
+            # dt_border:
+            #   время первого возможного сеанса. Если завтра, то это hall_start,
+            #   если сегодня, то время первого свободного сеанса
+            #   после текущего времени. Если вчера, то заглушка: полночь на следующий день
+            #
+            # 
+            if date < today:
+                dt_border = date_end
+            else:
+                # сегодня или завтра
+                #
+                dt_border = datetime.datetime(
+                    hall_start.year, hall_start.month, hall_start.day,
+                    hall_start.hour, hall_start.minute, 0)
+            if date == today:
+                while dt_border < hall_end and dt_border < dt_now:
+                    dt_border += hall_interval_timedelta
+
+            # Начала и окончания сеансов, которые могут оказаться свободными на дату date.
+            # если они окажутся занятыми, при проходе через имеющиеся сеансы
+            # будем удалять.
+            #
+            date_free_sessions = []
+            dt_start = dt_border
+            while dt_start < hall_end:
+                dt_end = dt_start + hall_interval_timedelta
+                if dt_end > hall_end:
+                    break
+                date_free_sessions.append(dict(dt_start=dt_start, dt_end=dt_end))
+                dt_start = dt_end
+
+            to_delete_from_date_free_sessions = []
+
+            hall_timetable=dict(title=hall.title)
+
+            # Сеансы до и после dt_border. В те что после dt_border,
+            # вставим свободные интервалы, после чего future_sessions
+            # отсортируем по времени начала сеанса. Результат -
+            # массив timetable = past_sessions + future_sessions
+            #
+            past_sessions = []
+            future_sessions = []
+            for tt in HallTimeTable.objects.filter(
+                    hall=hall,
+                    dt_begin__gte=date_start,
+                    dt_end__lt=date_end,
+                ).order_by('dt_begin'):
+                tt_item = dict(
+                    free = False,
+                    dt_start=tt.dt_begin,
+                    dt_end=tt.dt_end,
+                    text=tt.details,
+                    creator=tt.user,
+                    ids=self.make_id_prefix(tt.dt_begin, dt_end)
+                )
+                if tt.dt_end < dt_border:
+                    editable = False
+                    tt_item.update(editable=editable)
+                    past_sessions.append(tt_item)
+                else:
+                    editable = user.profile.is_hall_manager() and user == tt.user or \
+                               user.profile.is_hall_admin()
+                    if editable:
+                        have_smth_to_edit = True
+                    tt_item.update(editable=editable)
+                    future_sessions.append(tt_item)
+                    for i, s in enumerate(date_free_sessions):
+                       if tt.dt_end <= s.dt_start or tt.dt_begin >= s.dt_end:
+                           # Конец интервала из базы до начала рассматриваемого: не пересекает
+                           # Начало интервала из базы после  рассматриваемого: не пересекает
+                           pass
+                       else:
+                           # Во всех остальных случаях как-то пересекает
+                            to_delete_from_date_free_sessions.append[i]
+
+            for i in to_delete_from_date_free_sessions:
+                del date_free_sessions[i]
+
+            hall_timetable.update(timetable=past_sessions + future_sessions)            
+            hall_timetables.append(hall_timetable)
+
+        result = dict(
+            have_smth_to_edit=have_smth_to_edit,
+            hall_timetables=hall_timetables,
+        )
+        return result
 
     def get_default_date(self):
         """
