@@ -68,6 +68,12 @@
         </div>
     {% endif %}
 
+    {% if post_error %}
+        {% for e in post_error %}
+            <p><b>{{ e }}</b></p>
+        {% endfor %}
+    {% endif %}
+
     {% if halls %}
         <table class="table table-bordered table-striped">
             <tr>

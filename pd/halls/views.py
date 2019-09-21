@@ -1,4 +1,4 @@
-import datetime, re
+import datetime, base64
 
 from django.shortcuts import render, redirect
 from django.views.generic.base import View
@@ -84,10 +84,10 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
     #
     TOMORROW_BEGINS_AT = '13:00'
 
-    def get_timetable(self, date):
+    def get_timetable(self, date, halls_pks):
 
         # Собственно расчет, т.е. подготовка post формы в шаблоне,
-        # за дату date по залам self.halls_pks
+        # за дату date по заказанным залам halls_pks
         #
         halls = []
         return halls
@@ -107,11 +107,11 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
         context = dict()
 
         self.choice_halls = []
-        self.halls_pks = []
+        self.all_halls_pks = []
         for hall in Hall.objects.filter(org=self.request.user.profile.org, is_active=True):
-            self.halls_pks.append(str(hall.pk))
+            self.all_halls_pks.append(str(hall.pk))
             self.choice_halls.append((hall.pk, hall.title))
-        if not self.halls_pks:
+        if not self.all_halls_pks:
                 context.update(
                     no_halls_in_system=_('В организации нет залов. Обратитесь к администратору'),
                 )
@@ -121,14 +121,15 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
         date = None
         if form.is_valid() and form.data:
             date = form.cleaned_data.get('hall_date_from')
-            halls = self.get_timetable(date)
+            halls_pks = form.cleaned_data.get('halls')
+            context.update(self.get_timetable(date, halls_pks))
 
         items = []
         for k in list(self.request.GET.keys()):
             values = self.request.GET.getlist(k)
             for v in values:
                 items.append((k,v))
-        get_params = '&'.join(['%s=%s' %  (k, v) for k,v in items])
+        get_params = '&'.join(['%s=%s' %  (k, v) for k,v in items if k not in ('post_error', )])
 
         today_tomorrow = None
         if date:
@@ -138,11 +139,19 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
             elif date - today == datetime.timedelta(days=1):
                 today_tomorrow = _('завтра')
 
+        post_error = self.request.GET.get('post_error')
+        if post_error:
+            try:
+                post_error = base64.urlsafe_b64decode(post_error).decode('utf8')
+                post_error = post_error.split('~')
+            except:
+                post_error = None
+
         context.update(
             date=date,
             today_tomorrow=today_tomorrow,
             is_hall_manager = self.request.user.profile.is_hall_manager(),
-            halls=halls,
+            post_error=post_error,
             GET_PARAMS=get_params,
             form=form,
         )
@@ -159,7 +168,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context_data = self.get_context_data()
-        if not self.request.GET and self.halls_pks:
+        if not self.request.GET and self.all_halls_pks:
             # Сразу выведем все залы за self.get_default_date()
             #
             format_date = formats.get_format("SHORT_DATE_FORMAT", lang=settings.LANGUAGE_CODE)
@@ -167,18 +176,24 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
             date_str = date_format(date, format=format_date)
             get_params = '?hall_date_from=%s&%s' % (
                 date_str,
-                '&'.join(['halls=%s' %  pk for pk in self.halls_pks])
+                '&'.join(['halls=%s' %  pk for pk in self.all_halls_pks])
             )
-            print(get_params)
             return redirect(reverse('halls_timetable') + get_params)
         return render(request, self.template_name, context_data)
 
     def post(self, request, *args, **kwargs):
         if not self.request.user.profile.is_hall_manager():
             return HttpResponseForbidden()
+        post_error = []
+
         get_params = request.POST.get('GET_PARAMS', '')
         if get_params:
             get_params = '?' + request.POST['GET_PARAMS']
+            if post_error:
+                post_error = '~'.join(post_error)
+                post_error = base64.urlsafe_b64encode(post_error.encode('utf8')).decode('utf8')
+                post_error = post_error.replace('=', '%3D')
+                get_params += '&post_error=%s' % post_error
         return redirect(reverse('halls_timetable') + get_params)
 
 halls_timetable_view = HallsTimeTableView.as_view()
