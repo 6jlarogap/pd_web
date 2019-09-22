@@ -57,7 +57,7 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
                 else:
                     # fool-proof
                     do_create = True
-                    for k in ('title', 'time_begin', 'time_end'):
+                    for k in ('title', 'time_start', 'time_end'):
                         if not f[k].data.strip():
                             do_create = False
                             break
@@ -65,7 +65,7 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
                         hall = Hall.objects.create(
                             org=org,
                             title=f['title'].data.strip(),
-                            time_begin=f['time_begin'].data.strip(),
+                            time_start=f['time_start'].data.strip(),
                             time_end=f['time_end'].data.strip(),
                             interval=f['interval'].data,
                             is_active=f['is_active'].data,
@@ -90,9 +90,17 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
     DT_ID_FORMAT = "%Y_%m%_%d_%H_%M"
     
     def make_id_prefix(self, dt_start, dt_end):
-        start = datetime.datetime.strftime(dt_start, DT_ID_FORMAT)
-        end = datetime.datetime.strftime(dt_end, DT_ID_FORMAT)
-        return "id_%s__%s" % (start, end,)
+        """
+        Префикс id html элементов
+
+        id html элемента будет таким:
+            id__YYYY_MM_DD_hh_mm__YYYY_MM_DD_hh_mm__{text_details,text_details_old,cb_free,cb_book}
+                ----------------  ----------------
+                start             end
+        """
+        start = datetime.datetime.strftime(dt_start, self.DT_ID_FORMAT)
+        end = datetime.datetime.strftime(dt_end, self.DT_ID_FORMAT)
+        return "id__%s__%s" % (start, end,)
 
     def get_timetable(self, date, halls_pks):
 
@@ -120,7 +128,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
         for hall_pk in halls_pks:
             hall = Hall.objects.get(pk=hall_pk)
             hall_interval_timedelta = datetime.timedelta(seconds=hall.interval * 60)
-            hall_start = datetime.datetime.strptime(hall.time_begin, "%H:%M")
+            hall_start = datetime.datetime.strptime(hall.time_start, "%H:%M")
             hall_start = datetime.datetime(
                 year=date.year, month=date.month, day=date.day,
                 hour=hall_start.hour, minute=hall_start.minute,
@@ -174,30 +182,31 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
             future_sessions = []
             for tt in HallTimeTable.objects.filter(
                     hall=hall,
-                    dt_begin__gte=date_start,
+                    dt_start__gte=date_start,
                     dt_end__lt=date_end,
-                ).order_by('dt_begin'):
+                ).order_by('dt_start'):
                 tt_item = dict(
                     free = False,
-                    dt_start=tt.dt_begin,
+                    dt_start=tt.dt_start,
                     dt_end=tt.dt_end,
-                    text=tt.details,
+                    details=tt.details,
                     creator=tt.user,
-                    ids=self.make_id_prefix(tt.dt_begin, dt_end)
+                    id_prefix=self.make_id_prefix(tt.dt_start, tt.dt_end),
                 )
-                if tt.dt_end < dt_border:
-                    editable = False
-                    tt_item.update(editable=editable)
+                if tt.dt_end <= dt_border:
+                    tt_item.update(editable=False)
                     past_sessions.append(tt_item)
                 else:
-                    editable = user.profile.is_hall_manager() and user == tt.user or \
-                               user.profile.is_hall_admin()
+                    editable = bool(
+                        user.profile.is_hall_manager() and user == tt.user or \
+                        user.profile.is_hall_admin()
+                    )
                     if editable:
                         have_smth_to_edit = True
                     tt_item.update(editable=editable)
                     future_sessions.append(tt_item)
                     for i, s in enumerate(date_free_sessions):
-                       if tt.dt_end <= s.dt_start or tt.dt_begin >= s.dt_end:
+                       if tt.dt_end <= s.dt_start or tt.dt_start >= s.dt_end:
                            # Конец интервала из базы до начала рассматриваемого: не пересекает
                            # Начало интервала из базы после  рассматриваемого: не пересекает
                            pass
@@ -207,6 +216,19 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
 
             for i in to_delete_from_date_free_sessions:
                 del date_free_sessions[i]
+            editable = bool(user.profile.is_hall_manager() and date_free_sessions)
+            if editable:
+                have_smth_to_edit = True
+            for tt_item in date_free_sessions:
+                tt_item.update(
+                    free = True,
+                    details='',
+                    creator=user,
+                    id_prefix=self.make_id_prefix(tt_item['dt_start'], tt_item['dt_end']),
+                    editable=editable,
+                )
+            future_sessions += date_free_sessions
+            future_sessions.sort(key=lambda k: k['dt_start'])
 
             hall_timetable.update(timetable=past_sessions + future_sessions)            
             hall_timetables.append(hall_timetable)

@@ -92,7 +92,7 @@
 <form action="" method="POST" class="main-form">
     {% csrf_token %}
     <input type="hidden" name="GET_PARAMS" value="{{ GET_PARAMS }}" />
-    {% if is_hall_manager %}
+    {% if have_smth_to_edit %}
         <input type="submit" class="btn" value="{% trans "сохранить" %}" name="submit" class="btn"/>
     {% endif %}
 <form/>

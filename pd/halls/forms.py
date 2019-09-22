@@ -16,7 +16,7 @@ class HallItemForm(forms.ModelForm):
     def clean_title(self):
 
         # Делаем почти все проверки в этом поле, включая проверки
-        # по другим полям. Иначе, если бы был метод clean_time_begin
+        # по другим полям. Иначе, если бы был метод clean_time_start
         # и он породил бы исключение, то строчка разбивается.
         #
         title = self.cleaned_data['title'].strip()
@@ -27,14 +27,14 @@ class HallItemForm(forms.ModelForm):
         if not title:
             raise forms.ValidationError(_('Название зала не может быть пустым'))
         dts = dict()
-        for t in ('time_begin', 'time_end', ):
+        for t in ('time_start', 'time_end', ):
             try:
                 dts[t] = datetime.datetime.strptime(f[t].value().strip(), "%H:%M")
             except ValueError:
                 raise forms.ValidationError(_('Неверно: %s') % f[t].label)
-        if dts['time_begin'] >= dts['time_end']:
+        if dts['time_start'] >= dts['time_end']:
             raise forms.ValidationError(_('Время окончания работы зала меньше времени начала'))
-        diff = dts['time_end'] - dts['time_begin']
+        diff = dts['time_end'] - dts['time_start']
         if int(diff.total_seconds()/60) < int(f['interval'].value()):
             raise forms.ValidationError(_('Время работы зала меньше минимального времени на его посещение'))
         return title

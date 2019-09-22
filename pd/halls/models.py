@@ -20,7 +20,7 @@ class Hall(models.Model):
     # чтоб можно было игнорировать удаляемые объекты с неверно заданным,
     # например, пустым временем. Аналогично blank=true. Сами будем проверять.
     #
-    time_begin = models.CharField(_("Начало работы"), max_length=255, blank=True)
+    time_start = models.CharField(_("Начало работы"), max_length=255, blank=True)
     time_end = models.CharField(_("Окончание работы"), max_length=255, blank=True)
 
     interval = models.PositiveIntegerField(_("Минимальное время, минуты"), choices=HALL_INTERVAL_CHOICES, default=30)
@@ -37,21 +37,21 @@ class Hall(models.Model):
 
 class HallTimeTable(models.Model):
     hall = models.ForeignKey(Hall, verbose_name=_("Зал"), on_delete=models.CASCADE)
-    dt_begin = models.DateTimeField(_("Время начала"))
+    dt_start = models.DateTimeField(_("Время начала"))
     dt_end = models.DateTimeField(_("Время окончания"))
-    user = models.ForeignKey('auth.User', verbose_name=_("Сотрудник"), on_delete=models.CASCADE)
+    creator = models.ForeignKey('auth.User', verbose_name=_("Сотрудник"), on_delete=models.CASCADE)
     details =  models.TextField(_("Примечания"), blank=True)
     dt_created = models.DateTimeField(_("Дата/время создания"), auto_now_add=True)
 
     class Meta:
         verbose_name = _('Назначенное время в зале')
         verbose_name_plural = _('Расписание залов')
-        unique_together = ('hall', 'dt_begin', 'dt_end', )
+        unique_together = ('hall', 'dt_start', 'dt_end', )
 
     def __str__(self):
         return "%s, %s, %s - %s" % (
-            datetime.datetime.strftime(self.dt_begin, "%d.%m.%y"),
+            datetime.datetime.strftime(self.dt_start, "%d.%m.%y"),
             self.hall,
-            datetime.datetime.strftime(self.dt_begin, "%H:%M"),
+            datetime.datetime.strftime(self.dt_start, "%H:%M"),
             datetime.datetime.strftime(self.dt_end, "%H:%M"),
         )
