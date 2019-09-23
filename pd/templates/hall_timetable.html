@@ -26,6 +26,17 @@
                 }
             });
             $('input[id$={{ S.BOOK }}]').change();
+
+            $('input[name$={{ S.FREE }}]').change(function() {
+                var name = $(this).attr('name');
+                name = name.substr(0, name.length - '{{ S.FREE }}'.length);
+                if ($(this).is(':checked')) {
+                    $('textarea[name=' + name + '{{ S.DETAILS }}]').attr('readonly', 'True');
+                } else {
+                    $('textarea[name=' + name + '{{ S.DETAILS }}]').removeAttr('readonly');
+                }
+            });
+            $('input[id$={{ S.FREE }}]').change();
         });
     </script>
 
@@ -76,7 +87,7 @@
                 </table>
 
                 <p class="buttons">
-                    <input type="submit" value="искать" class="btn btn-primary" />
+                    <input type="submit" value="искать" class="btn" />
                 </p>
             </form>
         </div>
@@ -92,12 +103,12 @@
 <form action="" method="POST" class="main-form">
     {% csrf_token %}
     {% if have_smth_to_edit %}
-        <input type="submit" class="btn" value="{% trans "сохранить изменения" %}" name="submit" class="btn"/>
+        <input type="submit" class="btn btn-success" value="{% trans "сохранить изменения" %}" name="submit" class="btn"/>
     {% endif %}
     <input type="hidden" name="GET_PARAMS" value="{{ GET_PARAMS }}" />
 
     {% for hall in hall_timetables %}
-        <h2>{{ hall.hall }}{% if date %} ({{ date }}){% endif %}</h2>
+        <h2>{{ hall.hall }}</h2>
         {% if hall.timetable %}
             <table class="table table-bordered">
                 <tr>
@@ -115,7 +126,8 @@
                     </th>
                 </tr>
                 {% for tt in hall.timetable %}
-                    <tr{% if not tt.free %} style="background-color:#d599ca"{% endif %}>
+                    <tr
+                    {% if tt.past %} style="background-color:#f5e7f2"{% elif not tt.free %} style="background-color:#d599ca"{% endif %}>
                         <td>
                             {{ tt.dt_start|date:"H:i" }} &mdash; {{ tt.dt_end|date:"H:i" }}
                         </td>
@@ -130,11 +142,16 @@
                         </td>
                         <td style="text-align: center">
                             <textarea name="{{ tt.html_name_prefix }}__{{ S.DETAILS }}" rows="1" {% if not tt.editable %}readonly="True"{% endif %} id="id__{{ tt.html_name_prefix }}__{{ S.DETAILS }}">{{ tt.details }}</textarea>
+                            {% if tt.editable %}
+                                <textarea name="{{ tt.html_name_prefix }}__{{ S.DETAILS_OLD }}" id="id__{{ tt.html_name_prefix }}__{{ S.DETAILS }}" readonly="True" style="display:none">{{ tt.details }}</textarea>
+                            {% endif %}
                         </td>
                         <td>
-                        {{ tt.creator.profile.last_name_initials }}
-                        {% if tt.dt_created %}
-                            <br/>{{ tt.dt_created }}
+                        {% if tt.creator %}
+                            {{ tt.creator.profile.last_name_initials }} ({{ tt.creator.username }})
+                            {% if tt.dt_created %}
+                                <br/>{{ tt.dt_created }}
+                            {% endif %}
                         {% endif %}
                         </td>
                     </tr>
@@ -146,7 +163,7 @@
     {% endfor %}
 
     {% if have_smth_to_edit %}
-        <input type="submit" class="btn" value="{% trans "сохранить изменения" %}" name="submit" class="btn"/>
+        <input type="submit" class="btn btn-success" value="{% trans "сохранить изменения" %}" name="submit" class="btn"/>
     {% endif %}
 <form/>
 

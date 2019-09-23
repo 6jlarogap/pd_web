@@ -221,7 +221,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     dt_created=tt.dt_created,
                 )
                 if tt.dt_end <= dt_border:
-                    tt_item.update(editable=False)
+                    tt_item.update(editable=False, past=True)
                     past_sessions.append(tt_item)
                 else:
                     editable = bool(
@@ -230,7 +230,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     )
                     if editable:
                         have_smth_to_edit = True
-                    tt_item.update(editable=editable)
+                    tt_item.update(editable=editable, past=False)
                     future_sessions.append(tt_item)
                     for i, s in enumerate(date_free_sessions):
                        if tt.dt_end <= s['dt_start'] or tt.dt_start >= s['dt_end']:
@@ -252,7 +252,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                 tt_item.update(
                     free = True,
                     details='',
-                    creator=user,
+                    creator=None,
                     html_name_prefix=self.make_html_name_prefix(hall, tt_item['dt_start'], tt_item['dt_end']),
                     editable=editable,
                     dt_created=None,
@@ -388,6 +388,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                 pass
         if not date:
             raise Http404
+
         booked_s = [p[0:-len(S['BOOK'])-2] for p in request.POST if p.endswith(S['BOOK'])]
         for tt_item in booked_s:
             try:
@@ -412,7 +413,60 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     )))
             except (ValueError, Hall.DoesNotExist,):
                 raise Http404
-            
+
+        free_s = [p[0:-len(S['FREE'])-2] for p in request.POST if p.endswith(S['FREE'])]
+        for tt_item in free_s:
+            try:
+                hall_pk, t_start, t_end = tt_item.split('__')
+                hall = Hall.objects.get(pk=hall_pk)
+                dt_start, dt_end = self.mk_interval(date, t_start, t_end)
+                HallTimeTable.objects.filter(
+                    hall=hall,
+                    dt_start=dt_start,
+                    dt_end=dt_end,
+                ).delete()
+            except (ValueError, Hall.DoesNotExist,):
+                raise Http404
+
+        details_s = [p[0:-len(S['DETAILS'])-2] for p in request.POST if p.endswith(S['DETAILS'])]
+        for tt_item in details_s:
+            if tt_item in free_s or tt_item in booked_s:
+                continue
+            details_old = request.POST.get("%s__%s" % (tt_item, S['DETAILS_OLD'],))
+            details_new = request.POST.get("%s__%s" % (tt_item, S['DETAILS'],))
+            if details_old is not None and details_new is not None and \
+               details_new != details_old:
+                try:
+                    hall_pk, t_start, t_end = tt_item.split('__')
+                    hall = Hall.objects.get(pk=hall_pk)
+                    dt_start, dt_end = self.mk_interval(date, t_start, t_end)
+                    htt_qs = HallTimeTable.objects.filter(
+                        hall=hall,
+                        dt_start=dt_start,
+                        dt_end=dt_end,
+                    )
+                    try:
+                        htt = htt_qs[0]
+                        if htt.details != details_old:
+                            post_errors.append(
+                                _("%s, %s - %s : кто-то до вас уже изменил примечание, которое подправили и вы" % (
+                            hall.title,
+                            datetime.datetime.strftime(dt_start, '%H:%M'),
+                            datetime.datetime.strftime(dt_end, '%H:%M'),
+                            )))
+                            continue
+                        htt_qs.update(details=details_new)
+                    except IndexError:
+                        post_errors.append(
+                            _("%s, %s - %s : кто-то до вас уже удалил время, в котором вы изменили примечание" % (
+                        hall.title,
+                        datetime.datetime.strftime(dt_start, '%H:%M'),
+                        datetime.datetime.strftime(dt_end, '%H:%M'),
+                        )))
+                        continue
+                except (ValueError, Hall.DoesNotExist,):
+                    raise Http404
+
         get_params = '?' + get_params
         if post_errors:
             post_errors = '~'.join(post_errors)
