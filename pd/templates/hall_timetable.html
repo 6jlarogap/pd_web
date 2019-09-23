@@ -14,7 +14,18 @@
             return false;
         }
         $(function() {
-            $('textarea[id$=details]').css('width', '95%');
+            $('textarea[id$=details]').css('width', '96%');
+
+            $('input[name$={{ S.BOOK }}]').change(function() {
+                var name = $(this).attr('name');
+                name = name.substr(0, name.length - '{{ S.BOOK }}'.length);
+                if ($(this).is(':checked')) {
+                    $('textarea[name=' + name + '{{ S.DETAILS }}]').removeAttr('readonly');
+                } else {
+                    $('textarea[name=' + name + '{{ S.DETAILS }}]').attr('readonly', 'True');
+                }
+            });
+            $('input[id$={{ S.BOOK }}]').change();
         });
     </script>
 
@@ -72,8 +83,9 @@
     {% endif %}
 
     {% if post_errors %}
+        <h2><span style="color:blue">{% trans "Не все изменения сохранены!" %}</span></h2>
         {% for e in post_errors %}
-            <p><b>{{ e }}</b></p>
+            <p><span style="color:blue"><big>{{ e }}</big></span></p>
         {% endfor %}
     {% endif %}
 
@@ -82,9 +94,9 @@
     <input type="hidden" name="GET_PARAMS" value="{{ GET_PARAMS }}" />
 
     {% for hall in hall_timetables %}
-        <h2>{{ hall.hall }}</h2>
+        <h2>{{ hall.hall }}{% if date %} ({{ date }}){% endif %}</h2>
         {% if hall.timetable %}
-            <table class="table table-bordered table-striped">
+            <table class="table table-bordered">
                 <tr>
                     <th>
                         {% trans "Время" %}
@@ -100,15 +112,17 @@
                     </th>
                 </tr>
                 {% for tt in hall.timetable %}
-                    <tr>
+                    <tr{% if not tt.free %} style="background-color:#d599ca"{% endif %}>
                         <td>
                             {{ tt.dt_start|date:"H:i" }} &mdash; {{ tt.dt_end|date:"H:i" }}
                         </td>
                         <td>
                             {% if tt.free and tt.editable %}
-                                <p><label for="{{ tt.html_name_prefix }}__{{ S.FREE }}">{% trans "Занять" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.FREE }}" id="id__{{ tt.html_name_prefix }}__{{ S.FREE }}"/></p>
+                                <p><label for="{{ tt.html_name_prefix }}__{{ S.BOOK }}">{% trans "Занять" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.BOOK }}" id="id__{{ tt.html_name_prefix }}__{{ S.BOOK }}"/></p>
                             {% elif tt.editable %}
-                                <p><label for="{{ tt.html_name_prefix }}__{{ S.BOOK }}">{% trans "Освободить" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.BOOK }}" id="id__{{ tt.html_name_prefix }}__{{ S.BOOK }}"/></p>
+                                <p><label for="{{ tt.html_name_prefix }}__{{ S.FREE }}">{% trans "Освободить" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.FREE }}" id="id__{{ tt.html_name_prefix }}__{{ S.FREE }}"/></p>
+                            {% else %}
+                                {% trans "Было занято" %}
                             {% endif %}
                         </td>
                         <td style="text-align: center">
@@ -120,7 +134,7 @@
                 {% endfor %}
             </table>
         {% else %}
-        <h3><span style="color:blue">{% trans "Ничего не назначено и уже невозможно что-то назначить" %}<span></h3>
+        <h3><span style="color:blue">{% trans "Ничего не назначено и уже невозможно что-то назначить" %}{% if date %} на {% if today_tomorrow %}{{ today_tomorrow }}, {% endif %}{{ date }}{% endif %}<span></h3>
         {% endif %}
     {% endfor %}
 

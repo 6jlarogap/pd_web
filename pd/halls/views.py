@@ -112,6 +112,22 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
         end = datetime.datetime.strftime(dt_end, self.DT_ID_FORMAT)
         return "%s__%s__%s" % (hall.pk, start, end,)
 
+    def mk_interval(self, date, t_start, t_end):
+        """
+        datetimes начала и окончания интервала, если времена заданы в self.DT_ID_FORMAT
+        """
+        dt_start = datetime.datetime.strptime(t_start, self.DT_ID_FORMAT)
+        dt_start = datetime.datetime(
+            date.year, date.month, date.day,
+            dt_start.hour, dt_start.minute,
+        )
+        dt_end = datetime.datetime.strptime(t_end, self.DT_ID_FORMAT)
+        dt_end = datetime.datetime(
+            date.year, date.month, date.day,
+            dt_end.hour, dt_end.minute,
+        )
+        return dt_start, dt_end
+
     def get_timetable(self, date, halls_pks):
 
         # Собственно расчет, т.е. подготовка post формы в шаблоне,
@@ -200,7 +216,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     dt_start=tt.dt_start,
                     dt_end=tt.dt_end,
                     details=tt.details,
-                    creator=tt.user,
+                    creator=user,
                     html_name_prefix=self.make_html_name_prefix(hall, tt.dt_start, tt.dt_end),
                 )
                 if tt.dt_end <= dt_border:
@@ -208,7 +224,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     past_sessions.append(tt_item)
                 else:
                     editable = bool(
-                        user.profile.is_hall_manager() and user == tt.user or \
+                        user.profile.is_hall_manager() and user == tt.creator or \
                         user.profile.is_hall_admin()
                     )
                     if editable:
@@ -216,20 +232,22 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     tt_item.update(editable=editable)
                     future_sessions.append(tt_item)
                     for i, s in enumerate(date_free_sessions):
-                       if tt.dt_end <= s.dt_start or tt.dt_start >= s.dt_end:
+                       if tt.dt_end <= s['dt_start'] or tt.dt_start >= s['dt_end']:
                            # Конец интервала из базы до начала рассматриваемого: не пересекает
                            # Начало интервала из базы после  рассматриваемого: не пересекает
                            pass
                        else:
                            # Во всех остальных случаях как-то пересекает
-                            to_delete_from_date_free_sessions.append[i]
+                            to_delete_from_date_free_sessions.append(i)
 
-            for i in to_delete_from_date_free_sessions:
-                del date_free_sessions[i]
-            editable = bool(user.profile.is_hall_manager() and date_free_sessions)
+            updated_date_free_sessions = []
+            for i, s in enumerate(date_free_sessions):
+                if i not in to_delete_from_date_free_sessions:
+                    updated_date_free_sessions.append(s)
+            editable = bool(user.profile.is_hall_manager() and updated_date_free_sessions)
             if editable:
                 have_smth_to_edit = True
-            for tt_item in date_free_sessions:
+            for tt_item in updated_date_free_sessions:
                 tt_item.update(
                     free = True,
                     details='',
@@ -237,7 +255,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     html_name_prefix=self.make_html_name_prefix(hall, tt_item['dt_start'], tt_item['dt_end']),
                     editable=editable,
                 )
-            future_sessions += date_free_sessions
+            future_sessions += updated_date_free_sessions
             future_sessions.sort(key=lambda k: k['dt_start'])
 
             hall_timetable.update(timetable=past_sessions + future_sessions)            
@@ -344,6 +362,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
             return HttpResponseForbidden()
         post_errors = []
 
+        S = self.S
         get_params = request.POST.get('GET_PARAMS', '')
         params = parse_qs(get_params)
         try:
@@ -367,7 +386,30 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                 pass
         if not date:
             raise Http404
-
+        booked_s = [p[0:-len(S['BOOK'])-2] for p in request.POST if p.endswith(S['BOOK'])]
+        for tt_item in booked_s:
+            try:
+                hall_pk, t_start, t_end = tt_item.split('__')
+                hall = Hall.objects.get(pk=hall_pk)
+                dt_start, dt_end = self.mk_interval(date, t_start, t_end)
+                htt, created_ = HallTimeTable.objects.get_or_create(
+                    hall=hall,
+                    dt_start=dt_start,
+                    dt_end=dt_end,
+                    defaults=dict(
+                        creator=request.user,
+                ))
+                #TODO details
+                if not created_:
+                    post_errors.append(
+                        _("%s, %s - %s : кто-то до вас уже забронировал это время" % (
+                       hall.title,
+                       strftime(dt_start, '%H:%M'),
+                       strftime(dt_end, '%H:%M'),
+                    )))
+            except (ValueError, Hall.DoesNotExist,):
+                raise Http404
+            
         get_params = '?' + get_params
         if post_errors:
             post_errors = '~'.join(post_errors)
