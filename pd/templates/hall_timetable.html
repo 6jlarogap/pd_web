@@ -112,8 +112,8 @@
         {% if hall.timetable %}
             <table class="table table-bordered">
                 <tr>
-                    <th>
-                        {% trans "Время" %}
+                    <td>
+                        <b>{% trans "Время" %}</b> (<i>{{ date|date:"l d M Y" }}</i>)
                     </th>
                     <th>
                         {% trans "Занятость" %}
