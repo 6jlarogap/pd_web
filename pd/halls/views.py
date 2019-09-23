@@ -87,20 +87,30 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
 
     # Так записываются начальные id input'ов в форме, в таблицах залов
     #
-    DT_ID_FORMAT = "%Y_%m%_%d_%H_%M"
-    
-    def make_id_prefix(self, dt_start, dt_end):
+    DT_ID_FORMAT = "%H%M"
+
+    # Чтоб в template & view были одни и те же обозначения для имен html
+    # элементов и действий по ним
+    #
+    S = dict(
+        FREE="free",
+        BOOK="book",
+        DETAILS="details",
+        DETAILS_OLD="details_old",
+    )
+
+    def make_html_name_prefix(self, hall, dt_start, dt_end):
         """
         Префикс id html элементов
 
-        id html элемента будет таким:
-            id__YYYY_MM_DD_hh_mm__YYYY_MM_DD_hh_mm__{text_details,text_details_old,cb_free,cb_book}
-                ----------------  ----------------
-                start             end
+        name html элемента будет таким:
+            <hall.pk>__hhmm__hhmm__{text_details,text_details_old,cb_free,cb_book}
+        id html элемента будет:
+            id__<html_name_prefix>
         """
         start = datetime.datetime.strftime(dt_start, self.DT_ID_FORMAT)
         end = datetime.datetime.strftime(dt_end, self.DT_ID_FORMAT)
-        return "id__%s__%s" % (start, end,)
+        return "%s__%s__%s" % (hall.pk, start, end,)
 
     def get_timetable(self, date, halls_pks):
 
@@ -171,7 +181,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
 
             to_delete_from_date_free_sessions = []
 
-            hall_timetable=dict(title=hall.title)
+            hall_timetable=dict(hall=hall)
 
             # Сеансы до и после dt_border. В те что после dt_border,
             # вставим свободные интервалы, после чего future_sessions
@@ -191,7 +201,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     dt_end=tt.dt_end,
                     details=tt.details,
                     creator=tt.user,
-                    id_prefix=self.make_id_prefix(tt.dt_start, tt.dt_end),
+                    html_name_prefix=self.make_html_name_prefix(hall, tt.dt_start, tt.dt_end),
                 )
                 if tt.dt_end <= dt_border:
                     tt_item.update(editable=False)
@@ -224,7 +234,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     free = True,
                     details='',
                     creator=user,
-                    id_prefix=self.make_id_prefix(tt_item['dt_start'], tt_item['dt_end']),
+                    html_name_prefix=self.make_html_name_prefix(hall, tt_item['dt_start'], tt_item['dt_end']),
                     editable=editable,
                 )
             future_sessions += date_free_sessions
@@ -295,6 +305,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                 post_errors = None
 
         context.update(
+            S=self.S,
             date=date,
             today_tomorrow=today_tomorrow,
             is_hall_manager = self.request.user.profile.is_hall_manager(),
