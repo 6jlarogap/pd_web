@@ -218,6 +218,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     details=tt.details,
                     creator=user,
                     html_name_prefix=self.make_html_name_prefix(hall, tt.dt_start, tt.dt_end),
+                    dt_created=tt.dt_created,
                 )
                 if tt.dt_end <= dt_border:
                     tt_item.update(editable=False)
@@ -254,6 +255,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     creator=user,
                     html_name_prefix=self.make_html_name_prefix(hall, tt_item['dt_start'], tt_item['dt_end']),
                     editable=editable,
+                    dt_created=None,
                 )
             future_sessions += updated_date_free_sessions
             future_sessions.sort(key=lambda k: k['dt_start'])
@@ -392,20 +394,21 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                 hall_pk, t_start, t_end = tt_item.split('__')
                 hall = Hall.objects.get(pk=hall_pk)
                 dt_start, dt_end = self.mk_interval(date, t_start, t_end)
+                details = request.POST.get("%s__%s" % (tt_item, S['DETAILS'],), '')
                 htt, created_ = HallTimeTable.objects.get_or_create(
                     hall=hall,
                     dt_start=dt_start,
                     dt_end=dt_end,
                     defaults=dict(
                         creator=request.user,
+                        details=details,
                 ))
-                #TODO details
                 if not created_:
                     post_errors.append(
                         _("%s, %s - %s : кто-то до вас уже забронировал это время" % (
                        hall.title,
-                       strftime(dt_start, '%H:%M'),
-                       strftime(dt_end, '%H:%M'),
+                       datetime.datetime.strftime(dt_start, '%H:%M'),
+                       datetime.datetime.strftime(dt_end, '%H:%M'),
                     )))
             except (ValueError, Hall.DoesNotExist,):
                 raise Http404

@@ -83,7 +83,7 @@
     {% endif %}
 
     {% if post_errors %}
-        <h2><span style="color:blue">{% trans "Не все изменения сохранены!" %}</span></h2>
+        <h2><span style="color:red">{% trans "Не все изменения сохранены!" %}</span></h2>
         {% for e in post_errors %}
             <p><span style="color:blue"><big>{{ e }}</big></span></p>
         {% endfor %}
@@ -91,6 +91,9 @@
 
 <form action="" method="POST" class="main-form">
     {% csrf_token %}
+    {% if have_smth_to_edit %}
+        <input type="submit" class="btn" value="{% trans "сохранить изменения" %}" name="submit" class="btn"/>
+    {% endif %}
     <input type="hidden" name="GET_PARAMS" value="{{ GET_PARAMS }}" />
 
     {% for hall in hall_timetables %}
@@ -129,6 +132,10 @@
                             <textarea name="{{ tt.html_name_prefix }}__{{ S.DETAILS }}" rows="1" {% if not tt.editable %}readonly="True"{% endif %} id="id__{{ tt.html_name_prefix }}__{{ S.DETAILS }}">{{ tt.details }}</textarea>
                         </td>
                         <td>
+                        {{ tt.creator.profile.last_name_initials }}
+                        {% if tt.dt_created %}
+                            <br/>{{ tt.dt_created }}
+                        {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
@@ -139,7 +146,7 @@
     {% endfor %}
 
     {% if have_smth_to_edit %}
-        <input type="submit" class="btn" value="{% trans "сохранить" %}" name="submit" class="btn"/>
+        <input type="submit" class="btn" value="{% trans "сохранить изменения" %}" name="submit" class="btn"/>
     {% endif %}
 <form/>
 
