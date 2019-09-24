@@ -2,6 +2,9 @@ import datetime
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.contenttypes.models import ContentType
+
+from logs.models import Log
 
 class Hall(models.Model):
 
@@ -34,6 +37,12 @@ class Hall(models.Model):
 
     def __str__(self):
         return self.title
+
+    def delete(self, *args, **kwargs):
+        self.halltimetable_set.all().delete()
+        ct = ContentType.objects.get_for_model(self)
+        Log.objects.filter(ct=ct, obj_id=self.pk).delete()
+        super(Hall, self).delete(*args, **kwargs)
 
 class HallTimeTable(models.Model):
     hall = models.ForeignKey(Hall, verbose_name=_("Зал"), on_delete=models.CASCADE)
