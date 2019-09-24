@@ -216,7 +216,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     dt_start=tt.dt_start,
                     dt_end=tt.dt_end,
                     details=tt.details,
-                    creator=user,
+                    creator=tt.creator,
                     html_name_prefix=self.make_html_name_prefix(hall, tt.dt_start, tt.dt_end),
                     dt_created=tt.dt_created,
                 )
@@ -395,24 +395,32 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                 hall_pk, t_start, t_end = tt_item.split('__')
                 hall = Hall.objects.get(pk=hall_pk)
                 dt_start, dt_end = self.mk_interval(date, t_start, t_end)
-                details = request.POST.get("%s__%s" % (tt_item, S['DETAILS'],), '')
-                htt, created_ = HallTimeTable.objects.get_or_create(
-                    hall=hall,
-                    dt_start=dt_start,
-                    dt_end=dt_end,
-                    defaults=dict(
-                        creator=request.user,
-                        details=details,
-                ))
-                if not created_:
-                    post_errors.append(
-                        _("%s, %s - %s : кто-то до вас уже забронировал это время" % (
-                       hall.title,
-                       datetime.datetime.strftime(dt_start, '%H:%M'),
-                       datetime.datetime.strftime(dt_end, '%H:%M'),
-                    )))
             except (ValueError, Hall.DoesNotExist,):
                 raise Http404
+            details = request.POST.get("%s__%s" % (tt_item, S['DETAILS'],), '')
+            htt, created_ = HallTimeTable.objects.get_or_create(
+                hall=hall,
+                dt_start=dt_start,
+                dt_end=dt_end,
+                defaults=dict(
+                    creator=request.user,
+                    details=details,
+            ))
+            s_start = datetime.datetime.strftime(dt_start, '%H:%M')
+            s_end = datetime.datetime.strftime(dt_end, '%H:%M')
+            if created_:
+                write_log(self.request, hall, _("Назначено время, %s - %s%s") % (
+                    s_start,
+                    s_end,
+                    '. %s' % details if details else '',
+                ))
+            else:
+                post_errors.append(
+                    _("%s, %s - %s : кто-то до вас уже забронировал это время" % (
+                    hall.title,
+                    s_start,
+                    s_end,
+                )))
 
         free_s = [p[0:-len(S['FREE'])-2] for p in request.POST if p.endswith(S['FREE'])]
         for tt_item in free_s:
@@ -420,13 +428,19 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                 hall_pk, t_start, t_end = tt_item.split('__')
                 hall = Hall.objects.get(pk=hall_pk)
                 dt_start, dt_end = self.mk_interval(date, t_start, t_end)
-                HallTimeTable.objects.filter(
-                    hall=hall,
-                    dt_start=dt_start,
-                    dt_end=dt_end,
-                ).delete()
             except (ValueError, Hall.DoesNotExist,):
                 raise Http404
+            HallTimeTable.objects.filter(
+                hall=hall,
+                dt_start=dt_start,
+                dt_end=dt_end,
+            ).delete()
+            s_start = datetime.datetime.strftime(dt_start, '%H:%M')
+            s_end = datetime.datetime.strftime(dt_end, '%H:%M')
+            write_log(self.request, hall, _("Отменено время, %s - %s") % (
+                s_start,
+                s_end,
+            ))
 
         details_s = [p[0:-len(S['DETAILS'])-2] for p in request.POST if p.endswith(S['DETAILS'])]
         for tt_item in details_s:
@@ -440,32 +454,38 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     hall_pk, t_start, t_end = tt_item.split('__')
                     hall = Hall.objects.get(pk=hall_pk)
                     dt_start, dt_end = self.mk_interval(date, t_start, t_end)
-                    htt_qs = HallTimeTable.objects.filter(
-                        hall=hall,
-                        dt_start=dt_start,
-                        dt_end=dt_end,
-                    )
-                    try:
-                        htt = htt_qs[0]
-                        if htt.details != details_old:
-                            post_errors.append(
-                                _("%s, %s - %s : кто-то до вас уже изменил примечание, которое подправили и вы" % (
-                            hall.title,
-                            datetime.datetime.strftime(dt_start, '%H:%M'),
-                            datetime.datetime.strftime(dt_end, '%H:%M'),
-                            )))
-                            continue
-                        htt_qs.update(details=details_new)
-                    except IndexError:
+                except (ValueError, Hall.DoesNotExist,):
+                    raise Http404
+                htt_qs = HallTimeTable.objects.filter(
+                    hall=hall,
+                    dt_start=dt_start,
+                    dt_end=dt_end,
+                )
+                try:
+                    htt = htt_qs[0]
+                    if htt.details != details_old:
                         post_errors.append(
-                            _("%s, %s - %s : кто-то до вас уже удалил время, в котором вы изменили примечание" % (
+                            _("%s, %s - %s : кто-то до вас уже изменил примечание, которое подправили и вы" % (
                         hall.title,
                         datetime.datetime.strftime(dt_start, '%H:%M'),
                         datetime.datetime.strftime(dt_end, '%H:%M'),
                         )))
                         continue
-                except (ValueError, Hall.DoesNotExist,):
-                    raise Http404
+                    htt_qs.update(details=details_new)
+                    s_start = datetime.datetime.strftime(dt_start, '%H:%M')
+                    s_end = datetime.datetime.strftime(dt_end, '%H:%M')
+                    write_log(self.request, hall, _("Назначенное время, %s - %s, изменено описание") % (
+                        s_start,
+                        s_end,
+                    ))
+                except IndexError:
+                    post_errors.append(
+                        _("%s, %s - %s : кто-то до вас уже удалил время, в котором вы изменили примечание" % (
+                    hall.title,
+                    datetime.datetime.strftime(dt_start, '%H:%M'),
+                    datetime.datetime.strftime(dt_end, '%H:%M'),
+                    )))
+                    continue
 
         get_params = '?' + get_params
         if post_errors:

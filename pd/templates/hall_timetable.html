@@ -137,7 +137,7 @@
                             {% elif tt.editable %}
                                 <p><label for="{{ tt.html_name_prefix }}__{{ S.FREE }}">{% trans "Освободить" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.FREE }}" id="id__{{ tt.html_name_prefix }}__{{ S.FREE }}"/></p>
                             {% else %}
-                                {% trans "Было занято" %}
+                                {% trans "Занято" %}
                             {% endif %}
                         </td>
                         <td style="text-align: center">
