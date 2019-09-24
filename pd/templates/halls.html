@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <script type="text/javascript">
+
+        function makeTimePicker_halls(obj) {
+            obj.after('<span class="add-on move-left"><i class="icon-time"></i></span>').timepicker({
+                showOn: "focus",
+                hourText: 'Ч',
+                minuteText: 'М',
+                showPeriodLabels: false,
+                defaultTime: '09:00',
+                minutes: {
+                    starts: 0,
+                    ends: 55,
+                    interval: 5
+                },
+                hours: {
+                    starts: 8,
+                    ends: 19,
+                    interval: 1
+                },
+                inline: true
+            });
+        }
+
+        $(function() {
+            makeTimePicker_halls($('input[id$=time_start]'));
+            makeTimePicker_halls($('input[id$=time_end]'));
+        });
+
+    </script>
+
+    {% if not user.profile.is_admin %}
+        {% include "form_read_only.html" %}
+    {% endif %}
+
+    <form action="" method="POST" class="halls">
+        {% csrf_token %}
+        <h2>{% trans "Залы" %}</h2>
+        {{ formset.management_form }}
+        {{ formset.non_form_errors }}
+        {% for f in formset.forms %}
+            {% if not f.instance.pk %}
+            <p><b><big> {% trans "Новый зал" %}</big></b></p>
+            {% endif %}
+            <fieldset>
+                {{ f.as_p }}
+            </fieldset>
+        {% endfor %}
+
+    {% if user.profile.is_admin %}
+        <p>
+            <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
+        </p>
+    {% endif %}
+    </form>
+{% endblock %}

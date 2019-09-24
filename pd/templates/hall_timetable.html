@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+
+    <script>
+        function select_clear_halls(action) {
+            var obj = "select[name=halls]";
+            var selected = action == "select_all" ? "selected" : ""
+            $(obj).children().each(function () {
+                this.selected = selected;
+            });
+            return false;
+        }
+        $(function() {
+            $('textarea[id$=details]').css('width', '96%');
+
+            $('input[name$={{ S.BOOK }}]').change(function() {
+                var name = $(this).attr('name');
+                name = name.substr(0, name.length - '{{ S.BOOK }}'.length);
+                if ($(this).is(':checked')) {
+                    $('textarea[name=' + name + '{{ S.DETAILS }}]').removeAttr('readonly');
+                } else {
+                    $('textarea[name=' + name + '{{ S.DETAILS }}]').attr('readonly', 'True');
+                }
+            });
+            $('input[id$={{ S.BOOK }}]').change();
+
+            $('input[name$={{ S.FREE }}]').change(function() {
+                var name = $(this).attr('name');
+                name = name.substr(0, name.length - '{{ S.FREE }}'.length);
+                if ($(this).is(':checked')) {
+                    $('textarea[name=' + name + '{{ S.DETAILS }}]').attr('readonly', 'True');
+                } else {
+                    $('textarea[name=' + name + '{{ S.DETAILS }}]').removeAttr('readonly');
+                }
+            });
+            $('input[id$={{ S.FREE }}]').change();
+        });
+    </script>
+
+    <h1>{% trans "Залы: расписание" %}{% if date %} на {% if today_tomorrow %}<span style="color:blue"><big>{{ today_tomorrow }}</big></span>, {% endif %}{{ date }}{% endif %}</h1>
+    <br />
+
+    {% if no_halls_in_system %}
+        <h2><span style="color:blue">{{ no_halls_in_system }}</span></h2>
+    {% else %}
+        <div class="no-print">
+            <form id="mainform" method="get" action="">
+                <table>
+                    <tr valign="top">
+                        <td>
+                            {{ form.hall_date_from.errors }}
+                            <p>
+                                {{ form.hall_date_from.label_tag }}
+                                {{ form.hall_date_from }}
+                                <span class="helptext">{{ form.hall_date_from.help_text }}</span>
+                            </p>
+                        </td>
+                        <td>
+                            &nbsp;&nbsp;&nbsp;
+                        </td>
+                        <td>
+                            {{ form.halls.errors }}
+                            <p>
+                                {{ form.halls.label_tag }}
+                                {{ form.halls }}
+                                <span class="helptext">{{ form.halls.help_text }}</span>
+                            </p>
+                        </td>
+                        <td>
+                            &nbsp;&nbsp;
+                        </td>
+                        <td>
+                            <p>
+                                <br />
+                                &nbsp;<span class="helptext">{% trans "Сtrl-Enter для выборки" %}
+                                <br />
+                                &nbsp;{% trans "нескольких залов" %}</span>
+                                <br /><br />
+                                &nbsp;<button onclick='return select_clear_halls("select_all")'>{% trans "Выделить всех" %}</button>
+                                &nbsp;&nbsp;&nbsp;<button onclick='return select_clear_halls("clear_all")'>{% trans "Очистить" %}</button>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <p class="buttons">
+                    <input type="submit" value="искать" class="btn" />
+                </p>
+            </form>
+        </div>
+    {% endif %}
+
+    {% if post_errors %}
+        <h2><span style="color:red">{% trans "Не все изменения сохранены!" %}</span></h2>
+        {% for e in post_errors %}
+            <p><span style="color:blue"><big>{{ e }}</big></span></p>
+        {% endfor %}
+    {% endif %}
+
+<form action="" method="POST" class="main-form">
+    {% csrf_token %}
+    {% if have_smth_to_edit %}
+        <input type="submit" class="btn btn-success" value="{% trans "сохранить изменения" %}" name="submit" class="btn"/>
+    {% endif %}
+    <input type="hidden" name="GET_PARAMS" value="{{ GET_PARAMS }}" />
+
+    {% for hall in hall_timetables %}
+        <h2>{{ hall.hall }}</h2>
+        {% if hall.timetable %}
+            <table class="table table-bordered">
+                <tr>
+                    <td>
+                        <b>{% trans "Время" %}</b> (<i>{{ date|date:"l d M Y" }}</i>)
+                    </th>
+                    <th>
+                        {% trans "Занятость" %}
+                    </th>
+                    <th style="text-align: center">
+                        {% trans "Примечания" %}
+                    </th>
+                    <th>
+                        {% trans "Кто когда занял" %}
+                    </th>
+                </tr>
+                {% for tt in hall.timetable %}
+                    <tr
+                    {% if tt.past %} style="background-color:#f5e7f2"{% elif not tt.free %} style="background-color:#d599ca"{% endif %}>
+                        <td>
+                            {{ tt.dt_start|date:"H:i" }} &mdash; {{ tt.dt_end|date:"H:i" }}
+                        </td>
+                        <td>
+                            {% if tt.free and tt.editable %}
+                                <p><label for="{{ tt.html_name_prefix }}__{{ S.BOOK }}">{% trans "Занять" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.BOOK }}" id="id__{{ tt.html_name_prefix }}__{{ S.BOOK }}"/></p>
+                            {% elif tt.editable %}
+                                <p><label for="{{ tt.html_name_prefix }}__{{ S.FREE }}">{% trans "Освободить" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.FREE }}" id="id__{{ tt.html_name_prefix }}__{{ S.FREE }}"/></p>
+                            {% else %}
+                                {% trans "Занято" %}
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center">
+                            <textarea name="{{ tt.html_name_prefix }}__{{ S.DETAILS }}" rows="1" {% if not tt.editable %}readonly="True"{% endif %} id="id__{{ tt.html_name_prefix }}__{{ S.DETAILS }}">{{ tt.details }}</textarea>
+                            {% if tt.editable %}
+                                <textarea name="{{ tt.html_name_prefix }}__{{ S.DETAILS_OLD }}" id="id__{{ tt.html_name_prefix }}__{{ S.DETAILS }}" readonly="True" style="display:none">{{ tt.details }}</textarea>
+                            {% endif %}
+                        </td>
+                        <td>
+                        {% if tt.creator %}
+                            {{ tt.creator.profile.last_name_initials }} ({{ tt.creator.username }})
+                            {% if tt.dt_created %}
+                                <br/>{{ tt.dt_created }}
+                            {% endif %}
+                        {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+        <h3><span style="color:blue">{% trans "Ничего не назначено и уже невозможно что-то назначить" %}{% if date %} на {% if today_tomorrow %}{{ today_tomorrow }}, {% endif %}{{ date }}{% endif %}<span></h3>
+        {% endif %}
+    {% endfor %}
+
+    {% if have_smth_to_edit %}
+        <input type="submit" class="btn btn-success" value="{% trans "сохранить изменения" %}" name="submit" class="btn"/>
+    {% endif %}
+<form/>
+
+{% endblock %}
