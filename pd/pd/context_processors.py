@@ -3,7 +3,7 @@ from django.conf import settings
 from pd.views import get_front_end_url
 from pd.utils import host_country_code
 
-from users.models import Org
+from users.models import Org, Role
 
 def context_processor(request):
 
@@ -59,4 +59,5 @@ def context_processor(request):
             'global_context_HRAM_PREDKOV_URL': settings.HRAM_PREDKOV_URL,
             'global_context_YEAR_OVER_DAYS': settings.YEAR_OVER_DAYS,
             'global_context_SHOW_OPER_STATS': settings.SHOW_OPER_STATS,
+            'global_context_SHOW_HALLS': Role.objects.filter(name=Role.ROLE_HALL_MANAGER).exists(),
            }

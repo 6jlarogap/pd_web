@@ -181,6 +181,12 @@ class Log(models.Model):
                     product,
                 )
             result = _("Товар/услуга%s") % ref
+        elif model_name == 'Hall':
+            try:
+                hall = Model.objects.get(pk=obj_id).title
+            except Model.DoesNotExist:
+                hall = obj_id
+            result = _("Зал: %s") % hall
         else:
             result = "%s %s" % (model_name, obj_id,)
         return result
