@@ -62,6 +62,7 @@ urlpatterns = [
     url(r'', include('mobile.urls')),
     url(r'', include('geo.urls')),
     url(r'', include('import_burials.urls')),
+    url(r'', include('halls.urls')),
     
     url(r'', include(router.urls)),
 ]
