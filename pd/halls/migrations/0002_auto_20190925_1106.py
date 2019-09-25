@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='hall',
             name='interval',
-            field=models.PositiveIntegerField(choices=[(10, ' 10'), (15, ' 15'), (20, ' 20'), (30, ' 30'), (40, ' 40'), (60, ' 60'), (120, '120')], default=30, verbose_name='Минимальное время, минуты'),
+            field=models.PositiveIntegerField(choices=[(10, '10'), (15, '15'), (20, '20'), (30, '30'), (40, '40'), (60, '60'), (120, '120')], default=30, verbose_name='Минимальное время, минуты'),
         ),
     ]
