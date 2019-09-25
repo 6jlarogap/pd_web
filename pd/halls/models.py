@@ -9,11 +9,13 @@ from logs.models import Log
 class Hall(models.Model):
 
     HALL_INTERVAL_CHOICES = (
-        (10, "10",),
-        (15, "15",),
-        (20, "20",),
-        (30, "30",),
-        (60, "60",),
+        (10,  " 10",),
+        (15,  " 15",),
+        (20,  " 20",),
+        (30,  " 30",),
+        (40,  " 40",),
+        (60,  " 60",),
+        (120, "120",),
     )
 
     org = models.ForeignKey('users.Org', verbose_name=_("Организация"), on_delete=models.CASCADE)
