@@ -132,12 +132,18 @@
                             {{ tt.dt_start|date:"H:i" }} &mdash; {{ tt.dt_end|date:"H:i" }}
                         </td>
                         <td>
-                            {% if tt.free and tt.editable %}
-                                <p><label for="{{ tt.html_name_prefix }}__{{ S.BOOK }}">{% trans "Занять" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.BOOK }}" id="id__{{ tt.html_name_prefix }}__{{ S.BOOK }}"/></p>
-                            {% elif tt.editable %}
-                                <p><label for="{{ tt.html_name_prefix }}__{{ S.FREE }}">{% trans "Освободить" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.FREE }}" id="id__{{ tt.html_name_prefix }}__{{ S.FREE }}"/></p>
+                            {% if tt.editable %}
+                                {% if tt.free %}
+                                    <p><label for="{{ tt.html_name_prefix }}__{{ S.BOOK }}">{% trans "Занять" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.BOOK }}" id="id__{{ tt.html_name_prefix }}__{{ S.BOOK }}"/></p>
+                                {% else %}
+                                    <p><label for="{{ tt.html_name_prefix }}__{{ S.FREE }}">{% trans "Освободить" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.FREE }}" id="id__{{ tt.html_name_prefix }}__{{ S.FREE }}"/></p>
+                                {% endif %}
                             {% else %}
-                                {% trans "Занято" %}
+                                {% if tt.free %}
+                                    {# пусто #}
+                                {% else %}
+                                    {% trans "Занято" %}
+                                {% endif %}
                             {% endif %}
                         </td>
                         <td style="text-align: center">
@@ -148,7 +154,7 @@
                         </td>
                         <td>
                         {% if tt.creator %}
-                            {{ tt.creator.profile.last_name_initials }} ({{ tt.creator.username }})
+                            {{ tt.creator.profile.full_name }} ({{ tt.creator.username }})
                             {% if tt.dt_created %}
                                 <br/>{{ tt.dt_created }}
                             {% endif %}
