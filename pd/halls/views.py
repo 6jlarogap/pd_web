@@ -466,9 +466,9 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                     if htt.details != details_old:
                         post_errors.append(
                             _("%s, %s - %s : кто-то до вас уже изменил примечание, которое подправили и вы" % (
-                        hall.title,
-                        datetime.datetime.strftime(dt_start, '%H:%M'),
-                        datetime.datetime.strftime(dt_end, '%H:%M'),
+                            hall.title,
+                            datetime.datetime.strftime(dt_start, '%H:%M'),
+                            datetime.datetime.strftime(dt_end, '%H:%M'),
                         )))
                         continue
                     htt_qs.update(details=details_new)
@@ -481,9 +481,9 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                 except IndexError:
                     post_errors.append(
                         _("%s, %s - %s : кто-то до вас уже удалил время, в котором вы изменили примечание" % (
-                    hall.title,
-                    datetime.datetime.strftime(dt_start, '%H:%M'),
-                    datetime.datetime.strftime(dt_end, '%H:%M'),
+                        hall.title,
+                        datetime.datetime.strftime(dt_start, '%H:%M'),
+                        datetime.datetime.strftime(dt_end, '%H:%M'),
                     )))
                     continue
 

@@ -154,7 +154,7 @@
                         </td>
                         <td>
                         {% if tt.creator %}
-                            {{ tt.creator.profile.last_name_initials }} ({{ tt.creator.username }})
+                            {{ tt.creator.profile.full_name }} ({{ tt.creator.username }})
                             {% if tt.dt_created %}
                                 <br/>{{ tt.dt_created }}
                             {% endif %}
