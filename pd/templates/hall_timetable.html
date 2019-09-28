@@ -37,6 +37,11 @@
                 }
             });
             $('input[id$={{ S.FREE }}]').change();
+            $('[id^=time_span_]').each(function() {
+                var new_width = $(this).width() + 10;
+                var hall_pk = $(this).attr('id').substr('time_span_'.length);
+                $('#time_td_' + hall_pk).css('width', new_width + 'px');
+            });
         });
     </script>
 
@@ -87,7 +92,7 @@
                 </table>
 
                 <p class="buttons">
-                    <input type="submit" value="искать" class="btn" />
+                    <input type="submit" value="отобразить" class="btn" style="height:42px; font-weight:bold; font-size:large" />
                 </p>
             </form>
         </div>
@@ -103,7 +108,7 @@
 <form action="" method="POST" class="main-form">
     {% csrf_token %}
     {% if have_smth_to_edit %}
-        <input type="submit" class="btn btn-success" value="{% trans "сохранить изменения" %}" name="submit" class="btn"/>
+        <input type="submit" class="btn btn-success" value="{% trans "утвердить бронь" %}" name="submit" class="btn" style="font-weight:bold; font-size:large"/>
     {% endif %}
     <input type="hidden" name="GET_PARAMS" value="{{ GET_PARAMS }}" />
 
@@ -112,8 +117,8 @@
         {% if hall.timetable %}
             <table class="table table-bordered">
                 <tr>
-                    <td>
-                        <b>{% trans "Время" %}</b> (<i>{{ date|date:"l d M Y" }}</i>)
+                    <td id="time_td_{{ hall.hall.pk }}">
+                        <span id="time_span_{{ hall.hall.pk }}"><b>{% trans "Время" %}</b> (<i>{{ date|date:"l d M Y" }}</i>)</span>
                     </th>
                     <th>
                         {% trans "Занятость" %}
@@ -122,19 +127,19 @@
                         {% trans "Примечания" %}
                     </th>
                     <th>
-                        {% trans "Кто когда занял" %}
+                        {% trans "Кто когда забронировал" %}
                     </th>
                 </tr>
                 {% for tt in hall.timetable %}
                     <tr
-                    {% if tt.past %} style="background-color:#f5e7f2"{% elif not tt.free %} style="background-color:#d599ca"{% endif %}>
+                    {% if tt.past %} style="background-color:#e0e0d1"{% elif not tt.free %} style="background-color:#b8b894"{% endif %}>
                         <td>
-                            {{ tt.dt_start|date:"H:i" }} &mdash; {{ tt.dt_end|date:"H:i" }}
+                            {% if tt.editable and tt.free %}<b>{% endif %}{{ tt.dt_start|date:"H:i" }} &mdash; {{ tt.dt_end|date:"H:i" }}{% if tt.editable and tt.free %}</b>{% endif %}
                         </td>
                         <td>
                             {% if tt.editable %}
                                 {% if tt.free %}
-                                    <p><label for="{{ tt.html_name_prefix }}__{{ S.BOOK }}">{% trans "Занять" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.BOOK }}" id="id__{{ tt.html_name_prefix }}__{{ S.BOOK }}"/></p>
+                                    <p><label for="{{ tt.html_name_prefix }}__{{ S.BOOK }}"><b>{% trans "Забронировать" %}</b></label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.BOOK }}" id="id__{{ tt.html_name_prefix }}__{{ S.BOOK }}"/></p>
                                 {% else %}
                                     <p><label for="{{ tt.html_name_prefix }}__{{ S.FREE }}">{% trans "Освободить" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.FREE }}" id="id__{{ tt.html_name_prefix }}__{{ S.FREE }}"/></p>
                                 {% endif %}
@@ -169,7 +174,7 @@
     {% endfor %}
 
     {% if have_smth_to_edit %}
-        <input type="submit" class="btn btn-success" value="{% trans "сохранить изменения" %}" name="submit" class="btn"/>
+        <input type="submit" class="btn btn-success" value="{% trans "утвердить бронь" %}" name="submit" class="btn" style="font-weight:bold; font-size:large"/>
     {% endif %}
 <form/>
 
