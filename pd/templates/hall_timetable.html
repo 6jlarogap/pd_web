@@ -5,14 +5,6 @@
 {% block content %}
 
     <script>
-        function select_clear_halls(action) {
-            var obj = "select[name=halls]";
-            var selected = action == "select_all" ? "selected" : ""
-            $(obj).children().each(function () {
-                this.selected = selected;
-            });
-            return false;
-        }
         $(function() {
             $('textarea[id$=details]').css('width', '96%');
 
@@ -74,6 +66,22 @@
                                 <span class="helptext">{{ form.halls.help_text }}</span>
                             </p>
                         </td>
+                        <td>
+                            <p>
+                                <br />
+                                &nbsp;<span class="helptext">{% trans "Сtrl-Enter для выборки" %}
+                                <br />
+                                &nbsp;{% trans "нескольких залов" %}</span>
+                            </p>
+                        </td>
+                        {% if date_str %}
+                            <td>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            </td>
+                            <td>
+                                <br /><a href="{% url 'halls_time' %}?hall_date_from={{ date_str }}">{% trans "Залы: время на" %} {{ date_str }}</a>
+                            </td>
+                        {% endif %}
                     </tr>
                 </table>
 
