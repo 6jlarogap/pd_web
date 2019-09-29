@@ -245,8 +245,8 @@
                                     </li>
                                 {% endif %}
                                 {% if request.user.profile.is_hall_manager %}
-                                    <li{% if request.path == '/halls/timetable/' %} class="active"{% endif %}>
-                                        <a href="{% url 'halls_timetable' %}">{% trans "Залы: расписание" %}</a>
+                                    <li{% if request.path == '/halls/time/' %} class="active"{% endif %}>
+                                        <a href="{% url 'halls_time' %}">{% trans "Залы: время" %}</a>
                                     </li>
                                 {% endif %}
                             {% elif user.profile.is_loru %}

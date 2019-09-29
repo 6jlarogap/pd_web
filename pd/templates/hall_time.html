@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+
+<h2>{% trans "Залы: время" %}{% if date %} на {% if today_tomorrow %}<span style="color:blue"><big>{{ today_tomorrow }}</big></span>, {% endif %}{{ date }}{% endif %}</h2>
+<br />
+
+{% if no_halls_in_system %}
+    <h2><span style="color:blue">{{ no_halls_in_system }}</span></h2>
+{% else %}
+    <div class="no-print">
+        <form id="mainform" method="get" action="">
+            <table>
+                <tr valign="bottom">
+                    <td>
+                        {{ form.hall_date_from.errors }}
+                        <p>
+                            {{ form.hall_date_from.label_tag }}
+                            {{ form.hall_date_from }}
+                            <span class="helptext">{{ form.hall_date_from.help_text }}</span>
+                        </p>
+                    </td>
+                    <td>
+                        <p class="buttons">
+                            <input type="submit" value="отобразить" class="btn" style="height:42px; font-weight:bold; font-size:large" />
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+        </form>
+    </div>
+{% endif %}
+
+{% for hall in hall_timetables %}
+    <div  style="float:left">
+        <table border=1 cellpadding=5 cellspacing=0 >
+        <tr align="center">
+             <td>
+               <b>{{ hall.hall }}</b>
+               <br />
+               <a href="{% url 'halls_timetable' %}?hall_date_from={{ date_str }}&halls={{ hall.hall.pk }}">{% trans "Расписание" %}</a>
+             </td>
+        </tr>
+        {% if hall.timetable %}
+            {% for tt in hall.timetable %}
+                <tr align="center" {% if tt.past %} style="background-color:#e0e0d1"{% elif not tt.free %} style="background-color:#b8b894"{% endif %}>
+                    <td>
+                        {% if tt.editable and tt.free %}<b>{% endif %}{{ tt.dt_start|date:"H:i" }} &mdash; {{ tt.dt_end|date:"H:i" }}{% if tt.editable and tt.free %}</b>{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        {% else %}
+            <tr align="center">
+                <td>
+                <span style="color:red"><big>{% trans "Ничего не было" %}</big></span>
+                </td>
+            </tr>
+        {% endif %}
+        </table>
+        <br />
+    </div>
+    <p style="float:left">&nbsp;&nbsp;&nbsp;</p>
+{% endfor %}
+
+
+{% endblock %}
