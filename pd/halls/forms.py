@@ -66,3 +66,7 @@ class HallTimeTableForm(forms.Form):
 
     hall_date_from = forms.DateField(label=_("Дата"))
     halls = forms.MultipleChoiceField(label=_("Залы"),choices=())
+
+class HallTimeForm(forms.Form):
+
+    hall_date_from = forms.DateField(label=_("Дата"))
