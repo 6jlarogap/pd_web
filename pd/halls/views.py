@@ -78,26 +78,10 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
 
 halls_edit_view = HallsEdit.as_view()
 
-class HallsTimeTableView(UghOrLoruRequiredMixin, View):
-    template_name = 'hall_timetable.html'
-
-    # После этого выводим расчет на завтра по умолчанию
-    #
-    TOMORROW_BEGINS_AT = '13:00'
-
+class HallsTimeTableMixin(object):
     # Так записываются начальные id input'ов в форме, в таблицах залов
     #
     DT_ID_FORMAT = "%H%M"
-
-    # Чтоб в template & view были одни и те же обозначения для имен html
-    # элементов и действий по ним
-    #
-    S = dict(
-        FREE="free",
-        BOOK="book",
-        DETAILS="details",
-        DETAILS_OLD="details_old",
-    )
 
     def make_html_name_prefix(self, hall, dt_start, dt_end):
         """
@@ -268,6 +252,23 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
             hall_timetables=hall_timetables,
         )
         return result
+
+class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
+    template_name = 'hall_timetable.html'
+
+    # После этого выводим расчет на завтра по умолчанию
+    #
+    TOMORROW_BEGINS_AT = '13:00'
+
+    # Чтоб в template & view были одни и те же обозначения для имен html
+    # элементов и действий по ним
+    #
+    S = dict(
+        FREE="free",
+        BOOK="book",
+        DETAILS="details",
+        DETAILS_OLD="details_old",
+    )
 
     def get_default_date(self):
         """
