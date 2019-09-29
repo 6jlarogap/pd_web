@@ -12,7 +12,7 @@ from django.utils.formats import date_format
 
 from django.conf import settings
 
-from halls.forms import HallFormset, HallTimeTableForm
+from halls.forms import HallFormset, HallTimeTableForm, HallTimeForm
 
 from logs.models import write_log
 from halls.models import Hall, HallTimeTable
@@ -78,26 +78,10 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
 
 halls_edit_view = HallsEdit.as_view()
 
-class HallsTimeTableView(UghOrLoruRequiredMixin, View):
-    template_name = 'hall_timetable.html'
-
-    # После этого выводим расчет на завтра по умолчанию
-    #
-    TOMORROW_BEGINS_AT = '13:00'
-
+class HallsTimeTableMixin(object):
     # Так записываются начальные id input'ов в форме, в таблицах залов
     #
     DT_ID_FORMAT = "%H%M"
-
-    # Чтоб в template & view были одни и те же обозначения для имен html
-    # элементов и действий по ним
-    #
-    S = dict(
-        FREE="free",
-        BOOK="book",
-        DETAILS="details",
-        DETAILS_OLD="details_old",
-    )
 
     def make_html_name_prefix(self, hall, dt_start, dt_end):
         """
@@ -269,6 +253,23 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
         )
         return result
 
+class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
+    template_name = 'hall_timetable.html'
+
+    # После этого выводим расчет на завтра по умолчанию
+    #
+    TOMORROW_BEGINS_AT = '13:00'
+
+    # Чтоб в template & view были одни и те же обозначения для имен html
+    # элементов и действий по ним
+    #
+    S = dict(
+        FREE="free",
+        BOOK="book",
+        DETAILS="details",
+        DETAILS_OLD="details_old",
+    )
+
     def get_default_date(self):
         """
         Дата по умолчанию. До 13:00 сегодня, после 13:00 - завтра
@@ -346,10 +347,10 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         context_data = self.get_context_data()
+        format_date = formats.get_format("SHORT_DATE_FORMAT", lang=settings.LANGUAGE_CODE)
         if not self.request.GET and self.all_halls_pks:
             # Сразу выведем все залы за self.get_default_date()
             #
-            format_date = formats.get_format("SHORT_DATE_FORMAT", lang=settings.LANGUAGE_CODE)
             date = self.get_default_date()
             date_str = date_format(date, format=format_date)
             get_params = '?hall_date_from=%s&%s' % (
@@ -357,6 +358,11 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
                 '&'.join(['halls=%s' %  pk for pk in self.all_halls_pks])
             )
             return redirect(reverse('halls_timetable') + get_params)
+        date = context_data.get('date')
+        if date:
+            context_data.update(
+                date_str=date_format(date, format=format_date),
+            )
         return render(request, self.template_name, context_data)
 
     def post(self, request, *args, **kwargs):
@@ -496,3 +502,73 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, View):
         return redirect(reverse('halls_timetable') + get_params)
 
 halls_timetable_view = HallsTimeTableView.as_view()
+
+class HallsTimeView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
+    template_name = 'hall_time.html'
+
+    def get_default_date(self):
+        """
+        Дата по умолчанию. Сегодня.
+        """
+        result = datetime.date.today()
+        return result
+
+    def get_context_data(self):
+        context = dict()
+
+        self.all_halls_pks = []
+        for hall in Hall.objects.filter(org=self.request.user.profile.org, is_active=True):
+            self.all_halls_pks.append(str(hall.pk))
+        if not self.all_halls_pks:
+                context.update(
+                    no_halls_in_system=_('В организации нет залов. Обратитесь к администратору'),
+                )
+                return context
+
+        form=self.get_form()
+        date = None
+        if form.is_valid() and form.data:
+            date = form.cleaned_data.get('hall_date_from')
+            context.update(self.get_timetable(date, self.all_halls_pks))
+
+        today_tomorrow = None
+        if date:
+            today = datetime.date.today()
+            if date == today:
+                today_tomorrow = _('сегодня')
+            elif date - today == datetime.timedelta(days=1):
+                today_tomorrow = _('завтра')
+
+        context.update(
+            date=date,
+            today_tomorrow=today_tomorrow,
+            is_hall_manager = self.request.user.profile.is_hall_manager(),
+            form=form,
+        )
+        return context
+
+    def get_form(self):
+        data = self.request.GET
+        form = HallTimeForm(data=data or None)
+        if not data:
+            form.initial['hall_date_from'] = self.get_default_date()
+        return form
+
+    def get(self, request, *args, **kwargs):
+        context_data = self.get_context_data()
+        format_date = formats.get_format("SHORT_DATE_FORMAT", lang=settings.LANGUAGE_CODE)
+        if not self.request.GET and self.all_halls_pks:
+            date = self.get_default_date()
+            date_str = date_format(date, format=format_date)
+            get_params = '?hall_date_from=%s' % (
+                date_str,
+            )
+            return redirect(reverse('halls_time') + get_params)
+        date = context_data.get('date')
+        if date:
+            context_data.update(
+                date_str=date_format(date, format=format_date),
+            )
+        return render(request, self.template_name, context_data)
+
+halls_time_view = HallsTimeView.as_view()
