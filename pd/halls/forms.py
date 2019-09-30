@@ -28,10 +28,15 @@ class HallItemForm(forms.ModelForm):
             raise forms.ValidationError(_('Название зала не может быть пустым'))
         dts = dict()
         for t in ('time_start', 'time_end', ):
-            try:
-                dts[t] = datetime.datetime.strptime(f[t].value().strip(), "%H:%M")
-            except ValueError:
-                raise forms.ValidationError(_('Неверно: %s') % f[t].label)
+            ft_value = f[t].value().strip()
+            if ft_value == '24:00' and t == 'time_end':
+                dts[t] = datetime.datetime.strptime('23:59', "%H:%M")
+                dts[t] += datetime.timedelta(seconds=60)
+            else:
+                try:
+                    dts[t] = datetime.datetime.strptime(ft_value, "%H:%M")
+                except ValueError:
+                    raise forms.ValidationError(_('Неверно: %s') % f[t].label)
         if dts['time_start'] >= dts['time_end']:
             raise forms.ValidationError(_('Время окончания работы зала меньше времени начала'))
         diff = dts['time_end'] - dts['time_start']
