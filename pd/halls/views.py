@@ -262,6 +262,23 @@ class HallsTimeTableMixin(object):
             hall_timetable.update(timetable=past_sessions + future_sessions)            
             hall_timetables.append(hall_timetable)
 
+        # Подсчитать число пустых строк, которые надо добавить в таблицы,
+        # чтоб они не налазили друг на друга при уменьшении ширины экрана
+        #
+        # Вычислим максимум строк в залах. Минимально хотя бы одна будет (ничего не было)
+        #
+        max_rows = 1
+        for hall in hall_timetables:
+            cur_len = len(hall['timetable'])
+            if cur_len > max_rows:
+                max_rows = cur_len
+        for hall in hall_timetables:
+            cur_len = len(hall['timetable']) or 1
+            num_added_rows = max_rows - cur_len
+            empty_rows = ''
+            for i in range(num_added_rows):
+                empty_rows += '*'
+            hall.update(empty_rows=empty_rows)
         result = dict(
             have_smth_to_edit=have_smth_to_edit,
             hall_timetables=hall_timetables,
