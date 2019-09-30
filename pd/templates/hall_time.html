@@ -4,6 +4,20 @@
 
 {% block content %}
 
+<script>
+    $(function() {
+        var max_height = 0;
+        $('table[id^=id_table_tt_]').each(function() {
+            var height = $(this).height();
+            if (max_height < height) {
+                max_height = height;
+            }
+        });
+        max_height += 1;
+        $('table[id^=id_table_tt_]').css('height', max_height+'px');
+    });
+</script>
+
 <h2>{% trans "Залы: время" %}{% if date %} на {% if today_tomorrow %}<span style="color:blue"><big>{{ today_tomorrow }}</big></span>, {% endif %}{{ date }}{% endif %}</h2>
 <br />
 
@@ -36,10 +50,12 @@
 
 {% for hall in hall_timetables %}
     <div  style="float:left">
-        <table border=1 cellpadding=5 cellspacing=0 >
+        <table border=1 cellpadding=5 cellspacing=0 id="id_table_tt_{{ hall.hall.pk }}">
         <tr align="center">
              <td>
                <b>{{ hall.hall }}</b>
+               <br />
+               {{ hall.hall.time_start }}  &mdash; {{ hall.hall.time_end }}
                <br />
                <a href="{% url 'halls_timetable' %}?hall_date_from={{ date_str }}&halls={{ hall.hall.pk }}">{% trans "Расписание" %}</a>
              </td>
@@ -47,18 +63,25 @@
         {% if hall.timetable %}
             {% for tt in hall.timetable %}
                 <tr align="center" {% if tt.past %} style="background-color:#e0e0d1"{% elif not tt.free %} style="background-color:#b8b894"{% endif %}>
-                    <td>
+                    <td {% if forloop.last %} style="border-bottom:none;"{% endif %}>
                         {% if tt.editable and tt.free %}<b>{% endif %}{{ tt.dt_start_str }} &mdash; {{ tt.dt_end_str }}{% if tt.editable and tt.free %}</b>{% endif %}
                     </td>
                 </tr>
             {% endfor %}
         {% else %}
             <tr align="center">
-                <td>
-                <span style="color:red"><big>{% trans "Ничего не было" %}</big></span>
+                <td style="border-bottom:none;">
+                    <span style="color:red;border-bottom:none;"><big>{% trans "Ничего не было" %}</big></span>
                 </td>
             </tr>
         {% endif %}
+        {% for i in hall.empty_rows %}
+            <tr align="center">
+                <td style="border-top:none;border-bottom:none;" >
+                    <br />
+                </td>
+            </tr>
+        {% endfor %}
         </table>
         <br />
     </div>
