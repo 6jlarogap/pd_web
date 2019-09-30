@@ -81,7 +81,18 @@ halls_edit_view = HallsEdit.as_view()
 class HallsTimeTableMixin(object):
     # Так записываются начальные id input'ов в форме, в таблицах залов
     #
-    DT_ID_FORMAT = "%H%M"
+    DT_ID_FORMAT = "%Y%m%d%H%M"
+
+    def hhmms_from_dts(self, dt_start, dt_end):
+        """
+        Вернуть HH:MM от dt_start, dt_end, с учетом dt_end == 24:00
+        """
+        s_start = datetime.datetime.strftime(dt_start, '%H:%M')
+        if dt_end.date() > dt_start.date():
+            s_end = '24:00'
+        else:
+            s_end = datetime.datetime.strftime(dt_end, '%H:%M')
+        return s_start, s_end
 
     def make_html_name_prefix(self, hall, dt_start, dt_end):
         """
@@ -96,20 +107,12 @@ class HallsTimeTableMixin(object):
         end = datetime.datetime.strftime(dt_end, self.DT_ID_FORMAT)
         return "%s__%s__%s" % (hall.pk, start, end,)
 
-    def mk_interval(self, date, t_start, t_end):
+    def mk_interval(self, t_start, t_end):
         """
         datetimes начала и окончания интервала, если времена заданы в self.DT_ID_FORMAT
         """
         dt_start = datetime.datetime.strptime(t_start, self.DT_ID_FORMAT)
-        dt_start = datetime.datetime(
-            date.year, date.month, date.day,
-            dt_start.hour, dt_start.minute,
-        )
         dt_end = datetime.datetime.strptime(t_end, self.DT_ID_FORMAT)
-        dt_end = datetime.datetime(
-            date.year, date.month, date.day,
-            dt_end.hour, dt_end.minute,
-        )
         return dt_start, dt_end
 
     def get_timetable(self, date, halls_pks):
@@ -143,11 +146,14 @@ class HallsTimeTableMixin(object):
                 year=date.year, month=date.month, day=date.day,
                 hour=hall_start.hour, minute=hall_start.minute,
             )
-            hall_end = datetime.datetime.strptime(hall.time_end, "%H:%M")
-            hall_end = datetime.datetime(
-                year=date.year, month=date.month, day=date.day,
-                hour=hall_end.hour, minute=hall_end.minute,
-            )
+            if hall.time_end == '24:00':
+                hall_end = date_end
+            else:
+                hall_end = datetime.datetime.strptime(hall.time_end, "%H:%M")
+                hall_end = datetime.datetime(
+                    year=date.year, month=date.month, day=date.day,
+                    hour=hall_end.hour, minute=hall_end.minute,
+                )
             # dt_border:
             #   время первого возможного сеанса. Если завтра, то это hall_start,
             #   если сегодня, то время первого свободного сеанса
@@ -176,7 +182,13 @@ class HallsTimeTableMixin(object):
                 dt_end = dt_start + hall_interval_timedelta
                 if dt_end > hall_end:
                     break
-                date_free_sessions.append(dict(dt_start=dt_start, dt_end=dt_end))
+                dt_start_str, dt_end_str = self.hhmms_from_dts(dt_start, dt_end)
+                date_free_sessions.append(dict(
+                    dt_start=dt_start,
+                    dt_end=dt_end,
+                    dt_start_str=dt_start_str,
+                    dt_end_str=dt_end_str,
+                ))
                 dt_start = dt_end
 
             to_delete_from_date_free_sessions = []
@@ -193,12 +205,15 @@ class HallsTimeTableMixin(object):
             for tt in HallTimeTable.objects.filter(
                     hall=hall,
                     dt_start__gte=date_start,
-                    dt_end__lt=date_end,
+                    dt_start__lt=date_end,
                 ).order_by('dt_start'):
+                dt_start_str, dt_end_str = self.hhmms_from_dts(tt.dt_start, tt.dt_end)
                 tt_item = dict(
                     free = False,
                     dt_start=tt.dt_start,
                     dt_end=tt.dt_end,
+                    dt_start_str=dt_start_str,
+                    dt_end_str=dt_end_str,
                     details=tt.details,
                     creator=tt.creator,
                     html_name_prefix=self.make_html_name_prefix(hall, tt.dt_start, tt.dt_end),
@@ -400,7 +415,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
             try:
                 hall_pk, t_start, t_end = tt_item.split('__')
                 hall = Hall.objects.get(pk=hall_pk)
-                dt_start, dt_end = self.mk_interval(date, t_start, t_end)
+                dt_start, dt_end = self.mk_interval(t_start, t_end)
             except (ValueError, Hall.DoesNotExist,):
                 raise Http404
             details = request.POST.get("%s__%s" % (tt_item, S['DETAILS'],), '')
@@ -412,8 +427,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
                     creator=request.user,
                     details=details,
             ))
-            s_start = datetime.datetime.strftime(dt_start, '%H:%M')
-            s_end = datetime.datetime.strftime(dt_end, '%H:%M')
+            s_start, s_end = self.hhmms_from_dts(dt_start, dt_end)
             if created_:
                 write_log(self.request, hall, _("Назначено время, %s - %s%s") % (
                     s_start,
@@ -433,7 +447,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
             try:
                 hall_pk, t_start, t_end = tt_item.split('__')
                 hall = Hall.objects.get(pk=hall_pk)
-                dt_start, dt_end = self.mk_interval(date, t_start, t_end)
+                dt_start, dt_end = self.mk_interval(t_start, t_end)
             except (ValueError, Hall.DoesNotExist,):
                 raise Http404
             HallTimeTable.objects.filter(
@@ -441,8 +455,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
                 dt_start=dt_start,
                 dt_end=dt_end,
             ).delete()
-            s_start = datetime.datetime.strftime(dt_start, '%H:%M')
-            s_end = datetime.datetime.strftime(dt_end, '%H:%M')
+            s_start, s_end = self.hhmms_from_dts(dt_start, dt_end)
             write_log(self.request, hall, _("Отменено время, %s - %s") % (
                 s_start,
                 s_end,
@@ -459,7 +472,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
                 try:
                     hall_pk, t_start, t_end = tt_item.split('__')
                     hall = Hall.objects.get(pk=hall_pk)
-                    dt_start, dt_end = self.mk_interval(date, t_start, t_end)
+                    dt_start, dt_end = self.mk_interval(t_start, t_end)
                 except (ValueError, Hall.DoesNotExist,):
                     raise Http404
                 htt_qs = HallTimeTable.objects.filter(
@@ -467,14 +480,15 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
                     dt_start=dt_start,
                     dt_end=dt_end,
                 )
+                s_start, s_end = self.hhmms_from_dts(dt_start, dt_end)
                 try:
                     htt = htt_qs[0]
                     if htt.details != details_old:
                         post_errors.append(
                             _("%s, %s - %s : кто-то до вас уже изменил примечание, которое подправили и вы" % (
                             hall.title,
-                            datetime.datetime.strftime(dt_start, '%H:%M'),
-                            datetime.datetime.strftime(dt_end, '%H:%M'),
+                            s_start,
+                            s_end,
                         )))
                         continue
                     htt_qs.update(details=details_new)
@@ -488,8 +502,8 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
                     post_errors.append(
                         _("%s, %s - %s : кто-то до вас уже удалил время, в котором вы изменили примечание" % (
                         hall.title,
-                        datetime.datetime.strftime(dt_start, '%H:%M'),
-                        datetime.datetime.strftime(dt_end, '%H:%M'),
+                        s_start,
+                        s_end,
                     )))
                     continue
 
