@@ -174,6 +174,7 @@ class HallsTimeTableMixin(object):
 
         dt_now = datetime.datetime.now()
         today = dt_now.date()
+        dow = date.isoweekday()
         date_start = datetime.datetime(
             date.year, date.month, date.day, 0, 0
         )
@@ -181,16 +182,23 @@ class HallsTimeTableMixin(object):
 
         for hall_pk in halls_pks:
             hall = Hall.objects.get(pk=hall_pk)
-            hall_interval_timedelta = datetime.timedelta(seconds=hall.interval * 60)
-            hall_start = datetime.datetime.strptime(hall.time_start, "%H:%M")
+            try:
+                hall_weekly = HallWeekly.objects.get(hall=hall, dow=dow)
+                is_dayoff = hall_weekly.is_dayoff
+            except HallWeekly.DoesNotExist:
+                is_dayoff = True
+            hall_interval_timedelta = datetime.timedelta(seconds=hall_weekly.interval * 60)
+            hall_time_start_str = hall_weekly.time_start
+            hall_start = datetime.datetime.strptime(hall_time_start_str, "%H:%M")
             hall_start = datetime.datetime(
                 year=date.year, month=date.month, day=date.day,
                 hour=hall_start.hour, minute=hall_start.minute,
             )
-            if hall.time_end == '24:00':
+            hall_time_end_str = hall_weekly.time_end
+            if hall_time_end_str == '24:00':
                 hall_end = date_end
             else:
-                hall_end = datetime.datetime.strptime(hall.time_end, "%H:%M")
+                hall_end = datetime.datetime.strptime(hall_time_end_str, "%H:%M")
                 hall_end = datetime.datetime(
                     year=date.year, month=date.month, day=date.day,
                     hour=hall_end.hour, minute=hall_end.minute,
@@ -218,23 +226,29 @@ class HallsTimeTableMixin(object):
             # будем удалять.
             #
             date_free_sessions = []
-            dt_start = dt_border
-            while dt_start < hall_end:
-                dt_end = dt_start + hall_interval_timedelta
-                if dt_end > hall_end:
-                    break
-                dt_start_str, dt_end_str = self.hhmms_from_dts(dt_start, dt_end)
-                date_free_sessions.append(dict(
-                    dt_start=dt_start,
-                    dt_end=dt_end,
-                    dt_start_str=dt_start_str,
-                    dt_end_str=dt_end_str,
-                ))
-                dt_start = dt_end
+            if not is_dayoff:
+                dt_start = dt_border
+                while dt_start < hall_end:
+                    dt_end = dt_start + hall_interval_timedelta
+                    if dt_end > hall_end:
+                        break
+                    dt_start_str, dt_end_str = self.hhmms_from_dts(dt_start, dt_end)
+                    date_free_sessions.append(dict(
+                        dt_start=dt_start,
+                        dt_end=dt_end,
+                        dt_start_str=dt_start_str,
+                        dt_end_str=dt_end_str,
+                    ))
+                    dt_start = dt_end
 
             to_delete_from_date_free_sessions = []
 
-            hall_timetable=dict(hall=hall)
+            hall_timetable=dict(
+                hall=hall,
+                is_dayoff=is_dayoff,
+                hall_time_start_str=hall_time_start_str,
+                hall_time_end_str=hall_time_end_str,
+            )
 
             # Сеансы до и после dt_border. В те что после dt_border,
             # вставим свободные интервалы, после чего future_sessions
@@ -300,13 +314,16 @@ class HallsTimeTableMixin(object):
             future_sessions += updated_date_free_sessions
             future_sessions.sort(key=lambda k: k['dt_start'])
 
-            hall_timetable.update(timetable=past_sessions + future_sessions)            
+            hall_timetable.update(
+                have_smth_to_edit=editable,
+                timetable=past_sessions + future_sessions,
+            )
             hall_timetables.append(hall_timetable)
 
         # Подсчитать число пустых строк, которые надо добавить в таблицы,
         # чтоб они не налазили друг на друга при уменьшении ширины экрана
         #
-        # Вычислим максимум строк в залах. Минимально хотя бы одна будет (ничего не было)
+        # Вычислим максимум строк в залах. Минимально хотя бы одна будет (ничего не было или выходной)
         #
         max_rows = 1
         for hall in hall_timetables:

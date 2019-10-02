@@ -52,12 +52,26 @@
     <div  style="float:left">
         <table border=1 cellpadding=5 cellspacing=0 id="id_table_tt_{{ hall.hall.pk }}">
         <tr align="center">
-             <td>
-               <b>{{ hall.hall }}</b>
-               <br />
-               {{ hall.hall.time_start }}  &mdash; {{ hall.hall.time_end }}
-               <br />
-               <a href="{% url 'halls_timetable' %}?hall_date_from={{ date_str }}&halls={{ hall.hall.pk }}">{% trans "Расписание" %}</a>
+            <td>
+                <b>{{ hall.hall }}</b>
+                <br />
+                {% if hall.is_dayoff %}
+                    {% if hall.timetable %}
+                        <span style="color:red">{% trans "Не работает" %}</span>
+                    {% else %}
+                        &nbsp;
+                    {% endif %}
+                {% else %}
+                    {{ hall.hall_time_start_str }}  &mdash; {{ hall.hall_time_end_str }}
+                {% endif %}
+                <br />
+                {% if hall.have_smth_to_edit %}
+                    <a href="{% url 'halls_timetable' %}?hall_date_from={{ date_str }}&halls={{ hall.hall.pk }}">{% trans "Расписание" %}</a>
+                {% elif hall.is_dayoff %}
+                    <span style="color:red">{{ date|date:"l" }}</span>
+                {% else %}
+                        &nbsp;
+                {% endif %}
              </td>
         </tr>
         {% if hall.timetable %}
@@ -71,7 +85,7 @@
         {% else %}
             <tr align="center">
                 <td style="border-bottom:none;">
-                    <span style="color:red;"><big>{% trans "Ничего не было" %}</big></span>
+                    <span style="color:red;"><big>{% if hall.is_dayoff %}{% trans "Не работает" %}{% else %}{% trans "Ничего не было" %}{% endif %}</big></span>
                 </td>
             </tr>
         {% endif %}
