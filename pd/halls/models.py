@@ -140,7 +140,7 @@ class HallWeekly(models.Model):
     time_end = models.CharField(_("Окончание"), max_length=255, blank=True)
 
     interval = models.PositiveIntegerField(_("Время"), choices=HALL_INTERVAL_CHOICES, default=30)
-    is_dayoff = models.BooleanField(_("Выходной"), default=False)
+    is_dayoff = models.BooleanField(_("Не работает"), default=False)
 
     class Meta:
         verbose_name = _('День недели в зале')

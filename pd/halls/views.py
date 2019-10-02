@@ -105,39 +105,17 @@ class HallsTimeEdit(UghOrLoruRequiredMixin, View):
 
     def post(self, request, pk, *args, **kwargs):
         self.instance_pk = pk
-        org = self.get_object()
         if not (request.user.profile.is_loru() or request.user.profile.is_admin()):
             return HttpResponseForbidden()
         formset = self.get_formset()
         if formset.is_valid():
             for f in formset.forms:
                 if f.instance.pk:
-                    if f['DELETE'].value():
-                        if f.instance.halltimetable_set.exists():
-                            messages.error(request, _("Попытка удаления зала с назначенным ему расписанием"))
-                            return self.get(request, *args, **kwargs)
-                        f.instance.delete()
-                        write_log(request, org, _("Удален зал: %s") % f.instance.title)
-                    else:
                         f.save()
-                else:
-                    # fool-proof
-                    if f['title'].data.strip():
-                        hall = Hall.objects.create(
-                            org=org,
-                            title=f['title'].data.strip(),
-                            is_active=f['is_active'].data,
-                        )
-                        for d in HallWeekly.get_defaults():
-                            hw = HallWeekly(hall=hall)
-                            for attr in d:
-                                setattr(hw, attr, d[attr])
-                            hw.save(force_insert=True)
-                        write_log(request, org, _("Создан зал c расписанием по умолчанию: %s") % hall)
-            return redirect(reverse('halls_edit'))
+            return redirect(reverse('halls_time_edit', kwargs=dict(pk=pk)))
         else:
             messages.error(request, _("Обнаружены ошибки"))
-            return self.get(request, *args, **kwargs)
+            return self.get(request, pk, *args, **kwargs)
 
 halls_time_edit_view = HallsTimeEdit.as_view()
 

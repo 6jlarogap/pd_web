@@ -54,6 +54,33 @@ class HallWeeklyItemForm(forms.ModelForm):
         f_dow = self.fields['dow']
         f_dow.widget.attrs.update(disabled="True")
         f_dow.label = ''
+        f_dow.required = False
+
+    def clean_dow(self):
+
+        # Делаем почти все проверки в этом поле, включая проверки
+        # по другим полям. Иначе, если бы был метод clean_time_start
+        # и он породил бы исключение, то строчка разбивается.
+        #
+        dow = self.cleaned_data['dow']
+        f = self
+        dts = dict()
+        for t in ('time_start', 'time_end', ):
+            ft_value = f[t].value().strip()
+            if ft_value == '24:00' and t == 'time_end':
+                dts[t] = datetime.datetime.strptime('23:59', "%H:%M")
+                dts[t] += datetime.timedelta(seconds=60)
+            else:
+                try:
+                    dts[t] = datetime.datetime.strptime(ft_value, "%H:%M")
+                except ValueError:
+                    raise forms.ValidationError(_('Неверно: %s') % f[t].label)
+        if dts['time_start'] >= dts['time_end']:
+            raise forms.ValidationError(_('Время окончания работы зала меньше времени начала'))
+        diff = dts['time_end'] - dts['time_start']
+        if int(diff.total_seconds()/60) < int(f['interval'].value()):
+            raise forms.ValidationError(_('Время работы зала меньше минимального времени на его посещение'))
+        return dow
 
     class Meta:
         model = HallWeekly

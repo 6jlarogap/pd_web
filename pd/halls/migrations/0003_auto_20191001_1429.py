@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                 ('time_start', models.CharField(blank=True, max_length=255, verbose_name='Начало')),
                 ('time_end', models.CharField(blank=True, max_length=255, verbose_name='Окончание')),
                 ('interval', models.PositiveIntegerField(choices=[(10, '10 мин.'), (15, '15 мин.'), (20, '20 мин.'), (30, '30 мин.'), (40, '40 мин.'), (60, 'час'), (120, '2 часа')], default=30, verbose_name='Время')),
-                ('is_dayoff', models.BooleanField(default=False, verbose_name='Выходной')),
+                ('is_dayoff', models.BooleanField(default=False, verbose_name='Не работает')),
                 ('hall', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='halls.Hall', verbose_name='Зал')),
             ],
             options={
