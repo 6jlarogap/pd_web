@@ -31,9 +31,15 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
         return self.request.user.profile.org
 
     def get_context_data(self, **kwargs):
-        return {
-            'formset': self.get_formset(),
-        }
+        formset = self.get_formset()
+        for f in formset.forms:
+            if f.instance.pk:
+                time_schedule = f.instance.time_schedule()
+            else:
+                h = Hall()
+                time_schedule = h.time_schedule()
+            f.time_schedule = time_schedule
+        return dict(formset=formset)
 
     def get(self, request, *args, **kwargs):
         return render(request, self.template_name, self.get_context_data())

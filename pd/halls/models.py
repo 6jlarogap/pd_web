@@ -29,6 +29,59 @@ class Hall(models.Model):
         Log.objects.filter(ct=ct, obj_id=self.pk).delete()
         super(Hall, self).delete(*args, **kwargs)
 
+    def time_schedule(self):
+        "Расписание зала типа: Пн: 09-16/30; Вт: 09-16/30 ..."
+        
+        result = ''
+        if self.pk:
+            # Все ли времена одинаковы
+            count = 7
+            is_equal = True
+            is_first = True
+            for hw in self.hallweekly_set.all().order_by('dow'):
+                if is_first:
+                    time_start = hw.time_start
+                    time_end = hw.time_end
+                    interval = hw.interval
+                    is_dayoff = hw.is_dayoff
+                    is_first = False
+                count -= 1
+                if is_equal:
+                    if time_start != hw.time_start or time_end != hw.time_end or \
+                       interval != hw.interval     or is_dayoff != hw.is_dayoff:
+                        is_equal = False
+                if hw.is_dayoff:
+                    result += _("%s: не работает; ") % (
+                        HallWeekly.HALL_DAYS_OF_WEEK_SHORT_DICT[hw.dow],
+                    )
+                else:
+                    result += '%s: %s-%s/%s; ' % (
+                        HallWeekly.HALL_DAYS_OF_WEEK_SHORT_DICT[hw.dow],
+                        hw.time_start,
+                        hw.time_end,
+                        hw.interval,
+                    )
+            if is_equal and count != 0:
+                is_equal = False
+            if is_equal:
+                if is_dayoff:
+                    result = _("Всю неделю: не работает")
+                else:
+                    result = _("Всю неделю: : %(time_start)s - %(time_end)s / %(interval)s") % dict(
+                        time_start=time_start,
+                        time_end=time_end,
+                        interval=interval,
+                    )
+            result = result.rstrip()
+            result = result.rstrip(';')
+        else:
+            result = ("Всю неделю: : %(time_start)s - %(time_end)s / %(interval)s") % dict(
+                time_start=HallWeekly.HALL_DEFAULT_TIME_START,
+                time_end=HallWeekly.HALL_DEFAULT_TIME_END,
+                interval=HallWeekly.HALL_DEFAULT_INTERVAL,
+            )
+        return result
+
 class HallWeekly(models.Model):
 
     HALL_INTERVAL_CHOICES = (
