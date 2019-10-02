@@ -9,6 +9,8 @@ from halls.models import Hall
 
 class HallItemForm(forms.ModelForm):
 
+    # comment= forms.CharField(widget=forms.Textarea(attrs={"rows":1, "cols":40, "readonly": "True" }), required=False, label=_('Время по дням недели'))
+
     class Meta:
         model = Hall
         exclude = ('org', )
@@ -26,32 +28,12 @@ class HallItemForm(forms.ModelForm):
                 raise forms.ValidationError(_('Зал с назначенными сеансами удалить нельзя'))
         if not title:
             raise forms.ValidationError(_('Название зала не может быть пустым'))
-        dts = dict()
-        for t in ('time_start', 'time_end', ):
-            ft_value = f[t].value().strip()
-            if ft_value == '24:00' and t == 'time_end':
-                dts[t] = datetime.datetime.strptime('23:59', "%H:%M")
-                dts[t] += datetime.timedelta(seconds=60)
-            else:
-                try:
-                    dts[t] = datetime.datetime.strptime(ft_value, "%H:%M")
-                except ValueError:
-                    raise forms.ValidationError(_('Неверно: %s') % f[t].label)
-        if dts['time_start'] >= dts['time_end']:
-            raise forms.ValidationError(_('Время окончания работы зала меньше времени начала'))
-        diff = dts['time_end'] - dts['time_start']
-        if int(diff.total_seconds()/60) < int(f['interval'].value()):
-            raise forms.ValidationError(_('Время работы зала меньше минимального времени на его посещение'))
-        return title
-
-    def clean(self):
-        cleaned_data = super(HallItemForm, self).clean()
         for f in self.formset:
                 if f is not self and \
                    self['title'].value().strip() and \
                    f['title'].value().strip().upper() == self['title'].value().strip().upper():
                     raise forms.ValidationError(_('Залы не могут иметь одинаковые названия'))
-        return cleaned_data
+        return title
 
 class BaseHallFormset(BaseInlineFormSet):
     def __init__(self, request, *args, **kwargs):

@@ -15,7 +15,7 @@ from django.conf import settings
 from halls.forms import HallFormset, HallTimeTableForm, HallTimeForm
 
 from logs.models import write_log
-from halls.models import Hall, HallTimeTable
+from halls.models import Hall, HallTimeTable, HallWeekly
 from users.models import Org, Profile
 from users.views import UghOrLoruRequiredMixin
 
@@ -56,21 +56,18 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
                         f.save()
                 else:
                     # fool-proof
-                    do_create = True
-                    for k in ('title', 'time_start', 'time_end'):
-                        if not f[k].data.strip():
-                            do_create = False
-                            break
-                    if do_create:
+                    if f['title'].data.strip():
                         hall = Hall.objects.create(
                             org=org,
                             title=f['title'].data.strip(),
-                            time_start=f['time_start'].data.strip(),
-                            time_end=f['time_end'].data.strip(),
-                            interval=f['interval'].data,
                             is_active=f['is_active'].data,
                         )
-                        write_log(request, org, _("Создан зал: %s") % hall)
+                        for d in HallWeekly.get_defaults():
+                            hw = HallWeekly(hall=hall)
+                            for attr in d:
+                                setattr(hw, attr, d[attr])
+                            hw.save(force_insert=True)
+                        write_log(request, org, _("Создан зал c расписанием по умолчанию: %s") % hall)
             return redirect(reverse('halls_edit'))
         else:
             messages.error(request, _("Обнаружены ошибки"))
