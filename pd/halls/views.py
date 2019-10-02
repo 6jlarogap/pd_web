@@ -12,10 +12,10 @@ from django.utils.formats import date_format
 
 from django.conf import settings
 
-from halls.forms import HallFormset, HallTimeTableForm, HallTimeForm
+from halls.forms import HallFormset, HallTimeTableForm, HallTimeForm, HallWeeklyFormset
 
 from logs.models import write_log
-from halls.models import Hall, HallTimeTable
+from halls.models import Hall, HallTimeTable, HallWeekly
 from users.models import Org, Profile
 from users.views import UghOrLoruRequiredMixin
 
@@ -30,10 +30,16 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
     def get_object(self):
         return self.request.user.profile.org
 
-    def get_context_data(self, **kwargs):
-        return {
-            'formset': self.get_formset(),
-        }
+    def get_context_data(self, *args, **kwargs):
+        formset = self.get_formset()
+        for f in formset.forms:
+            if f.instance.pk:
+                time_schedule = f.instance.time_schedule()
+            else:
+                h = Hall()
+                time_schedule = h.time_schedule()
+            f.time_schedule = time_schedule
+        return dict(formset=formset)
 
     def get(self, request, *args, **kwargs):
         return render(request, self.template_name, self.get_context_data())
@@ -56,27 +62,62 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
                         f.save()
                 else:
                     # fool-proof
-                    do_create = True
-                    for k in ('title', 'time_start', 'time_end'):
-                        if not f[k].data.strip():
-                            do_create = False
-                            break
-                    if do_create:
+                    if f['title'].data.strip():
                         hall = Hall.objects.create(
                             org=org,
                             title=f['title'].data.strip(),
-                            time_start=f['time_start'].data.strip(),
-                            time_end=f['time_end'].data.strip(),
-                            interval=f['interval'].data,
                             is_active=f['is_active'].data,
                         )
-                        write_log(request, org, _("Создан зал: %s") % hall)
+                        for d in HallWeekly.get_defaults():
+                            hw = HallWeekly(hall=hall)
+                            for attr in d:
+                                setattr(hw, attr, d[attr])
+                            hw.save(force_insert=True)
+                        write_log(request, org, _("Создан зал c расписанием по умолчанию: %s") % hall)
             return redirect(reverse('halls_edit'))
         else:
             messages.error(request, _("Обнаружены ошибки"))
             return self.get(request, *args, **kwargs)
 
 halls_edit_view = HallsEdit.as_view()
+
+class HallsTimeEdit(UghOrLoruRequiredMixin, View):
+    template_name = 'halls_time_edit.html'
+
+    def get_formset(self, instance=None):
+        if not instance:
+            instance=self.get_object()
+        return HallWeeklyFormset(request=self.request, data=self.request.POST or None, instance=instance)
+
+    def get_object(self):
+        try:
+            return Hall.objects.get(pk=self.instance_pk, org=self.request.user.profile.org)
+        except Hall.DoesNotExist:
+            raise Http404
+
+    def get_context_data(self,  *args, **kwargs):
+        formset = self.get_formset()
+        return dict(formset=formset)
+
+    def get(self, request, pk, *args, **kwargs):
+        self.instance_pk = pk
+        return render(request, self.template_name, self.get_context_data())
+
+    def post(self, request, pk, *args, **kwargs):
+        self.instance_pk = pk
+        if not (request.user.profile.is_loru() or request.user.profile.is_admin()):
+            return HttpResponseForbidden()
+        formset = self.get_formset()
+        if formset.is_valid():
+            for f in formset.forms:
+                if f.instance.pk:
+                        f.save()
+            return redirect(reverse('halls_time_edit', kwargs=dict(pk=pk)))
+        else:
+            messages.error(request, _("Обнаружены ошибки"))
+            return self.get(request, pk, *args, **kwargs)
+
+halls_time_edit_view = HallsTimeEdit.as_view()
 
 class HallsTimeTableMixin(object):
     # Так записываются начальные id input'ов в форме, в таблицах залов
@@ -133,6 +174,7 @@ class HallsTimeTableMixin(object):
 
         dt_now = datetime.datetime.now()
         today = dt_now.date()
+        dow = date.isoweekday()
         date_start = datetime.datetime(
             date.year, date.month, date.day, 0, 0
         )
@@ -140,16 +182,23 @@ class HallsTimeTableMixin(object):
 
         for hall_pk in halls_pks:
             hall = Hall.objects.get(pk=hall_pk)
-            hall_interval_timedelta = datetime.timedelta(seconds=hall.interval * 60)
-            hall_start = datetime.datetime.strptime(hall.time_start, "%H:%M")
+            try:
+                hall_weekly = HallWeekly.objects.get(hall=hall, dow=dow)
+                is_dayoff = hall_weekly.is_dayoff
+            except HallWeekly.DoesNotExist:
+                is_dayoff = True
+            hall_interval_timedelta = datetime.timedelta(seconds=hall_weekly.interval * 60)
+            hall_time_start_str = hall_weekly.time_start
+            hall_start = datetime.datetime.strptime(hall_time_start_str, "%H:%M")
             hall_start = datetime.datetime(
                 year=date.year, month=date.month, day=date.day,
                 hour=hall_start.hour, minute=hall_start.minute,
             )
-            if hall.time_end == '24:00':
+            hall_time_end_str = hall_weekly.time_end
+            if hall_time_end_str == '24:00':
                 hall_end = date_end
             else:
-                hall_end = datetime.datetime.strptime(hall.time_end, "%H:%M")
+                hall_end = datetime.datetime.strptime(hall_time_end_str, "%H:%M")
                 hall_end = datetime.datetime(
                     year=date.year, month=date.month, day=date.day,
                     hour=hall_end.hour, minute=hall_end.minute,
@@ -177,23 +226,29 @@ class HallsTimeTableMixin(object):
             # будем удалять.
             #
             date_free_sessions = []
-            dt_start = dt_border
-            while dt_start < hall_end:
-                dt_end = dt_start + hall_interval_timedelta
-                if dt_end > hall_end:
-                    break
-                dt_start_str, dt_end_str = self.hhmms_from_dts(dt_start, dt_end)
-                date_free_sessions.append(dict(
-                    dt_start=dt_start,
-                    dt_end=dt_end,
-                    dt_start_str=dt_start_str,
-                    dt_end_str=dt_end_str,
-                ))
-                dt_start = dt_end
+            if not is_dayoff:
+                dt_start = dt_border
+                while dt_start < hall_end:
+                    dt_end = dt_start + hall_interval_timedelta
+                    if dt_end > hall_end:
+                        break
+                    dt_start_str, dt_end_str = self.hhmms_from_dts(dt_start, dt_end)
+                    date_free_sessions.append(dict(
+                        dt_start=dt_start,
+                        dt_end=dt_end,
+                        dt_start_str=dt_start_str,
+                        dt_end_str=dt_end_str,
+                    ))
+                    dt_start = dt_end
 
             to_delete_from_date_free_sessions = []
 
-            hall_timetable=dict(hall=hall)
+            hall_timetable=dict(
+                hall=hall,
+                is_dayoff=is_dayoff,
+                hall_time_start_str=hall_time_start_str,
+                hall_time_end_str=hall_time_end_str,
+            )
 
             # Сеансы до и после dt_border. В те что после dt_border,
             # вставим свободные интервалы, после чего future_sessions
@@ -259,13 +314,16 @@ class HallsTimeTableMixin(object):
             future_sessions += updated_date_free_sessions
             future_sessions.sort(key=lambda k: k['dt_start'])
 
-            hall_timetable.update(timetable=past_sessions + future_sessions)            
+            hall_timetable.update(
+                have_smth_to_edit=editable,
+                timetable=past_sessions + future_sessions,
+            )
             hall_timetables.append(hall_timetable)
 
         # Подсчитать число пустых строк, которые надо добавить в таблицы,
         # чтоб они не налазили друг на друга при уменьшении ширины экрана
         #
-        # Вычислим максимум строк в залах. Минимально хотя бы одна будет (ничего не было)
+        # Вычислим максимум строк в залах. Минимально хотя бы одна будет (ничего не было или выходной)
         #
         max_rows = 1
         for hall in hall_timetables:
