@@ -12,7 +12,7 @@ from django.utils.formats import date_format
 
 from django.conf import settings
 
-from halls.forms import HallFormset, HallTimeTableForm, HallTimeForm
+from halls.forms import HallFormset, HallTimeTableForm, HallTimeForm, HallWeeklyFormset
 
 from logs.models import write_log
 from halls.models import Hall, HallTimeTable, HallWeekly
@@ -30,7 +30,7 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
     def get_object(self):
         return self.request.user.profile.org
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, *args, **kwargs):
         formset = self.get_formset()
         for f in formset.forms:
             if f.instance.pk:
@@ -80,6 +80,66 @@ class HallsEdit(UghOrLoruRequiredMixin, View):
             return self.get(request, *args, **kwargs)
 
 halls_edit_view = HallsEdit.as_view()
+
+class HallsTimeEdit(UghOrLoruRequiredMixin, View):
+    template_name = 'halls_time_edit.html'
+
+    def get_formset(self, instance=None):
+        if not instance:
+            instance=self.get_object()
+        return HallWeeklyFormset(request=self.request, data=self.request.POST or None, instance=instance)
+
+    def get_object(self):
+        try:
+            return Hall.objects.get(pk=self.instance_pk, org=self.request.user.profile.org)
+        except Hall.DoesNotExist:
+            raise Http404
+
+    def get_context_data(self,  *args, **kwargs):
+        formset = self.get_formset()
+        return dict(formset=formset)
+
+    def get(self, request, pk, *args, **kwargs):
+        self.instance_pk = pk
+        return render(request, self.template_name, self.get_context_data())
+
+    def post(self, request, pk, *args, **kwargs):
+        self.instance_pk = pk
+        org = self.get_object()
+        if not (request.user.profile.is_loru() or request.user.profile.is_admin()):
+            return HttpResponseForbidden()
+        formset = self.get_formset()
+        if formset.is_valid():
+            for f in formset.forms:
+                if f.instance.pk:
+                    if f['DELETE'].value():
+                        if f.instance.halltimetable_set.exists():
+                            messages.error(request, _("Попытка удаления зала с назначенным ему расписанием"))
+                            return self.get(request, *args, **kwargs)
+                        f.instance.delete()
+                        write_log(request, org, _("Удален зал: %s") % f.instance.title)
+                    else:
+                        f.save()
+                else:
+                    # fool-proof
+                    if f['title'].data.strip():
+                        hall = Hall.objects.create(
+                            org=org,
+                            title=f['title'].data.strip(),
+                            is_active=f['is_active'].data,
+                        )
+                        for d in HallWeekly.get_defaults():
+                            hw = HallWeekly(hall=hall)
+                            for attr in d:
+                                setattr(hw, attr, d[attr])
+                            hw.save(force_insert=True)
+                        write_log(request, org, _("Создан зал c расписанием по умолчанию: %s") % hall)
+            return redirect(reverse('halls_edit'))
+        else:
+            messages.error(request, _("Обнаружены ошибки"))
+            return self.get(request, *args, **kwargs)
+
+halls_time_edit_view = HallsTimeEdit.as_view()
 
 class HallsTimeTableMixin(object):
     # Так записываются начальные id input'ов в форме, в таблицах залов

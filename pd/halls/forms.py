@@ -5,11 +5,9 @@ from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext as _
 
 from users.models import Org
-from halls.models import Hall
+from halls.models import Hall, HallWeekly
 
 class HallItemForm(forms.ModelForm):
-
-    # comment= forms.CharField(widget=forms.Textarea(attrs={"rows":1, "cols":40, "readonly": "True" }), required=False, label=_('Время по дням недели'))
 
     class Meta:
         model = Hall
@@ -47,6 +45,28 @@ HallFormset = inlineformset_factory(
     form=HallItemForm,
     formset=BaseHallFormset,
     extra=1
+)
+
+class HallWeeklyItemForm(forms.ModelForm):
+
+    class Meta:
+        model = HallWeekly
+        exclude = ('hall', )
+
+class BaseHallWeeklyFormset(BaseInlineFormSet):
+    def __init__(self, request, *args, **kwargs):
+        super(BaseHallWeeklyFormset, self).__init__(*args, **kwargs)
+        for f in self.forms:
+            f.formset = self
+
+HallWeeklyFormset = inlineformset_factory(
+    Hall,
+    HallWeekly,
+    form=HallWeeklyItemForm,
+    formset=BaseHallWeeklyFormset,
+    extra=0,
+    can_delete=False,
+    
 )
 
 class HallTimeTableForm(forms.Form):

@@ -5,31 +5,7 @@
 {% block content %}
 <script type="text/javascript">
 
-    function makeTimePicker_halls(obj) {
-        obj.after('<span class="add-on move-left"><i class="icon-time"></i></span>').timepicker({
-            showOn: "focus",
-            hourText: 'Ч',
-            minuteText: 'М',
-            showPeriodLabels: false,
-            defaultTime: '09:00',
-            minutes: {
-                starts: 0,
-                ends: 55,
-                interval: 5
-            },
-            hours: {
-                starts: 8,
-                ends: 19,
-                interval: 1
-            },
-            inline: true
-        });
-    }
-
     $(function() {
-        makeTimePicker_halls($('input[id$=time_start]'));
-        makeTimePicker_halls($('input[id$=time_end]'));
-
         // Чтоб по кнопке "назад" в браузере перезагружалась страница
         // event.persisted означает, что страница бюзята из кэша,
         // что и бывает по кнопке "назад"
