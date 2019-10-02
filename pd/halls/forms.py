@@ -49,6 +49,12 @@ HallFormset = inlineformset_factory(
 
 class HallWeeklyItemForm(forms.ModelForm):
 
+    def __init__(self, *args, **kwargs):
+        super(HallWeeklyItemForm, self).__init__(*args, **kwargs)
+        f_dow = self.fields['dow']
+        f_dow.widget.attrs.update(disabled="True")
+        f_dow.label = ''
+
     class Meta:
         model = HallWeekly
         exclude = ('hall', )
