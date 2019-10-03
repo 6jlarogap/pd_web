@@ -297,9 +297,11 @@ class HallsTimeTableMixin(object):
 
             # Есть ли что-то по залу редактировать: бронировать
             # или убирать бронирование? В date_free_sessions
-            # находятся все промежутки, возможно свободные или занятые
+            # находятся все промежутки, которые после текущего времени можно назначить
+            # или снять. Если такие есть, а есть что-то назначенное, даже после окончания
+            # времени работы или в выходной (future_sessions), то пусть редактируют
             #
-            editable = bool(user.profile.is_hall_manager() and date_free_sessions)
+            editable = bool(user.profile.is_hall_manager() and (date_free_sessions or future_sessions))
             if editable:
                 have_smth_to_edit = True
             updated_date_free_sessions = []
