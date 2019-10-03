@@ -295,13 +295,17 @@ class HallsTimeTableMixin(object):
                            # Во всех остальных случаях как-то пересекает
                             to_delete_from_date_free_sessions.append(i)
 
+            # Есть ли что-то по залу редактировать: бронировать
+            # или убирать бронирование? В date_free_sessions
+            # находятся все промежутки, возможно свободные или занятые
+            #
+            editable = bool(user.profile.is_hall_manager() and date_free_sessions)
+            if editable:
+                have_smth_to_edit = True
             updated_date_free_sessions = []
             for i, s in enumerate(date_free_sessions):
                 if i not in to_delete_from_date_free_sessions:
                     updated_date_free_sessions.append(s)
-            editable = bool(user.profile.is_hall_manager() and updated_date_free_sessions)
-            if editable:
-                have_smth_to_edit = True
             for tt_item in updated_date_free_sessions:
                 tt_item.update(
                     free = True,
