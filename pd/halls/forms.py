@@ -5,7 +5,7 @@ from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.translation import ugettext as _
 
 from users.models import Org
-from halls.models import Hall
+from halls.models import Hall, HallWeekly
 
 class HallItemForm(forms.ModelForm):
 
@@ -26,6 +26,44 @@ class HallItemForm(forms.ModelForm):
                 raise forms.ValidationError(_('Зал с назначенными сеансами удалить нельзя'))
         if not title:
             raise forms.ValidationError(_('Название зала не может быть пустым'))
+        for f in self.formset:
+                if f is not self and \
+                   self['title'].value().strip() and \
+                   f['title'].value().strip().upper() == self['title'].value().strip().upper():
+                    raise forms.ValidationError(_('Залы не могут иметь одинаковые названия'))
+        return title
+
+class BaseHallFormset(BaseInlineFormSet):
+    def __init__(self, request, *args, **kwargs):
+        super(BaseHallFormset, self).__init__(*args, **kwargs)
+        for f in self.forms:
+            f.formset = self
+
+HallFormset = inlineformset_factory(
+    Org,
+    Hall,
+    form=HallItemForm,
+    formset=BaseHallFormset,
+    extra=1
+)
+
+class HallWeeklyItemForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(HallWeeklyItemForm, self).__init__(*args, **kwargs)
+        f_dow = self.fields['dow']
+        f_dow.widget.attrs.update(disabled="True")
+        f_dow.label = ''
+        f_dow.required = False
+
+    def clean_dow(self):
+
+        # Делаем почти все проверки в этом поле, включая проверки
+        # по другим полям. Иначе, если бы был метод clean_time_start
+        # и он породил бы исключение, то строчка разбивается.
+        #
+        dow = self.cleaned_data['dow']
+        f = self
         dts = dict()
         for t in ('time_start', 'time_end', ):
             ft_value = f[t].value().strip()
@@ -42,29 +80,26 @@ class HallItemForm(forms.ModelForm):
         diff = dts['time_end'] - dts['time_start']
         if int(diff.total_seconds()/60) < int(f['interval'].value()):
             raise forms.ValidationError(_('Время работы зала меньше минимального времени на его посещение'))
-        return title
+        return dow
 
-    def clean(self):
-        cleaned_data = super(HallItemForm, self).clean()
-        for f in self.formset:
-                if f is not self and \
-                   self['title'].value().strip() and \
-                   f['title'].value().strip().upper() == self['title'].value().strip().upper():
-                    raise forms.ValidationError(_('Залы не могут иметь одинаковые названия'))
-        return cleaned_data
+    class Meta:
+        model = HallWeekly
+        exclude = ('hall', )
 
-class BaseHallFormset(BaseInlineFormSet):
+class BaseHallWeeklyFormset(BaseInlineFormSet):
     def __init__(self, request, *args, **kwargs):
-        super(BaseHallFormset, self).__init__(*args, **kwargs)
+        super(BaseHallWeeklyFormset, self).__init__(*args, **kwargs)
         for f in self.forms:
             f.formset = self
 
-HallFormset = inlineformset_factory(
-    Org,
+HallWeeklyFormset = inlineformset_factory(
     Hall,
-    form=HallItemForm,
-    formset=BaseHallFormset,
-    extra=1
+    HallWeekly,
+    form=HallWeeklyItemForm,
+    formset=BaseHallWeeklyFormset,
+    extra=0,
+    can_delete=False,
+    
 )
 
 class HallTimeTableForm(forms.Form):

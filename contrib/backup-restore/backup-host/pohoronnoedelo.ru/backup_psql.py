@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 #   backup_psql.py
 #   --------------
@@ -67,7 +66,7 @@ def backup(db_name, dst_dir):
     )
     rc = os.system(pg_dump_command)
     if rc:
-        print "Failed to create db '%s' dump at %s" % (db_name, HOST)
+        print("Failed to create db '%s' dump at %s" % (db_name, HOST))
         exit(1)
 
     dst_f_name = '%s%s-%s%s' % (dst_dir, db_name, now_str, db_dump_ext)
@@ -87,7 +86,7 @@ def backup(db_name, dst_dir):
         )
     rc = os.system(pg_copy_command)
     if rc:
-        print "Failed to copy db dump from %s to here: %s" % (HOST, dst_f_name)
+        print("Failed to copy db dump from %s to here: %s" % (HOST, dst_f_name))
         exit(1)
 
 def delta_datetime(fname):
@@ -101,7 +100,7 @@ for parm in ('BACKUP_PATH', 'TODAY_PATH', 'DAILY_PATH', 'WEEKLY_PATH', 'MONTHLY_
     if parm != 'BACKUP_PATH':
         globals()[parm] = BACKUP_PATH + globals()[parm]
     if not os.path.isdir(globals()[parm]):
-        print "Failed to find folder: %s" % globals()[parm]
+        print("Failed to find folder: %s" % globals()[parm])
         exit(1)
 
 # today backups
@@ -193,7 +192,7 @@ for db_name in DATABASES:
     remote_dumps = pipe.read()
     rc = pipe.close()
     if rc:
-        print "Failed to count dumps at %s" % (HOST, dst_f_name)
+        print("Failed to count dumps at %s" % (HOST, dst_f_name))
         exit(1)
     remote_dumps = remote_dumps.strip().split('\n')
     # Ограничим число удаляемых файлов до 3 шт, чтоб не была слишкой длинной строка удаления
@@ -219,7 +218,7 @@ for db_name in DATABASES:
         )
         rc = os.system(pg_remove_command)
         if rc:
-            print "Failed to remove outdated dumps at %s" % HOST
+            print("Failed to remove outdated dumps at %s" % HOST)
             exit(1)
 
 exit(0)

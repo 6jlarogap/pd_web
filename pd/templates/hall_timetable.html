@@ -109,6 +109,9 @@
     {% for hall in hall_timetables %}
         <h2>{{ hall.hall }}</h2>
         {% if hall.timetable %}
+            {% if hall.is_dayoff %}
+                <h3><span style="color:blue">{% trans "Не работает" %} {% if today_tomorrow %}{{ today_tomorrow }}, {% endif %}{{ date }}<span></h3>
+            {% endif %}
             <table class="table table-bordered">
                 <tr>
                     <td id="time_td_{{ hall.hall.pk }}">
@@ -163,7 +166,7 @@
                 {% endfor %}
             </table>
         {% else %}
-        <h3><span style="color:blue">{% trans "Ничего не назначено и уже невозможно что-то назначить" %}{% if date %} на {% if today_tomorrow %}{{ today_tomorrow }}, {% endif %}{{ date }}{% endif %}<span></h3>
+        <h3><span style="color:blue">{% if hall.is_dayoff %}{% trans "Не работает" %}{% else %}{% trans "Ничего не назначено и уже невозможно что-то назначить на" %}{% endif %} {% if today_tomorrow %}{{ today_tomorrow }}, {% endif %}{{ date }}<span></h3>
         {% endif %}
     {% endfor %}
 
