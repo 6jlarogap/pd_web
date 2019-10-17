@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+<script type="text/javascript">
+
+    $(function() {
+        // Чтоб по кнопке "назад" в браузере перезагружалась страница
+        // event.persisted означает, что страница бюзята из кэша,
+        // что и бывает по кнопке "назад"
+        //
+        window.onpageshow = function(event) {
+            if (event.persisted) {
+                location.reload(true);
+            }
+        };
+
+    });
+
+</script>
+
+{% if not user.profile.is_admin %}
+    {% include "form_read_only.html" %}
+{% endif %}
+
+<form action="" method="POST" class="halls">
+    {% csrf_token %}
+    <h2>{% trans "Залы" %}</h2>
+    {{ formset.management_form }}
+    {{ formset.non_form_errors }}
+    {% for f in formset.forms %}
+        {% if not f.instance.pk %}
+        <p><b><big> {% trans "Новый зал" %}</big></b></p>
+        {% endif %}
+        <fieldset>
+            {{ f.title.errors }}
+            <p>{{ f.title.label_tag }}{{ f.title }}</p>
+            <p>&nbsp;&nbsp;</p>
+            <p>
+                {% if f.instance.pk %}
+                    <a href="{% url 'halls_time_edit' f.instance.pk %}">{% trans "Время" %}</a>
+                {% else %}
+                    {% trans "Время по умолчанию" %}
+                {% endif %}
+                <br />
+                <textarea readonly="True" rows="1" style="width:450px">{{ f.time_schedule }}</textarea>
+                </p>
+            <p>&nbsp;&nbsp;</p>
+            {{ f.is_active.errors }}
+            <p>{{ f.is_active.label_tag }}{{ f.is_active }}</p>
+            <p>&nbsp;&nbsp;</p>
+            {{ f.DELETE.errors }}
+            <p>{{ f.DELETE.label_tag }}{{ f.DELETE }}</p>
+            <p>{{ f.id }}</p>
+        </fieldset>
+    {% endfor %}
+
+{% if user.profile.is_admin %}
+    <p>
+        <input type="submit" class="btn btn-primary" value="{% trans "cохранить" %}"/>
+    </p>
+{% endif %}
+</form>
+{% endblock %}

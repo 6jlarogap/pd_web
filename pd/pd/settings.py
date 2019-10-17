@@ -127,6 +127,7 @@ INSTALLED_APPS = [
     'reports',
     'import_burials',
     'mobile',
+    'halls',
     'rest_api',
     'restthumbnails',
     'django_assets',

@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 from django.db import models, migrations
 import users.models
 import pd.utils
@@ -30,7 +27,7 @@ class Migration(migrations.Migration):
                 ('bik', models.CharField(max_length=9, verbose_name='\u0411\u0418\u041a', validators=[pd.utils.DigitsValidator(), pd.utils.LengthValidator(9)])),
                 ('bankname', models.CharField(max_length=64, verbose_name='\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0431\u0430\u043d\u043a\u0430', validators=[pd.utils.NotEmptyValidator(1)])),
                 ('ls', models.CharField(blank=True, max_length=11, null=True, verbose_name='\u041b/\u0441', validators=[pd.utils.LengthValidator(11)])),
-                ('off_address', models.ForeignKey(editable=False, to='geo.Location', null=True, verbose_name='\u042e\u0440. \u0430\u0434\u0440\u0435\u0441')),
+                ('off_address', models.ForeignKey(editable=False, to='geo.Location', null=True, verbose_name='\u042e\u0440. \u0430\u0434\u0440\u0435\u0441', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -46,7 +43,7 @@ class Migration(migrations.Migration):
                 ('bik', models.CharField(max_length=9, verbose_name='\u0411\u0418\u041a', validators=[pd.utils.DigitsValidator(), pd.utils.LengthValidator(9)])),
                 ('bankname', models.CharField(max_length=64, verbose_name='\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0431\u0430\u043d\u043a\u0430', validators=[pd.utils.NotEmptyValidator(1)])),
                 ('ls', models.CharField(blank=True, max_length=11, null=True, verbose_name='\u041b/\u0441', validators=[pd.utils.LengthValidator(11)])),
-                ('off_address', models.ForeignKey(editable=False, to='geo.Location', null=True, verbose_name='\u042e\u0440. \u0430\u0434\u0440\u0435\u0441')),
+                ('off_address', models.ForeignKey(editable=False, to='geo.Location', null=True, verbose_name='\u042e\u0440. \u0430\u0434\u0440\u0435\u0441', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -67,7 +64,7 @@ class Migration(migrations.Migration):
                 ('site', models.URLField(default='', verbose_name='\u0421\u0430\u0439\u0442 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f', max_length=255, editable=False)),
                 ('tc_confirmed', models.DateTimeField(verbose_name='\u041f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u043e \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u0441\u043a\u043e\u0435 \u0441\u043e\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u0435', null=True, editable=False)),
                 ('login_phone', models.DecimalField(decimal_places=0, validators=[pd.models.validate_phone_as_number], max_digits=15, blank=True, help_text='\u0412 \u043c\u0435\u0436\u0434\u0443\u043d\u0430\u0440\u043e\u0434\u043d\u043e\u043c \u0444\u043e\u0440\u043c\u0430\u0442\u0435, \u043d\u0430\u0447\u0438\u043d\u0430\u044f \u0441 \u043a\u043e\u0434\u0430 \u0441\u0442\u0440\u0430\u043d\u044b, \u0431\u0435\u0437 "+", \u043d\u0430\u043f\u0440\u0438\u043c\u0435\u0440 79101234567', null=True, verbose_name='\u041c\u043e\u0431\u0438\u043b\u044c\u043d\u044b\u0439 \u0442\u0435\u043b\u0435\u0444\u043e\u043d \u0434\u043b\u044f \u0432\u0445\u043e\u0434\u0430 \u0432 \u043a\u0430\u0431\u0438\u043d\u0435\u0442', db_index=True)),
-                ('user', models.OneToOneField(null=True, to=settings.AUTH_USER_MODEL)),
+                ('user', models.OneToOneField(null=True, to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
             },
@@ -114,7 +111,7 @@ class Migration(migrations.Migration):
                 ('birthday', models.DateField(null=True, verbose_name='\u0414\u0430\u0442\u0430 \u0440\u043e\u0436\u0434\u0435\u043d\u0438\u044f \u0443 \u043f\u0440\u043e\u0432\u0430\u0439\u0434\u0435\u0440\u0430')),
                 ('phones', models.TextField(null=True, verbose_name='\u0422\u0435\u043b\u0435\u0444\u043e\u043d\u044b (\u0435\u0441\u043b\u0438 \u043d\u0435\u0441\u043a\u043e\u043b\u044c\u043a\u043e, \u0442\u043e \u0447\u0435\u0440\u0435\u0437 ; \u0438\u043b\u0438 ,)')),
                 ('site', models.URLField(default='', max_length=255, verbose_name='\u0421\u0430\u0439\u0442 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f')),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
             },
@@ -182,7 +179,7 @@ class Migration(migrations.Migration):
                 ('original_name', models.CharField(max_length=255, editable=False)),
                 ('date_of_creation', models.DateTimeField(auto_now_add=True)),
                 ('creator', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u0421\u043e\u0437\u0434\u0430\u0442\u0435\u043b\u044c')),
-                ('org', models.OneToOneField(to='users.Org')),
+                ('org', models.OneToOneField(to='users.Org', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -198,7 +195,7 @@ class Migration(migrations.Migration):
                 ('original_name', models.CharField(max_length=255, editable=False)),
                 ('date_of_creation', models.DateTimeField(auto_now_add=True)),
                 ('creator', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u0421\u043e\u0437\u0434\u0430\u0442\u0435\u043b\u044c')),
-                ('org', models.OneToOneField(to='users.Org')),
+                ('org', models.OneToOneField(to='users.Org', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -214,7 +211,7 @@ class Migration(migrations.Migration):
                 ('original_name', models.CharField(max_length=255, editable=False)),
                 ('date_of_creation', models.DateTimeField(auto_now_add=True)),
                 ('creator', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u0421\u043e\u0437\u0434\u0430\u0442\u0435\u043b\u044c')),
-                ('org', models.ForeignKey(to='users.Org')),
+                ('org', models.ForeignKey(to='users.Org', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -252,7 +249,7 @@ class Migration(migrations.Migration):
                 ('wsb_currency_id', models.CharField(default='BYN', max_length=255, verbose_name='\u041a\u043e\u0434 \u0432\u0430\u043b\u044e\u0442\u044b \u0441\u043e\u0433\u043b\u0430\u0441\u043d\u043e ISO4271')),
                 ('wsb_version', models.CharField(max_length=255, verbose_name='\u0412\u0435\u0440\u0441\u0438\u044f \u0444\u043e\u0440\u043c\u044b \u043e\u043f\u043b\u0430\u0442\u044b')),
                 ('wsb_test', models.BooleanField(default=True, verbose_name='\u0422\u0435\u0441\u0442\u043e\u0432\u0430\u044f \u0441\u0440\u0435\u0434\u0430')),
-                ('org', models.OneToOneField(to='users.Org')),
+                ('org', models.OneToOneField(to='users.Org', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -277,10 +274,10 @@ class Migration(migrations.Migration):
                 ('phones_publish', models.BooleanField(default=False, verbose_name='\u041f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u0442\u044c \u0442\u0435\u043b\u0435\u0444\u043e\u043d\u044b?')),
                 ('lat', models.DecimalField(null=True, max_digits=30, decimal_places=27, blank=True)),
                 ('lng', models.DecimalField(null=True, max_digits=30, decimal_places=27, blank=True)),
-                ('area', models.ForeignKey(verbose_name='\u0423\u0447\u0430\u0441\u0442\u043e\u043a', blank=True, to='burials.Area', null=True)),
+                ('area', models.ForeignKey(verbose_name='\u0423\u0447\u0430\u0441\u0442\u043e\u043a', blank=True, to='burials.Area', null=True, on_delete=models.CASCADE)),
                 ('cemeteries', models.ManyToManyField(related_name='rw_profiles', verbose_name='\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u043a\u043b\u0430\u0434\u0431\u0438\u0449\u0430', to='burials.Cemetery', blank=True)),
-                ('cemetery', models.ForeignKey(verbose_name='\u041a\u043b\u0430\u0434\u0431\u0438\u0449\u0435', blank=True, to='burials.Cemetery', null=True)),
-                ('org', models.ForeignKey(to='users.Org', null=True)),
+                ('cemetery', models.ForeignKey(verbose_name='\u041a\u043b\u0430\u0434\u0431\u0438\u0449\u0435', blank=True, to='burials.Cemetery', null=True, on_delete=models.CASCADE)),
+                ('org', models.ForeignKey(to='users.Org', null=True, on_delete=models.CASCADE)),
             ],
             options={
                 'ordering': ('user_last_name', 'user_first_name', 'user_middle_name'),
@@ -292,8 +289,8 @@ class Migration(migrations.Migration):
             name='ProfileLORU',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('loru', models.ForeignKey(related_name='ugh_list', verbose_name='\u041b\u041e\u0420\u0423', to='users.Org')),
-                ('ugh', models.ForeignKey(related_name='loru_list', verbose_name='\u041e\u041c\u0421', to='users.Org')),
+                ('loru', models.ForeignKey(related_name='ugh_list', verbose_name='\u041b\u041e\u0420\u0423', to='users.Org', on_delete=models.CASCADE)),
+                ('ugh', models.ForeignKey(related_name='loru_list', verbose_name='\u041e\u041c\u0421', to='users.Org', on_delete=models.CASCADE)),
             ],
             options={
                 'verbose_name': '\u041b\u041e\u0420\u0423 \u0443 \u041e\u041c\u0421',
@@ -324,8 +321,8 @@ class Migration(migrations.Migration):
                 ('org_phones', models.TextField(help_text='\u0412 \u043c\u0435\u0436\u0434\u0443\u043d\u0430\u0440\u043e\u0434\u043d\u043e\u043c \u0444\u043e\u0440\u043c\u0430\u0442\u0435: +\u043a\u043e\u0434-\u0441\u0442\u0440\u0430\u043d\u044b-\u043a\u043e\u0434-\u0433\u043e\u0440\u043e\u0434\u0430-\u043d\u043e\u043c\u0435\u0440-\u0442\u0435\u043b\u0435\u0444\u043e\u043d\u0430', verbose_name='\u0422\u0435\u043b\u0435\u0444\u043e\u043d\u044b')),
                 ('org_fax', models.CharField(default='', max_length=20, verbose_name='\u0424\u0430\u043a\u0441', blank=True)),
                 ('org_subdomain', models.CharField(verbose_name='\u041f\u043e\u0434\u0434\u043e\u043c\u0435\u043d', max_length=255, null=True, editable=False)),
-                ('org_address', models.ForeignKey(editable=False, to='geo.Location', null=True)),
-                ('org_currency', models.ForeignKey(default=users.models.get_default_currency, verbose_name='\u0412\u0430\u043b\u044e\u0442\u0430', to='billing.Currency')),
+                ('org_address', models.ForeignKey(editable=False, to='geo.Location', null=True, on_delete=models.CASCADE)),
+                ('org_currency', models.ForeignKey(default=users.models.get_default_currency, verbose_name='\u0412\u0430\u043b\u044e\u0442\u0430', to='billing.Currency', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -341,7 +338,7 @@ class Migration(migrations.Migration):
                 ('original_name', models.CharField(max_length=255, editable=False)),
                 ('date_of_creation', models.DateTimeField(auto_now_add=True)),
                 ('creator', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u0421\u043e\u0437\u0434\u0430\u0442\u0435\u043b\u044c')),
-                ('registerprofile', models.OneToOneField(to='users.RegisterProfile')),
+                ('registerprofile', models.OneToOneField(to='users.RegisterProfile', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -357,7 +354,7 @@ class Migration(migrations.Migration):
                 ('original_name', models.CharField(max_length=255, editable=False)),
                 ('date_of_creation', models.DateTimeField(auto_now_add=True)),
                 ('creator', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u0421\u043e\u0437\u0434\u0430\u0442\u0435\u043b\u044c')),
-                ('registerprofile', models.OneToOneField(to='users.RegisterProfile')),
+                ('registerprofile', models.OneToOneField(to='users.RegisterProfile', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -382,7 +379,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('name', models.CharField(default='', max_length=255, verbose_name='\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435')),
-                ('address', models.ForeignKey(verbose_name='\u0410\u0434\u0440\u0435\u0441', to='geo.Location')),
+                ('address', models.ForeignKey(verbose_name='\u0410\u0434\u0440\u0435\u0441', to='geo.Location', on_delete=models.CASCADE)),
                 ('loru', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, verbose_name='\u041b\u041e\u0420\u0423', to='users.Org')),
             ],
             options={
@@ -398,7 +395,7 @@ class Migration(migrations.Migration):
                 ('photo', models.ImageField(max_length=255, upload_to=pd.models.files_upload_to, null=True, verbose_name='\u0424\u043e\u0442\u043e', blank=True)),
                 ('original_filename', models.CharField(max_length=255, null=True, editable=False)),
                 ('creator', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u0421\u043e\u0437\u0434\u0430\u0442\u0435\u043b\u044c')),
-                ('store', models.OneToOneField(to='users.Store')),
+                ('store', models.OneToOneField(to='users.Store', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -411,8 +408,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('dt_created', models.DateTimeField(auto_now_add=True, verbose_name='\u0414\u0430\u0442\u0430/\u0432\u0440\u0435\u043c\u044f \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f')),
                 ('dt_modified', models.DateTimeField(auto_now=True, verbose_name='\u0414\u0430\u0442\u0430/\u0432\u0440\u0435\u043c\u044f \u043c\u043e\u0434\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u0438')),
-                ('customperson', models.ForeignKey(verbose_name='\u041f\u0435\u0440\u0441\u043e\u043d\u0430', to='persons.CustomPerson')),
-                ('user', models.ForeignKey(verbose_name='\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c', to=settings.AUTH_USER_MODEL)),
+                ('customperson', models.ForeignKey(verbose_name='\u041f\u0435\u0440\u0441\u043e\u043d\u0430', to='persons.CustomPerson', on_delete=models.CASCADE)),
+                ('user', models.ForeignKey(verbose_name='\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
             },
@@ -438,7 +435,7 @@ class Migration(migrations.Migration):
                 ('original_name', models.CharField(max_length=255, editable=False)),
                 ('date_of_creation', models.DateTimeField(auto_now_add=True)),
                 ('creator', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, editable=False, to=settings.AUTH_USER_MODEL, null=True, verbose_name='\u0421\u043e\u0437\u0434\u0430\u0442\u0435\u043b\u044c')),
-                ('user', models.OneToOneField(related_name='user_photo_list', to=settings.AUTH_USER_MODEL)),
+                ('user', models.OneToOneField(related_name='user_photo_list', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -465,8 +462,8 @@ class Migration(migrations.Migration):
                 ('dt_created', models.DateTimeField(auto_now_add=True, verbose_name='\u0414\u0430\u0442\u0430/\u0432\u0440\u0435\u043c\u044f \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f')),
                 ('dt_modified', models.DateTimeField(auto_now=True, verbose_name='\u0414\u0430\u0442\u0430/\u0432\u0440\u0435\u043c\u044f \u043c\u043e\u0434\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u0438')),
                 ('like', models.CharField(default='up', max_length=100, verbose_name='\u0420\u0435\u0430\u043a\u0446\u0438\u044f', choices=[('up', '\u041d\u0440\u0430\u0432\u0438\u0442\u0441\u044f'), ('up', '\u041d\u0435 \u043d\u0440\u0430\u0432\u0438\u0442\u0441\u044f')])),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
-                ('youtubecaption', models.ForeignKey(to='users.YoutubeCaption')),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
+                ('youtubecaption', models.ForeignKey(to='users.YoutubeCaption', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -498,8 +495,8 @@ class Migration(migrations.Migration):
                 ('dt_modified', models.DateTimeField(auto_now=True, verbose_name='\u0414\u0430\u0442\u0430/\u0432\u0440\u0435\u043c\u044f \u043c\u043e\u0434\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u0438')),
                 ('time', models.PositiveIntegerField(default=0, verbose_name='\u0412\u0440\u0435\u043c\u044f \u0440\u0435\u0430\u043a\u0446\u0438\u0438')),
                 ('like', models.CharField(default='up', max_length=100, verbose_name='\u0420\u0435\u0430\u043a\u0446\u0438\u044f', choices=[('up', '\u041d\u0440\u0430\u0432\u0438\u0442\u0441\u044f'), ('up', '\u041d\u0435 \u043d\u0440\u0430\u0432\u0438\u0442\u0441\u044f')])),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
-                ('youtubevideo', models.ForeignKey(to='users.YoutubeVideo')),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
+                ('youtubevideo', models.ForeignKey(to='users.YoutubeVideo', on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -509,7 +506,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='youtubecaption',
             name='youtubevideo',
-            field=models.ForeignKey(to='users.YoutubeVideo'),
+            field=models.ForeignKey(to='users.YoutubeVideo', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
@@ -529,13 +526,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='profile',
             name='store',
-            field=models.ForeignKey(verbose_name='\u041f\u043e\u0434\u0440\u0430\u0437\u0434\u0435\u043b\u0435\u043d\u0438\u0435', blank=True, to='users.Store', null=True),
+            field=models.ForeignKey(verbose_name='\u041f\u043e\u0434\u0440\u0430\u0437\u0434\u0435\u043b\u0435\u043d\u0438\u0435', blank=True, to='users.Store', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='profile',
             name='user',
-            field=models.OneToOneField(null=True, to=settings.AUTH_USER_MODEL),
+            field=models.OneToOneField(null=True, to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -547,13 +544,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='org',
             name='currency',
-            field=models.ForeignKey(default=users.models.get_default_currency, verbose_name='\u0412\u0430\u043b\u044e\u0442\u0430', to='billing.Currency', help_text=' \u041f\u0440\u0438 \u0441\u043c\u0435\u043d\u0435 \u0432\u0430\u043b\u044e\u0442\u044b \u043e\u043d\u0430 \u0431\u0443\u0434\u0435\u0442 \u0437\u0430\u043c\u0435\u043d\u0435\u043d\u0430 \u0443 \u0432\u0441\u0435\u0445 \u0442\u043e\u0432\u0430\u0440\u043e\u0432 (\u0443\u0441\u043b\u0443\u0433) \u0431\u0435\u0437 \u043a\u043e\u0440\u0440\u0435\u043a\u0442\u0438\u0440\u043e\u0432\u043a\u0438 \u0446\u0435\u043d'),
+            field=models.ForeignKey(default=users.models.get_default_currency, verbose_name='\u0412\u0430\u043b\u044e\u0442\u0430', to='billing.Currency', help_text=' \u041f\u0440\u0438 \u0441\u043c\u0435\u043d\u0435 \u0432\u0430\u043b\u044e\u0442\u044b \u043e\u043d\u0430 \u0431\u0443\u0434\u0435\u0442 \u0437\u0430\u043c\u0435\u043d\u0435\u043d\u0430 \u0443 \u0432\u0441\u0435\u0445 \u0442\u043e\u0432\u0430\u0440\u043e\u0432 (\u0443\u0441\u043b\u0443\u0433) \u0431\u0435\u0437 \u043a\u043e\u0440\u0440\u0435\u043a\u0442\u0438\u0440\u043e\u0432\u043a\u0438 \u0446\u0435\u043d', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='org',
             name='off_address',
-            field=models.ForeignKey(verbose_name='\u042e\u0440. \u0430\u0434\u0440\u0435\u0441', blank=True, to='geo.Location', null=True),
+            field=models.ForeignKey(verbose_name='\u042e\u0440. \u0430\u0434\u0440\u0435\u0441', blank=True, to='geo.Location', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
@@ -583,13 +580,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='dover',
             name='agent',
-            field=models.ForeignKey(verbose_name='\u0410\u0433\u0435\u043d\u0442', to='users.Profile'),
+            field=models.ForeignKey(verbose_name='\u0410\u0433\u0435\u043d\u0442', to='users.Profile', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='dover',
             name='target_org',
-            field=models.ForeignKey(editable=False, to='users.Org', null=True),
+            field=models.ForeignKey(editable=False, to='users.Org', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
@@ -599,13 +596,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='bankaccountregister',
             name='registerprofile',
-            field=models.ForeignKey(verbose_name='\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f', to='users.RegisterProfile'),
+            field=models.ForeignKey(verbose_name='\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f', to='users.RegisterProfile', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='bankaccount',
             name='organization',
-            field=models.ForeignKey(verbose_name='\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f', to='users.Org'),
+            field=models.ForeignKey(verbose_name='\u041e\u0440\u0433\u0430\u043d\u0438\u0437\u0430\u0446\u0438\u044f', to='users.Org', on_delete=models.CASCADE),
             preserve_default=True,
         ),
     ]

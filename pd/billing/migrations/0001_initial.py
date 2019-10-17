@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 from django.db import models, migrations
 
 
@@ -89,7 +86,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('amount', models.DecimalField(default='0.00', verbose_name='\u041e\u0441\u0442\u0430\u0442\u043e\u043a', max_digits=20, decimal_places=2)),
-                ('currency', models.ForeignKey(verbose_name='\u0412\u0430\u043b\u044e\u0442\u0430', to='billing.Currency')),
+                ('currency', models.ForeignKey(verbose_name='\u0412\u0430\u043b\u044e\u0442\u0430', to='billing.Currency', on_delete=models.CASCADE)),
             ],
             options={
                 'verbose_name': '\u041a\u043e\u0448\u0435\u043b\u0435\u043a',
