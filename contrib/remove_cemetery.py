@@ -29,7 +29,7 @@ def main():
     
     print('\nremove deadmen')
     i = 0
-    for deadperson in DeadPerson.objects.filter(burial__cemetery=cemetery).iterator():
+    for deadperson in DeadPerson.objects.filter(burial__cemetery=cemetery).iterator(chunk_size=100):
         i += 1 
         Burial.objects.filter(deadman=deadperson).update(deadman=None)
         #
@@ -45,7 +45,7 @@ def main():
 
     print('\nremove burial applicants- alivepersons')
     i = 0
-    for aliveperson in AlivePerson.objects.filter(applied_burials__cemetery=cemetery).iterator():
+    for aliveperson in AlivePerson.objects.filter(applied_burials__cemetery=cemetery).iterator(chunk_size=100):
         i += 1
         Burial.objects.filter(applicant=aliveperson).update(applicant=None)
         aliveperson.delete()
@@ -56,7 +56,7 @@ def main():
 
     print('\nremove non-closed burial responsibles- alivepersons')
     i = 0
-    for aliveperson in AlivePerson.objects.filter(responsible_burials__cemetery=cemetery).iterator():
+    for aliveperson in AlivePerson.objects.filter(responsible_burials__cemetery=cemetery).iterator(chunk_size=100):
         i += 1
         Burial.objects.filter(responsible=aliveperson).update(responsible=None)
         aliveperson.delete()
@@ -68,7 +68,7 @@ def main():
 
     print('\nremove exhumationrequest applicants- alivepersons')
     i = 0
-    for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__cemetery=cemetery).iterator():
+    for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__cemetery=cemetery).iterator(chunk_size=100):
         i += 1
         ExhumationRequest.objects.filter(applicant=aliveperson).update(applicant=None)
         aliveperson.delete()
@@ -83,7 +83,7 @@ def main():
 
     print('\nremove burial files')
     i = 0
-    for burialfile in BurialFiles.objects.filter(burial__cemetery=cemetery).iterator():
+    for burialfile in BurialFiles.objects.filter(burial__cemetery=cemetery).iterator(chunk_size=100):
         i += 1
         burialfile.delete()
         if i % 1000 == 0:
@@ -94,7 +94,7 @@ def main():
     i = 0
     print('\nremove burials')
     ct = ContentType.objects.get(app_label="burials", model="burial")
-    for burial in Burial.objects.filter(cemetery=cemetery).iterator():
+    for burial in Burial.objects.filter(cemetery=cemetery).iterator(chunk_size=100):
         i += 1
         Log.objects.filter(ct=ct, obj_id = burial.pk).delete()
         BurialComment.objects.filter(burial=burial).delete()
@@ -106,7 +106,7 @@ def main():
 
     print('\nremove place responsibles - alivepersons')
     i = 0
-    for aliveperson in AlivePerson.objects.filter(place__cemetery=cemetery).iterator():
+    for aliveperson in AlivePerson.objects.filter(place__cemetery=cemetery).iterator(chunk_size=100):
         i += 1
         Place.objects.filter(responsible=aliveperson).update(responsible=None)
         if not aliveperson.user:
@@ -118,7 +118,7 @@ def main():
 
     print('\nremove place photos')
     i = 0
-    for ph in PlacePhoto.objects.filter(place__cemetery=cemetery).iterator():
+    for ph in PlacePhoto.objects.filter(place__cemetery=cemetery).iterator(chunk_size=100):
         i += 1
         ph.delete()
         if i % 1000 == 0:
@@ -131,7 +131,7 @@ def main():
     PlaceStatus.objects.filter(place__cemetery=cemetery).delete()
     ct = ContentType.objects.get(app_label="burials", model="place")
     i = 0
-    for place in Place.objects.filter(cemetery=cemetery).iterator():
+    for place in Place.objects.filter(cemetery=cemetery).iterator(chunk_size=100):
         i += 1
         Log.objects.filter(ct=ct, obj_id = place.pk).delete()
         Grave.objects.filter(place=place).delete()
