@@ -67,7 +67,7 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
                                 on_delete=models.PROTECT)
     ugh = models.ForeignKey(Org, verbose_name=_("УГХ"), null=True, limit_choices_to={'type': Org.PROFILE_UGH},
                             on_delete=models.PROTECT)
-    address = models.ForeignKey('geo.Location', editable=False, null=True)
+    address = models.ForeignKey('geo.Location', editable=False, null=True, on_delete=models.CASCADE)
     archive_burial_fact_date_required = models.BooleanField(_("Дата архивного захоронения обязательна"), default=False)
     archive_burial_account_number_required = models.BooleanField(_("Номер архивного захоронения обязателен"), default=False)
     square = models.FloatField(_("Площадь"), null=True, editable=False)
@@ -172,13 +172,13 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
         return result
 
 class CemeteryPhoto(PhotoFiles, GeoPointModel):
-    cemetery = models.OneToOneField(Cemetery)
+    cemetery = models.OneToOneField(Cemetery, on_delete=models.CASCADE)
 
 class CemeterySchema(PhotoFiles):
     # В 2 раза больше, чем вообще для фоток
     MAX_PHOTO_SIZE = 20
 
-    cemetery = models.OneToOneField(Cemetery)
+    cemetery = models.OneToOneField(Cemetery, on_delete=models.CASCADE)
 
 class CemeteryCoordinates(CoordinatesModel):
     #TODO:
@@ -677,11 +677,11 @@ class OrderPlace(models.Model):
     """
     Место, указываемый при заказе, для которого еще не сделано захоронение
     """
-    order = models.OneToOneField('orders.Order', verbose_name=_("Заказ"))
-    cemetery = models.ForeignKey(Cemetery, verbose_name=_("Кладбище"), null=True)
+    order = models.OneToOneField('orders.Order', verbose_name=_("Заказ"), on_delete=models.CASCADE)
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_("Кладбище"), null=True, on_delete=models.CASCADE)
     # Если кладбище не выбирается из имеющихся, а задается вручную
     cemetery_text = models.CharField(_("Кладбище"), max_length=255, default='')
-    area = models.ForeignKey(Area, verbose_name=_("Участок"), null=True)
+    area = models.ForeignKey(Area, verbose_name=_("Участок"), null=True, on_delete=models.CASCADE)
     row = models.CharField(_("Ряд"), max_length=255, default='')
     place = models.CharField(_("Место"), max_length=255, default='')
     size = models.CharField(_("Размер гроба"), max_length=255, default='')
@@ -705,7 +705,7 @@ class PlaceStatus(BaseModel):
         (PS_RECOVERED, _('Готово к повторному использованию')),
         (PS_OTHER, _('Другой статус места')),
     )
-    place = models.ForeignKey(Place, verbose_name=_("Место"))
+    place = models.ForeignKey(Place, verbose_name=_("Место"), on_delete=models.CASCADE)
     status = models.CharField(_("Статус"), max_length=40, choices=PS_TYPES, default=PS_ACTUAL)
     comment = models.TextField(verbose_name=_("Примечание"), blank=True, null=True)
     creator = models.ForeignKey('auth.User', verbose_name=_("Создатель"), editable=False,
@@ -713,7 +713,7 @@ class PlaceStatus(BaseModel):
 
 
 class Grave(BaseModelManualDtCreated):
-    place = models.ForeignKey(Place, verbose_name=_("Место"))
+    place = models.ForeignKey(Place, verbose_name=_("Место"), on_delete=models.CASCADE)
     grave_number = models.PositiveSmallIntegerField(_("Номер"), default=1)
     is_wrong_fio = models.BooleanField(_("Неверное ФИО"), default=False)
     is_military = models.BooleanField(_("Воинская могила"), default=False)
@@ -774,7 +774,7 @@ class Grave(BaseModelManualDtCreated):
         return super(Grave, self).save(*args, **kwargs)
 
 class PlacePhoto(Files, GeoPointModel, BaseModelManualDtCreated):
-    place = models.ForeignKey(Place)
+    place = models.ForeignKey(Place, on_delete=models.CASCADE)
 
     def save(self, *args, **kwargs):
         try:
@@ -820,7 +820,7 @@ class PlacePhoto(Files, GeoPointModel, BaseModelManualDtCreated):
         
 
 class AreaPhoto(Files, GeoPointModel, BaseModelManualDtCreated):
-    area = models.ForeignKey(Area)
+    area = models.ForeignKey(Area, on_delete=models.CASCADE)
 
     def save(self, *args, **kwargs):
         self.fill_dt_created()
@@ -870,6 +870,12 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     CONTAINER_URN = 'container_urn'
     CONTAINER_ASH = 'container_ash'
     CONTAINER_BIO = 'container_bio'
+
+    # Это для продвинутого списка select в поиске,
+    # но не для записи в поле таблицы в б.д.
+    #
+    CONTAINER_URN_IN_GRAVE = 'container_urn_in_grave'
+    CONTAINER_URN_IN_COLUMBARIUM = 'container_urn_in_columbarium'
 
     BURIAL_CONTAINERS = (
         (CONTAINER_COFFIN, _("Гроб")),
@@ -957,6 +963,19 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         по Burial, оставляем эту функцию-заглушку.
         """
         return self
+
+    @classmethod
+    def container_list_advanced(cls):
+        """
+        Добавить в список урны в колумбарии и могилах после 'урна'
+        """
+        result = []
+        for c in Burial.BURIAL_CONTAINERS:
+            result.append(c)
+            if c[0] == Burial.CONTAINER_URN:
+                result.append((Burial.CONTAINER_URN_IN_GRAVE, _("Урна в могиле")))
+                result.append((Burial.CONTAINER_URN_IN_COLUMBARIUM, _("Урна в колумбарии")))
+        return result
 
     def is_edit(self):
         return self.is_draft() or self.is_backed() or self.is_declined()
@@ -1551,11 +1570,11 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         
 class BurialComment(BaseModel):
 
-    burial = models.ForeignKey(Burial, verbose_name=_("Захоронение"), )
-    creator = models.ForeignKey('auth.User', verbose_name=_("Создатель"), )
+    burial = models.ForeignKey(Burial, verbose_name=_("Захоронение"), on_delete=models.CASCADE)
+    creator = models.ForeignKey('auth.User', verbose_name=_("Создатель"), on_delete=models.CASCADE)
     # если не указан изменивший, то это создатель
     modifier = models.ForeignKey('auth.User', verbose_name=_("Последний изменивший"),
-                                 related_name='modified_by', null=True)
+                                 related_name='modified_by', null=True, on_delete=models.CASCADE)
     comment = models.TextField(_("Комментарий"), )
 
     class Meta:
@@ -1571,13 +1590,13 @@ class BurialFiles(Files):
     """
     Файлы, связанные с захоронением
     """
-    burial = models.ForeignKey(Burial)
+    burial = models.ForeignKey(Burial, on_delete=models.CASCADE)
 
 class PlaceStatusFiles(Files):
     """
     Файлы, связанные со статусом места
     """
-    placestatus = models.ForeignKey(PlaceStatus)
+    placestatus = models.ForeignKey(PlaceStatus, on_delete=models.CASCADE)
 
 class Reason(models.Model):
     TYPE_BACK = 'back'
@@ -1618,8 +1637,8 @@ class Reason(models.Model):
         return '%s' % self.pk
 
 class ExhumationRequest(SafeDeleteMixin, models.Model):
-    burial = models.OneToOneField(Burial, editable=False)
-    place = models.ForeignKey(Place, editable=False, null=True)
+    burial = models.OneToOneField(Burial, editable=False, on_delete=models.CASCADE)
+    place = models.ForeignKey(Place, editable=False, null=True, on_delete=models.CASCADE)
     plan_date = models.DateField(_("План. дата"), null=True, blank=True)
     plan_time = models.TimeField(_("План. время"), null=True, blank=True)
     fact_date = models.DateField(_("Факт. дата"), null=True)
@@ -1715,9 +1734,9 @@ class Burial1(BaseModel):
     account_number_s2 = models.FloatField(null=True)
     account_number_s3 = models.TextField(null=True)
 
-    place = models.ForeignKey(Place, verbose_name=_("Место"), null=True, related_name='place_1_burials')
-    cemetery = models.ForeignKey(Cemetery, verbose_name=_("Кладбище"), null=True, related_name='cemetery_1_burials')
-    area = models.ForeignKey(Area, verbose_name=_("Участок"), null=True, related_name='area_1_burials')
+    place = models.ForeignKey(Place, verbose_name=_("Место"), null=True, related_name='place_1_burials', on_delete=models.PROTECT)
+    cemetery = models.ForeignKey(Cemetery, verbose_name=_("Кладбище"), null=True, related_name='cemetery_1_burials', on_delete=models.PROTECT)
+    area = models.ForeignKey(Area, verbose_name=_("Участок"), null=True, related_name='area_1_burials', on_delete=models.PROTECT)
     row = models.CharField(_("Ряд"), max_length=255)
     place_number = models.CharField(_("Номер места"), max_length=255)
     place_number_s1 = models.TextField(null=True)
@@ -1725,7 +1744,7 @@ class Burial1(BaseModel):
     place_number_s3 = models.TextField(null=True)
 
     grave = models.ForeignKey(Grave, verbose_name=_("Могила"),
-                              null=True, related_name='grave_1_burials')
+                              null=True, related_name='grave_1_burials', on_delete=models.PROTECT)
     grave_number = models.PositiveSmallIntegerField(_("Могила"), default=1)
     desired_graves_count = models.PositiveSmallIntegerField(_("Число могил в новом месте"), default=1)
     place_length = models.DecimalField(_("Длина, м."), max_digits=5, decimal_places=2,
@@ -1733,7 +1752,7 @@ class Burial1(BaseModel):
     place_width = models.DecimalField(_("Ширина, м."), max_digits=5, decimal_places=2,
                                         null=True)
     responsible = models.ForeignKey('persons.AlivePerson', verbose_name=_("Ответственный"), null=True,
-                                    related_name='responsible_1_burials')
+                                    related_name='responsible_1_burials', on_delete=models.PROTECT)
 
     plan_date = models.DateField(_("План. дата"), null=True)
     plan_time = models.TimeField(_("План. время"), null=True)
@@ -1741,25 +1760,25 @@ class Burial1(BaseModel):
     # Null даты при сортировке по убыванию показывается первыми, а это неудобно
     fact_date_s = models.CharField(_("Факт. дата"), max_length=255)
 
-    deadman = models.ForeignKey(DeadPerson, verbose_name=_("Усопший"), null=True, related_name='deadman_1_burials')
+    deadman = models.ForeignKey(DeadPerson, verbose_name=_("Усопший"), null=True, related_name='deadman_1_burials', on_delete=models.PROTECT)
 
     applicant = models.ForeignKey('persons.AlivePerson', verbose_name=_("Заявитель"), null=True,
-                                  related_name='applied_1_burials')
-    ugh = models.ForeignKey(Org, verbose_name=_("УГХ"), null=True, related_name='ugh_1_created')
-    loru = models.ForeignKey(Org, verbose_name=_("Посредник"), null=True, related_name='loru_1_burials')
+                                  related_name='applied_1_burials', on_delete=models.PROTECT)
+    ugh = models.ForeignKey(Org, verbose_name=_("УГХ"), null=True, related_name='ugh_1_created', on_delete=models.PROTECT)
+    loru = models.ForeignKey(Org, verbose_name=_("Посредник"), null=True, related_name='loru_1_burials', on_delete=models.PROTECT)
     loru_agent_director = models.BooleanField(_("Директор-Агент"), default=False)
     loru_agent = models.ForeignKey(Profile, verbose_name=_("Агент"), null=True,
-                              related_name='loru_agent_1_burials',)
+                              related_name='loru_agent_1_burials', on_delete=models.PROTECT)
     loru_dover = models.ForeignKey(Dover, verbose_name=_("Доверенность"), null=True,
-                              related_name='loru_dover_1_burials')
+                              related_name='loru_dover_1_burials', on_delete=models.PROTECT)
     applicant_organization = models.ForeignKey(Org, verbose_name=_("Заявитель-ЮЛ"), null=True,
-                                               related_name='applicant_organization_1_burials')
+                                               related_name='applicant_organization_1_burials', on_delete=models.PROTECT)
     agent_director = models.BooleanField(_("Директор-Агент"), default=False)
-    agent = models.ForeignKey(Profile, verbose_name=_("Агент"), null=True, related_name='agent_1_burials',)
-    dover = models.ForeignKey(Dover, verbose_name=_("Доверенность"), null=True, related_name='dover_1_burials')
+    agent = models.ForeignKey(Profile, verbose_name=_("Агент"), null=True, related_name='agent_1_burials', on_delete=models.PROTECT)
+    dover = models.ForeignKey(Dover, verbose_name=_("Доверенность"), null=True, related_name='dover_1_burials', on_delete=models.PROTECT)
 
     status = models.CharField(_("Статус"), max_length=255)
-    changed_by = models.ForeignKey('auth.User', null=True, related_name='changed_by_1_burials')
+    changed_by = models.ForeignKey('auth.User', null=True, related_name='changed_by_1_burials', on_delete=models.PROTECT)
     annulated = models.BooleanField(_("Аннулировано"), default=False)
     flag_no_applicant_doc_required = models.BooleanField(_("Документ заявителя-ФЛ не требуется"), default=False)
 

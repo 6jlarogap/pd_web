@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from users.models import Profile, Org, ProfileLORU, Dover, CustomerProfile
+from users.models import Profile, Org, ProfileLORU, Dover, CustomerProfile, Role
 
 
 class AgentDoverInline(admin.TabularInline):
@@ -32,3 +32,9 @@ class OrgAdmin(admin.ModelAdmin):
     search_fields = ['name']
 
 admin.site.register(Org, OrgAdmin)
+
+class RoleAdmin(admin.ModelAdmin):
+    list_display = ['name', 'title', ]
+
+admin.site.register(Role, RoleAdmin)
+

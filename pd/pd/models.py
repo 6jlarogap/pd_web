@@ -82,7 +82,7 @@ class UnclearDate:
         """
         YYYY or YYYY-MM or YYYY-MM-DD
 
-        Возможен возврат ММ.ДД.ГГГГ, ММ.ГГГГ, ГГГГ при формате 'd.m'y'
+        Возможен возврат ДД.ММ.ГГГГ, ММ.ГГГГ, ГГГГ при формате 'd.m'y'
         """
         result = "%04d" % self.d.year
         if format == 'd.m.y':
@@ -229,7 +229,7 @@ class UnclearDate:
                     except ValueError:
                         raise ServiceException(_(
                             "Неверный формат даты. "
-                            "Допускается ММ.ДД.ГГГГ, ММ.ГГГГ, ГГГГ. Точки можно опустить или вместо них - или /"))
+                            "Допускается ДД.ММ.ГГГГ, ММ.ГГГГ, ГГГГ. Точки можно опустить или вместо них - или /"))
 
                 else:
                     m = re.search(cls.SAFE_STR_REGEX, s)

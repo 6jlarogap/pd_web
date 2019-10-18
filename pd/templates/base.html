@@ -146,6 +146,9 @@
                                                     {% endif %}
                                                 {% endif %}
                                             {% endif %}
+                                            {% if user.profile.is_ugh and global_context_SHOW_HALLS %}
+                                                <li><a href="{% url 'halls_edit' %}">{% trans "Залы" %}</a></li>
+                                            {% endif %}
                                             {% if user.profile.org.pk %}
                                                 <li><a href="{% url 'org_log' %}">{% trans "Журнал" %}</a></li>
                                             {% endif %}
@@ -239,6 +242,11 @@
 
                                     <li{% if request.path == '/burials/create/' and request.GET.archive %} class="active"{% endif %}>
                                         <a href="{% url 'create_burial' %}?archive=1">{% trans "Внести архивное" %}</a>
+                                    </li>
+                                {% endif %}
+                                {% if request.user.profile.is_hall_manager %}
+                                    <li{% if request.path == '/halls/time/' %} class="active"{% endif %}>
+                                        <a href="{% url 'halls_time' %}">{% trans "Залы: время" %}</a>
                                     </li>
                                 {% endif %}
                             {% elif user.profile.is_loru %}

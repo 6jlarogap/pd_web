@@ -1370,6 +1370,11 @@ function makeDatePicker(obj) {
                 start_year = now_year -10;
                 end_year = now_year + 100;
             }
+            regex = /^.+hall_date_from$/;
+            if (regex.test(id)) {
+                start_year = now_year -5;
+                end_year = now_year + 1;
+            }
         }
 
         $(this).after('<span class="add-on move-left"><i class="icon-calendar"></i></span>').datepicker({

@@ -211,7 +211,7 @@ class OrderDeadPerson(DeadPersonMixin, BasePerson):
     Усопший, указываемый при заказе, для которого еще не сделано захоронение
     """
     # serialize=False - не выгружать значение поля в фикстуры. Для этого типа поля не описан сериализатор
-    order = models.OneToOneField('orders.Order', verbose_name=_("Заказ"))
+    order = models.OneToOneField('orders.Order', verbose_name=_("Заказ"), on_delete=models.CASCADE)
     death_date = UnclearDateModelField(_("Дата смерти"), serialize=False, blank=True, null=True)
 
 class AlivePerson(BasePerson, PhonesMixin):
@@ -220,7 +220,7 @@ class AlivePerson(BasePerson, PhonesMixin):
     """
     phones = models.TextField(_("Телефоны (если несколько, то через ; или ,)"), blank=True, null=True)
     user = models.ForeignKey('auth.User', verbose_name=_("Ответственный за место или пользователь- физ. лицо"),
-           null=True, editable=False)
+           null=True, editable=False, on_delete=models.CASCADE)
     # Оставляем здесь login_phone как хранилище для телефона логина ответственного,
     # для сохранения черновиков захоронений, а также для удобства отображения в формах.
     # Реальный телефон логина ответственного см. в self.user and self.user.customerprofile.login_phone.
@@ -254,11 +254,11 @@ class PersonID(models.Model):
     Удостоверение личности
     """
 
-    person = models.OneToOneField(BasePerson)
-    id_type = models.ForeignKey(IDDocumentType, verbose_name=_("Тип документа"), blank=True, null=True)
+    person = models.OneToOneField(BasePerson, on_delete=models.CASCADE)
+    id_type = models.ForeignKey(IDDocumentType, verbose_name=_("Тип документа"), blank=True, null=True, on_delete=models.CASCADE)
     series = models.CharField(_("Серия"), max_length=255, blank=True, default='')
     number = models.CharField(_("Номер"), max_length=255, blank=True, default='')
-    source = models.ForeignKey(DocumentSource, verbose_name=_("Кем выдан"), blank=True, null=True)
+    source = models.ForeignKey(DocumentSource, verbose_name=_("Кем выдан"), blank=True, null=True, on_delete=models.CASCADE)
     date = models.DateField(_("Дата выдачи"), blank=True, null=True)
     date_expire = models.DateField(_("Срок действия"), blank=True, null=True)
 
@@ -284,13 +284,13 @@ class DeathCertificate(BaseModel):
         (PROFILE_MEDIC, _("Медицинская справка")),
     )
 
-    person = models.OneToOneField(DeadPerson)
+    person = models.OneToOneField(DeadPerson, on_delete=models.CASCADE)
 
     type = models.CharField(_("Тип"), max_length=255, choices=PROFILE_TYPES, default=PROFILE_ZAGS)
     s_number = models.CharField(_("Номер"), max_length=255, blank=True, default='')
     series = models.CharField(_("Серия"), max_length=255, blank=True, default='')
     release_date = models.DateField(_("Дата выдачи"), null=True, blank=True)
-    zags = models.ForeignKey(Org, verbose_name=_("ЗАГС"), null=True, blank=True)
+    zags = models.ForeignKey(Org, verbose_name=_("ЗАГС"), null=True, blank=True, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = _("свидетельство о смерти")
@@ -338,7 +338,7 @@ class DeathCertificateScan(Files):
     """
     Файлы-сканы свидетельства о смерти, по одному на СоС
     """
-    deathcertificate = models.OneToOneField(DeathCertificate)
+    deathcertificate = models.OneToOneField(DeathCertificate, on_delete=models.CASCADE)
 
 
 class Phone(BaseModel):
@@ -354,7 +354,7 @@ class Phone(BaseModel):
         (PHONE_TYPE_OTHER, _("Иной"))
     )
 
-    ct = models.ForeignKey('contenttypes.ContentType', null=True, blank=True, editable=False, verbose_name=_("Тип"))
+    ct = models.ForeignKey('contenttypes.ContentType', null=True, blank=True, editable=False, verbose_name=_("Тип"), on_delete=models.CASCADE)
     obj_id = models.PositiveIntegerField(null=True, blank=True, editable=False, verbose_name=_("ID объекта"), db_index=True)
     obj = GenericForeignKey(ct_field='ct', fk_field='obj_id')
     number = models.CharField(_("Номер"), max_length=50, blank=True)
@@ -385,9 +385,9 @@ class Phone(BaseModel):
 
 class CustomPlace(LocationMixin, BaseModel):
     name = models.CharField(_("Название"), max_length=255, blank=True)
-    address = models.ForeignKey(Location, verbose_name=_("Адрес"), null=True)
-    user = models.ForeignKey('auth.User', verbose_name=_("Ответственный за место или указавший место"))
-    place = models.ForeignKey('burials.Place', verbose_name=_("Место"), null=True)
+    address = models.ForeignKey(Location, verbose_name=_("Адрес"), null=True, on_delete=models.CASCADE)
+    user = models.ForeignKey('auth.User', verbose_name=_("Ответственный за место или указавший место"), on_delete=models.CASCADE)
+    place = models.ForeignKey('burials.Place', verbose_name=_("Место"), null=True, on_delete=models.CASCADE)
     # Основное фото места. Оно не грузится от клиента, а копируется из PlacePhoto
     # или из результатов выполнения заказа, как только появляется новое фото места или
     # новый результат заказа, привязанного к этому customPlace. Параметр upload_to
@@ -395,7 +395,7 @@ class CustomPlace(LocationMixin, BaseModel):
     #
     title_photo = models.ImageField(_("Основное Фото"), upload_to='.', null=True)
     favorite_performer = models.ForeignKey(Org, verbose_name=_("Предпочтительный исполнитель"),
-                                           null=True, blank=True)
+                                           null=True, blank=True, on_delete=models.CASCADE)
     comment = models.TextField(_("Комментарий"), null=True)
 
 
@@ -533,9 +533,9 @@ class CustomPerson(PersonMixin, PhotoModel, BaseModel):
     # Поскольку предполагается здесь хранить и живых лиц, то
     # ссылку делаем на Person, как живое, так и мертвое.
     #
-    user = models.ForeignKey('auth.User', verbose_name=_("Владелец или указавший захороненного"))
-    customplace = models.ForeignKey(CustomPlace, verbose_name=_("Место захоронения"), blank=True, null=True)
-    person = models.ForeignKey(BasePerson, verbose_name=_("Лицо"), null=True)
+    user = models.ForeignKey('auth.User', verbose_name=_("Владелец или указавший захороненного"), on_delete=models.CASCADE)
+    customplace = models.ForeignKey(CustomPlace, verbose_name=_("Место захоронения"), blank=True, null=True, on_delete=models.CASCADE)
+    person = models.ForeignKey(BasePerson, verbose_name=_("Лицо"), null=True, on_delete=models.CASCADE)
     last_name = models.CharField(_("Фамилия"), max_length=255, blank=True)
     first_name = models.CharField(_("Имя"), max_length=255, blank=True)
     middle_name = models.CharField(_("Отчество"), max_length=255, blank=True)
@@ -598,7 +598,7 @@ class MemoryGallery(Files):
     # Мегабайт:
     MAX_IMAGE_SIZE = 10
 
-    customperson = models.ForeignKey(CustomPerson)
+    customperson = models.ForeignKey(CustomPerson, on_delete=models.CASCADE)
     type = models.CharField(_("Тип"), max_length=255, choices=TYPE_CHOICES)
     text = models.TextField(_("Текст"), null=True)
     event_date = UnclearDateModelField(_("Дата события"), null=True)
@@ -618,7 +618,7 @@ class CustomPersonPermission(models.Model):
     если один из таковых прописан в разрешениях в этой модели
     """
 
-    customperson = models.ForeignKey(CustomPerson)
+    customperson = models.ForeignKey(CustomPerson, on_delete=models.CASCADE)
     email = models.EmailField(_("Email"), null=True)
     login_phone = models.DecimalField(_("Мобильный телефон для входа в кабинет"),
                                       max_digits=15, decimal_places=0, null=True)
@@ -632,7 +632,7 @@ class MemoryGalleryPermission(models.Model):
     если один из таковых прописан в разрешениях в этой модели
     """
 
-    memorygallery = models.ForeignKey(MemoryGallery)
+    memorygallery = models.ForeignKey(MemoryGallery, on_delete=models.CASCADE)
     email = models.EmailField(_("Email"), null=True)
     login_phone = models.DecimalField(_("Мобильный телефон для входа в кабинет"),
                                       max_digits=15, decimal_places=0, null=True)
