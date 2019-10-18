@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.db import IntegrityError, connection
 from django.db.models.query_utils import Q
-from django.db.models import Count, Avg, Min, Max
+from django.db.models import Count, Min, Max
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import Http404, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt

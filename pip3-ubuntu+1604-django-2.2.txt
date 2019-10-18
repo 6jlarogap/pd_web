@@ -1,10 +1,10 @@
 # Для pip install -r <этот_файл>
 # ОС: Ubuntu 16.04, 18.04
 # Python: 3.6
-# Django 2.1
+# Django 2.2
 #
 cssmin
-Django==2.1.13
+Django==2.2.6
 django-assets
 django-autoslug
 django-cors-headers
@@ -25,10 +25,6 @@ odfpy
 piexif
 Pillow
 psycopg2-binary
-
-# Полезно для сервера разработчика
-#
-pyinotify
 
 python-dateutil
 python-geohash
