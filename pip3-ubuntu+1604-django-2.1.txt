@@ -1,0 +1,39 @@
+# Для pip install -r <этот_файл>
+# ОС: Ubuntu 16.04, 18.04
+# Python: 3.6
+# Django 2.1
+#
+cssmin
+Django==2.1.13
+django-assets
+django-autoslug
+django-cors-headers
+django-debug-toolbar
+django-google-charts
+django-nocaptcha-recaptcha
+django-qsstats-magic
+
+redis
+django-redis
+
+django-wkhtmltopdf
+djangorestframework==3.9.1
+djangorestframework-jsonp
+
+LatLon23
+odfpy
+piexif
+Pillow
+psycopg2-binary
+
+# Полезно для сервера разработчика
+#
+pyinotify
+
+python-dateutil
+python-geohash
+python-magic
+pytils
+raven
+rjsmin
+webassets

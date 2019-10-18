@@ -229,7 +229,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
             years = list(range((datetime.date.today() + datetime.timedelta(days=12)).year, 1899, -1))
         return super(UnclearSelectDateWidget, self).__init__(attrs, years, required)
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         if isinstance(value, datetime.date):
             value = UnclearDate(value.year, value.month, value.day)
 
@@ -447,7 +447,7 @@ class CustomClearableFileInput(ClearableFileInput):
         super(CustomClearableFileInput, self).__init__(*args, **kwargs)
         self.show_clear_checkbox_ = show_clear_checkbox_
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
 
         if self.show_clear_checkbox_:
             self.template_with_initial = '%(initial_text)s: %(initial)s<br />%(clear_template)s<br />%(input_text)s:<br /> %(input)s<br />'
