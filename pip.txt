@@ -1,1 +1,1 @@
-pip3-ubuntu+1604-django-2.1.txt
+pip3-ubuntu+1604-django-2.2.txt
