@@ -346,13 +346,25 @@ class UnclearDateField(forms.DateField):
     def prepare_value(self, value):
         if not value:
             return None
-        if isinstance(value, UnclearDate):
-            return value
+        if isinstance(value, str):
+            re_m = re.search(r'^(\d{1,4})\-(\d{1,2})?-(\d{1,2})?$', value)
+            if re_m:
+                try:
+                    y = int(re_m.group(1))
+                    m = re_m.group(2)
+                    m = int(m) if m else m
+                    d = re_m.group(3)
+                    d = int(d) if d else d
+                    value = UnclearDate(y, m, d)
+                except ValueError:
+                    pass
         return value
 
     def clean(self, value):
         if not value and self.required:
             raise forms.ValidationError(self.error_messages['required'])
+        if isinstance(value, str):
+            value = self.prepare_value(value)
         if isinstance(value, str):
             if not re.search(r'^\d{1,4}\-\d{1,2}-\d{1,2}$', value):
                 raise forms.ValidationError(
