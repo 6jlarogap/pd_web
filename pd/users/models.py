@@ -242,11 +242,6 @@ class Profile(CommonProfile):
     def can_create_burials(self):
         return self.is_ugh() or self.is_loru()
 
-    def get_coords(self):
-        if self.lat and self.lng:
-            return ','.join([self.lat, self.lng])
-        return ''
-
     def user_dict(self):
         result = super(Profile, self).user_dict()
         result.update(dict(
