@@ -14,7 +14,7 @@ from django.db import transaction
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
-from django.shortcuts import redirect, render, render_to_response
+from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.views.generic.base import View
 from django.views.generic.detail import DetailView
@@ -354,18 +354,21 @@ class OrderList(LORURequiredMixin, PaginateListView):
                 burial_date_to = form.cleaned_data['burial_date_to']
                 no_dates = not (burial_date_from and burial_date_to)
             if no_dates:
-                return render_to_response(
+                return render(
+                    request,
                     'simple_message.html',
                     dict(message=_("Не задан интервал дат захоронения"))
                 )
             if burial_date_from > burial_date_to:
-                return render_to_response(
+                return render(
+                    request,
                     'simple_message.html',
                     dict(message=_('"Дата захоронений: с" больше "Дата захоронений: по"'))
                 )
             orders = self.filtered_orders()
             if not orders:
-                return render_to_response(
+                return render(
+                    request,
                     'simple_message.html',
                     dict(message=_('Не найдены заказы по выбранным критериям'))
                 )
@@ -386,7 +389,7 @@ class OrderList(LORURequiredMixin, PaginateListView):
                 end_date=burial_date_to,
                 print_now=True,
             )
-            return render_to_response('reports/burial_plan.html', context)
+            return render(request, 'reports/burial_plan.html', context)
         if not request.GET and request.user.profile.org.inn == '9103078189':
             form = self.get_form()
             get_attrs = '?'

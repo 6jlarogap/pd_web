@@ -1,6 +1,6 @@
 from django.conf import settings
 
-from django.shortcuts import render, render_to_response, get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from django.views.generic.base import View
 from django.utils.translation import ugettext as _
 
@@ -86,7 +86,7 @@ class ApiCemeteryUpload(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) :
-        return render_to_response('mobile_upload_cemetery.html', {'message': _("Загрузите название кладбища:")})
+        return render(request, 'mobile_upload_cemetery.html', {'message': _("Загрузите название кладбища:")})
 
     @transaction.atomic
     def post(self, request):
@@ -366,7 +366,7 @@ class ApiAreaUpload(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) : 
-        return render_to_response('mobile_upload_area.html', {'message': _("Задайте название участка:")})
+        return render(request, 'mobile_upload_area.html', {'message': _("Задайте название участка:")})
 
     @transaction.atomic
     def post(self, request) : 
@@ -721,7 +721,7 @@ class ApiGraveUpload(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) :
-        return render_to_response('mobile_upload_grave.html', {'message': _("Загрузите название могилы:")})
+        return render(request, 'mobile_upload_grave.html', {'message': _("Загрузите название могилы:")})
 
     @transaction.atomic
     def post(self, request) :
@@ -889,7 +889,7 @@ class ApiBindBurialGrave(APIView):
 
     permission_classes = (IsAuthenticated,)
     def get(self, request) :
-        return render_to_response('mobile_bind_burial_grave.html', {'message': _("Загрузите захоронение:")})
+        return render(request, 'mobile_bind_burial_grave.html', {'message': _("Загрузите захоронение:")})
     def post(self, request) :
         graveId = int(request.POST['graveId'])
         burialId = int(request.POST['burialId'])
@@ -979,7 +979,7 @@ class ApiPlacePhotoUpload(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
 
     def get(self, request) :
-        return render_to_response('mobile_upload_placephoto.html', {'message': _("Загрузите фотографию к месту")})
+        return render(request, 'mobile_upload_placephoto.html', {'message': _("Загрузите фотографию к месту")})
 
     def post(self, request) :
         placeId = request.POST['place']
@@ -1062,7 +1062,7 @@ class ApiPlacePhotoDelete(APIView):
 
     permission_classes = (PermitIfUgh,)
     def get(self, request) :
-        return render_to_response('mobile_remove_placephoto.html', {'message': _("Удалить фотографию места")})
+        return render(request, 'mobile_remove_placephoto.html', {'message': _("Удалить фотографию места")})
 
     def post(self, request) :
         placePhotoId = request.POST['placePhotoId']

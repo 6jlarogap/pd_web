@@ -9,7 +9,7 @@ from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import redirect, render_to_response
+from django.shortcuts import redirect, render
 from django.views.generic.base import TemplateView, View
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.detail import DetailView
@@ -88,7 +88,8 @@ class DashboardView(TemplateView):
             if settings.REDIRECT_LOGIN_TO_FRONT_END:
                 return redirect(get_front_end_url(request))
             else:
-                return render_to_response(
+                return render(
+                    request,
                     'simple_message.html',
                     dict(message=_("Рабочее место пользователя кабинета организовано другими средствами"))
                 )
@@ -1258,7 +1259,7 @@ class MakeNotificationView(BurialsListGenericMixin, DetailView):
                 template=template,
                 context=context,
             )
-        return render_to_response(template, context)
+        return render(self.request, template, context)
 
 make_notification = MakeNotificationView.as_view()
 
@@ -1279,7 +1280,7 @@ class MakeExhumateReport(BurialsListGenericMixin, DetailView):
                 context['message'] = _("Захоронение не эксгумировано")
         else:
             context['message'] = _("Нет доступа")
-        return render_to_response(template, context)
+        return render(self.request, template, context)
 
 make_exhumate_report = MakeExhumateReport.as_view()
 
@@ -1300,7 +1301,7 @@ class MakeExhumateNotification(BurialsListGenericMixin, DetailView):
                 context['message'] = _("Захоронение не эксгумировано")
         else:
             context['message'] = _("Нет доступа")
-        return render_to_response(template, context)
+        return render(self.request, template, context)
 
 make_exhumate_notification = MakeExhumateNotification.as_view()
 

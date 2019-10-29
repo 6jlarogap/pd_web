@@ -229,7 +229,7 @@ class UnclearSelectDateWidget(SelectDateWidget):
             years = list(range((datetime.date.today() + datetime.timedelta(days=12)).year, 1899, -1))
         return super(UnclearSelectDateWidget, self).__init__(attrs, years, required)
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         if isinstance(value, datetime.date):
             value = UnclearDate(value.year, value.month, value.day)
 
@@ -346,13 +346,25 @@ class UnclearDateField(forms.DateField):
     def prepare_value(self, value):
         if not value:
             return None
-        if isinstance(value, UnclearDate):
-            return value
+        if isinstance(value, str):
+            re_m = re.search(r'^(\d{1,4})\-(\d{1,2})?-(\d{1,2})?$', value)
+            if re_m:
+                try:
+                    y = int(re_m.group(1))
+                    m = re_m.group(2)
+                    m = int(m) if m else m
+                    d = re_m.group(3)
+                    d = int(d) if d else d
+                    value = UnclearDate(y, m, d)
+                except ValueError:
+                    pass
         return value
 
     def clean(self, value):
         if not value and self.required:
             raise forms.ValidationError(self.error_messages['required'])
+        if isinstance(value, str):
+            value = self.prepare_value(value)
         if isinstance(value, str):
             if not re.search(r'^\d{1,4}\-\d{1,2}-\d{1,2}$', value):
                 raise forms.ValidationError(
@@ -447,7 +459,7 @@ class CustomClearableFileInput(ClearableFileInput):
         super(CustomClearableFileInput, self).__init__(*args, **kwargs)
         self.show_clear_checkbox_ = show_clear_checkbox_
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
 
         if self.show_clear_checkbox_:
             self.template_with_initial = '%(initial_text)s: %(initial)s<br />%(clear_template)s<br />%(input_text)s:<br /> %(input)s<br />'
