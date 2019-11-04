@@ -102,7 +102,7 @@ class Command(BaseCommand):
                 "pk",
 
             )
-            for burial in burials.iterator():
+            for burial in burials.iterator(chunk_size=100):
                 deadman = burial.deadman
                 last_name = self.correct_str(deadman.last_name)
                 last_name_lower = last_name and last_name.lower() or ''

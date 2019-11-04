@@ -33,12 +33,12 @@ def main():
     ugh_qs = Q(type=Org.PROFILE_UGH, currency__code=CURRENCY_CODE)
     org_qs = Q(currency__code=CURRENCY_CODE)
 
-    print 'Looking for russian orgs...'
+    print('Looking for russian orgs...')
     for org in Org.objects.filter(org_qs).distinct():
-        print org
+        print(org)
         ProfileLORU.objects.filter(loru=org).delete()
 
-        print 'removing orderItems'
+        print('removing orderItems')
         OrderItem.objects.filter(
             Q(order__loru=org) | \
             Q(order__loru__isnull=True) | \
@@ -52,20 +52,20 @@ def main():
         ServiceItem.objects.filter(orgservice__org=org).delete()
         transaction.commit()
 
-        print 'removing order applicants- alivepersons'
+        print('removing order applicants- alivepersons')
         i = 0
         for aliveperson in AlivePerson.objects.filter(
                 Q(order__loru=org) | \
                 Q(order__burial__ugh=org)
-            ).iterator():
+            ).iterator(chunk_size=100):
             i += 1 
             Order.objects.filter(applicant=aliveperson).update(applicant=None)
             aliveperson.delete()
             if i % 1000 == 0:
-                print "%d order applicants removed" % i
+                print("%d order applicants removed" % i)
         transaction.commit()
 
-        print 'removing orders'
+        print('removing orders')
         OrderComment.objects.filter(order__loru=org).delete()
         ResultFile.objects.filter(order__loru=org).delete()
         Order.objects.filter(
@@ -78,7 +78,7 @@ def main():
         ).delete()
         transaction.commit()
 
-        print 'Marking dependent fields in Burials as None'
+        print('Marking dependent fields in Burials as None')
         Burial.objects.filter(applicant_organization=org).update(applicant_organization=None)
         Burial.objects.filter(agent__org=org).update(agent=None)
         Burial.objects.filter(Q(dover__agent__org=org) | Q(dover__target_org=org)).update(dover=None)
@@ -91,57 +91,57 @@ def main():
         transaction.commit()
 
         Burial.objects.filter(changed_by__profile__org=org).update(changed_by=None)
-        print 'removing dovers'
+        print('removing dovers')
         Dover.objects.filter(Q(agent__org=org) | Q(target_org=org)).delete()
         if org.type != Org.PROFILE_UGH:
             remove_org(org)
-            print 'Org deleted'
+            print('Org deleted')
         transaction.commit()
 
-    print 'Looking for russian UGHs...'
+    print('Looking for russian UGHs...')
     for ugh in Org.objects.filter(ugh_qs):
-        print ugh
-        print 'removing deadmen in burial'
+        print(ugh)
+        print('removing deadmen in burial')
         i = 0
-        for deadperson in DeadPerson.objects.filter(burial__ugh=ugh).iterator():
+        for deadperson in DeadPerson.objects.filter(burial__ugh=ugh).iterator(chunk_size=100):
             i += 1 
             Burial.objects.filter(deadman=deadperson).update(deadman=None)
             deadperson.delete()
             if i % 1000 == 0:
-                print "%d deadmen removed" % i
-        print 'removing burial applicants- alivepersons'
+                print("%d deadmen removed" % i)
+        print('removing burial applicants- alivepersons')
         transaction.commit()
         i = 0
-        for aliveperson in AlivePerson.objects.filter(applied_burials__ugh=ugh).iterator():
+        for aliveperson in AlivePerson.objects.filter(applied_burials__ugh=ugh).iterator(chunk_size=100):
             i += 1 
             Burial.objects.filter(applicant=aliveperson).update(applicant=None)
             aliveperson.delete()
             if i % 1000 == 0:
-                print "%d burial applicants removed" % i
-        print 'removing non-closed burial responsibles- alivepersons'
+                print("%d burial applicants removed" % i)
+        print('removing non-closed burial responsibles- alivepersons')
         transaction.commit()
-        for aliveperson in AlivePerson.objects.filter(responsible_burials__ugh=ugh).iterator():
+        for aliveperson in AlivePerson.objects.filter(responsible_burials__ugh=ugh).iterator(chunk_size=100):
             Burial.objects.filter(responsible=aliveperson).update(applicant=None)
             aliveperson.delete()
-        print 'removing exhumationrequest applicants- alivepersons'
-        for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__ugh=ugh).iterator():
+        print('removing exhumationrequest applicants- alivepersons')
+        for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__ugh=ugh).iterator(chunk_size=100):
             ExhumationRequest.objects.filter(applicant=aliveperson).update(applicant=None)
             aliveperson.delete()
         transaction.commit()
 
-        print 'removing burials'
+        print('removing burials')
         ExhumationRequest.objects.filter(burial__ugh=ugh).delete()
         BurialFiles.objects.filter(burial__ugh=ugh).delete()
         BurialComment.objects.filter(burial__ugh=ugh).delete()
         Burial.objects.filter(ugh=ugh).delete()
         transaction.commit()
-        print 'removing graves'
+        print('removing graves')
         Grave.objects.filter(place__cemetery__ugh=ugh).delete()
         transaction.commit()
 
-        print 'removing place responsibles- alivepersons'
+        print('removing place responsibles- alivepersons')
         i = 0
-        for aliveperson in AlivePerson.objects.filter(place__cemetery__ugh=ugh).iterator():
+        for aliveperson in AlivePerson.objects.filter(place__cemetery__ugh=ugh).iterator(chunk_size=100):
             i += 1
             Place.objects.filter(responsible=aliveperson).update(responsible=None)
             try:
@@ -159,10 +159,10 @@ def main():
                 user.delete()
                 customerprofile.delete()
             if i % 1000 == 0:
-                print "%d place responsibles removed" % i
+                print("%d place responsibles removed" % i)
                 transaction.commit()
 
-        print 'removing places'
+        print('removing places')
         PlaceSize.objects.filter(org=ugh).delete()
         PlacePhoto.objects.filter(place__cemetery__ugh=ugh).delete()
         PlaceStatusFiles.objects.filter(placestatus__place__cemetery__ugh=ugh).delete()
@@ -170,18 +170,18 @@ def main():
         Place.objects.filter(cemetery__ugh=ugh).delete()
         transaction.commit()
 
-        print 'removing areas'
+        print('removing areas')
         AreaPhoto.objects.filter(area__cemetery__ugh=ugh).delete()
         AreaCoordinates.objects.filter(area__cemetery__ugh=ugh).delete()
         Area.objects.filter(cemetery__ugh=ugh).delete()
-        print 'removing cemeteries'
+        print('removing cemeteries')
         CemeteryCoordinates.objects.filter(cemetery__ugh=ugh).delete()
         Cemetery.objects.filter(ugh=ugh).delete()
         Reason.objects.filter(org=ugh).delete()
         transaction.commit()
         
         remove_org(ugh)
-        print 'UGH deleted'
+        print('UGH deleted')
         transaction.commit()
 
 def remove_org(org):
