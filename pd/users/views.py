@@ -2024,8 +2024,8 @@ class RegisterView(RegisterMixin, CreateView):
     def form_valid(self, form):
         obj = form.save(commit=False)
         obj.user_password = make_password(form.cleaned_data['password1'])
-        salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
-        obj.user_activation_key = hashlib.sha1(salt+obj.user_name).hexdigest()
+        salt = hashlib.sha1(str(random.random()).encode('utf8')).hexdigest()[:5]
+        obj.user_activation_key = hashlib.sha1((salt+obj.user_name).encode('utf8')).hexdigest()
         obj.status = RegisterProfile.STATUS_TO_CONFIRM
         # Поля адреса вплоть до города обязательны, но
         # вдруг мы от этой обязательности откажемся, посему if...:
@@ -3074,8 +3074,8 @@ class ApiOrgSignupView(CheckRecaptcha2Mixin, RegisterMixin, APIView):
             if not password.strip():
                 raise ServiceException(_('Не задан пароль'))
             user_password = make_password(password)
-            salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
-            user_activation_key = hashlib.sha1(salt+username).hexdigest()
+            salt = hashlib.sha1(str(random.random()).encode('utf8')).hexdigest()[:5]
+            user_activation_key = hashlib.sha1((salt+username).encode('utf8')).hexdigest()
 
             location = request.data.get('registredOffice')
             if not location:
