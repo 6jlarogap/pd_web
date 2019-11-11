@@ -22,10 +22,13 @@
             $('input[name$={{ S.FREE }}]').change(function() {
                 var name = $(this).attr('name');
                 name = name.substr(0, name.length - '{{ S.FREE }}'.length);
-                if ($(this).is(':checked')) {
-                    $('textarea[name=' + name + '{{ S.DETAILS }}]').attr('readonly', 'True');
-                } else {
-                    $('textarea[name=' + name + '{{ S.DETAILS }}]').removeAttr('readonly');
+                var is_editable_input = $('input[name=' + name + 'editable]')
+                if (is_editable_input.length && is_editable_input.val() == 'True') {
+                    if ($(this).is(':checked')) {
+                        $('textarea[name=' + name + '{{ S.DETAILS }}]').attr('readonly', 'True');
+                    } else {
+                        $('textarea[name=' + name + '{{ S.DETAILS }}]').removeAttr('readonly');
+                    }
                 }
             });
             $('input[id$={{ S.FREE }}]').change();
@@ -102,7 +105,7 @@
 <form action="" method="POST" class="main-form">
     {% csrf_token %}
     {% if have_smth_to_edit %}
-        <input type="submit" class="btn btn-success" value="{% trans "утвердить бронь" %}" name="submit" class="btn" style="font-weight:bold; font-size:large"/>
+        <input type="submit" class="btn btn-success" value="{% trans "сохранить" %}" name="submit" class="btn" style="font-weight:bold; font-size:large"/>
     {% endif %}
     <input type="hidden" name="GET_PARAMS" value="{{ GET_PARAMS }}" />
 
@@ -131,14 +134,14 @@
                     <tr
                     {% if tt.past %} style="background-color:#e0e0d1"{% elif not tt.free %} style="background-color:#b8b894"{% endif %}>
                         <td>
-                            {% if tt.editable and tt.free %}<b>{% endif %}{{ tt.dt_start_str }} &mdash; {{ tt.dt_end_str }}{% if tt.editable and tt.free %}</b>{% endif %}
+                            {% if tt.editable_or_deletable and tt.free %}<b>{% endif %}{{ tt.dt_start_str }} &mdash; {{ tt.dt_end_str }}{% if tt.editable_or_deletable and tt.free %}</b>{% endif %}
                         </td>
                         <td>
-                            {% if tt.editable %}
+                            {% if tt.editable_or_deletable %}
                                 {% if tt.free %}
                                     <p><label for="{{ tt.html_name_prefix }}__{{ S.BOOK }}"><b>{% trans "Забронировать" %}</b></label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.BOOK }}" id="id__{{ tt.html_name_prefix }}__{{ S.BOOK }}"/></p>
                                 {% else %}
-                                    <p><label for="{{ tt.html_name_prefix }}__{{ S.FREE }}">{% trans "Освободить" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.FREE }}" id="id__{{ tt.html_name_prefix }}__{{ S.FREE }}"/></p>
+                                    <p><label for="{{ tt.html_name_prefix }}__{{ S.FREE }}">{% trans "Отменить бронь" %}</label><input type="checkbox" name="{{ tt.html_name_prefix }}__{{ S.FREE }}" id="id__{{ tt.html_name_prefix }}__{{ S.FREE }}"/></p>
                                 {% endif %}
                             {% else %}
                                 {% if tt.free %}
@@ -149,6 +152,7 @@
                             {% endif %}
                         </td>
                         <td style="text-align: center">
+                            <input type="hidden" name="{{ tt.html_name_prefix }}__editable" value="{{ tt.editable }}" />
                             <textarea name="{{ tt.html_name_prefix }}__{{ S.DETAILS }}" rows="1" {% if not tt.editable %}readonly="True"{% endif %} id="id__{{ tt.html_name_prefix }}__{{ S.DETAILS }}">{{ tt.details }}</textarea>
                             {% if tt.editable %}
                                 <textarea name="{{ tt.html_name_prefix }}__{{ S.DETAILS_OLD }}" id="id__{{ tt.html_name_prefix }}__{{ S.DETAILS }}" readonly="True" style="display:none">{{ tt.details }}</textarea>
@@ -171,7 +175,7 @@
     {% endfor %}
 
     {% if have_smth_to_edit %}
-        <input type="submit" class="btn btn-success" value="{% trans "утвердить бронь" %}" name="submit" class="btn" style="font-weight:bold; font-size:large"/>
+        <input type="submit" class="btn btn-success" value="{% trans "сохранить" %}" name="submit" class="btn" style="font-weight:bold; font-size:large"/>
     {% endif %}
 <form/>
 
