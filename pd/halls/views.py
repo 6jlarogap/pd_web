@@ -275,16 +275,27 @@ class HallsTimeTableMixin(object):
                     dt_created=tt.dt_created,
                 )
                 if tt.dt_end <= dt_border:
-                    tt_item.update(editable=False, past=True)
+                    tt_item.update(
+                        editable=False,
+                        deletable=False,
+                        editable_or_deletable=False,
+                        past=True,
+                    )
                     past_sessions.append(tt_item)
                 else:
                     editable = bool(
                         user.profile.is_hall_manager() and user == tt.creator or \
                         user.profile.is_hall_admin()
                     )
-                    if editable:
+                    deletable = user.profile.is_hall_manager()
+                    if editable or deletable:
                         have_smth_to_edit = True
-                    tt_item.update(editable=editable, past=False)
+                    tt_item.update(
+                        editable=editable,
+                        deletable=deletable,
+                        editable_or_deletable=editable or deletable,
+                        past=False,
+                    )
                     future_sessions.append(tt_item)
                     for i, s in enumerate(date_free_sessions):
                        if tt.dt_end <= s['dt_start'] or tt.dt_start >= s['dt_end']:
@@ -315,6 +326,8 @@ class HallsTimeTableMixin(object):
                     creator=None,
                     html_name_prefix=self.make_html_name_prefix(hall, tt_item['dt_start'], tt_item['dt_end']),
                     editable=editable,
+                    deletable=False,
+                    editable_or_deletable=editable,
                     dt_created=None,
                 )
             future_sessions += updated_date_free_sessions

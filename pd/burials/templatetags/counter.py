@@ -42,4 +42,4 @@ class CounterNode(template.Node):
         context.render_context['counter'] += 1
 
         # Return counter number
-        return context['counter_var']
+        return str(context['counter_var'])

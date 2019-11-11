@@ -16,16 +16,6 @@ framework.
 import os
 import sys
 
-# An old python bug concerning multi-threading and strptime. Refer to
-# a workaround: https://modwsgi.readthedocs.org/en/latest/application-issues/index.html
-# ...
-# The only work around for the problem is to ensure that all module imports
-# related to modules on which the PyImport_ImportModuleNoBlock() function
-# is used be done explicitly or indirectly when the WSGI script file is loaded.
-# Thus, to get around the specific case above, add the following into the WSGI script file:
-# ...
-import _strptime
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pd.settings")
 
 activate_this = os.path.join(os.path.dirname(__file__), '..', '..', 'ENV', 'bin', 'activate_this.py')
