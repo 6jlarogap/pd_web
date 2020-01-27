@@ -21,6 +21,28 @@ from burials.models import Place, Grave, Burial, Cemetery
 
 CEMETERIES = (
     dict(
+        export='chizhovskoe_cemeteries',
+        cemeteries=[
+            35,         # Колумбарий, кладбище Чижовское
+            33,         # Красная Слобода
+            34,         # Лошица
+            36,         # Малый Тростенец
+            24,         # Чижовское
+        ],
+   ),
+    dict(
+        export='severnoe_cemeteries',
+        cemeteries=[
+            41,         # Колумбарий кладбища Северное-1
+            42,         # Колумбарий кладбища Северное-2
+            43,         # Колумбарий кладбища Северное-3
+            29,         # Северное-1
+            27,         # Северное-2
+            30,         # Северное-3
+            31,         # Цна
+        ],
+   ),
+    dict(
         export='kolodischi_cemeteries',
         cemeteries=[28, ],
    ),
@@ -110,7 +132,8 @@ class Command(BaseCommand):
                 if last_name_lower and \
                    place and \
                    not 'неизвестен' in last_name_lower and \
-                   not 'безфамильн' in last_name_lower:
+                   not 'безфамильн' in last_name_lower and \
+                   not 'резервирование' in last_name_lower:
                     pk = str(deadman.pk)
 
                     last_name = last_name.upper()

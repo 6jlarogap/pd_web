@@ -9,10 +9,12 @@
 где /home/terminal - домашний каталог пользователя, который будет забирать
 экспортные .csv:
 
-    - vostochoe.csv
-    - voennoe.csv
-    - zapadnoe.csv
-    - kolodischi.csv
+    - vostochoe_cemeteries.csv
+    - voennoe_cemeteries.csv
+    - zapadnoe_cemeteries.csv
+    - kolodischi_cemeteries.csv
+    - chizhovskoe_cemeteries_cemeteries.csv
+    - severnoe_cemeteries_cemeteries.csv
 
 В /etc/crontab можно занести строчку:
 
@@ -72,7 +74,7 @@ PuTTY Installer, http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html
 Надо на этом ПК создать задание в планировщике заданий с действием:
 
     - программа/сценарий:   C:\Windows\System32\wscript.exe
-    - аргументы:            invisible.vbs "sftp.bat voennoe"
+    - аргументы:            invisible.vbs "sftp.bat voennoe_cemeteries"
                             (кавычки обязательны!)
     - рабочая папка:        d:\terminal
 
