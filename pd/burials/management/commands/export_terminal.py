@@ -134,7 +134,7 @@ class Command(BaseCommand):
                    not 'неизвестен' in last_name_lower and \
                    not 'безфамильн' in last_name_lower and \
                    not 'резервирование' in last_name_lower and \
-                   re.search(r'^[а-яёa-z\-]{2,}$', last_name_lower):
+                   re.search(r'^[а-яёіiўa-z\-]{2,}$', last_name_lower):
                     pk = str(deadman.pk)
 
                     last_name = last_name.upper()
