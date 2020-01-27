@@ -133,7 +133,8 @@ class Command(BaseCommand):
                    place and \
                    not 'неизвестен' in last_name_lower and \
                    not 'безфамильн' in last_name_lower and \
-                   not 'резервирование' in last_name_lower:
+                   not 'резервирование' in last_name_lower and \
+                   re.search(r'^[а-яa-z\-]{2,}$', last_name_lower):
                     pk = str(deadman.pk)
 
                     last_name = last_name.upper()
