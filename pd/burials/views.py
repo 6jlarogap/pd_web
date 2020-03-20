@@ -113,29 +113,30 @@ class EditCemeteryObjectsMixin(object):
 class CaretakerMixin(object):
 
     def get_caretakers(self, obj):
+        result = []
         if isinstance(obj, Cemetery):
             ugh = obj.ugh
+            cemetery = obj
         else:
         # Area. Place
             ugh = obj.cemetery.ugh
-        return [
-            UserFioLoginSerializer(user).data \
-                for user in User.objects.filter(
-                                profile__org=ugh,
-                                profile__out_of_staff=False,
-                                profile__role__name__in=(
-                                    Role.ROLE_REGISTRATOR,
-                                    Role.ROLE_CARETAKER,
-                                    Role.ROLE_CEMETERY_MANAGER,
-                                ),
-                                is_active=True,
-                            ).order_by(
-                                'profile__user_last_name',
-                                'profile__user_first_name',
-                                'profile__user_middle_name',
-                              ).distinct()
-        ]
-
+            cemetery = obj.cemetery
+        for user in User.objects.filter(
+                        profile__org=ugh,
+                        profile__role__name__in=(
+                            Role.ROLE_REGISTRATOR,
+                            Role.ROLE_CARETAKER,
+                            Role.ROLE_CEMETERY_MANAGER,
+                        ),
+                        is_active=True,
+                    ).order_by(
+                        'profile__user_last_name',
+                        'profile__user_first_name',
+                        'profile__user_middle_name',
+                        ).distinct():
+            if cemetery in Cemetery.editable_ugh_cemeteries(user):
+                result.append(UserFioLoginSerializer(user).data)
+        return result
 
 class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSet):
     model = Cemetery
