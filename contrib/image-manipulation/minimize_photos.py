@@ -23,18 +23,18 @@ d_final = datetime.datetime(2016, 10, 31, 0, 0, 0)
 count = count_modified = 0
 for ph in PlacePhoto.objects.filter(
                 dt_modified__lt=d_final,
-                ).iterator():
+                ).iterator(chunk_size=100):
     count += 1
     image = None
 
     if not ph.bfile:
-        print("Empty bfile: %s" % ph.pk)
+        print(("Empty bfile: %s" % ph.pk))
         continue
 
     try:
         f = open(str(ph.bfile.path), 'rb')
     except IOError:
-        print("Not found : %s" % ph.bfile.path)
+        print(("Not found : %s" % ph.bfile.path))
         continue
 
     buff = f.read()
@@ -42,7 +42,7 @@ for ph in PlacePhoto.objects.filter(
         image = Image.open(BytesIO(buff))
         image.load()
     except IOError:
-        print("Not image file: %s" % ph.bfile.path)
+        print(("Not image file: %s" % ph.bfile.path))
         continue
 
     if image.size[0] * image.size[1] >= 1600*1200:
@@ -61,10 +61,10 @@ for ph in PlacePhoto.objects.filter(
         PlacePhoto.objects.filter(pk=ph.pk).update(dt_modified=datetime.datetime.now())
         count_modified += 1
     else:
-        print("Low resolution : %s x %s, %s" % (
+        print(("Low resolution : %s x %s, %s" % (
             image.size[0], image.size[1],
             ph.bfile.path
-        ))
+        )))
     if image:
         image.close()
     buff = image = None
@@ -77,6 +77,6 @@ for ph in PlacePhoto.objects.filter(
         break
 
     if count % 250 == 0:
-        print("count all", count, ", count modified", count_modified)
+        print(("count all", count, ", count modified", count_modified))
 
-print("\n", "count all", count, ", count modified", count_modified)
+print(("\n", "count all", count, ", count modified", count_modified))

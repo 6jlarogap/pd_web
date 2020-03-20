@@ -39,16 +39,16 @@ class Command(BaseCommand):
         try:
             ugh_one = Org.objects.get(type=Org.PROFILE_UGH, pk=ugh_pk)
         except Org.DoesNotExist:
-            print("ERROR! Failed to gind OMS with pk=%s" % ugh_pk)
+            print(("ERROR! Failed to gind OMS with pk=%s" % ugh_pk))
             quit()
 
         media_list = kwargs['media_list']
-        print('Forming the list of media of the OMS, %s' % media_list)
+        print(('Forming the list of media of the OMS, %s' % media_list))
 
         try:
             self.media_file = open(media_list, 'w')
         except IOError:
-            print("ERROR! Failed to open '%s' for write" % media_list)
+            print(("ERROR! Failed to open '%s' for write" % media_list))
             quit()
 
         for model in (OrgCertificate, OrgGallery, OrgContract,):
@@ -68,7 +68,7 @@ class Command(BaseCommand):
         self.collect_media(BurialFiles, Q(burial__ugh=ugh_one))
         
         self.media_file.close()
-        print('\n%s total media recs written\n' % self.count_media)
+        print(('\n%s total media recs written\n' % self.count_media))
         
         ugh_qs = Q(type=Org.PROFILE_UGH) & ~Q(pk=ugh_pk)
 
@@ -77,12 +77,12 @@ class Command(BaseCommand):
             print(ugh)
             print('removing deadmen in burial')
             i = 0
-            for deadperson in DeadPerson.objects.filter(burial__ugh=ugh).iterator():
+            for deadperson in DeadPerson.objects.filter(burial__ugh=ugh).iterator(chunk_size=100):
                 i += 1 
                 Burial.objects.filter(deadman=deadperson).update(deadman=None)
                 deadperson.delete()
                 if i % 1000 == 0:
-                    print("%d deadmen removed" % i)
+                    print(("%d deadmen removed" % i))
             print('removing burial applicants- alivepersons')
             i = 0
             for aliveperson in AlivePerson.objects.filter(applied_burials__ugh=ugh).iterator():
@@ -90,13 +90,13 @@ class Command(BaseCommand):
                 Burial.objects.filter(applicant=aliveperson).update(applicant=None)
                 aliveperson.delete()
                 if i % 1000 == 0:
-                    print("%d burial applicants removed" % i)
+                    print(("%d burial applicants removed" % i))
             print('removing non-closed burial responsibles- alivepersons')
-            for aliveperson in AlivePerson.objects.filter(responsible_burials__ugh=ugh).iterator():
+            for aliveperson in AlivePerson.objects.filter(responsible_burials__ugh=ugh).iterator(chunk_size=100):
                 Burial.objects.filter(responsible=aliveperson).update(applicant=None)
                 aliveperson.delete()
             print('removing exhumationrequest applicants- alivepersons')
-            for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__ugh=ugh).iterator():
+            for aliveperson in AlivePerson.objects.filter(exhumationrequest__burial__ugh=ugh).iterator(chunk_size=100):
                 ExhumationRequest.objects.filter(applicant=aliveperson).update(applicant=None)
                 aliveperson.delete()
 
@@ -137,7 +137,7 @@ class Command(BaseCommand):
 
             print('removing place responsibles- alivepersons')
             i = 0
-            for aliveperson in AlivePerson.objects.filter(place__cemetery__ugh=ugh).iterator():
+            for aliveperson in AlivePerson.objects.filter(place__cemetery__ugh=ugh).iterator(chunk_size=100):
                 i += 1
                 Place.objects.filter(responsible=aliveperson).update(responsible=None)
                 try:
@@ -145,7 +145,7 @@ class Command(BaseCommand):
                 except (AttributeError, User.DoesNotExist,):
                     aliveperson.delete()
                     if i % 1000 == 0:
-                        print("%d place responsibles removed" % i)
+                        print(("%d place responsibles removed" % i))
 
             print('removing places')
             PlaceSize.objects.filter(org=ugh).delete()
@@ -169,15 +169,15 @@ class Command(BaseCommand):
             print('UGH deleted')
 
         print('Current Stats')
-        print('Burials total: %s' % Burial.objects.all().count())
-        print('DeadPerson total: %s' % DeadPerson.objects.all().count())
-        print('Places total: %s' % Place.objects.all().count())
+        print(('Burials total: %s' % Burial.objects.all().count()))
+        print(('DeadPerson total: %s' % DeadPerson.objects.all().count()))
+        print(('Places total: %s' % Place.objects.all().count()))
 
-        print('DeathCertificateScans total: %s' % DeathCertificateScan.objects.all().count())
-        print('PlacePhoto total: %s' % PlacePhoto.objects.all().count())
-        print('AreaPhoto total: %s' % AreaPhoto.objects.all().count())
-        print('CemeteryPhoto total: %s' % CemeteryPhoto.objects.all().count())
-        print('Burial Files total: %s' % BurialFiles.objects.all().count())
+        print(('DeathCertificateScans total: %s' % DeathCertificateScan.objects.all().count()))
+        print(('PlacePhoto total: %s' % PlacePhoto.objects.all().count()))
+        print(('AreaPhoto total: %s' % AreaPhoto.objects.all().count()))
+        print(('CemeteryPhoto total: %s' % CemeteryPhoto.objects.all().count()))
+        print(('Burial Files total: %s' % BurialFiles.objects.all().count()))
 
 
     def remove_org(self, org):
@@ -205,10 +205,10 @@ class Command(BaseCommand):
         org.delete()
 
     def collect_media(self, model, filter_, field='bfile'):
-        print(' - %s' % model._meta.object_name)
+        print((' - %s' % model._meta.object_name))
         count_model = 0
         for rec in model.objects.filter(filter_):
             self.count_media += 1
             count_model +=1
             self.media_file.write("%s\n" % getattr(rec, field).name)
-        print('     %s media recs written' % count_model)
+        print(('     %s media recs written' % count_model))

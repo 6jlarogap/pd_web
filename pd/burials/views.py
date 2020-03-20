@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.db import IntegrityError, connection
 from django.db.models.query_utils import Q
-from django.db.models import Count, Avg, Min, Max
+from django.db.models import Count, Min, Max
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import Http404, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
@@ -1571,7 +1571,7 @@ class ApiOmsAreaMsAccessSync(APIView):
             # Get deleted and annulated to data
         for b in Burial.objects.filter(q).select_related(
                 'cemetery', 'area', 'deadman', 'applicant', 'applicant__address',
-            ).order_by('dt_modified').iterator():
+            ).order_by('dt_modified').iterator(chunk_size=100):
 
             burial_comments = ""
             for comment in BurialComment.objects.filter(burial=b).order_by('dt_created'):

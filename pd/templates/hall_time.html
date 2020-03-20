@@ -78,7 +78,7 @@
             {% for tt in hall.timetable %}
                 <tr align="center" {% if tt.past %} style="background-color:#e0e0d1"{% elif not tt.free %} style="background-color:#b8b894"{% endif %}>
                     <td {% if forloop.last %} style="border-bottom:none;"{% endif %}>
-                        {% if tt.editable and tt.free %}<b>{% endif %}{{ tt.dt_start_str }} &mdash; {{ tt.dt_end_str }}{% if tt.editable and tt.free %}</b>{% endif %}
+                        {% if tt.editable_or_deletable and tt.free %}<b>{% endif %}{{ tt.dt_start_str }} &mdash; {{ tt.dt_end_str }}{% if tt.editable_or_deletable and tt.free %}</b>{% endif %}
                     </td>
                 </tr>
             {% endfor %}
