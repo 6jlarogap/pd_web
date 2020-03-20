@@ -1325,8 +1325,8 @@ class BurialCommitForm(BurialForm):
                     msg = _("Плановая дата захоронения не может быть раньше текущей даты")
                 raise forms.ValidationError(msg)
 
-        if cemetery:
-            if cemetery and cemetery.places_algo == Cemetery.PLACE_CEM_YEAR:
+        if is_ugh and cemetery and cemetery.places_algo == Cemetery.PLACE_CEM_YEAR and \
+           not self.archived_burial and not self.instance.is_transferred():
                 place_number = self.cleaned_data.get('place_number')
                 if place_number:
                     if not re.match(r'^\d{4}.+',place_number) or int(place_number[:4]) > today.year or not int(place_number[:4]):
