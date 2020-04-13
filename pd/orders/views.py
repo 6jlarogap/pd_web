@@ -3110,9 +3110,15 @@ class ProductXlsxreportView(LORURequiredMixin, FormView):
                     order__dt__gte=date_from,
                     order__dt__lt=date_to_1
                 ).order_by('product__name'). \
-                values('product__name',). \
+                values(
+                    'product__name',
+                    'product__measure',
+                    'product__sku',
+                ). \
                 annotate(
-                    sum=Sum(F('cost')*F('quantity')*(100-F('discount')))/100):
+                    sum=Sum(F('cost') * F('quantity') * (100 - F('discount')) / 100),
+                    count=Sum(F('quantity'))
+                ):
             if first:
                 book = Workbook()
                 sheet = book.active
