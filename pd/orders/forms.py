@@ -389,3 +389,14 @@ class OrderBurialForm(forms.ModelForm):
                     raise forms.ValidationError(_('Нет такого захоронения'))
         return cd
 
+
+class ProductXlsxreportForm(forms.Form):
+
+    date_from = forms.DateField(required=True, label=_("С"))
+    date_to = forms.DateField(required=True, label=_("по"))
+
+    def clean(self):
+        if self.cleaned_data.get('date_from') >  self.cleaned_data.get('date_to'):
+            raise forms.ValidationError(_("Начальная дата больше конечной"))
+        return self.cleaned_data
+            

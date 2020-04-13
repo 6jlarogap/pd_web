@@ -3,14 +3,18 @@ import decimal
 import json
 import random
 import string
-import re
+import re, os, tempfile
 import hashlib
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
 
 from django.conf import settings
 from django.contrib import messages
 from django.urls import reverse
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
+from django.db.models import F
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
@@ -18,7 +22,7 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.views.generic.base import View
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic.edit import CreateView, UpdateView, FormView
 from django.views.generic.list import ListView
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
@@ -38,7 +42,7 @@ from users.models import CustomerProfile, Org, ProfileLORU, Store, OrgWebPay, \
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm, \
-                         OrderServicesForm
+                         OrderServicesForm, ProductXlsxreportForm
 from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
                           Route, ResultFile, OrderWebPay
@@ -3061,3 +3065,71 @@ class ApiLoruOrdersDetailView(
         )
 
 api_loru_orders_detail = ApiLoruOrdersDetailView.as_view()
+
+class ProductXlsxreportView(LORURequiredMixin, FormView):
+
+    template_name = 'product_xlsxreport.html'
+    form_class = ProductXlsxreportForm
+
+    def get_form(self, *args, **kwargs):
+        form = super(ProductXlsxreportView, self).get_form(*args, **kwargs)
+        today = datetime.date.today()
+        date_from = datetime.date(today.year, today.month, 1)
+        form.initial['date_from'] = date_from
+        form.initial['date_to'] = today
+        return form
+
+    def form_valid(self, form, *args, **kwargs):
+
+        org = self.request.user.profile.org
+        org_pk = org.pk
+        media_path = os.path.join('tmp', 'products', 'reports',
+            '%s' % org_pk,
+        )
+        export_path = os.path.join(settings.MEDIA_ROOT, media_path)
+        try:
+            os.makedirs(export_path)
+        except OSError:
+            pass
+        temp_dir = tempfile.mkdtemp(dir=export_path)
+        temp_dir_name = os.path.basename(temp_dir)
+        d = datetime.datetime.now()
+        date_from = form.cleaned_data['date_from']
+        date_from_str = datetime.datetime.strftime(date_from, '%Y%m%d')
+        date_to = form.cleaned_data['date_to']
+        date_to_str = datetime.datetime.strftime(date_to, '%Y%m%d')
+        date_to_1 = date_to + datetime.timedelta(days=1)
+        fname_basename = 'report-from-%s-to-%s.xlsx' % (date_from_str, date_to_str,)
+        fname = os.path.join(temp_dir, fname_basename)
+        
+        got_data = False
+        first = True
+        for p in OrderItem.objects.filter(
+                    order__loru=org,
+                    product__stockable=True,
+                    order__dt__gte=date_from,
+                    order__dt__lt=date_to_1
+                ).order_by('product__name'). \
+                values('product__name',). \
+                annotate(
+                    sum=Sum(F('cost')*F('quantity')*(100-F('discount')))/100):
+            if first:
+                book = Workbook()
+                sheet = book.active
+                sheet.title = 'Отчет'
+                sheet.cell(row=1, column=1).value = 'Отчет о розничных продажах'
+                first = False
+            got_data = True
+        
+        if got_data:
+            book.save(fname)
+            return redirect(os.path.join(settings.MEDIA_URL, media_path, temp_dir_name, fname_basename))
+        else:
+            try:
+                os.rmdir(temp_dir)
+            except OSError:
+                pass
+            messages.info(self.request, _('Не найдены данные для отчета за указанный интервал дат'))
+            return self.get(self.request, *self.args, **self.kwargs)
+
+product_xlsxreport = ProductXlsxreportView.as_view()
