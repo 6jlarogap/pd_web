@@ -3080,7 +3080,7 @@ class ProductXlsxreportView(LORURequiredMixin, FormView):
         return form
 
     def thousand_str(self, num):
-        return  f"{num:,}".replace(',', ' ')
+        return  num # f"{num:,}".replace(',', ' ')
 
     def form_valid(self, form, *args, **kwargs):
 
