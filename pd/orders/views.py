@@ -3169,12 +3169,12 @@ class ProductXlsxreportView(LORURequiredMixin, FormView):
                         sheet.cell(row, col).border = Border(top=thick, left=thin, right=thick, bottom=thick)
                     else:
                         sheet.cell(row, col).border = Border(top=thick, left=thin, right=thin, bottom=thick)
-                sheet.column_dimensions['A'].width =  8
-                sheet.column_dimensions['B'].width = 15
-                sheet.column_dimensions['C'].width = 45
-                sheet.column_dimensions['D'].width = 10
-                sheet.column_dimensions['E'].width = 12
-                sheet.column_dimensions['F'].width = 17
+                sheet.column_dimensions['A'].width =  7
+                sheet.column_dimensions['B'].width = 10
+                sheet.column_dimensions['C'].width = 35
+                sheet.column_dimensions['D'].width = 7
+                sheet.column_dimensions['E'].width = 10
+                sheet.column_dimensions['F'].width = 14
                 first = False
             row += 1
             npp += 1
@@ -3188,7 +3188,7 @@ class ProductXlsxreportView(LORURequiredMixin, FormView):
             cell_sku.alignment = align_left
 
             cell_name = sheet.cell(row, 3)
-            cell_name.value = str(p['product__name'])
+            cell_name.value = p['product__name']
             cell_name.alignment = align_left
 
             v_count = p['count']
@@ -3223,7 +3223,7 @@ class ProductXlsxreportView(LORURequiredMixin, FormView):
 
             row_height = sheet.row_dimensions[row].height = 15
             col_width = sheet.column_dimensions['C'].width
-            mul = math.ceil(len(str(cell_name.value)) / col_width)
+            mul = math.ceil(1.1 * len(str(cell_name.value)) / col_width)
             if mul > 1:
                 sheet.row_dimensions[row].height = int(row_height * mul)
         
@@ -3251,7 +3251,7 @@ class ProductXlsxreportView(LORURequiredMixin, FormView):
             roubles = pytils.numeral.in_words(int(total))
             roubles = roubles[0].upper() + roubles[1:]
             propis.value = '%s руб. %s коп.' % (roubles, kopecks)
-            propis.font = Font(name='Arial', b=True, size=11)
+            propis.font = Font(name='Arial', b=True, size=10)
 
             row += 1
             for c in range(1, 7):
