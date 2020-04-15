@@ -3120,7 +3120,7 @@ class ProductXlsxreportView(LORURequiredMixin, FormView):
                     'product__sku',
                 ). \
                 annotate(
-                    sum=Sum(F('cost') * F('quantity') * (100 - F('discount')) / 100),
+                    sum=Sum(F('cost') * F('quantity')) / 100),
                     count=Sum(F('quantity'))
                 )
         qs_count = qs.count()
