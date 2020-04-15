@@ -254,6 +254,7 @@ class Order(GetLogsMixin, BaseModel):
     archived = models.BooleanField(_('Архивирован'), editable=False, default=False)
     cost = models.DecimalField(_("Цена"), max_digits=20, decimal_places=2, editable=False)
     dt = models.DateField(_("Дата заказа"))
+    dt_paid = models.DateTimeField(_("Дата/время оплаты"), null=True)
     burial = models.ForeignKey(Burial, related_name='burial_orders', editable=False, null=True, on_delete=models.CASCADE)
 
     customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_("Место захоронения"),
