@@ -21,6 +21,8 @@ urlpatterns = [
     url(r'^order/(?P<pk>\d+)/annulate/$', views.order_annulate, {'referer': 'edit'}, name='order_annulate'),
     url(r'^order/(?P<pk>\d+)/annulate_from_list/$', views.order_annulate, {'referer': 'list'}, name='order_annulate_from_list'),
 
+    url(r'^product/xlsxreport/$', views.product_xlsxreport, name='product_xlsxreport'),
+
     url(r'^api/order/(?P<what>paid|advanced)/(?P<pk>\d+)/status/?$', views.api_order_status, name='api_order_status'),
 
     url(r'^api/loru/product_places/?$', views.api_loru_product_places, name='api_loru_product_places'),
