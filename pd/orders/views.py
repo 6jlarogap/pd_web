@@ -3138,11 +3138,11 @@ class ProductXlsxreportView(LORURequiredMixin, FormView):
                 sheet = book.active
                 sheet.title = 'Отчет'
                 if date_from == date_to:
-                    title_end = 'за %s' % datetime.datetime.strftime(date_from, '%m.%d.%Y')
+                    title_end = 'за %s' % datetime.datetime.strftime(date_from, '%d.%m.%Y')
                 else:
                     title_end = 'с %s по %s' % (
-                        datetime.datetime.strftime(date_from, '%m.%d.%Y'),
-                        datetime.datetime.strftime(date_to, '%m.%d.%Y'),
+                        datetime.datetime.strftime(date_from, '%d.%m.%Y'),
+                        datetime.datetime.strftime(date_to, '%d.%m.%Y'),
                     )
                 title = sheet.cell(row, 1)
                 title.value = 'Отчет о розничных продажах %s' % title_end
