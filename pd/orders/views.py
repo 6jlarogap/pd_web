@@ -888,8 +888,10 @@ class ApiOrderStatus(APIView):
             if o.is_paid():
                 o.status = Order.STATUS_POSTED
                 msg = _('Заказ: отмена получения оплаты')
+                o.dt_paid = None
             else:
                 o.status = Order.STATUS_PAID
+                o.dt_paid = datetime.datetime.now()
                 msg = _('Заказ: оплачен')
             o.save()
             write_log(request, o, msg)
@@ -3112,16 +3114,16 @@ class ProductXlsxreportView(LORURequiredMixin, FormView):
         qs = OrderItem.objects.filter(
                     order__loru=org,
                     order__annulated=False,
-                    order__dt__gte=date_from,
-                    order__dt__lt=date_to_1
-                ).order_by('product__name'). \
+                    order__dt_paid__gte=date_from,
+                    order__dt_paid__lt=date_to_1
+                ).order_by('product__name').distinct(). \
                 values(
                     'product__name',
                     'product__measure',
                     'product__sku',
                 ). \
                 annotate(
-                    sum=Sum(F('cost') * F('quantity') * (100 - F('discount')) / 100),
+                    sum=Sum(F('cost') * F('quantity')),
                     count=Sum(F('quantity'))
                 )
         qs_count = qs.count()
