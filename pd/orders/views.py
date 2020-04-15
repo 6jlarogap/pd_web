@@ -3111,6 +3111,7 @@ class ProductXlsxreportView(LORURequiredMixin, FormView):
         total = 0
         qs = OrderItem.objects.filter(
                     order__loru=org,
+                    order__annulated=False,
                     order__dt__gte=date_from,
                     order__dt__lt=date_to_1
                 ).order_by('product__name'). \
