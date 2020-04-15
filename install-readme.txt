@@ -235,8 +235,12 @@ install-readme.txt, utf8 code page
         Применяется при доступе к видео youtube.
         Среди API пользователя должно быть включено Youtube API.
 
-    * Очистка "мусора"
-        на производственном серверею
+    * Очистка "мусора":
+        (на производственном сервере)
       В /etc/crontab такого типа строки:
+          # устаревшие сессии
           15 2 * * * www-data   cd /home/www-data/django/pd_prod/pd && ./manage.py clearsessions
+          # устаревшие иконки
           16 5 * * 0 www-data   rm -rf /home/www-data/django/MEDIA/pd_prod/thumbnails/*
+          # устаревшие временные файлы
+          28 2 * * * www-data   /home/www-data/django/pd_prod/contrib/clear-media-tmp.sh pd_prod

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block content %}
+
+<h3>{% trans "Отчет по товарам" %}</h3>
+<form action="" method="POST">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <fieldset>
+    {{ form.date_from.errors }}
+    <p>{{ form.date_from.label_tag }} {{ form.date_from }} <span class="helptext">{{ form.date_from.help_text }}</span></p>
+
+    {{ form.date_to.errors }}
+    <p>{{ form.date_to.label_tag }} {{ form.date_to }} <span class="helptext">{{ form.date_to.help_text }}</span></p>
+    </fieldset>
+
+    <p>
+        <input type="submit" name="submit" class="btn btn-primary" value="{% trans "получить" %}"/>
+    </p>
+</form>
+
+{% endblock %}
