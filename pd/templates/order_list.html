@@ -376,7 +376,7 @@
                                 <a href="{% url 'order_print' c.pk %}" class="btn" target="_blank">{% trans "счет-заказ" %}</a>
                                 <a href="{% url 'order_contract' c.pk %}" class="btn" target="_blank">{% trans "контракт" %}</a>
                                 {% if c.is_paid %}
-                                    <br />{% trans "Оплачен" %}
+                                    <br /><span style="color:maroon">{% trans "Оплачен" %}</span>
                                 {% endif %}
                                 <table class="table-void">
                                     <tr>
