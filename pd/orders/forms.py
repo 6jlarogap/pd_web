@@ -392,7 +392,7 @@ class OrderBurialForm(forms.ModelForm):
 
 class ProductXlsxreportForm(forms.Form):
 
-    date_from = forms.DateField(required=True, label=_("С"))
+    date_from = forms.DateField(required=True, label=_("c"))
     date_to = forms.DateField(required=True, label=_("по"))
 
     def clean(self):
