@@ -33,3 +33,5 @@ pytils
 raven
 rjsmin
 webassets
+
+openpyxl

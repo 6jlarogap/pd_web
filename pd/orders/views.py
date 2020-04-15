@@ -1,16 +1,21 @@
 import datetime
 import decimal
 import json
-import random
+import random, math
 import string
-import re
+import re, os, tempfile
 import hashlib
+import pytils
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, Border, Side
 
 from django.conf import settings
 from django.contrib import messages
 from django.urls import reverse
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
+from django.db.models import F
 from django.db.models.aggregates import Count, Sum
 from django.db.models.query_utils import Q
 from django.http import HttpResponse, Http404
@@ -18,7 +23,7 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.views.generic.base import View
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic.edit import CreateView, UpdateView, FormView
 from django.views.generic.list import ListView
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
@@ -38,7 +43,7 @@ from users.models import CustomerProfile, Org, ProfileLORU, Store, OrgWebPay, \
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm, \
-                         OrderServicesForm
+                         OrderServicesForm, ProductXlsxreportForm
 from orders.models import Product, Order, OrderItem, ProductCategory, \
                           Service, Measure, OrgService, OrgServicePrice, ServiceItem, OrderComment, \
                           Route, ResultFile, OrderWebPay
@@ -883,8 +888,10 @@ class ApiOrderStatus(APIView):
             if o.is_paid():
                 o.status = Order.STATUS_POSTED
                 msg = _('Заказ: отмена получения оплаты')
+                o.dt_paid = None
             else:
                 o.status = Order.STATUS_PAID
+                o.dt_paid = datetime.datetime.now()
                 msg = _('Заказ: оплачен')
             o.save()
             write_log(request, o, msg)
@@ -3061,3 +3068,206 @@ class ApiLoruOrdersDetailView(
         )
 
 api_loru_orders_detail = ApiLoruOrdersDetailView.as_view()
+
+class ProductXlsxreportView(LORURequiredMixin, FormView):
+
+    template_name = 'product_xlsxreport.html'
+    form_class = ProductXlsxreportForm
+
+    def get_form(self, *args, **kwargs):
+        form = super(ProductXlsxreportView, self).get_form(*args, **kwargs)
+        today = datetime.date.today()
+        form.initial['date_from'] = today
+        form.initial['date_to'] = today
+        return form
+
+    def thousand_str(self, num):
+        return '{:,}'.format(num).replace(',', ' ')
+
+    def form_valid(self, form, *args, **kwargs):
+
+        org = self.request.user.profile.org
+        org_pk = org.pk
+        media_path = os.path.join('tmp', 'products', 'reports',
+            '%s' % org_pk,
+        )
+        export_path = os.path.join(settings.MEDIA_ROOT, media_path)
+        try:
+            os.makedirs(export_path)
+        except OSError:
+            pass
+        temp_dir = tempfile.mkdtemp(dir=export_path)
+        temp_dir_name = os.path.basename(temp_dir)
+        d = datetime.datetime.now()
+        date_from = form.cleaned_data['date_from']
+        date_from_str = datetime.datetime.strftime(date_from, '%Y%m%d')
+        date_to = form.cleaned_data['date_to']
+        date_to_str = datetime.datetime.strftime(date_to, '%Y%m%d')
+        date_to_1 = date_to + datetime.timedelta(days=1)
+        fname_basename = 'report-from-%s-to-%s.xlsx' % (date_from_str, date_to_str,)
+        fname = os.path.join(temp_dir, fname_basename)
+        
+        first = True
+        row = 0
+        npp = 0
+        total = 0
+        qs = OrderItem.objects.filter(
+                    order__loru=org,
+                    order__annulated=False,
+                    order__dt_paid__gte=date_from,
+                    order__dt_paid__lt=date_to_1
+                ).order_by('product__name').distinct(). \
+                values(
+                    'product__name',
+                    'product__measure',
+                    'product__sku',
+                ). \
+                annotate(
+                    sum=Sum(F('cost') * F('quantity')),
+                    count=Sum(F('quantity'))
+                )
+        qs_count = qs.count()
+        for p in qs:
+            if first:
+                row = 2
+                thick = Side(border_style="thick")
+                thin = Side(border_style="thin")
+                align_right = Alignment(horizontal="right", vertical="center", indent=1)
+                align_left = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
+                book = Workbook()
+                sheet = book.active
+                sheet.title = 'Отчет'
+                if date_from == date_to:
+                    title_end = 'за %s' % datetime.datetime.strftime(date_from, '%d.%m.%Y')
+                else:
+                    title_end = 'с %s по %s' % (
+                        datetime.datetime.strftime(date_from, '%d.%m.%Y'),
+                        datetime.datetime.strftime(date_to, '%d.%m.%Y'),
+                    )
+                title = sheet.cell(row, 1)
+                title.value = 'Отчет о розничных продажах %s' % title_end
+                for c in range(1, 7):
+                    sheet.cell(row, c).border = Border(bottom=thick)
+                title.font  = Font(name='Arial', b=True, size=16)
+                row = 4
+                title = sheet.cell(row, 1)
+                title.value = 'Организация: %s' % org.name
+                title.font  = Font(b=True, size=14)
+                row = 6
+                rd = sheet.row_dimensions[row]
+                rd.height = 25
+                sheet.cell(row, 1).value = '№'
+                sheet.cell(row, 2).value = 'Артикул'
+                sheet.cell(row, 3).value = 'Товар'
+                sheet.merge_cells('D%s:E%s' % (row, row,))
+                top_left_cell = sheet['D%s' % row]
+                top_left_cell.value = 'Количество'
+                sheet.cell(row, 6).value = 'Цена'
+                for col in range(1,7):
+                    sheet.cell(row, col).alignment = Alignment(horizontal="center", vertical="center")
+                    sheet.cell(row, col).font  = Font(name='Arial', b=True, size=12)
+                    if col == 1:
+                        sheet.cell(row, col).border = Border(top=thick, left=thick, right=thin, bottom=thick)
+                    elif col == 6:
+                        sheet.cell(row, col).border = Border(top=thick, left=thin, right=thick, bottom=thick)
+                    else:
+                        sheet.cell(row, col).border = Border(top=thick, left=thin, right=thin, bottom=thick)
+                sheet.column_dimensions['A'].width =  7
+                sheet.column_dimensions['B'].width = 10
+                sheet.column_dimensions['C'].width = 35
+                sheet.column_dimensions['D'].width = 7
+                sheet.column_dimensions['E'].width = 10
+                sheet.column_dimensions['F'].width = 14
+                first = False
+            row += 1
+            npp += 1
+            cell_npp = sheet.cell(row, 1)
+            cell_npp.value = str(npp)
+            # Если здесь вставить align_right, то некоторые знаки здесь криво ???
+            cell_npp.alignment = Alignment(horizontal="right", vertical="center", wrap_text=True, indent=1)
+
+            cell_sku = sheet.cell(row, 2)
+            cell_sku.value = str(p['product__sku'])
+            cell_sku.alignment = align_left
+
+            cell_name = sheet.cell(row, 3)
+            cell_name.value = p['product__name']
+            cell_name.alignment = align_left
+
+            v_count = p['count']
+            if int(v_count) == v_count:
+                v_count = int(v_count)
+            cell_count = sheet.cell(row, 4)
+            cell_count.value = str(int(v_count))
+            cell_count.alignment = align_right
+
+            cell_measure = sheet.cell(row, 5)
+            cell_measure.value = p['product__measure']
+            cell_measure.alignment = align_left
+
+            v_sum = round(p['sum'], 2)
+            total += v_sum
+            cell_sum = sheet.cell(row, 6)
+            cell_sum.value = self.thousand_str(v_sum)
+            cell_sum.alignment = align_right
+
+            if npp == qs_count:
+                border_bottom = thick
+            else:
+                border_bottom = thin
+            for col in range(1, 7):
+                if col == 1:
+                    sheet.cell(row, col).border = Border(left=thick, right=thin, bottom=border_bottom)
+                elif col == 6:
+                    sheet.cell(row, col).border = Border(left=thin, right=thick, bottom=border_bottom)
+                else:
+                    sheet.cell(row, col).border = Border(left=thin, right=thin, bottom=border_bottom)
+                sheet.cell(row, col).font = Font(name='Arial', size=10)
+
+            row_height = sheet.row_dimensions[row].height = 15
+            col_width = sheet.column_dimensions['C'].width
+            mul = math.ceil(1.1 * len(str(cell_name.value)) / col_width)
+            if mul > 1:
+                sheet.row_dimensions[row].height = int(row_height * mul)
+        
+        if row:
+            row += 1
+            itogo = sheet.cell(row, 5)
+            itogo.value = 'Итого:'
+            itogo.font = Font(name='Arial', b=True, size=12)
+            itogo.alignment = align_right
+
+            itogo_sum = sheet.cell(row, 6)
+            itogo_sum.value = self.thousand_str(total)
+            itogo_sum.font = Font(name='Arial', b=True, size=10)
+            itogo_sum.alignment = align_right
+
+            row += 1
+            v_n = sheet.cell(row, 1)
+            v_n.value = 'Всего наименований %s, на сумму %s руб.' % (
+                npp, itogo_sum.value
+            )
+            row += 1
+            sheet.row_dimensions[row].height = 20
+            propis = sheet.cell(row, 1)
+            kopecks = '%02d' % int((total - int(total)) * 100)
+            roubles = pytils.numeral.in_words(int(total))
+            roubles = roubles[0].upper() + roubles[1:]
+            propis.value = '%s руб. %s коп.' % (roubles, kopecks)
+            propis.font = Font(name='Arial', b=True, size=10)
+
+            row += 1
+            for c in range(1, 7):
+                sheet.cell(row, c).border = Border(bottom=thick)
+
+            book.save(fname)
+            return redirect(os.path.join(settings.MEDIA_URL, media_path, temp_dir_name, fname_basename))
+        else:
+            try:
+                os.rmdir(temp_dir)
+            except OSError:
+                pass
+            messages.info(self.request, _('Не найдены данные для отчета за указанный интервал дат'))
+            return self.get(self.request, *self.args, **self.kwargs)
+
+product_xlsxreport = ProductXlsxreportView.as_view()

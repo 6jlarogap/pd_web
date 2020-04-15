@@ -192,6 +192,8 @@
                                             <li><a href="{{ global_context_FRONT_END_URL }}orders">{% trans "Архив заказов" %}</a></li>
                                             <li><a href="{{ global_context_FRONT_END_URL }}loru/own-orders/add">{% trans "Заказ похорон" %}</a></li>
                                             <li class="divider"></li>
+                                            <li><a href="{% url 'product_xlsxreport' %}">{% trans "Отчет о продажах" %}</a></li>
+                                            <li class="divider"></li>
                                         {% endif %}
                                         {% if user.profile.is_supervisor %}
                                             <li><a href="{% url 'registrants' %}">{% trans "Регистрация" %}</a></li>
