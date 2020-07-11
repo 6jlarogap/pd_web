@@ -574,9 +574,6 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
             result += _(', %s') % cemetery_address
         return result
 
-    def get_caretaker(self):
-        return self.caretaker or self.area.caretaker or self.cemetery.caretaker or None
-
     @classmethod
     def check_invent_place(cls, request, pk):
 
