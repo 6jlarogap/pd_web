@@ -2598,7 +2598,7 @@ class OrderItemCheckMixin(object):
             discount = decimal.Decimal(item.get('discount') or 0)
         except decimal.InvalidOperation:
             raise ServiceException(msg)
-        if discount < 0 or discount > 100:
+        if discount < 0 or discount >= 100:
             raise ServiceException(msg)
 
         return product, quantity, discount
