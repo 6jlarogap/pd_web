@@ -1356,7 +1356,10 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         if new_place:
             place.place_length = self.place_length
             place.place_width = self.place_width
-        place.save(new_place_for_archive=self.is_archive())
+        try:
+            place.save(new_place_for_archive=self.is_archive())
+        except IntegrityError:
+            return None
         if new_place:
             graves_count = self.desired_graves_count or 1
             # fool-proof, чтоб не пропустили могилу с номером,

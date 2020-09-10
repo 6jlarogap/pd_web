@@ -388,12 +388,12 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                 if b.is_ugh():
                     return redirect(reverse('edit_burial', args=[b.pk]) + '?action=complete')
                 else:
-                    b.close(request=request)
-                    messages.success(
-                        request,
-                        _("<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
-                            view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
-                    ))
+                    if b.close(request=request):
+                        messages.success(
+                            request,
+                            _("<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
+                                view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
+                        ))
             else:
                 return self.get(request, *args, **kwargs)
 
@@ -1083,20 +1083,20 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
 
             if action == 'complete' and self.request.user.profile.is_ugh() and b.can_finish() and b.is_ugh():
                 b.changed_by = self.request.user
-                b.close(request=self.request)
-                if form.responsible_form.cleaned_data.get('take_from') != form.responsible_form.WHERE_FROM_PLACE:
-                    form.compare_responsible_info(
-                        request=self.request,
-                        old_responsible_info=old_responsible_info,
-                        burial=b,
-                        is_new_burial=not is_existing_burial,
-                    )
-                messages.success(
-                    self.request,
-                    _("<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
-                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
-                ))
-                redirect_to_view = True
+                if b.close(request=self.request):
+                    if form.responsible_form.cleaned_data.get('take_from') != form.responsible_form.WHERE_FROM_PLACE:
+                        form.compare_responsible_info(
+                            request=self.request,
+                            old_responsible_info=old_responsible_info,
+                            burial=b,
+                            is_new_burial=not is_existing_burial,
+                        )
+                    messages.success(
+                        self.request,
+                        _("<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
+                            view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
+                    ))
+                    redirect_to_view = True
 
             if old_status != b.status or old_annulated != b.annulated:
                 b.save()
@@ -1119,7 +1119,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                     else:
                         redirect_to_view = True
 
-            if redirect_to_view:
+            if redirect_to_view and b.pk:
                 return redirect(reverse('view_burial', args=[b.pk]) + order_parm)
             else:
                 return redirect('dashboard')
