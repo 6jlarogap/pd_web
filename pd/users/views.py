@@ -53,7 +53,7 @@ from logs.models import LogOperation, Log, write_log, LoginLog
 from users.forms import RegisterForm, LoruFormset, BankAccountFormset, OrgForm, \
                         OrgLogForm, LoginLogForm, OrgBurialStatsForm, SupportForm, \
                         TestCaptcha2Form, \
-                        LoruOrdersStatsForm, ProfileDataForm, OmsOperStats, \
+                        LoruOrdersStatsForm, ProfileDataForm, OperStats, \
                         VideoSearchForm, ThanksForm, OrgLogOrgForm
 from users.models import Profile, Org, RegisterProfile, ProfileLORU, CustomerProfile, Store, \
                          get_mail_footer, is_cabinet_user, is_loru_user, is_ugh_user, \
@@ -122,6 +122,20 @@ class UghOrLoruRequiredMixin:
         if is_ugh_user(request.user) or is_loru_user(request.user):
             return View.dispatch(self, request, *args, **kwargs)
         return redirect('/')
+
+class LORURequiredMixin:
+    def is_loru(self, request):
+        if not request.user.is_authenticated:
+            return False
+        if not getattr(self.request.user, 'profile', None):
+            return False
+        if not self.request.user.profile.is_loru():
+            return False
+        return True
+
+    def dispatch(self, request, *args, **kwargs):
+        self.request = request
+        return self.is_loru(request) and View.dispatch(self, request, *args, **kwargs) or redirect('/')
 
 class CheckRecaptcha2Mixin(object):
 
@@ -1807,8 +1821,22 @@ class LoginLogView(SupervisorRequiredMixin, PaginateListView):
 
 login_log = LoginLogView.as_view()
 
-class OmsOperStatsView(UGHRequiredMixin, ReportDatesMixin, PaginateListView):
-    template_name = 'oper_stats.html'
+class OperStatsMixin(object):
+
+    def get_form(self):
+        data = self.request.GET
+        form = OperStats(data=data or None)
+        if data:
+            form.fields['date_from'].required = True
+            form.fields['date_to'].required = True
+        else:
+            date_from, date_to = self.get_dates()
+            form.initial['date_from'] = date_from
+            form.initial['date_to'] = date_to
+        return form
+
+class OmsOperStatsView(UGHRequiredMixin, OperStatsMixin, ReportDatesMixin, PaginateListView):
+    template_name = 'oms_oper_stats.html'
     context_object_name = 'dates'
 
     def dispatch(self, request, *args, **kwargs):
@@ -1828,9 +1856,11 @@ class OmsOperStatsView(UGHRequiredMixin, ReportDatesMixin, PaginateListView):
         d_start = form.cleaned_data['date_from']
         d_end = form.cleaned_data['date_to']
         users = []
-        for profile in Profile.objects.filter(org=self.request.user.profile.org):
-            if profile.user:
-                users.append(profile.user)
+        for profile in Profile.objects.filter(
+                org=self.request.user.profile.org,
+                user__isnull=False,
+            ):
+            users.append(profile.user)
         q_users = Q(user__in=users)
         q_dt = Q(
             dt__gte=d_start,
@@ -1974,19 +2004,134 @@ class OmsOperStatsView(UGHRequiredMixin, ReportDatesMixin, PaginateListView):
             context.update(self.context_extra)
         return context
 
-    def get_form(self):
-        data = self.request.GET
-        form = OmsOperStats(data=data or None)
-        if data:
-            form.fields['date_from'].required = True
-            form.fields['date_to'].required = True
-        else:
-            date_from, date_to = self.get_dates()
-            form.initial['date_from'] = date_from
-            form.initial['date_to'] = date_to
-        return form
-
 oms_oper_stats = OmsOperStatsView.as_view()
+
+class LoruOperStatsView(LORURequiredMixin, OperStatsMixin, ReportDatesMixin, PaginateListView):
+    template_name = 'loru_oper_stats.html'
+    context_object_name = 'dates'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not settings.SHOW_OPER_STATS:
+            raise Http404
+        return super(LoruOperStatsView, self).dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        self.context_extra = None
+        form = self.get_form()
+        if form.data and form.is_valid():
+            d_start = form.cleaned_data['date_from']
+            d_end = form.cleaned_data['date_to']
+        else:
+            return []
+
+        d_start = form.cleaned_data['date_from']
+        d_end = form.cleaned_data['date_to']
+        users = []
+        for profile in Profile.objects.filter(
+                org=self.request.user.profile.org,
+                user__isnull=False,
+            ):
+            users.append(profile.user)
+        q_users = Q(user__in=users)
+        q_dt = Q(
+            dt__gte=d_start,
+            dt__lt=d_end + datetime.timedelta(days=1)
+        )
+        values = lambda qs: \
+            QuerySetStats(qs, date_field='dt', aggregate=Count('id')). \
+            time_series(d_start, d_end, interval='days')
+
+        # Раскидаем по таблицам для пользователей
+        parms = [
+            dict(
+                name='orders_created',
+                qs=Q(operation=LogOperation.ORDER_CREATED),
+                caption=_("Созданные заказы"),
+            ),
+        ]
+        mark = {}
+        #   parm:
+        #       {
+        #           total:
+        #           days:  [ .... ]
+        #           totals:  [ .... ]
+        #           users: [
+        #               {
+        #                   user: user
+        #                   total: total
+        #                   days: [ num1, num2 ... ]
+        #               }
+        #       ]
+        #       }
+        #
+        for parm in parms:
+            mark[parm['name']] = {}
+            qs_org = Log.objects.filter(parm['qs'] & q_users)
+            mark[parm['name']]['total'] = qs_org.filter(q_dt).count()
+            mark[parm['name']]['values'] = values(qs_org)
+            mark[parm['name']]['caption'] = parm['caption']
+            if not mark[parm['name']]['total']:
+                continue
+
+            mark[parm['name']]['users'] = []
+            # Только дни, в которых были результаты
+            days = []
+            day_totals = []
+            dt = d_start
+            while dt <= d_end:
+                qs_day = Q(
+                    dt__gte=dt,
+                    dt__lt=dt + datetime.timedelta(days=1)
+                )
+                total = Log.objects. \
+                        filter(parm['qs'] & qs_day & q_users).count()
+                if total:
+                    days.append(dt)
+                    day_totals.append(total)
+                dt = dt + datetime.timedelta(days=1)
+            mark[parm['name']]['days'] = days
+            mark[parm['name']]['day_totals'] = day_totals
+            mark_users = []
+            for user in users:
+                qs_dt = q_dt
+                qs_user = Q(user=user)
+                total = Log.objects. \
+                            filter(parm['qs'] & qs_dt & qs_user).count()
+                if not total:
+                    continue
+                mark_user = dict(
+                    user=user,
+                    total=total,
+                    )
+                mark_user['days'] = []
+                mark_user['days_users'] = []
+                for dt in days:
+                    qs_dt = Q(
+                        dt__gte=dt,
+                        dt__lt=dt + datetime.timedelta(days=1)
+                    )
+                    count = Log.objects. \
+                                filter(parm['qs'] & qs_dt & qs_user).count()
+                    mark_user['days'].append(count)
+                mark_users.append(mark_user)
+            mark_users.sort(key=lambda x: x['total'], reverse=True)
+            mark[parm['name']]['users'] = mark_users
+
+        self.context_extra = dict(
+            mark=mark,
+            parms=parms,
+        )
+
+        dates = SeriesTable(*[ mark[parm['name']]['values'] for parm in parms ])
+        return dates
+
+    def get_context_data(self, **kwargs):
+        context = super(LoruOperStatsView, self).get_context_data(**kwargs)
+        if self.context_extra:
+            context.update(self.context_extra)
+        return context
+
+loru_oper_stats = LoruOperStatsView.as_view()
 
 class RegisterMixin(object):
     

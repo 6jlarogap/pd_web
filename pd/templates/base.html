@@ -155,6 +155,9 @@
                                             {% if user.profile.is_ugh and global_context_SHOW_OPER_STATS %}
                                                 <li><a href="{% url 'oms_oper_stats' %}">{% trans "Статистика операций" %}</a></li>
                                             {% endif %}
+                                            {% if user.profile.is_loru and global_context_SHOW_OPER_STATS %}
+                                                <li><a href="{% url 'loru_oper_stats' %}">{% trans "Статистика операций" %}</a></li>
+                                            {% endif %}
                                             <li class="divider"></li>
                                         {% endif %}
                                         {% if user.profile.is_ugh %}

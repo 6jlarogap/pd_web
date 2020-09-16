@@ -40,6 +40,7 @@ from users.models import CustomerProfile, Org, ProfileLORU, Store, OrgWebPay, \
                          is_trade_user, is_supervisor, is_cabinet_user, \
                          PermitIfTrade, PermitIfCabinet, PermitIfTradeOrCabinet, \
                          get_profile
+from users.views import LORURequiredMixin
 from billing.models import Rate
 from orders.forms import ProductForm, OrderForm, OrderItemFormset, CoffinForm, CatafalqueForm, \
                          AddInfoForm, OrderSearchForm, OrderBurialForm, \
@@ -87,20 +88,6 @@ class ProductCategoryQsMixin(object):
             return Q(productcategory__pk__in=category_ids)
         else:
             return Q()
-
-class LORURequiredMixin:
-    def is_loru(self, request):
-        if not request.user.is_authenticated:
-            return False
-        if not getattr(self.request.user, 'profile', None):
-            return False
-        if not self.request.user.profile.is_loru():
-            return False
-        return True
-
-    def dispatch(self, request, *args, **kwargs):
-        self.request = request
-        return self.is_loru(request) and View.dispatch(self, request, *args, **kwargs) or redirect('/')
 
 class ProductList(LORURequiredMixin, ListView):
     template_name = 'product_list.html'

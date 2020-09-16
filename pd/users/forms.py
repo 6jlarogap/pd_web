@@ -593,7 +593,7 @@ class OrgLogForm(FromToPageForm):
 LoginLogForm = FromToPageForm
 
 # В этой форме во view заменяем required для дат
-OmsOperStats = FromToPageForm
+OperStats = FromToPageForm
 
 class RegisterForm(forms.ModelForm):
 
