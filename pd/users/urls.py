@@ -69,6 +69,7 @@ urlpatterns = [
     url(r'^oms_burialstats/', views.oms_burial_stats, name='oms_burial_stats'),
     url(r'^oms_currentstats/', views.oms_current_stats, name='oms_current_stats'),
     url(r'^oms_operstats/', views.oms_oper_stats, name='oms_oper_stats'),
+    url(r'^loru_operstats/', views.loru_oper_stats, name='loru_oper_stats'),
     url(r'^loru_currentstats/', views.loru_current_stats, name='loru_current_stats'),
     url(r'^loru_orderstats/', views.loru_order_stats, name='loru_order_stats'),
         
