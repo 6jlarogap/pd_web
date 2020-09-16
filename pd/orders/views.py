@@ -31,7 +31,7 @@ from django.shortcuts import get_object_or_404
 
 from LatLon23 import LatLon, Latitude, Longitude
 
-from logs.models import write_log
+from logs.models import write_log, LogOperation
 from geo.models import Location
 from burials.forms import AddOrgForm, AddAgentForm, AddDoverForm, AddDocTypeForm
 from burials.models import Burial, Place, Area, Cemetery, OrderPlace
@@ -451,7 +451,7 @@ class OrderCreate(LORURequiredMixin, RequestToFormMixin, CreateView):
         for p in Product.objects.filter(loru=self.request.user.profile.org, default=True, is_archived=False):
             OrderItem.objects.create(order=self.object, product=p)
 
-        write_log(self.request, self.object, _('Заказ сохранен'))
+        write_log(self.request, self.object, operation=LogOperation.ORDER_CREATED)
         msg = _("<a href='%(order_edit)s'>Заказ %(pk)s</a> сохранен") % dict(
             order_edit=reverse('order_edit', args=[self.object.pk]),
             pk=self.object.pk,
@@ -1361,6 +1361,7 @@ class ApiOptPlacesOrders(OptOrderMixin, APIView):
                             raise ServiceException(_('В списке товаров таковые от разных поставщиков'))
                     self.put_item(order, product, p['count'], p.get('comment'))
                     data['id'] = order.pk
+                    write_log(self.request, order, operation=LogOperation.ORDER_CREATED)
                 except Product.DoesNotExist:
                     raise ServiceException(_('Не найден товар/услуга Id=%s') % p['id'])
         except ServiceException as excpt:
@@ -2784,7 +2785,7 @@ class ApiLoruOrdersView(
         except ServiceException as excpt:
             transaction.set_rollback(True)
             return Response(data=dict(status='error', message=excpt.args[0]), status=400)
-        write_log(request, order, _('Заказ создан'))
+        write_log(request, order, operation=LogOperation.ORDER_CREATED)
         data = LoruOrderSerializer(order, context=dict(request=request)).data
         if settings.DEBUG and debug_text:
             data.update(dict(debugMessage=debug_text))
