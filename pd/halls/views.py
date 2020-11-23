@@ -273,6 +273,9 @@ class HallsTimeTableMixin(object):
                     creator=tt.creator,
                     html_name_prefix=self.make_html_name_prefix(hall, tt.dt_start, tt.dt_end),
                     dt_created=tt.dt_created,
+                    kind_burn=tt.kind == HallTimeTable.BOOK_BURN,
+                    kind_move=tt.kind == HallTimeTable.BOOK_MOVE,
+                    kind_display = tt.get_kind_display(),
                 )
                 if tt.dt_end <= dt_border:
                     tt_item.update(
@@ -374,7 +377,8 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
     #
     S = dict(
         FREE="free",
-        BOOK="book",
+        BOOK_BURN= HallTimeTable.BOOK_BURN,
+        BOOK_MOVE= HallTimeTable.BOOK_MOVE,
         DETAILS="details",
         DETAILS_OLD="details_old",
     )
@@ -504,8 +508,23 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
         if not date:
             raise Http404
 
-        booked_s = [p[0:-len(S['BOOK'])-2] for p in request.POST if p.endswith(S['BOOK'])]
-        for tt_item in booked_s:
+        booked_all = [
+            p[0:-len(S['BOOK_BURN'])-2] for p in request.POST \
+                if p.endswith(S['BOOK_BURN']) or p.endswith(S['BOOK_MOVE'])
+        ]
+        booked_with_kind = []
+        booked_with_kind.extend([
+            (p[0:-len(S['BOOK_BURN'])-2], S['BOOK_BURN']) for p in request.POST \
+                if p.endswith(S['BOOK_BURN'])
+        ])
+        booked_with_kind.extend([
+            (p[0:-len(S['BOOK_MOVE'])-2], S['BOOK_MOVE']) for p in request.POST \
+                if p.endswith(S['BOOK_MOVE'])
+        ])
+
+        for tt_item_kind in booked_with_kind:
+            tt_item = tt_item_kind[0]
+            kind = tt_item_kind[1]
             try:
                 hall_pk, t_start, t_end = tt_item.split('__')
                 hall = Hall.objects.get(pk=hall_pk)
@@ -520,6 +539,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
                 defaults=dict(
                     creator=request.user,
                     details=details,
+                    kind=kind,
             ))
             s_start, s_end = self.hhmms_from_dts(dt_start, dt_end)
             if created_:
@@ -557,7 +577,7 @@ class HallsTimeTableView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
 
         details_s = [p[0:-len(S['DETAILS'])-2] for p in request.POST if p.endswith(S['DETAILS'])]
         for tt_item in details_s:
-            if tt_item in free_s or tt_item in booked_s:
+            if tt_item in free_s or tt_item in booked_all:
                 continue
             details_old = request.POST.get("%s__%s" % (tt_item, S['DETAILS_OLD'],))
             details_new = request.POST.get("%s__%s" % (tt_item, S['DETAILS'],))

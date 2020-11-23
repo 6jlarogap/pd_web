@@ -177,12 +177,25 @@ class HallWeekly(models.Model):
         return result
 
 class HallTimeTable(models.Model):
+
+    # Из зала прощания может быть или сразу кремация,
+    # или могут вывозить для захоронения
+    #
+    BOOK_BURN = 'burn'
+    BOOK_MOVE = 'move'
+
+    BOOK_CHOICES = (
+        (BOOK_BURN, _('Кремация')),
+        (BOOK_MOVE, _('Вывоз на захоронение')),
+    )
+
     hall = models.ForeignKey(Hall, verbose_name=_("Зал"), on_delete=models.CASCADE)
     dt_start = models.DateTimeField(_("Время начала"))
     dt_end = models.DateTimeField(_("Время окончания"))
     creator = models.ForeignKey('auth.User', verbose_name=_("Сотрудник"), on_delete=models.CASCADE)
     details =  models.TextField(_("Примечания"), blank=True)
     dt_created = models.DateTimeField(_("Дата/время создания"), auto_now_add=True)
+    kind = models.CharField(_("Тип"), max_length=10, choices=BOOK_CHOICES, default=BOOK_BURN)
 
     class Meta:
         verbose_name = _('Назначенное время в зале')
