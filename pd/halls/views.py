@@ -1,8 +1,10 @@
-import datetime, base64
+import datetime, base64, os, tempfile
 from urllib.parse import parse_qs
 
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect
 from django.views.generic.base import View
+from django.views.generic.edit import UpdateView
 from django.http import Http404, HttpResponseForbidden
 from django.contrib import messages
 from django.urls import reverse
@@ -12,12 +14,14 @@ from django.utils.formats import date_format
 
 from django.conf import settings
 
-from halls.forms import HallFormset, HallTimeTableForm, HallTimeForm, HallWeeklyFormset
+from halls.forms import HallFormset, HallTimeTableForm, HallTimeForm, HallWeeklyFormset, HallsExportForm
 
 from logs.models import write_log
 from halls.models import Hall, HallTimeTable, HallWeekly
-from users.models import Org, Profile
+from users.models import Org, Profile, is_ugh_user, is_loru_user
 from users.views import UghOrLoruRequiredMixin
+
+from pd.views import FormInvalidMixin, ManualEncodedCsvMixin
 
 class HallsEdit(UghOrLoruRequiredMixin, View):
     template_name = 'halls.html'
@@ -700,3 +704,179 @@ class HallsTimeView(UghOrLoruRequiredMixin, HallsTimeTableMixin, View):
         return render(request, self.template_name, context_data)
 
 halls_time_view = HallsTimeView.as_view()
+
+class HallsExportView(FormInvalidMixin, ManualEncodedCsvMixin, UpdateView):
+
+    template_name = 'halls_export.html'
+    model = Profile
+    form_class = HallsExportForm
+
+    def get_object(self):
+        user = self.request.user
+        if not is_ugh_user(user) or is_loru_user(user):
+            raise Http404
+        return self.request.user.profile
+
+    def get_form(self, *args, **kwargs):
+        form = super(HallsExportView, self).get_form(*args, **kwargs)
+        halls_qs = Hall.objects.filter(
+            org=self.request.user.profile.org,
+            is_active=True,
+        ).order_by('title')
+        choices = list()
+        hh = list()
+        for h in halls_qs:
+            hh.append(h.pk)
+            choices.append((h.pk, h.title,))
+        form.fields['halls'].choices = choices
+        form.fields['halls'].widget.attrs.update({'size': str(min(halls_qs.count()+1, 15))})
+        form.initial['halls'] = hh
+        form.initial['date_from'] = datetime.date.today()
+        return form
+
+    def form_valid(self, form):
+        org = self.request.user.profile.org
+        date_from = form.cleaned_data['date_from']
+        dow = date_from.isoweekday()
+        date_from_plus_1 = date_from + datetime.timedelta(days=1)
+        halls_pks = form.cleaned_data['halls']
+
+        halls_by_pk = dict()
+        n = 0
+        for hall in Hall.objects.filter(pk__in=halls_pks).order_by('title'):
+            if hall.org != org:
+                raise PermissionDenied
+            n += 1
+            if form.cleaned_data['titleby'] == HallsExportForm.TITLE_BY_NUMBER:
+                title = _('Зал № %s') % n
+            else:
+                title = self.correct_field(hall.title)
+            halls_by_pk[str(hall.pk)] = dict(n=n, title=title)
+
+        output = list()
+        htt = dict()
+        qs_tt = HallTimeTable.objects.filter(
+            hall__pk__in=halls_pks,
+            dt_start__gte=date_from,
+            dt_start__lt=date_from_plus_1,
+        ).select_related('hall')
+        for halltimetable in qs_tt:
+            details = self.correct_field(halltimetable.details)
+            if not details:
+                details = _('%s: не указано кого') % halltimetable.get_kind_display()
+            time_start = halltimetable.dt_start.strftime('%H:%M')
+            if halltimetable.dt_start.date() < halltimetable.dt_end.date():
+                time_end = '24:00'
+            else:
+                time_end = halltimetable.dt_end.strftime('%H:%M')
+            n_hall = halls_by_pk[str(halltimetable.hall.pk)]['n']
+            title = halls_by_pk[str(halltimetable.hall.pk)]['title']
+            htt[
+                (
+                    time_start,
+                    n_hall,
+                )
+            ] = dict(
+                details=details,
+                time_end=time_end,
+                title=title
+            )
+            output.append((
+              time_start,
+              time_end,
+              n_hall,
+              details,
+              title
+            ))
+
+        qs_weekly = HallWeekly.objects.filter(
+            hall__pk__in=halls_pks,
+            dow=dow,
+            is_dayoff=False,
+        ).select_related('hall')
+
+        for hallweekly in qs_weekly:
+            hall_interval_timedelta = datetime.timedelta(seconds=hallweekly.interval * 60)
+            n_hall = halls_by_pk[str(hallweekly.hall.pk)]['n']
+
+            hall_time_start_str = hallweekly.time_start
+            hall_start = datetime.datetime.strptime(hall_time_start_str, "%H:%M")
+            hall_start = datetime.datetime(
+                year=date_from.year, month=date_from.month, day=date_from.day,
+                hour=hall_start.hour, minute=hall_start.minute,
+            )
+            hall_end_plus_1 = datetime.datetime(
+                year=date_from_plus_1.year, month=date_from_plus_1.month, day=date_from_plus_1.day,
+                hour=0, minute=0,
+            )
+            hall_time_end_str = hallweekly.time_end
+            if hall_time_end_str == '24:00':
+                hall_end = hall_end_plus_1
+            else:
+                hall_end = datetime.datetime.strptime(hall_time_end_str, "%H:%M")
+                hall_end = datetime.datetime(
+                    year=date_from.year, month=date_from.month, day=date_from.day,
+                    hour=hall_end.hour, minute=hall_end.minute,
+                )
+            # foolproof
+            hall_end = min(hall_end, hall_end_plus_1)
+            while hall_start < hall_end:
+                h_start = hall_start
+                t_start = h_start.strftime('%H:%M')
+                h_end = h_start + hall_interval_timedelta
+                hall_start = h_end
+                if not htt.get((t_start, n_hall, )):
+                    if h_end.date() > h_start.date():
+                        t_end = '24:00'
+                    else:
+                        t_end = h_end.strftime('%H:%M')
+                    output.append((
+                        t_start,
+                        t_end,
+                        halls_by_pk[str(hallweekly.hall.pk)]['n'],
+                        '-',
+                        halls_by_pk[str(hallweekly.hall.pk)]['title']
+                    ))
+
+        # Порядок элементов в tuple, список которых будем сортировать и
+        # потом заносить в выходной файл
+        TT_START = 0
+        TT_END = 1
+        TT_HALL_NUMBER = 2
+        TT_DETAILS = 3
+        TT_HALL_TITLE = 4
+        output.sort(key=lambda x: (x[TT_START], x[TT_END], x[TT_HALL_NUMBER],))
+
+        if output:
+            media_path = os.path.join('tmp', 'export', 'halls', '%s' % org.pk, )
+            export_path = os.path.join(settings.MEDIA_ROOT, media_path)
+            try:
+                os.makedirs(export_path)
+            except OSError:
+                pass
+            temp_dir = tempfile.mkdtemp(dir=export_path)
+            temp_dir_name = os.path.basename(temp_dir)
+            now = datetime.datetime.now()
+            dt_now_str = datetime.datetime.strftime(now, '%Y%m%d%H%M%S')
+            date_from_str = datetime.datetime.strftime(date_from, '%Y%m%d')
+            fname = 'halls-for-%s-got-at-%s.csv' % (date_from_str, dt_now_str, )
+            path_fname = os.path.join(temp_dir, fname)
+            with open(path_fname, 'wb') as f:
+                t_start_prev = output[0][TT_START]
+                t_end_prev = output[0][TT_END]
+                for s in output:
+                    if s[TT_START] != t_start_prev or s[TT_END] != t_end_prev:
+                        t_start_prev = s[TT_START]
+                        t_end_prev = s[TT_END]
+                        f.write(self.LINE_END.encode(self.ENCODING))
+                    f.write(self.encode_(self.SEPARATOR.join((
+                        '%s - %s' % (s[TT_START], s[TT_END],),
+                        s[TT_DETAILS],
+                        s[TT_HALL_TITLE],
+                    ))))
+            return redirect(os.path.join(settings.MEDIA_URL, media_path, temp_dir_name, fname))
+        else:
+            messages.info(self.request, _('Не найдены данные для экспорта расписаний за указанную дату'))
+            return self.get(self.request, *self.args, **self.kwargs)
+
+halls_export_view = HallsExportView.as_view()

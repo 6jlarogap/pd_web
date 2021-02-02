@@ -27,7 +27,7 @@ from orders.models import Order
 from users.models import Org, Profile, is_cabinet_user, is_ugh_user
 from pd.utils import re_search, host_country_code
 from pd.forms import CommentForm
-from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url
+from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url, ManualEncodedCsvMixin
 from reports.models import make_report
 
 class BurialGetOrderMixin:
@@ -1438,12 +1438,8 @@ class CancelExhumationView(ArchiveMixin, DeleteView):
 
 burial_cancel_exhumation = CancelExhumationView.as_view()
 
-class RegistryView(FormInvalidMixin, UpdateView):
+class RegistryView(FormInvalidMixin, ManualEncodedCsvMixin, UpdateView):
 
-    ENCODING = 'cp1251'
-    SEPARATOR = ';'
-    LINE_END = '\r\n'
-    EMPTY_FIELD = '-'
     DATE_FORMAT='%d.%m.%Y'
 
     template_name = 'registry.html'
@@ -1485,9 +1481,6 @@ class RegistryView(FormInvalidMixin, UpdateView):
             pass
         return result
 
-    def correct_name(self, name):
-        return name.replace(self.SEPARATOR, '').strip()
-
     def check_names(self, deadman):
         """
         Убрать из фио ';'. Пустое отчество -> '-'
@@ -1495,39 +1488,17 @@ class RegistryView(FormInvalidMixin, UpdateView):
         result = None
         last_name = first_name = middle_name = ''
         if deadman:
-            last_name = self.correct_name(deadman.last_name)
+            last_name = self.correct_field(deadman.last_name)
             if last_name == self.EMPTY_FIELD:
                 last_name = ''
-            first_name = self.correct_name(deadman.first_name)
+            first_name = self.correct_field(deadman.first_name)
             if first_name == self.EMPTY_FIELD:
                 first_name = ''
-            middle_name = self.correct_name(deadman.middle_name)
+            middle_name = self.correct_field(deadman.middle_name)
             if not middle_name:
                 middle_name = self.EMPTY_FIELD
         if last_name and first_name:
             result = (last_name, first_name, middle_name)
-        return result
-
-    def encode_(self, s):
-        """
-        Кодирование, исправление ошибок в вых строке
-        """
-        s = '%s%s' % (s, self.LINE_END)
-        try:
-            result = s.encode(self.ENCODING)
-        except UnicodeEncodeError:
-            result = b''
-            for c in s:
-                try:
-                    result += c.encode(self.ENCODING)
-                except UnicodeEncodeError:
-                    pass
-            result = result.replace(
-                '%s%s'  % (self.SEPARATOR, self.SEPARATOR,),
-                '%s-%s' % (self.SEPARATOR, self.SEPARATOR,)
-            )
-            if result.endswith(self.SEPARATOR):
-                result += self.EMPTY_FIELD
         return result
 
     def form_valid(self, form):

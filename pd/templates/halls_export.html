@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block content %}
+
+<script>
+    function select_clear_halls(what, action) {
+        var obj = "select[name=" + what + "]";
+        var selected = action == "select_all" ? "selected" : ""
+        $(obj).children().each(function () {
+            this.selected = selected;
+        });
+        return false;
+    }
+    function disable_submit() {
+        $('input[type=submit').attr('disabled', true);
+        $('#id_message_after_submit').show();
+        return true;
+    }
+</script>
+
+<script type="text/javascript">
+    $(function() {
+        $('select[id$=halls]').css('width', '400px');
+        $('input[type=submit').attr('disabled', false);
+        $('#id_message_after_submit').hide();
+    });
+</script>
+
+<h3>{% trans "Экпорт расписаний залов" %}</h3>
+<form action="" method="POST" onSubmit="disable_submit()" name="refreshForm">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    {{ form.date_from.errors }}
+    <p>{{ form.date_from.label_tag }} {{ form.date_from }} <span class="helptext">{{ form.date_from.help_text }}</span></p>
+
+    {{ form.halls.errors }}
+    <p>{{ form.halls.label_tag }} {{ form.halls }} <span class="helptext"> {{ form.halls.help_text }}</span>
+    <br />
+    <button onclick='return select_clear_halls("halls", "select_all")'>Выделить все</button> 
+    &nbsp;&nbsp;
+    <button onclick='return select_clear_halls("halls", "clear_all")'>Очистить</button>
+    </p>
+    <br/>
+
+    {{ form.titleby.errors }}
+    <p>{{ form.titleby.label_tag }}
+    {% for radio in form.titleby %}
+        {{ radio }}
+    {% endfor %}
+    <span class="helptext">{{ form.titleby.help_text }}</span>
+    </p>
+    <br/>
+
+    <p>
+        <input type="submit" name="submit" class="btn btn-primary" value="{% trans "получить" %}"/>
+    </p>
+    <span id="id_message_after_submit" style="display:none">
+        Запрос отправлен.<br /> 
+        Кнопка "получить" заблокирована во избежание ошибочного повторного запроса.<br /> 
+        Дождитесь выгрузки результата.<br />
+        После этого, если надо повторить операцию, 
+            <a href="#" onclick="$('input[type=submit').attr('disabled', false);$('#id_message_after_submit').hide();return false">сюда<a>
+    </span>
+
+</form>
+
+{% endblock %}
