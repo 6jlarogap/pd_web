@@ -56,13 +56,17 @@ def backup(db_name, dst_dir):
     pg_dump_command = \
         '%(rssh)s ' \
         '"' \
-            'pg_dump -U postgres %(db_name)s | ' \
+            'umask 0277 && ' \
+            "export PGPASSWORD='%(pg_password)s' && " \
+            'pg_dump -U %(pg_user)s %(db_name)s | ' \
             'gzip > %(host_folder)s/%(gz_name)s' \
         '"' % dict(
         rssh=rssh,
         db_name=db_name,
         host_folder=host_folder,
         gz_name=gz_name,
+        pg_password=PG_PASSWORD,
+        pg_user=PG_USER,
     )
     rc = os.system(pg_dump_command)
     if rc:
