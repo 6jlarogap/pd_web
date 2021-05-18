@@ -4,7 +4,7 @@ from django.db.models.query_utils import Q
 
 from logs.models import write_log
 from . import models as burials_models
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 
 class PlaceManager(models.Manager):

@@ -14,7 +14,7 @@ from django.db.models.aggregates import Max
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.db.models.query_utils import Q
 
 from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialComment, BurialFiles, Grave, PlaceSize
