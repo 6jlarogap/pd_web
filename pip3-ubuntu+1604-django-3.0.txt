@@ -24,6 +24,7 @@ LatLon23
 odfpy
 piexif
 Pillow
+psycopg2-binary
 
 python-dateutil
 python-geohash
@@ -34,3 +35,6 @@ rjsmin
 webassets
 
 openpyxl
+
+# if using pycurl in virtualenv, uncomment this
+# pycurl
