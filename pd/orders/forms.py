@@ -4,7 +4,7 @@ from django import forms
 from django.db.models.deletion import ProtectedError
 from django.db.models.query_utils import Q
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from burials.models import Burial
 from geo.forms import LocationForm

@@ -1,6 +1,6 @@
 import copy
 from django.db import models, IntegrityError
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.db.models.deletion import ProtectedError
 from django.apps import apps
 get_model = apps.get_model
