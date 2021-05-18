@@ -31,8 +31,8 @@ from django.db.models.aggregates import Count
 from django.http import HttpResponse, Http404
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import render_to_string
-from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import smart_text
+from django.utils.translation import gettext_lazy as _
+from django.utils.encoding import smart_str
 from django.utils.formats import number_format
 from django.views.generic.base import View, TemplateView
 from django.views.generic.edit import UpdateView, CreateView, FormView
@@ -148,7 +148,7 @@ class CheckRecaptcha2Mixin(object):
         secret_key = settings.NORECAPTCHA_SECRET_KEY
         from nocaptcha_recaptcha.client import submit
         return submit(
-                g_nocaptcha_response_value=smart_text(g_nocaptcha_response_value),
+                g_nocaptcha_response_value=smart_str(g_nocaptcha_response_value),
                 secret_key=secret_key,
                 remoteip=remote_ip,
         ).is_valid

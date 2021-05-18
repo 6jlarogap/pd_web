@@ -2,7 +2,7 @@ from django.conf import settings
 
 from django.shortcuts import render, get_object_or_404
 from django.views.generic.base import View
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from django.http import HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt, csrf_protect

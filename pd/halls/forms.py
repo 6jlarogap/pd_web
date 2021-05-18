@@ -2,7 +2,7 @@ import datetime
 
 from django import forms
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from users.models import Org, Profile
 from halls.models import Hall, HallWeekly

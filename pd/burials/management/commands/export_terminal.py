@@ -8,8 +8,9 @@ import sys, os, re
 import pytils
 
 from django import db
-from django.core.management.base import BaseCommand
 from django.db.models.query_utils import Q
+from django.db import connection
+from django.core.management.base import BaseCommand
 from django.utils import translation
 
 from burials.models import Place, Grave, Burial, Cemetery
@@ -84,10 +85,34 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         export_path = kwargs['export_path']
 
+        cursor = connection.cursor()
+
+        cursor.execute(
+            "create temporary table tmp_terminal_export ("
+                "last_name varchar(255),"
+                "initials varchar(255),"
+                "pk bigint,"
+                "date varchar(255),"
+                "cemetery_name varchar(255),"
+                "area varchar(255),"
+                "row_seat varchar(255)"
+            ");"
+        )
+        cursor.execute(
+            "create index tmp_terminal_export_idx ON "
+            "tmp_terminal_export ("
+                "last_name,"
+                "initials,"
+                "pk"
+            ");"
+        )
         translation.activate('ru')
 
         for cemetery_parms in CEMETERIES:
             print("Processing bundle of cemeteries for %s.csv" % cemetery_parms['export'])
+            cursor.execute(
+                "delete from tmp_terminal_export;"
+            )
             cemeteries = []
             for cemetery_pk in cemetery_parms['cemeteries']:
                 try:
@@ -98,9 +123,6 @@ class Command(BaseCommand):
             if not cemeteries:
                 print("    !!! No cemeteries in system found for bundle %s" % cemetery_parms['export'])
                 continue
-            fname_export = os.path.join(export_path, "%s.csv" % cemetery_parms['export'])
-            fname_export_partial = "%s.partial" % fname_export
-            f = open(fname_export_partial, "wb")
             q = Q(
                     annulated=False,
                     status=Burial.STATUS_CLOSED,
@@ -134,10 +156,12 @@ class Command(BaseCommand):
                    not 'неизвестен' in last_name_lower and \
                    not 'безфамильн' in last_name_lower and \
                    not 'резервирование' in last_name_lower and \
-                   re.search(r'^[а-яёіiўa-z\-]{2,}$', last_name_lower):
+                   not re.search(r'^м[её]ртво\s*рожд[её]н', last_name_lower) and \
+                   re.search(r'^[а-яёa-z\-]{2,}$', last_name_lower):
                     pk = str(deadman.pk)
 
                     last_name = last_name.upper()
+                    last_name = last_name.replace('Ё', 'Е')
                     initials = ""
                     first_name = deadman.first_name and deadman.first_name.rstrip(".")
                     first_name = self.correct_str(first_name)
@@ -153,6 +177,8 @@ class Command(BaseCommand):
                     if len(initials) > 30:
                         initials = "%s..." % initials[:28]
                     initials = initials or "-"
+                    initials = initials.replace('Ё', 'Е')
+                    initials = initials.replace('ё', 'е')
 
                     b_date = burial.fact_date
                     if b_date:
@@ -195,24 +221,79 @@ class Command(BaseCommand):
                         )
                     else:
                         row_seat = "-"
-                    columns_str = b''
-                    for c in (pk, last_name, initials, date, cemetery_name, area, row_seat,):
-                        columns_str += self.encode_(c) + b'\t'
-                    columns_str = columns_str[:-1]
-                    columns_str += b'\r\n'
 
-                    f.write(columns_str)
+                    cursor.execute(
+                        "insert into tmp_terminal_export ("
+                            "last_name,"
+                            "initials,"
+                            "pk,"
+                            "date,"
+                            "cemetery_name,"
+                            "area,"
+                            "row_seat"
+                        ") values("
+                            "'%(last_name)s',"
+                            "'%(initials)s',"
+                            "%(pk)s,"
+                            "'%(date)s',"
+                            "'%(cemetery_name)s',"
+                            "'%(area)s',"
+                            "'%(row_seat)s'"
+                        ");" % dict(
+                            last_name=last_name,
+                            initials=initials,
+                            pk=pk,
+                            date=date,
+                            cemetery_name=cemetery_name,
+                            area=area,
+                            row_seat=row_seat,
+                    ))
                     db.reset_queries()
+
+            fname_export = os.path.join(export_path, "%s.csv" % cemetery_parms['export'])
+            fname_export_partial = "%s.partial" % fname_export
+            f = open(fname_export_partial, "wb")
+            cursor.execute(
+                "select "
+                    "pk::text as pk,"
+                    "last_name,"
+                    "initials,"
+                    "date,"
+                    "cemetery_name,"
+                    "area,"
+                    "row_seat"
+                    " "
+                "from "
+                    "tmp_terminal_export "
+                "order by "
+                    "last_name, initials, pk;"
+            )
+            columns = [col[0] for col in cursor.description]
+            while True:
+                row_ = cursor.fetchone()
+                if not row_:
+                    break
+                row_ = dict(zip(columns, row_))
+                columns_str = b''
+                for c in columns:
+                    columns_str += self.encode_(row_[c]) + b'\t'
+                columns_str = columns_str[:-1]
+                columns_str += b'\r\n'
+                f.write(columns_str)
             f.close()
             os.rename(fname_export_partial, fname_export)
 
         translation.deactivate()
 
+        cursor.execute(
+            "drop table tmp_terminal_export;"
+        )
+
     def correct_str(self, s):
 
         # Символы, которые могут в фамилии, имени, отч., по ошибке
         #
-        BAD_CHAR_RE = r'\\|\"|\''
+        BAD_CHAR_RE = r'\\|\"|\'\%'
         return re.sub(BAD_CHAR_RE, '', s)
 
     def encode_(self, s):
