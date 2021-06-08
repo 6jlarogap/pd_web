@@ -1,4 +1,4 @@
-from django.conf.urls import include, url
+from django.urls import include, re_path, path
 from django.views.generic.base import RedirectView
 from django.views.i18n import JavaScriptCatalog
 from django.views.static import serve
@@ -50,32 +50,32 @@ router.register(r'^api/geo/location', LocationViewSet, basename='api-geo-locatio
 router.register(r'^api/geo/location/static', LocationStaticViewSet, basename='api-geo-location-static-viewset')
 
 urlpatterns = [
-    url(r'^favicon\.ico$',
+    re_path(r'^favicon\.ico$',
         RedirectView.as_view(url=static('img/favicon16x16.ico'), permanent=True)),
-    url(r'^thumb/', include('pd.restthumbnails_urls')),
+    re_path(r'^thumb/', include('pd.restthumbnails_urls')),
 
-    url(r'', include('users.urls')),
-    url(r'', include('burials.urls')),
-    url(r'', include('persons.urls')),
-    url(r'', include('orders.urls')),
-    url(r'', include('reports.urls')),
-    url(r'', include('mobile.urls')),
-    url(r'', include('geo.urls')),
-    url(r'', include('import_burials.urls')),
-    url(r'', include('halls.urls')),
+    path('', include('users.urls')),
+    path('', include('burials.urls')),
+    path('', include('persons.urls')),
+    path('', include('orders.urls')),
+    path('', include('reports.urls')),
+    path('', include('mobile.urls')),
+    path('', include('geo.urls')),
+    path('', include('import_burials.urls')),
+    path('', include('halls.urls')),
     
-    url(r'', include(router.urls)),
+    path('', include(router.urls)),
 ]
 
 # Redirects. Move into nginx at production
 urlpatterns += [
-    url(r'^api$', api_root),
-    url(r'^manage/404$', base_page),
-    url(r'^manage/500$', base_page),
-    url(r'^manage/cemetery/$', base_page),
-    url(r'^manage/cemetery/(?P<id>.*)$', base_page),
-    url(r'^manage/area/(?P<id>.*)$', base_page),
-    url(r'^manage/place/(?P<id>.*)$', base_page),
+    re_path(r'^api$', api_root),
+    re_path(r'^manage/404$', base_page),
+    re_path(r'^manage/500$', base_page),
+    re_path(r'^manage/cemetery/$', base_page),
+    re_path(r'^manage/cemetery/(?P<id>.*)$', base_page),
+    re_path(r'^manage/area/(?P<id>.*)$', base_page),
+    re_path(r'^manage/place/(?P<id>.*)$', base_page),
 ]
 
 js_locale_kwargs = dict()
@@ -83,7 +83,7 @@ if settings.SPECIFIC_RU_LOCALE_APP:
     js_locale_kwargs['packages'] = [settings.SPECIFIC_RU_LOCALE_APP, ]
 
 urlpatterns += [
-    url(r'^jsi18n/$', JavaScriptCatalog.as_view(**js_locale_kwargs), name='jsi18n'),
+    re_path(r'^jsi18n/$', JavaScriptCatalog.as_view(**js_locale_kwargs), name='jsi18n'),
 ]
 
 # Для включения административных функций (http://.../admin)
@@ -92,14 +92,14 @@ urlpatterns += [
 #
 if 'ADMIN_ENABLED' in dir(settings) and settings.ADMIN_ENABLED:
     urlpatterns += [
-        url(r'^admin/jsi18n/', JavaScriptCatalog.as_view()),
-        url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-        url(r'^admin/', admin.site.urls),
+        re_path(r'^admin/jsi18n/', JavaScriptCatalog.as_view()),
+        re_path(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+        re_path(r'^admin/', admin.site.urls),
     ]
 
 urlpatterns += [
     #
-    # url(r'^media/(?P<path>.*)$',  'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
+    # re_path(r'^media/(?P<path>.*)$',  'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
     #
     # Здесь django.views.static.serve заменена на свою функцию
     # pd.views.media_xsendfile, которая проверяет, работаем ли мы под сервером Apache и если да,
@@ -108,14 +108,14 @@ urlpatterns += [
     # Если работаем не под сервером Apache, а пока это только из ./manage.py runserver, то 
     # управление передается на django.views.static.serve, но это без проверок доступа к файлу
     #
-    url(r'^media/(?P<path>.*)$', media_xsendfile, {'document_root': settings.MEDIA_ROOT}),
+    re_path(r'^media/(?P<path>.*)$', media_xsendfile, {'document_root': settings.MEDIA_ROOT}),
 ]
 
 if settings.DEBUG:
     urlpatterns += [
-            url(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
+            re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
     ]
     from debug_toolbar import urls as debug_urls
     urlpatterns += [
-        url(r'^__debug__/', include(debug_urls)),
+        re_path(r'^__debug__/', include(debug_urls)),
     ]

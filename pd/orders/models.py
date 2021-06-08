@@ -260,7 +260,7 @@ class Order(GetLogsMixin, BaseModel):
     customplace = models.ForeignKey('persons.CustomPlace', verbose_name=_("Место захоронения"),
                                     null=True, editable=False, on_delete=models.PROTECT)
     status = models.CharField(_("Статус"), max_length=255, choices=STATUS_TYPES, default=STATUS_POSTED, editable=False,)
-    applicant_approved = models.NullBooleanField(_("Одобрено заказчиком"), null=True, editable=False,)
+    applicant_approved = models.BooleanField(_("Одобрено заказчиком"), null=True, editable=False,)
 
     # При создании оптового заказа исполнителем, когда заказчик обращении к нему по телефону
     # (applicant == applicant_organization = None):
