@@ -8,7 +8,7 @@ from django.views.generic.edit import BaseFormView
 from django.shortcuts import get_object_or_404
 from django.apps import apps
 get_model = apps.get_model
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.contrib import messages
 
 from django.conf import settings
@@ -222,7 +222,7 @@ def media_xsendfile(request, path, document_root):
             m_anyone = re.search(r'^/?(?:product\-photo|icons|support)/',path)
             # Для экспорта захоронений организации, например в реестр населения
             # и др., например отчеты лору
-            m_export = re.search(r'^/?tmp/(?:export/burials|products/reports)/(\d+)/',path)
+            m_export = re.search(r'^/?tmp/(?:export/burials|export/halls|products/reports)/(\d+)/',path)
             if m_anyone:
                 pass
             elif m_export:
@@ -310,3 +310,44 @@ class ServiceException(Exception):
         # all good
     """
     pass
+
+
+class ManualEncodedCsvMixin(object):
+    """
+    Операции для csv, формируемого вручную
+    """
+
+    ENCODING = 'cp1251'
+    SEPARATOR = ';'
+    LINE_END = '\r\n'
+    EMPTY_FIELD = '-'
+    SEPARATOR_REPLACE = ''
+
+    def correct_field(self, s):
+        return s.replace(self.SEPARATOR, self.SEPARATOR_REPLACE).strip()
+
+    def encode_(self, s):
+        """
+        Кодирование, исправление ошибок в вых строке
+        """
+        s = '%s%s' % (s, self.LINE_END)
+        if self.ENCODING:
+            try:
+                result = s.encode(self.ENCODING)
+            except UnicodeEncodeError:
+                result = b''
+                for c in s:
+                    try:
+                        result += c.encode(self.ENCODING)
+                    except UnicodeEncodeError:
+                        pass
+                if self.EMPTY_FIELD:
+                    result = result.replace(
+                        '%s%s'  % (self.SEPARATOR, self.SEPARATOR,),
+                        '%s%s%s' % (self.SEPARATOR, self.EMPTY_FIELD, self.SEPARATOR,)
+                    )
+                    if result.endswith(self.SEPARATOR):
+                        result += self.EMPTY_FIELD
+        else:
+            result = s.encode('utf-8')
+        return result

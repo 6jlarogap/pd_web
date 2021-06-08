@@ -2,9 +2,9 @@ import datetime
 
 from django import forms
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
-from users.models import Org
+from users.models import Org, Profile
 from halls.models import Hall, HallWeekly
 
 class HallItemForm(forms.ModelForm):
@@ -110,3 +110,37 @@ class HallTimeTableForm(forms.Form):
 class HallTimeForm(forms.Form):
 
     hall_date_from = forms.DateField(label=_("Дата"))
+
+class HallsExportForm(forms.ModelForm):
+
+    TITLE_BY_NUMBER = 'number'
+    TITLE_BY_TITLE = 'title'
+    TITLE_BY_CHOICES = (
+        (TITLE_BY_NUMBER, _('Выбранные залы в выводе нумеруются (Зал №1, Зал №2 ...)')),
+        (TITLE_BY_TITLE, _('В выводе названия выбранных залов')),
+    )
+
+    date_from = forms.DateField(required=True, label=_("Дата"))
+    halls = forms.MultipleChoiceField(label=_("Доступные залы"), choices = [], required=False)
+    titleby = forms.ChoiceField(
+        label='',
+        choices=TITLE_BY_CHOICES,
+        widget=forms.RadioSelect,
+        initial=TITLE_BY_NUMBER,
+    )
+
+    class Meta:
+        model = Profile
+        fields = ('date_from', 'halls', 'titleby', )
+
+    def clean_date_from(self):
+        d = self.cleaned_data['date_from']
+        if d > datetime.date.today():
+            raise forms.ValidationError(_("Дата больше текущей"))
+        return d
+
+    def clean_halls(self):
+        halls = self.cleaned_data['halls']
+        if len(halls) == 0:
+            raise forms.ValidationError(_("Не заданы залы"))
+        return halls

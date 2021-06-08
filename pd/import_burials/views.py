@@ -2,7 +2,7 @@ from django.db import transaction
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.views.generic.base import TemplateView, View
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from import_burials.forms import ImportCsvMinskForm
 from import_burials.models import do_import_burials_minsk

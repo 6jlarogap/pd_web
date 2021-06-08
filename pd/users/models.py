@@ -14,7 +14,7 @@ from django.db import models, transaction, IntegrityError
 from django.apps import apps
 get_model = apps.get_model
 from django.db.models.deletion import ProtectedError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 
 from autoslug import AutoSlugField

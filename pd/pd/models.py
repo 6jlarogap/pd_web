@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.apps import apps
 get_model = apps.get_model
 from django.db.models.deletion import ProtectedError
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError
 from logs.models import Log
 from pd.views import ServiceException

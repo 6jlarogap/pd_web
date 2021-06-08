@@ -21,13 +21,17 @@ HOST_USER = "reserve"
 #
 HOST_FOLDER = "/home/reserve/pgsql-backup/"
 
+# Пользователь, пароль к базе
+PG_USER = 'postgres'
+PG_PASSWORD = ''
+
 # список баз данных на HOST
 #
 DATABASES = ('pd_prod', 'pd', )
 
 # каталог резервных копий, должен быть предварительно создан!
 #
-BACKUP_PATH = '/home/soul/reserve/pohoronnoedelo.ru/pgsql-backup/'
+BACKUP_PATH = '/home/suprune20/reserve/pohoronnoedelo.ru/pgsql-backup/'
 
 # папки сегодняшних, ежедневных, еженедельных, ежемесячных архивов,
 # внутри BACKUP_PATH. Должны быть предварительно созданы
@@ -52,5 +56,5 @@ LOCK_FILE = 'this.lock'
 # Сколько дампов по максимуму оставлять на удаленном сервере
 # в папке HOST_FOLDER
 #
-CURRENT_DUMPS_NUM = 2
+CURRENT_DUMPS_NUM = 1
 

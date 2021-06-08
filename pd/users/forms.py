@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from django.forms.models import inlineformset_factory, BaseInlineFormSet
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.db import IntegrityError, transaction
 from django.db.models.query_utils import Q
 from django.db.models.fields.files import FieldFile

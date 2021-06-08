@@ -8,7 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction, IntegrityError
 from django.apps import apps
 get_model = apps.get_model
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.db.models import Sum, F
 from django.db.models.query_utils import Q
 
