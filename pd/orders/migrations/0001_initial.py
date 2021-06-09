@@ -74,7 +74,7 @@ class Migration(migrations.Migration):
                 ('cost', models.DecimalField(verbose_name='\u0426\u0435\u043d\u0430', editable=False, max_digits=20, decimal_places=2)),
                 ('dt', models.DateField(verbose_name='\u0414\u0430\u0442\u0430 \u0437\u0430\u043a\u0430\u0437\u0430')),
                 ('status', models.CharField(default='posted', verbose_name='\u0421\u0442\u0430\u0442\u0443\u0441', max_length=255, editable=False, choices=[('posted', '\u0420\u0430\u0437\u043c\u0435\u0449\u0435\u043d'), ('accepted', '\u041f\u0440\u0438\u043d\u044f\u0442'), ('advanced', '\u0412\u044b\u043f\u043b\u0430\u0447\u0435\u043d \u0430\u0432\u0430\u043d\u0441'), ('paid', '\u041e\u043f\u043b\u0430\u0447\u0435\u043d'), ('done', '\u0412\u044b\u043f\u043e\u043b\u043d\u0435\u043d')])),
-                ('applicant_approved', models.NullBooleanField(verbose_name='\u041e\u0434\u043e\u0431\u0440\u0435\u043d\u043e \u0437\u0430\u043a\u0430\u0437\u0447\u0438\u043a\u043e\u043c', editable=False)),
+                ('applicant_approved', models.BooleanField(verbose_name='\u041e\u0434\u043e\u0431\u0440\u0435\u043d\u043e \u0437\u0430\u043a\u0430\u0437\u0447\u0438\u043a\u043e\u043c', editable=False, null=True)),
                 ('title', models.CharField(default='', verbose_name='\u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u043f\u043e\u043a\u0443\u043f\u0430\u0442\u0435\u043b\u044f', max_length=255, editable=False)),
                 ('phones', models.TextField(verbose_name='\u0422\u0435\u043b\u0435\u0444\u043e\u043d\u044b', null=True, editable=False)),
                 ('dt_due', models.DateField(verbose_name='\u0414\u0430\u0442\u0430 \u043f\u043e\u0445\u043e\u0440\u043e\u043d', null=True, editable=False)),

@@ -1,10 +1,10 @@
-from django.conf.urls import url
+from django.urls import re_path
 
 from restthumbnails.defaults import URL_REGEX
 from pd.views import OurThumbnailView
 
 urlpatterns = [
-    url(regex=URL_REGEX,
-        view=OurThumbnailView.as_view(),
+    re_path(URL_REGEX,
+        OurThumbnailView.as_view(),
         name="get_thumbnail")
 ]
