@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.validators import RegexValidator, MinLengthValidator
 from django.core.mail import EmailMessage
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 import datetime
 import dateutil.parser

@@ -8,7 +8,7 @@ from django.db import transaction
 from django.db.models.query_utils import Q
 from django.http import Http404, HttpResponse
 from django.views.generic.base import View
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.shortcuts import get_object_or_404
 
 from persons.models import DeadPerson, AlivePerson, BasePerson, DocumentSource, Phone, \

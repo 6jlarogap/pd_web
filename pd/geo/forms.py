@@ -1,7 +1,7 @@
 import datetime
 
 from django import forms
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from geo.models import Location, Country, Region, City, Street
 from pd.forms import PartialFormMixin

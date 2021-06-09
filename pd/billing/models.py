@@ -1,6 +1,6 @@
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext_lazy as _
 
 from users.models import Org
 

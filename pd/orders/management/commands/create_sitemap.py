@@ -1,7 +1,7 @@
 import sys, os, codecs, urllib.request, urllib.error, urllib.parse, json
 
 from django.core.management.base import BaseCommand
-from django.template import loader, Context
+from django.template import loader
 from django.db.models.query_utils import Q
 
 from django.conf import settings

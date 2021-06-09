@@ -12,26 +12,31 @@ install-readme.txt, utf8 code page
  
     * Д.б. установлено на Linux:
         - средства разработки:
-            * python3, не ниже 3.5
-                  * sudo apt install python3-all-dev
-                  * sudo apt install g++
-                  * sudo apt python3-virtualenv python3-pycurl
+            * python3, не ниже 3.6
+                * sudo apt install python3-all-dev
+                * sudo apt install g++
+                * sudo apt install python3-virtualenv python3-pycurl
 
-         - postgresql,
+        - redis-server
+                  * sudo apt install redis-server
+
+        - postgresql,
             * в т.ч. для разработчика, ubuntu:
-              sudo apt-get install postgresql postgresql-server-dev-all
-            полагаем, что используется база postgresql на localhost,
-            в которой пользователю postgres всё дозволено. Это достигается
-            (ubuntu 16.04) в /etc/postgresql/9.5/main/,
-            (ubuntu 18.04) в /etc/postgresql/10/main/)
+                sudo apt-get install postgresql postgresql-server-dev-all
 
-            заменой строки:
-                local all postgres peer
-            на:
-                local all postgres trust
-            с перезагрузкой postgresql (service postgresql restart)
+                полагаем, что используется база postgresql на localhost,
+                в которой пользователю postgres всё дозволено. Это достигается
 
-         - библиотеки для графики, включая jpeg, в Ubuntu: libjpeg-dev
+                (ubuntu 16.04) в /etc/postgresql/9.5/main/,
+                (ubuntu 18.04) в /etc/postgresql/10/main/)
+
+                заменой строки:
+                    local all postgres peer
+                на:
+                    local all postgres trust
+                с перезагрузкой postgresql (service postgresql restart)
+
+        - библиотеки для графики, включая jpeg, в Ubuntu: libjpeg-dev
 
         - bower
             ubuntu 16.4 и ниже:

@@ -15,7 +15,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.http import Http404, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import View
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.utils.formats import localize
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import UpdateView

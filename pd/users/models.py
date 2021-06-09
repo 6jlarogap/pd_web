@@ -14,7 +14,7 @@ from django.db import models, transaction, IntegrityError
 from django.apps import apps
 get_model = apps.get_model
 from django.db.models.deletion import ProtectedError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 
 from autoslug import AutoSlugField
@@ -1296,7 +1296,7 @@ class OrgReview(BaseModel):
     """
     org = models.ForeignKey(Org, editable=False, on_delete=models.PROTECT)
     subject = models.CharField(_("Тема отзыва"), max_length=255, blank=True)
-    is_positive = models.NullBooleanField(_("Оценка положительная/отрицательна/без оценки"),
+    is_positive = models.BooleanField(_("Оценка положительная/отрицательна/без оценки"),
                                            null=True)
     common_text = models.TextField(_("Текст"), blank=True, null=True)
     positive_text = models.TextField(_("Текст положительной оценки"), blank=True, null=True)
