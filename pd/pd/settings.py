@@ -497,6 +497,11 @@ SHOW_OPER_STATS = True
 #
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
+# From Django 3.2 this is BigAutofield
+# To avoid unnecessary migrations in future:
+#
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 try:
     from .local_settings import *
 except ImportError:
