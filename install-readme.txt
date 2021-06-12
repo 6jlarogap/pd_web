@@ -8,27 +8,31 @@ install-readme.txt, utf8 code page
         - ~/projects/pd_web:    проект, в соответствии с именем на bitbucket.org
         - USERNAME:             имя пользователя на bitbucket.org
 
-        - ubuntu:               ubuntu 16.04 или 18.04, если не уточняется
+        - ubuntu:               ubuntu 16.04 и выше, если не уточняется
+                    !!! ubuntu 16.04, 18.04 имеют python3 версии ниже 3.8
+                        Как установить там python 3.8, см. Приложение A
  
     * Д.б. установлено на Linux:
         - средства разработки:
-            * python3, не ниже 3.6
-                * sudo apt install python3-all-dev
+            * python3, не ниже 3.8
+                * sudo apt install python3-all-dev python3-virtualenv
                 * sudo apt install g++
-                * sudo apt install python3-virtualenv python3-pycurl
+                * sudo apt install software-properties-common libcurl4-gnutls-dev librtmp-dev
 
         - redis-server
                   * sudo apt install redis-server
 
         - postgresql,
+            !!! версии не ниже 10. Если установлена более старая версия,
+                например, в Ubuntu 16.04, то действовать по инструкции,
+                см. Приложение B
+
             * в т.ч. для разработчика, ubuntu:
                 sudo apt-get install postgresql postgresql-server-dev-all
 
                 полагаем, что используется база postgresql на localhost,
                 в которой пользователю postgres всё дозволено. Это достигается
-
-                (ubuntu 16.04) в /etc/postgresql/9.5/main/,
-                (ubuntu 18.04) в /etc/postgresql/10/main/)
+                в /etc/postgresql/<версия_postgresql>/main/
 
                 заменой строки:
                     local all postgres peer
@@ -36,10 +40,11 @@ install-readme.txt, utf8 code page
                     local all postgres trust
                 с перезагрузкой postgresql (service postgresql restart)
 
-        - библиотеки для графики, включая jpeg, в Ubuntu: libjpeg-dev
+        - библиотеки для графики, включая jpeg, в Ubuntu: 
+            sudo apt install libjpeg-dev
 
         - bower
-            ubuntu 16.4 и ниже:
+            ubuntu 16.4:
                 * скачать NodeJS: http://nodejs.org/
                 * распаковать, cd node-<VERSION>; ./configure && make && sudo make install
                 * sudo npm install -g bower
@@ -60,7 +65,7 @@ install-readme.txt, utf8 code page
                     * tar xf wkhtmltox-linux-<i386|amd64>_<версия>.tar.xz
                     * sudo rsync -a wkhtmltox /usr/local/bin && rm -rf wkhtmltox
                     * sudo ln -s /usr/local/bin/wkhtmltox/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
-                ! На ubuntu 18.04:
+                ! На ubuntu 18.04+:
                     (приходится таки ставить wkhtmltopdf из дистрибутива, и это всё потянуло кучу
                      инсталяций для X server'a):
                     sudo -i
@@ -249,3 +254,79 @@ install-readme.txt, utf8 code page
           16 5 * * 0 www-data   rm -rf /home/www-data/django/MEDIA/pd_prod/thumbnails/*
           # устаревшие временные файлы
           28 2 * * * www-data   /home/www-data/django/pd_prod/contrib/clear-media-tmp.sh pd_prod
+
+---------------------------------------------------------------------------------------------------
+
+Приложение A
+
+Установка python 3.8 на ubuntu 16.04, 18.04
+
+    sudo apt update
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt update
+    sudo apt install python3.8 python3.8-venv python3.8-dev python3.8-gdbm apache2-dev
+
+    sudo apt purge libapache2-mod-wsgi-py3
+    cd
+    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    sudo service apache2 stop
+    sudo python3.8 get-pip.py
+    sudo python3.8 -m pip install --upgrade pip setuptools wheel virtualenv mod_wsgi
+
+    mod_wsgi-express module-config
+        # : вывод заносим в /etc/apache2/mods-available/wsgi-python38.load
+        # Например, так:
+            sudo -i
+            echo 'LoadModule wsgi_module "/usr/local/lib/python3.8/dist-packages/mod_wsgi/server/mod_wsgi-py38.cpython-38-x86_64-linux-gnu.so"' > /etc/apache2/mods-available/wsgi-python38.load
+            exit
+    sudo ln -s /etc/apache2/mods-available/wsgi-python38.load /etc/apache2/mods-enabled/wsgi-python38.load
+
+    # cd /path/to/venv: пусть это будет :
+    cd /home/www-data/venv
+    virtualenv -p `which python3.8` pdweb.python38
+    cd pdweb.python38
+    source ./bin/activate
+    pip install -r /path/to/current/pip.txt
+    deactivate
+    
+    # Поменять symlink pd_web/ENV:
+    sudo ln -sfn /home/www-data/venv/pdweb.python38 /home/www-data/django/pd_web/ENV
+    sudo service apache2 start
+
+---------------------------------------------------------------------------------------------------
+
+Приложение B
+
+Установка последней версии postgresql
+
+!!! В разделе, где /var/lib/postgresql должно быть свободное место, не меньше 120% от того,
+    сколько занимает текущий /var/lib/postgresql
+!!! Эта установка сначала добавляет все версии postgresql, начиная со следующей после
+    текущей, так что должно быть достаточно места и на системном разделе,
+    не меньше 700 Mb свободного места
+
+sudo echo 'deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main' > /etc/apt/sources.list.d/pgdg.list
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt update
+
+sudo apt upgrade
+    # На ubuntu 16.04 это обновит текущий postgresql 9.5, а также поставит версии 10, 11, 12, 13.
+    # (на момент, когда вносятся эти строки)
+    # Версии 10, 11, 12 потом удалим.
+
+pg_lsclusters 
+    # Увидим:
+    #   Ver Cluster Port Status Owner    Data directory               Log file
+    #   9.5 main    5432 online postgres /var/lib/postgresql/9.6/main /var/log/postgresql/postgresql-9.5-main.log
+    #   13  main    5433 online postgres /var/lib/postgresql/13/main  /var/log/postgresql/postgresql-13-main.log
+
+sudo pg_dropcluster 13 main --stop
+sudo pg_upgradecluster 9.5 main
+sudo pg_dropcluster 9.5 main
+
+dpkg -l | grep postgresql
+    # Удалить из системы все postgresl-XX, где XX < 13:
+    # sudo apt purge postgresql-9.5... ....
+    # sudo apt purge postgresql-10... ....
+    # sudo apt purge postgresql-11... ....
+    # sudo apt purge postgresql-12... ....
