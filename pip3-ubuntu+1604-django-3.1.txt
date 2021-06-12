@@ -1,5 +1,5 @@
 # Для pip install -r <этот_файл>
-# ОС: Ubuntu 16.04, 18.04
+# ОС: Ubuntu 16.04+
 # Python: 3.6+
 # Django 3.1
 #
@@ -36,5 +36,4 @@ webassets
 
 openpyxl
 
-# if using pycurl in virtualenv, uncomment this
-# pycurl
+pycurl

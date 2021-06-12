@@ -590,7 +590,7 @@ class PhotoFiles(PhotoModel, BaseModel):
         abstract = True
 
 def validate_gt0(value):
-    if value <= 0:
+    if value is None or value <= 0:
         raise ValidationError(_('Должно быть больше нуля'))
 
 def validate_username(value):
