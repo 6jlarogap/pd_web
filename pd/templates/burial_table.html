@@ -254,7 +254,7 @@
                     <br /><br />
                 {% endif %}
                 {% if b.burialfiles_set.all %}
-                    <span class="badge" title="{% trans "Есть прикрепленные файлы" %}"><i class="icon-book icon-white"></i></span>
+                    <span class="badge" title="{% trans "Файл(ы):" %}{% for fc in b.file_comment_list %}&#10; {{ fc }}{% endfor %}"><i class="icon-book icon-white"></i></span>
                 {% endif %}
                 {% if b.get_place.placephoto_set.all %}
                     <span class="badge" title="{% trans "Место имеет фото" %}"><i class="icon-camera icon-white"></i></span>
