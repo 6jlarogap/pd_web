@@ -1568,6 +1568,13 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             pass
         return result
         
+    def file_comment_list(self):
+        """
+        Список описаний файлов
+        """
+        files = BurialFiles.objects.filter(burial=self).order_by('-pk')
+        return [ f.comment for f in files if f.comment ]
+
 class BurialComment(BaseModel):
 
     burial = models.ForeignKey(Burial, verbose_name=_("Захоронение"), on_delete=models.CASCADE)
