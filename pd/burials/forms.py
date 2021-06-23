@@ -103,6 +103,7 @@ class BurialSearchForm(forms.Form):
     source = forms.TypedChoiceField(required=False, label=_("Источник"))
     status = forms.TypedChoiceField(required=False, label=_("Статус"))
     comment = forms.CharField(required=False, label=_("Комментарий"))
+    file_comment = forms.CharField(required=False, label=_("Описание файла"))
     annulated = forms.BooleanField(required=False, initial=False, label=_("Аннулировано"))
     per_page = forms.ChoiceField(label=_("На странице"), choices=PAGE_CHOICES, initial=25, required=False)
 
