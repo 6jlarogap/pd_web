@@ -1,10 +1,10 @@
 # Для pip install -r <этот_файл>
-# ОС: Ubuntu 16.04, 18.04
-# Python: 3.6
-# Django 2.2
+# ОС: Ubuntu 16.04+
+# Python: 3.8+
+# Django 3.2
 #
 cssmin
-Django==2.2.22
+Django==3.2.6
 django-assets
 django-autoslug
 django-cors-headers
@@ -35,3 +35,5 @@ rjsmin
 webassets
 
 openpyxl
+
+pycurl
