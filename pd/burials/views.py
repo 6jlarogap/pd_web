@@ -1438,7 +1438,7 @@ class ApiPlacePhotoUpload(EditCemeteryObjectsMixin, APIView):
         if photo_content:
             data = dict()
             status = 200
-            photo = PlacePhoto(place=place)
+            photo = PlacePhoto(place=place, creator=request.user)
             photo.save()
             photo.bfile.save(request.data['file'].name, photo_content)
             msg = request.build_absolute_uri(photo.bfile.url)
