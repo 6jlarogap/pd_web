@@ -22,6 +22,13 @@ from burials.models import Place, Grave, Burial, Cemetery
 
 CEMETERIES = (
     dict(
+        export='lesnoe_cemeteries',
+        cemeteries=[
+            49,         # Колумбарий, кладбище Лесное
+            47,         # Лесное
+        ],
+   ),
+    dict(
         export='chizhovskoe_cemeteries',
         cemeteries=[
             35,         # Колумбарий, кладбище Чижовское

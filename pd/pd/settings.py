@@ -267,6 +267,12 @@ NORECAPTCHA_SECRET_KEY = 'secret-norecaptcha-key'
 #
 DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
 
+# Надо также установить в local_settings.py:
+#
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+#
+# Это для почтовых серверов, которые проверяют домен отправителя
+
 # На этот адрес доставляются скрытые копии всех писем, отправленных
 # с этого сервера. Если не задан (None), то такие копии не
 # доставляются

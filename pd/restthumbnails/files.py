@@ -82,6 +82,8 @@ class ThumbnailFile(ThumbnailFileBase):
                     im = processors.scale_and_crop(
                         im, self.size, self.method, crop_background=self.crop_background)
                     im = processors.colorspace(im)
+                    if getattr(im, 'mode', '').upper() == 'RGBA':
+                        im = im.convert('RGB')
                     im = processors.save_image(im)
                     self.storage.save(self.name, im)
                     return True
