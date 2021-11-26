@@ -269,7 +269,7 @@ DEFAULT_FROM_EMAIL = 'EMAIL-HOST-USER@gmail.com'
 
 # Надо также установить в local_settings.py:
 #
-SERVER_EMAL = DEFAULT_FROM_EMAIL
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
 #
 # Это для почтовых серверов, которые проверяют домен отправителя
 
