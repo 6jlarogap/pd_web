@@ -166,8 +166,11 @@ def save_image(image, format='JPEG', **options):
     """
     destination = BytesIO()
     if format == 'JPEG':
-        options.setdefault('quality', 85)
+        from restthumbnails import defaults
+        options.setdefault('quality', defaults.THUMBNAIL_QUALITY)
         try:
+            if getattr(image, 'mode', '').upper() == 'RGBA':
+                image = image.convert('RGB')
             image.save(destination, format=format, optimize=1, **options)
         except IOError:
             # Try again, without optimization (PIL can't optimize an image
@@ -422,7 +425,10 @@ def get_minimized_contentfile(source, minsize=0, quality=50):
     except IOError:
         return None
 
-    if image.size[0] * image.size[1] >= minsize:
+    minsize = minsize or 0
+    if not quality or quality >= 100:
+        quality = None
+    if quality and image.size[0] * image.size[1] >= minsize:
         options = dict(quality=quality)
         exif_dict = None
         try:
