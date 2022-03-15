@@ -68,6 +68,7 @@ MIDDLEWARE = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'pd.middleware.CountryRestrictMiddleware',
     'pd.middleware.LoginRequiredMiddleware',
     'corsheaders.middleware.CorsMiddleware',
 )
@@ -507,6 +508,12 @@ TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 # To avoid unnecessary migrations in future:
 #
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+# Требуется, если будет ограничение по странам, откуда доступ
+#
+GEOIP2_DB = '/usr/share/GeoIP/GeoLite2-Country.mmdb'
+# Например, ['RU', 'BY']
+COUNTRIES_ISO_CODES_ALLOW = []
 
 try:
     from .local_settings import *

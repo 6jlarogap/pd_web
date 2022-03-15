@@ -11,6 +11,9 @@ import string
 import math
 from collections import Sequence, OrderedDict
 
+import ipaddress
+import geoip2.database
+
 from PIL import Image
 import magic
 
@@ -358,6 +361,50 @@ def reorder_form_fields(fields, old_pos, new_pos):
     field_keys.insert(new_pos, field_keys.pop(old_pos))
     fields = OrderedDict((k, fields[k]) for k in field_keys)
     return fields
+
+class IpTools(object):
+
+    LOCAL_NETs = (
+        ipaddress.IPv4Network('192.168.0.0/16'),
+        ipaddress.IPv4Network('172.16.0.0/12'),
+        ipaddress.IPv4Network('10.0.0.0/8'),
+        ipaddress.IPv4Network('127.0.0.0/8'),
+    )
+
+    @classmethod
+    def get_client_ip(cls, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+    @classmethod
+    def ipv4_valid_address(cls, ip):
+        try:
+            result = ipaddress.IPv4Address(ip)
+        except ipaddress.AddressValueError:
+            result = None
+        return result
+
+    @classmethod
+    def ipv4_is_local(cls, ip_v4_address):
+        """
+        """
+        for net in cls.LOCAL_NETs:
+            if ip_v4_address in net:
+                return True
+        return False
+
+    @classmethod
+    def ipv4_country(cls, ip):
+        try:
+            reader = geoip2.database.Reader(settings.GEOIP2_DB)
+            record = reader.country(ip)
+            return record.country
+        except:
+            return None
 
 class RestoreObjectMixin(object):
     """
