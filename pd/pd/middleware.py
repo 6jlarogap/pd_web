@@ -1,10 +1,12 @@
 import re
 from urllib.parse import quote_plus, unquote_plus
 
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect
+from django.core.exceptions import PermissionDenied
 from django.conf import settings
 
 from pd.views import is_url_accessible_anonymous
+from pd.utils import IpTools
 
 exempt_urls = [re.compile(re.escape(url.lstrip('/')), flags=re.I) \
                 for url in (
@@ -49,4 +51,24 @@ class LoginRequiredMiddleware(object):
 
         # Code to be executed for each request/response after
         # the view is called.
+        return response
+
+
+class CountryRestrictMiddleware(object):
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if settings.GEOIP2_DB and settings.COUNTRIES_ISO_CODES_ALLOW:
+            client_ip = IpTools.get_client_ip(request)
+            ip_v4_address = IpTools.ipv4_valid_address(client_ip)
+            if ip_v4_address and not IpTools.ipv4_is_local(ip_v4_address):
+                country = IpTools.ipv4_country(client_ip)
+                if country:
+                    iso_code = getattr(country, 'iso_code', None)
+                    if iso_code and iso_code.upper() not in settings.COUNTRIES_ISO_CODES_ALLOW:
+                        raise PermissionDenied()
+
+        response = self.get_response(request)
         return response

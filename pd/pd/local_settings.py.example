@@ -152,4 +152,8 @@ REDIRECT_LOGIN_TO_FRONT_END = False
     #),
 #)
 
-# ------------------------------------------------------------------------
+# Требуется, если будет ограничение по странам, откуда доступ
+#
+GEOIP2_DB = '/usr/share/GeoIP/GeoLite2-Country.mmdb'
+# Например, ['RU', 'BY']
+COUNTRIES_ISO_CODES_ALLOW = []
