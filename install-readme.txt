@@ -40,6 +40,8 @@ install-readme.txt, utf8 code page
                     local all postgres trust
                 с перезагрузкой postgresql (service postgresql restart)
 
+        - geoipupdate, инструкции, см. Приложение C
+
         - библиотеки для графики, включая jpeg, в Ubuntu: 
             sudo apt install libjpeg-dev
 
@@ -330,3 +332,36 @@ dpkg -l | grep postgresql
     # sudo apt purge postgresql-10... ....
     # sudo apt purge postgresql-11... ....
     # sudo apt purge postgresql-12... ....
+
+---------------------------------------------------------------------------------------------------
+
+Приложение C
+
+Установка geoipupdate. Требуется, если проект будет открыт только для определеных стран
+
+    sudo apt purge geoip-database geoip-bin geoipupdate
+    sudo add-apt-repository ppa:maxmind/ppa
+    sudo apt update
+    sudo apt install geoipupdate
+
+    # - Получить на https://www.maxmind.com/en/home:
+    #       Account/User ID
+    #       License key
+    # - Заменить полученным в /etc/GeoIp.conf
+
+    sudo geoipupdate
+    # Должно отработать:
+    ls -l /usr/share/GeoIP
+        # Должно быть примерно следующее
+        # -rw-r--r-- 1 root root  1436463 Mar 15  2018 GeoIP.dat
+        # -rw-r--r-- 1 root root  5545515 Mar 15  2018 GeoIPv6.dat
+        # -rw-r--r-- 1 root root 77379291 Mar 14 17:26 GeoLite2-City.mmdb
+        # -rw-r--r-- 1 root root  7044714 Mar 14 17:26 GeoLite2-Country.mmdb
+    В /etc/crontab добавить строку типа:
+        # Min         Hr      Day     Month   DayofW  User      Command
+        11            0       *       *       3       root      geoipupdate
+
+В local_settings.py возможны такие строки:
+    GEOIP2_DB = '/usr/share/GeoIP/GeoLite2-Country.mmdb'
+    # Например, ['RU', 'BY']
+    COUNTRIES_ISO_CODES_ALLOW = []
