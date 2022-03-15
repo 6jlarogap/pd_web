@@ -201,6 +201,7 @@ class Command(BaseCommand):
                     seat = self.correct_str(place.place)
 
                     cemetery_name = burial.cemetery and burial.cemetery.name or ''
+                    cemetery_name = re.sub(r'\t|\n|\r|\f|\v', '', cemetery_name)
                     if not cemetery_name:
                         cemetery_name = "-"
                     cemetery_name_lower = cemetery_name.lower()
@@ -300,7 +301,7 @@ class Command(BaseCommand):
 
         # Символы, которые могут в фамилии, имени, отч., по ошибке
         #
-        BAD_CHAR_RE = r'\\|\"|\'\%'
+        BAD_CHAR_RE = r'\\|\"|\'\%|\t|\n|\r|\f|\v'
         return re.sub(BAD_CHAR_RE, '', s)
 
     def encode_(self, s):
