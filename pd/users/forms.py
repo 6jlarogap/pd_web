@@ -191,9 +191,13 @@ class ProfileDataForm(ChildrenJSONMixin, LoggingFormMixin, forms.ModelForm):
             self.fields['cemeteries'].queryset = cemeteries_qs
             self.fields['role'].widget.attrs.update({'size': str(min(Role.objects.all().count()+1, 20))})
             self.fields['cemeteries'].widget.attrs.update({'size': str(min(cemeteries_qs.count()+1, 20))})
-            # По умолчанию новому пользователю ОМС назначаем все роли и все кладбища
             if not self.instance or not self.instance.pk:
-                self.initial['role'] = [Role.objects.get(name=Role.ROLE_REGISTRATOR)]
+                if Role.objects.filter(name=Role.ROLE_REGISTRATOR).exists():
+                    self.initial['role'] = [Role.objects.get(name=Role.ROLE_REGISTRATOR)]
+                elif Role.objects.filter(name=Role.ROLE_CEMETERY_MANAGER).exists():
+                    self.initial['role'] = [Role.objects.get(name=Role.ROLE_CEMETERY_MANAGER)]
+                else:
+                    self.initial['role'] = []
 
         photo = None
         if self.instance.pk:
