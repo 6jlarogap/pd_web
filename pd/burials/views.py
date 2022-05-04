@@ -333,7 +333,7 @@ class CemeteryEditorsView(APIView):
             ugh=request.user.profile.org)
         previous_profiles = Profile.objects.filter(
                 cemeteries=cemetery,
-                role__name=Role.ROLE_REGISTRATOR,
+                role__name__in=(Role.ROLE_REGISTRATOR, Role.ROLE_CEMETERY_MANAGER,),
             ).distinct()
         new_cemetery_editor_ids = request.data.get('cemetery_editors_pks', [])
         new_profiles = [Profile.objects.get(pk=id_) for id_ in new_cemetery_editor_ids]
