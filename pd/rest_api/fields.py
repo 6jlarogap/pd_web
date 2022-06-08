@@ -34,18 +34,6 @@ class UnclearDateFieldSerializer(serializers.Field):
 class UnclearDateFieldSafeSerializer(UnclearDateFieldSerializer):
     date_format = ''
 
-class ThumbnailFieldSerializer(serializers.Field):
-    """
-    Field to frontend conversion
-    """
-    def to_representation(self, obj, width=None, height=None, method=None):
-        if obj:
-            try:
-                return '%s%s/%dx%d~%s~12.jpg'.format(settings.THUMBNAILS_STORAGE_BASE_PATH, 
-                                                     obj.url, width, height, method)
-            except:
-                return None
-
 class UnclearDateFieldMixin(object):
 
     def birth_date(self, instance):
