@@ -25,6 +25,9 @@
 {% endif %}
 
 <h1>{% trans "Данные организации" %} {{ object }}</h1>
+{% if is_my_org and object.pk == 394 %}
+    <br /><p><a href="/media/org-data/{{ object.pk }}/jurnal-vydachi-udostovereniy.xlsx">Журнал выдачи удостоверений</a></p>
+{% endif %}
 <form action="" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
     {% for field in form %}
