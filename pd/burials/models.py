@@ -446,9 +446,9 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
                 precision=Place._meta.get_field('geohash').max_length,
             )
         MAX_LEN = 999
-        if self.place_length and float(self.place_length) > MAX_LEN:
+        if self.place_length and abs(float(self.place_length)) > MAX_LEN:
             self.place_length = MAX_LEN
-        if self.place_width and float(self.place_width) > MAX_LEN:
+        if self.place_width and abs(float(self.place_width)) > MAX_LEN:
             self.place_width = MAX_LEN
 
         return super(Place, self).save(*args, **kwargs)
