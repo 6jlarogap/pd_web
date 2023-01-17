@@ -275,7 +275,7 @@ class UnclearDate:
         """
         Сравнить эту UnclearDate c d (UnlearDate or date or datetime)
 
-        Результат: relativedelta: словарь, включающий years, months, days
+        Результат: relativedelta: объект, включающий years, months, days
         """
         if not self or not d:
             raise ValueError(_('Одна или обе даты для сравнения не заданы'))
