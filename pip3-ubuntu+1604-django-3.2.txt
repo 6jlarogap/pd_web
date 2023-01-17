@@ -3,6 +3,8 @@
 # Python: 3.8+
 # Django 3.2
 #
+backports.zoneinfo
+
 cssmin
 Django==3.2.6
 django-assets

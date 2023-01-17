@@ -1,5 +1,4 @@
 import datetime
-from pytz import timezone
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -9,6 +8,8 @@ from django.utils.translation import gettext_lazy as _
 from django.urls import reverse
 from django.apps import apps
 get_model = apps.get_model
+
+from pd.utils import ZONEINFO_LOCAL
 
 class LogOperation(object):
 
@@ -230,7 +231,7 @@ def compare_obj(verbose_name, old_val, new_val):
         elif isinstance(value, datetime.datetime):
             datetime_format = '%Y-%m-%d %H:%M:%S'
             if value.tzinfo:
-                value = value.astimezone(timezone(settings.TIME_ZONE)).replace(tzinfo=None)
+                value = value.astimezone(ZONEINFO_LOCAL).replace(tzinfo=None)
             result = value.strftime(datetime_format)
         else:
             result= str(value)

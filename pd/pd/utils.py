@@ -5,7 +5,6 @@ from django.utils.translation import gettext_lazy as _
 
 import datetime
 import dateutil.parser
-from pytz import timezone, utc
 import re
 import string
 import math
@@ -16,6 +15,10 @@ import geoip2.database
 
 from PIL import Image
 import magic
+
+from backports.zoneinfo import ZoneInfo
+ZONEINFO_LOCAL = ZoneInfo(settings.TIME_ZONE)
+ZONEINFO_UTC = ZoneInfo('UTC')
 
 class DigitsValidator(RegexValidator):
     regex = '^\d+$'
@@ -41,38 +44,36 @@ class NotEmptyValidator(MinLengthValidator):
     message = _('Не пусто')
     code = 'not_empty'
 
-def utcisoformat(dt, remove_mcsec=True):
+def local2utc(dt, remove_mcsec=False):
     """
-    Return a datetime object in ISO 8601 format in UTC, without microseconds
-    or time zone offset other than 'Z', e.g. '2011-06-28T00:00:00Z'.
+    Из локальной даты/времени сделать дату по Гринвичу без timezone
     """
-    # Convert datetime to UTC, remove microseconds, remove timezone, convert to string
-    TZ = timezone(settings.TIME_ZONE)
     if remove_mcsec:
         dt = dt.replace(microsecond=0)
-    return TZ.localize(dt).astimezone(utc).replace(tzinfo=None).isoformat() + 'Z'
+    dt_local = dt.replace(tzinfo=ZONEINFO_LOCAL)
+    return dt_local.astimezone(ZONEINFO_UTC).replace(tzinfo=None)
 
-def utcstr2local(str_dt):
-    try:
-        return utc2local(dateutil.parser.parse(str_dt, ignoretz=True))
-    except (ValueError, AttributeError,):
-        return None
+def utcisoformat(dt, remove_mcsec=True):
+    """
+    Вернуть datetime object в ISO 8601 format in UTC
+    """
+    return local2utc(dt, remove_mcsec).isoformat() + 'Z'
 
 def utc2local(dt):
     """
     Из даты/времени по Гринвичу сделать локальную дату
     """
-    local_tz = timezone(settings.TIME_ZONE)
-    utc_tz = timezone('UTC')
-    return utc_tz.localize(dt).astimezone(local_tz).replace(tzinfo=None)
+    dt_utc = dt.replace(tzinfo=ZONEINFO_UTC)
+    return dt_utc.astimezone(ZONEINFO_LOCAL).replace(tzinfo=None)
 
-def local2utc(dt):
+def utcstr2local(str_dt):
     """
-    Из локальной даты/времени сделать дату по Гринвичу
+    Из строки даты/времени по Гринвичу сделать локальную дату
     """
-    local_tz = timezone(settings.TIME_ZONE)
-    utc_tz = timezone('UTC')
-    return local_tz.localize(dt).astimezone(utc_tz).replace(tzinfo=None)
+    try:
+        return utc2local(dateutil.parser.parse(str_dt, ignoretz=True))
+    except (ValueError, AttributeError,):
+        return None
 
 def host_country_code(request):
     """
