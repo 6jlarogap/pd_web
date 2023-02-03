@@ -473,7 +473,7 @@ class ServiceOrderDetailSerializer(serializers.ModelSerializer):
     placeId = serializers.PrimaryKeyRelatedField(source='customplace', read_only=True)
     number = serializers.ReadOnlyField(source='number_verbose')
     isArchived = serializers.BooleanField(source='archived')
-    clientRating = serializers.NullBooleanField(source='applicant_approved')
+    clientRating = serializers.BooleanField(source='applicant_approved')
     services = ServiceItemSerializer(many=True, source='serviceitem_set')
     products = serializers.SerializerMethodField('products_func')
 
