@@ -4,13 +4,6 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-# После django 1.5 сессии хранятся по умолчанию в json формате по умолчанию,
-# но переход к этому формату означает потерю всех сессий, что наверняка
-# приведет к необходимости вводить имя/пароль и следовательно,
-# организационные проблемы.
-#
-SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
-
 ADMINS = ()
 
 MANAGERS = ADMINS
