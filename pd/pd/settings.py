@@ -109,7 +109,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'raven.contrib.django',
 
-    'nocaptcha_recaptcha',
+    'captcha',
 
     'geo',
     'burials',
@@ -245,8 +245,10 @@ SESSION_SAVE_EVERY_REQUEST = True
 # Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
 # подлежат замене в local_settings.py:
 #
-NORECAPTCHA_SITE_KEY = 'public-norecaptcha-key'
-NORECAPTCHA_SECRET_KEY = 'secret-norecaptcha-key'
+
+RECAPTCHA_PUBLIC_KEY = 'public-recaptcha-key'
+RECAPTCHA_PRIVATE_KEY = 'secret-recaptcha-key'
+SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
 
 # Для отправки кода активации и прочей почты,
 #
