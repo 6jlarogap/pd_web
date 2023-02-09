@@ -26,7 +26,7 @@ query = DeadPerson.objects.filter(
 
 count_invalid = 0
 with open(output_csv, 'w') as f:
-    for p in query.iterator():
+    for p in query.iterator(chunk_size=100):
         if p.death_date.year - p.birth_date.year > max_age or \
            p.death_date < p.birth_date:
             count_invalid += 1

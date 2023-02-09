@@ -20,7 +20,7 @@ def main():
                 fact_date__gte=DATE_START,
                 fact_date__lte=DATE_END,
                 annulated=False,
-            ).order_by('fact_date').distinct().iterator():
+            ).order_by('fact_date').distinct().iterator(chunk_size=100):
 
             deadman_last_name=''
             deadman_first_name=''
