@@ -85,7 +85,7 @@ class Command(BaseCommand):
                     print(("%d deadmen removed" % i))
             print('removing burial applicants- alivepersons')
             i = 0
-            for aliveperson in AlivePerson.objects.filter(applied_burials__ugh=ugh).iterator():
+            for aliveperson in AlivePerson.objects.filter(applied_burials__ugh=ugh).iterator(chunk_size=100):
                 i += 1 
                 Burial.objects.filter(applicant=aliveperson).update(applicant=None)
                 aliveperson.delete()
