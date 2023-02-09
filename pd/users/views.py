@@ -139,17 +139,16 @@ class LORURequiredMixin:
 
 class CheckRecaptcha2Mixin(object):
 
-    def check_recaptcha(self, request, g_nocaptcha_response_value):
+    def check_recaptcha(self, request, recaptcha_data):
         forwarded_ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
         if forwarded_ip:
             remote_ip = forwarded_ip
         else:
             remote_ip = request.META.get('REMOTE_ADDR', '')
-        secret_key = settings.NORECAPTCHA_SECRET_KEY
-        from nocaptcha_recaptcha.client import submit
+        from captcha.client import submit
         return submit(
-                g_nocaptcha_response_value=smart_str(g_nocaptcha_response_value),
-                secret_key=secret_key,
+                recaptcha_response=smart_str(recaptcha_data),
+                private_key=settings.RECAPTCHA_PRIVATE_KEY,
                 remoteip=remote_ip,
         ).is_valid
 

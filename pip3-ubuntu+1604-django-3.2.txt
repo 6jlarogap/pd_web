@@ -12,8 +12,11 @@ django-autoslug
 django-cors-headers
 django-debug-toolbar
 django-google-charts
-django-nocaptcha-recaptcha
 django-qsstats-magic
+
+# Не обновляется с 2018
+# django-nocaptcha-recaptcha
+django-recaptcha
 
 redis
 django-redis
