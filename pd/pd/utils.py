@@ -390,10 +390,11 @@ class IpTools(object):
         return result
 
     @classmethod
-    def ipv4_is_local(cls, ip_v4_address):
-        """
-        """
+    def ipv4_is_permitted(cls, ip_v4_address):
         for net in cls.LOCAL_NETs:
+            if ip_v4_address in net:
+                return True
+        for net in settings.GEOIP2_NETS_PERMITTED:
             if ip_v4_address in net:
                 return True
         return False
