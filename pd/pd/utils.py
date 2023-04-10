@@ -395,8 +395,12 @@ class IpTools(object):
             if ip_v4_address in net:
                 return True
         for net in settings.GEOIP2_NETS_PERMITTED:
-            if ip_v4_address in net:
-                return True
+            try:
+                net_ip = ipaddress.IPv4Network(net)
+                if ip_v4_address in net_ip:
+                    return True
+            except ipaddress.AddressValueError:
+                pass
         return False
 
     @classmethod
