@@ -138,6 +138,28 @@ class CaretakerMixin(object):
                 result.append(UserFioLoginSerializer(user).data)
         return result
 
+    def check_caretaker(self, obj):
+        result = True
+        if obj.caretaker:
+            if isinstance(obj, Cemetery):
+                ugh = obj.ugh
+                cemetery = obj
+            else:
+            # Area. Place
+                ugh = obj.cemetery.ugh
+                cemetery = obj.cemetery
+            result = User.objects.filter(
+                profile__org=ugh,
+                profile__role__name__in=(
+                    Role.ROLE_REGISTRATOR,
+                    Role.ROLE_CARETAKER,
+                    Role.ROLE_CEMETERY_MANAGER,
+                ),
+                is_active=True,
+                pk=obj.caretaker.pk,
+            ).exists()
+        return result
+
 class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSet):
     model = Cemetery
     serializer_class = CemeterySerializer
@@ -183,6 +205,10 @@ class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelVi
         return result
 
     def post_update(self, obj):
+        if not self.check_caretaker(obj):
+            obj.caretaker = None
+            obj.save()
+
         old_lat = obj.address and obj.address.gps_y or None
         old_lng = obj.address and obj.address.gps_x or None
         address = self.request.data.get('obj_address')
@@ -368,9 +394,12 @@ class AreaViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSe
         item = self.getCemetery(self.request)
         return self.model.objects.filter(cemetery=item)
 
-    def check_new_area(self, area):
+    def check_area(self, area):
         if area.kind != Area.KIND_GRAVES and area.places_count > 1:
             area.places_count = 1
+            area.save()
+        if not self.check_caretaker(area):
+            area.caretaker = None
             area.save()
         serializer = self.get_serializer(area)
         return serializer
@@ -382,7 +411,7 @@ class AreaViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSe
         area = self.model(**serializer.validated_data)
         area.cemetery = self.getCemetery(self.request)
         area.save(force_insert=True)
-        serializer = self.check_new_area(area)
+        serializer = self.check_area(area)
         write_log(request, area.cemetery, _('Создан участок: %s') % area)
         return Response(serializer.data, status=201)
 
@@ -397,9 +426,10 @@ class AreaViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSe
         serializer = self.get_serializer(area, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        serializer = self.check_new_area(area)
+        serializer = self.check_area(area)
         write_log(request, area, _('Участок изменен'))
         return Response(serializer.data)
+
 
     def retrieve(self, request, *args, **kwargs):
         area = self.get_object()
@@ -502,6 +532,9 @@ class PlaceViewSet(EditCemeteryObjectsMixin, SafeDeleteMixin, CaretakerMixin, vi
         place = self.get_object()
         new_msg = []
 
+        if not self.check_caretaker(place):
+            place.caretaker = None
+            place.save()
         responsible = data.get('obj_responsible')
         if responsible and responsible.get('login_phone'):
             try:

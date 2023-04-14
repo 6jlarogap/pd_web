@@ -103,7 +103,7 @@ class CemeterySerializer(CemeteryPhotoMixin, serializers.ModelSerializer):
     time_end = serializers.TimeField()
     caretaker = serializers.PrimaryKeyRelatedField(
         required=False,
-        queryset=User.objects.filter(is_active=True),
+        queryset=User.objects.all(),
         allow_null=True,
     )
     photoUrl = serializers.SerializerMethodField('photoUrl_func')
@@ -133,7 +133,7 @@ class AreaSerializer(serializers.ModelSerializer):
     cemetery = serializers.PrimaryKeyRelatedField(queryset=Cemetery.objects.all(), required=False)
     caretaker = serializers.PrimaryKeyRelatedField(
         required=False,
-        queryset=User.objects.filter(is_active=True),
+        queryset=User.objects.all(),
         allow_null=True,
     )
 
@@ -208,7 +208,7 @@ class PlaceSerializer(GetGalleryMixin, serializers.ModelSerializer):
     dt_unindentified = serializers.DateTimeField(allow_null=True, required=False)
     caretaker = serializers.PrimaryKeyRelatedField(
         required=False,
-        queryset=User.objects.filter(is_active=True),
+        queryset=User.objects.all(),
         allow_null=True,
     )
     create_cabinet = serializers.SerializerMethodField('create_cabinet_func')
