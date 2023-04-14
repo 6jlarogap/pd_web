@@ -509,6 +509,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 GEOIP2_DB = '/usr/share/GeoIP/GeoLite2-Country.mmdb'
 # Например, ['RU', 'BY']
 COUNTRIES_ISO_CODES_ALLOW = []
+# Если установлен COUNTRIES_ISO_CODES_ALLOW, и ответ
+# по странам, что не из той страны, то проверить,
+# не попадает ли в одну из сетей (увы geoip2 для
+# свободных аккаунтов иногда таки ошибается):
+GEOIP2_NETS_PERMITTED = []
 
 try:
     from .local_settings import *
