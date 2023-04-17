@@ -148,16 +148,7 @@ class CaretakerMixin(object):
             # Area. Place
                 ugh = obj.cemetery.ugh
                 cemetery = obj.cemetery
-            result = User.objects.filter(
-                profile__org=ugh,
-                profile__role__name__in=(
-                    Role.ROLE_REGISTRATOR,
-                    Role.ROLE_CARETAKER,
-                    Role.ROLE_CEMETERY_MANAGER,
-                ),
-                is_active=True,
-                pk=obj.caretaker.pk,
-            ).exists()
+            result = cemetery in Cemetery.editable_ugh_cemeteries(obj.caretaker)
         return result
 
 class CemeteryViewSet(EditCemeteryObjectsMixin, CaretakerMixin, viewsets.ModelViewSet):
