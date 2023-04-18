@@ -14,7 +14,10 @@ from django.db.models.fields.files import FieldFile
 from geo.forms import LocationForm
 from pd.forms import ChildrenJSONMixin, LoggingFormMixin, StrippedStringsMixin, \
                      CustomUploadModelForm, CustomClearableFileInput
-from nocaptcha_recaptcha.fields import NoReCaptchaField
+
+from captcha.fields import ReCaptchaField
+from captcha.widgets import ReCaptchaV2Checkbox
+
 
 from pd.models import validate_phone_as_number, validate_username
 from pd.utils import host_country_code, EmailMessage, reorder_form_fields
@@ -617,7 +620,7 @@ class RegisterForm(forms.ModelForm):
                   'captcha',
                  )
 
-    captcha = NoReCaptchaField(label='')
+    captcha = ReCaptchaField(widget=ReCaptchaV2Checkbox(), label='')
     password1 = forms.CharField(label=_("Пароль"), widget=forms.PasswordInput())
     password2 = forms.CharField(label=_("Пароль (повторите)"), widget=forms.PasswordInput())
 
@@ -698,7 +701,7 @@ class SupportForm(forms.Form):
         help_text=_('В международном формате: +код-страны-код-города-номер-телефона'),
         required=False,
     )
-    captcha = NoReCaptchaField(label='', required=True)
+    captcha = ReCaptchaField(widget=ReCaptchaV2Checkbox(), label='', required=True)
 
     def __init__(self, request, *args, **kwargs):
         super(SupportForm, self).__init__(*args, **kwargs)
@@ -806,7 +809,7 @@ class SupportForm(forms.Form):
         EmailMessage(email_subject, email_text, email_from, email_to, headers=headers, ).send()
 
 class TestCaptcha2Form(forms.Form):
-    captcha = NoReCaptchaField(label='')
+    captcha = ReCaptchaField(widget=ReCaptchaV2Checkbox(), label='')
 
 class VideoSearchForm(forms.Form):
     PAGE_CHOICES = (

@@ -1573,7 +1573,7 @@ class RegistryView(FormInvalidMixin, ManualEncodedCsvMixin, UpdateView):
                 select_related(*select_related).distinct()
         fname = 'registry-1-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
         with open(os.path.join(temp_dir, fname), 'wb') as f:
-            for b in qs.iterator():
+            for b in qs.iterator(chunk_size=100):
                 full_name = self.check_names(b.deadman)
                 if not full_name:
                     pass
@@ -1599,7 +1599,7 @@ class RegistryView(FormInvalidMixin, ManualEncodedCsvMixin, UpdateView):
                 select_related(*select_related).distinct()
         fname = 'registry-5-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
         with open(os.path.join(temp_dir, fname), 'wb') as f:
-            for b in qs.iterator():
+            for b in qs.iterator(chunk_size=100):
                 full_name = self.check_names(b.deadman)
                 if not full_name:
                     pass
@@ -1626,7 +1626,7 @@ class RegistryView(FormInvalidMixin, ManualEncodedCsvMixin, UpdateView):
                 select_related(*select_related).distinct()
         fname = 'registry-2-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
         with open(os.path.join(temp_dir, fname), 'wb') as f:
-            for b in qs.iterator():
+            for b in qs.iterator(chunk_size=100):
                 full_name = self.check_names(b.deadman)
                 if not full_name:
                     pass
@@ -1654,7 +1654,7 @@ class RegistryView(FormInvalidMixin, ManualEncodedCsvMixin, UpdateView):
                 select_related(*select_related).distinct()
         fname = 'registry-3-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
         with open(os.path.join(temp_dir, fname), 'wb') as f:
-            for b in qs.iterator():
+            for b in qs.iterator(chunk_size=100):
                 full_name = self.check_names(b.deadman)
                 if not full_name:
                     pass
@@ -1680,7 +1680,7 @@ class RegistryView(FormInvalidMixin, ManualEncodedCsvMixin, UpdateView):
                 select_related(*select_related).distinct()
         fname = 'registry-4-from-%s-to-%s-at-%s.csv' % (date_from_str, date_to_str, dt_now_str, )
         with open(os.path.join(temp_dir, fname), 'wb') as f:
-            for b in qs.iterator():
+            for b in qs.iterator(chunk_size=100):
                 full_name = self.check_names(b.deadman)
                 if not full_name:
                     pass

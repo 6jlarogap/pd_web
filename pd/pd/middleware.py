@@ -63,7 +63,7 @@ class CountryRestrictMiddleware(object):
         if settings.GEOIP2_DB and settings.COUNTRIES_ISO_CODES_ALLOW:
             client_ip = IpTools.get_client_ip(request)
             ip_v4_address = IpTools.ipv4_valid_address(client_ip)
-            if ip_v4_address and not IpTools.ipv4_is_local(ip_v4_address):
+            if ip_v4_address and not IpTools.ipv4_is_permitted(ip_v4_address):
                 country = IpTools.ipv4_country(client_ip)
                 if country:
                     iso_code = getattr(country, 'iso_code', None)

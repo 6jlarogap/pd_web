@@ -4,13 +4,6 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-# После django 1.5 сессии хранятся по умолчанию в json формате по умолчанию,
-# но переход к этому формату означает потерю всех сессий, что наверняка
-# приведет к необходимости вводить имя/пароль и следовательно,
-# организационные проблемы.
-#
-SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
-
 ADMINS = ()
 
 MANAGERS = ADMINS
@@ -46,7 +39,7 @@ MEDIA_ROOT = os.path.join(ROOT_DIR, 'media/')
 MEDIA_URL = '/media/'
 
 STATIC_ROOT = os.path.join(ROOT_DIR, 'static/')
-STATIC_URL = '/static/'
+STATIC_URL = 'static/'
 
 
 STATICFILES_DIRS = (
@@ -116,7 +109,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'raven.contrib.django',
 
-    'nocaptcha_recaptcha',
+    'captcha',
 
     'geo',
     'burials',
@@ -252,8 +245,10 @@ SESSION_SAVE_EVERY_REQUEST = True
 # Google reCaptcha keys, поучаемые из http://www.google.com/recaptcha,
 # подлежат замене в local_settings.py:
 #
-NORECAPTCHA_SITE_KEY = 'public-norecaptcha-key'
-NORECAPTCHA_SECRET_KEY = 'secret-norecaptcha-key'
+
+RECAPTCHA_PUBLIC_KEY = 'public-recaptcha-key'
+RECAPTCHA_PRIVATE_KEY = 'secret-recaptcha-key'
+SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
 
 # Для отправки кода активации и прочей почты,
 #
@@ -514,6 +509,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 GEOIP2_DB = '/usr/share/GeoIP/GeoLite2-Country.mmdb'
 # Например, ['RU', 'BY']
 COUNTRIES_ISO_CODES_ALLOW = []
+# Если установлен COUNTRIES_ISO_CODES_ALLOW, и ответ
+# по странам, что не из той страны, то проверить,
+# не попадает ли в одну из сетей (увы geoip2 для
+# свободных аккаунтов иногда таки ошибается):
+GEOIP2_NETS_PERMITTED = []
 
 try:
     from .local_settings import *

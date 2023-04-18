@@ -433,7 +433,7 @@ class ProfileClientSiteSerializer(PhonesFromTextMixin, serializers.ModelSerializ
             return []
 
 class OrgReviewSerializer(CreatedAtMixin, serializers.ModelSerializer):
-    isPositive = serializers.NullBooleanField(source='is_positive')
+    isPositive = serializers.BooleanField(source='is_positive')
     author = UserFioSerializer(source='creator')
     createdAt = serializers.SerializerMethodField('createdAt_func')
     title = serializers.CharField(source='subject')
