@@ -20,7 +20,7 @@ from burials.forms import BurialSearchForm, BurialPublicListForm, BurialForm, Bu
                           BurialApproveCloseForm, AddDocTypeForm, AddGravesForm, SpravkaForm, \
                           RegistryForm
 from burials.forms import AddAgentForm, AddDoverForm, AddOrgForm, ExhumationForm
-from burials.models import Reason, Burial, Burial1, Cemetery, Area, Place, ExhumationRequest, OrderPlace
+from burials.models import Reason, Burial, Burial1, Cemetery, Area, Place, ExhumationRequest, OrderPlace, Debitor
 from persons.models import DeathCertificate, OrderDeadPerson, DeadPerson, AlivePerson
 from logs.models import write_log
 from orders.models import Order
@@ -389,11 +389,17 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                     return redirect(reverse('edit_burial', args=[b.pk]) + '?action=complete')
                 else:
                     if b.close(request=request):
-                        messages.success(
-                            request,
-                            _("<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
-                                view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
-                        ))
+                        msg_close = "<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто"
+                        msg_debitor_to_warn = Debitor.check_debitor_warn(b)
+                        if msg_debitor_to_warn:
+                            msg_close += '<br />' + msg_debitor_to_warn
+                        msg_close = _(msg_close) % dict(
+                            view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
+                        )
+                        if msg_debitor_to_warn:
+                            messages.warning(request, msg_close)
+                        else:
+                            messages.success(request, msg_close)
             else:
                 return self.get(request, *args, **kwargs)
 
@@ -1095,11 +1101,17 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
                             burial=b,
                             is_new_burial=not is_existing_burial,
                         )
-                    messages.success(
-                        self.request,
-                        _("<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто") % dict(
-                            view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
-                    ))
+                    msg_debitor_to_warn = Debitor.check_debitor_warn(b)
+                    msg_close = "<a href='%(view_burial)s'>Захоронение %(pk)s</a> закрыто"
+                    if msg_debitor_to_warn:
+                        msg_close += '<br />' + msg_debitor_to_warn
+                    msg_close = _(msg_close) % dict(
+                        view_burial=reverse('view_burial', args=[b.pk]), pk=b.pk,
+                    )
+                    if msg_debitor_to_warn:
+                        messages.warning(self.request, msg_close)
+                    else:
+                        messages.success(self.request, msg_close)
                     redirect_to_view = True
 
             if old_status != b.status or old_annulated != b.annulated:

@@ -515,6 +515,12 @@ COUNTRIES_ISO_CODES_ALLOW = []
 # свободных аккаунтов иногда таки ошибается):
 GEOIP2_NETS_PERMITTED = []
 
+# Список должников, которых надо предупредить
+# Ключ: ugh__pk, значение: сообщение должнику
+# при всякой правке/закрытии захоронения
+#
+DEBITORS_TO_WARN = dict()
+
 try:
     from .local_settings import *
 except ImportError:

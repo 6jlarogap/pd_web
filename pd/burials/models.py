@@ -1815,3 +1815,23 @@ class Burial1(BaseModel):
             'changed_by', 'changed_by__profile', 
             'responsible',  'responsible__address',
         )[0]
+
+class Debitor(object):
+    """
+    Проверка при сохранении/закрытии закрытии захоронения работником ОМС
+    """
+    @classmethod
+    def check_debitor_warn(cls, burial):
+        """
+        Проверка предупреждаемых
+
+        Если всё нормально, то возвращает пустоту.
+        Иначе дополнительное сообщение при закрытии, правке закрытого захоронения
+        """
+        message = ''
+        if burial and burial.ugh and burial.ugh.pk:
+            try:
+                message = settings.DEBITORS_TO_WARN[burial.ugh.pk]
+            except KeyError:
+                pass
+        return message

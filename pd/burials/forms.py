@@ -17,7 +17,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.db.models.query_utils import Q
 
-from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialComment, BurialFiles, Grave, PlaceSize
+from burials.models import Cemetery, Area, Burial, Place, ExhumationRequest, BurialComment, BurialFiles, Grave, PlaceSize, Debitor
 from persons.models import AlivePerson
 from geo.models import Location
 from geo.forms import LocationForm
@@ -927,11 +927,18 @@ class BurialForm(PartialFormMixin, ChildrenJSONMixin, LoggingFormMixin, SafeDele
 
         order_parm = '?order=%s' % self.order.pk if self.order else ''
         url = 'view_burial' if request.user.profile.is_ugh() else 'edit_burial'
-        msg = _("<a href='%(burial_url)s'>Захоронение %(pk)s</a> сохранено") % dict(
+        msg = "<a href='%(burial_url)s'>Захоронение %(pk)s</a> сохранено"
+        msg_debitor_to_warn = request.user.profile.is_ugh() and Debitor.check_debitor_warn(self.instance) or ''
+        if msg_debitor_to_warn:
+            msg += '<br />' + msg_debitor_to_warn
+        msg = _(msg) % dict(
             burial_url=reverse(url, args=[self.instance.pk]) + order_parm,
             pk=self.instance.pk,
         )
-        messages.success(self.request, msg)
+        if msg_debitor_to_warn:
+            messages.warning(self.request, msg)
+        else:
+            messages.success(self.request, msg)
 
         return self.instance
 
