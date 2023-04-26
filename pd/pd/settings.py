@@ -521,6 +521,14 @@ GEOIP2_NETS_PERMITTED = []
 #
 DEBITORS_TO_WARN = dict()
 
+# Список должников, которым надо запретить
+# закрытие захоронений
+# Ключ: ugh__pk, значение: сообщение должнику
+# при нажатии кнопки закрытия захоронения.
+# Захоронения закрываться не будут.
+#
+DEBITORS_TO_BAN_CLOSE_BURIAL = dict()
+
 try:
     from .local_settings import *
 except ImportError:
