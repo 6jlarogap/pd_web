@@ -1835,3 +1835,23 @@ class Debitor(object):
             except KeyError:
                 pass
         return message
+
+    @classmethod
+    def check_debitor_ban_close_burial(cls, request):
+        """
+        Проверка, не запретили ОМС закрывать захоронение
+
+        Если всё нормально, то возвращает пустоту.
+        Иначе дополнительное сообщение при закрытии, правке закрытого захоронения
+        """
+        message = ''
+        try:
+            user = request.user
+            if is_ugh_user(user):
+                try:
+                    message = settings.DEBITORS_TO_BAN_CLOSE_BURIAL[user.profile.org.pk]
+                except KeyError:
+                    pass
+        except AttributeError:
+            pass
+        return message

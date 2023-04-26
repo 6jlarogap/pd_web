@@ -51,7 +51,17 @@
                             <input type="submit" class="btn btn-commit-burial" name="disapprove" value="{% trans "cохранить и отменить согласование" %}"/>
                         {% endif %}
                         {% if not b.is_full and not b.is_closed %}
-                            <input type="submit" class="btn btn-success" name="complete" value="{% trans "cохранить и закрыть" %}"/>
+                            <script>
+                                function checkIfBannedClose() {
+                                    {% if ban_close_burial %}
+                                        alert("{{ ban_close_burial }}");
+                                        return false;
+                                    {% else %}
+                                        return true;
+                                    {% endif %}
+                                }
+                            </script>
+                            <input type="submit" class="btn btn-success" name="complete" value="{% trans "cохранить и закрыть" %}"  onclick="return checkIfBannedClose()"/>
                         {% endif %}
                         {% if b.can_ugh_annulate %}
                             <input type="submit" class="btn btn-commit-burial" name="annulate" onclick="return confirm('{% trans "Вы уверены?" %}');" value="{% trans "аннулировать" %}"/>

@@ -551,7 +551,8 @@ class BurialView(BurialsListGenericMixin, BurialGetOrderMixin, DetailView):
                                 (self.request.user.profile.is_registrator() or \
                                  self.request.user.profile.is_caretaker_only() and not b.is_closed()),
             'place': b.get_place(),
-            'editable_ugh_cemeteries': Cemetery.editable_ugh_cemeteries(self.request.user)
+            'editable_ugh_cemeteries': Cemetery.editable_ugh_cemeteries(self.request.user),
+            'ban_close_burial': Debitor.check_debitor_ban_close_burial(self.request),
         })
         return data
 
@@ -898,6 +899,7 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
             'doc_type_form': AddDocTypeForm(prefix='doctype'),
             'add_graves_form': AddGravesForm(prefix='add_graves'),
             'order': self.get_order(),
+            'ban_close_burial': Debitor.check_debitor_ban_close_burial(self.request),
         })
         return data
 
