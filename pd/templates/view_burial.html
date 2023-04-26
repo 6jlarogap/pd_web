@@ -323,7 +323,17 @@
                         CEMETERY_AREAS = {{ approve_close_form.cemetery_areas_json|default:"{}" }};
                         PLACE_SIZE = {{ approve_close_form.place_size_json|default:"{}" }};
                     </script>
-                    <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}">
+                    <script>
+                        function checkIfBannedClose() {
+                            {% if ban_close_burial %}
+                                alert("{{ ban_close_burial }}");
+                                return false;
+                            {% else %}
+                                return true;
+                            {% endif %}
+                        }
+                    </script>
+                    <input type="submit" class="btn btn-primary" name="complete" value="{% trans "закрыть" %}" onclick="return checkIfBannedClose()">
                     {% if b.can_approve_ugh %}
                         <input type="submit" class="btn btn-primary" name="approve" value="{% trans "cогласовать" %}">
                     {% endif %}
