@@ -884,9 +884,8 @@ class CreateBurial(BurialGetOrderMixin, FormInvalidMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         data = super(CreateBurial, self).get_context_data(**kwargs)
-        b = self.get_object()
         data.update({
-            'b': b,
+            'b': self.get_object(),
             'agent_form': AddAgentForm(prefix='agent'),
             'loru_agent_form': AddAgentForm(prefix='loru_agent'),
             'agent_dover_form': AddDoverForm(prefix='agent_dover'),
