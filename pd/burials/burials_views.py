@@ -1437,16 +1437,13 @@ class ExhumateView(ArchiveMixin, DetailView):
 burial_exhumate = ExhumateView.as_view()
 
 class CancelExhumationView(ArchiveMixin, DeleteView):
-    def delete(self, *args, **kwargs):
-        self.burial = self.get_object().burial
-        self.place = self.get_object().place or self.burial.get_place()
-        return super(CancelExhumationView, self).delete(*args, **kwargs)
-
     def get_success_url(self):
-        write_log(self.request, self.burial, _('Эксгумация отменена'))
+        burial = self.get_object().burial
+        place = self.get_object().place or burial.get_place()
+        write_log(self.request, burial, _('Эксгумация отменена'))
         messages.success(self.request, _("Эксгумация отменена"))
-        if self.place and self.place.pk:
-            return self.place.url()
+        if place and place.pk:
+            return place.url()
         else:
             return reverse('dashboard')
 

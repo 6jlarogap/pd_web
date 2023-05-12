@@ -6,7 +6,7 @@
 backports.zoneinfo
 
 cssmin
-Django==4.1.6
+Django==4.2.1
 django-assets
 django-autoslug
 django-cors-headers
@@ -16,7 +16,6 @@ django-recaptcha
 django-qsstats-magic
 
 redis
-django-redis
 
 django-wkhtmltopdf
 djangorestframework
