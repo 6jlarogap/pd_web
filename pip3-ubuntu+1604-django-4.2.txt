@@ -25,7 +25,7 @@ LatLon23
 odfpy
 piexif
 Pillow
-psycopg2-binary
+psycopg
 
 python-dateutil
 python-geohash

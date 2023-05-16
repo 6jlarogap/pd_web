@@ -332,7 +332,6 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
     ),
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework.parsers.JSONParser',
@@ -537,6 +536,12 @@ except ImportError:
 for t in TEMPLATES:
     t['OPTIONS']['debug'] = DEBUG
 ASSETS_DEBUG = DEBUG
+
+if DEBUG:
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    )
 
 # Миграции, начиная с Django 1.7, вносят verbose_name
 # поля, а это меняется для разных локалей
