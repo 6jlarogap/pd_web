@@ -731,8 +731,6 @@ class BurialsListView(PaginateListView):
             s = [s]
 
         burials = burials.order_by(*s).distinct()
-        burials_count = burials.count()
-        burials.count = lambda: burials_count
         return burials
 
     def get_template_names(self):
