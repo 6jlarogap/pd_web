@@ -24,7 +24,7 @@ from burials.models import Reason, Burial, Burial1, Cemetery, Area, Place, Exhum
 from persons.models import DeathCertificate, OrderDeadPerson, DeadPerson, AlivePerson
 from logs.models import write_log
 from orders.models import Order
-from users.models import Org, Profile, is_cabinet_user, is_ugh_user
+from users.models import Org, Profile, is_cabinet_user, is_ugh_user, is_loru_user
 from pd.utils import re_search, host_country_code
 from pd.forms import CommentForm
 from pd.views import PaginateListView, FormInvalidMixin, get_front_end_url, ManualEncodedCsvMixin
@@ -575,11 +575,15 @@ class BurialsListView(PaginateListView):
             return Burial.objects.none().order_by('-pk')
 
         if self.request.user.is_authenticated:
-            burials = Burial1.objects.filter(
-                Q(applicant_organization=self.request.user.profile.org) | Q(ugh=self.request.user.profile.org),
-            ).order_by('-pk')
+            if is_ugh_user(self.request.user):
+                q_org = Q(ugh=self.request.user.profile.org)
+            elif is_loru_user(self.request.user):
+                q_org = Q(applicant_organization=self.request.user.profile.org)
+            else:
+                raise Http404
+            burials = Burial1.objects.filter(q_org).order_by('-pk')
         else:
-            burials = Burial.objects.none().order_by('-pk')
+            burials = Burial.objects.none()
         form = self.get_form()
         if form.data and form.is_valid():
             if form.cleaned_data['operation']:
@@ -730,7 +734,7 @@ class BurialsListView(PaginateListView):
         if not isinstance(s, list):
             s = [s]
 
-        burials = burials.order_by(*s).distinct()
+        burials = burials.order_by(*s)
         return burials
 
     def get_template_names(self):

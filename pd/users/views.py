@@ -1670,11 +1670,16 @@ class OrgLogView(UghOrLoruRequiredMixin, ReportDatesMixin, PaginateListView):
                             user__is_active=True,
                         ).exclude(
                             user__pk=self.request.user.pk
+                        ).select_related(
+                            'user',
                         ).distinct():
             self.collaborators.append((profile.user.pk, profile.last_name_initials()))
         collaborators_pks = [ c[0] for c in self.collaborators ]
         q = Q(org=org, user__is_active=True) & ~Q(user__pk__in=collaborators_pks)
-        other_users = [(profile.user.pk, profile.last_name_initials()) for profile in Profile.objects.filter(q)]
+        other_users = [
+            (profile.user.pk, profile.last_name_initials()) for profile in Profile.objects.filter(
+                q).select_related('user')
+        ]
         self.choice_users = self.collaborators + other_users
 
         self.date_from, self.date_to = self.get_dates()
@@ -1691,7 +1696,7 @@ class OrgLogView(UghOrLoruRequiredMixin, ReportDatesMixin, PaginateListView):
             self.date_to = form.cleaned_data.get('date_to')
             q_users = Q(user__pk__in=form.cleaned_data.get('users') or [])
 
-        logs = Log.objects.filter(q_users)
+        logs = Log.objects.filter(q_users).select_related('user', 'user__profile')
         if self.date_from:
             logs = logs.filter(dt__gte=self.date_from)
         if self.date_to:
