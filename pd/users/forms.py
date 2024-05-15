@@ -811,16 +811,6 @@ class SupportForm(forms.Form):
 class TestCaptcha2Form(forms.Form):
     captcha = ReCaptchaField(widget=ReCaptchaV2Checkbox(), label='')
 
-class VideoSearchForm(forms.Form):
-    PAGE_CHOICES = (
-        (5, 5),
-        (10, 10),
-        (25, 25),
-        (50, 50),
-    )
-
-    per_page = forms.ChoiceField(label=_("На странице"), choices=PAGE_CHOICES, initial=25, required=False)
-
 class ThanksForm(forms.Form):
     PAGE_CHOICES = (
         (5, 5),

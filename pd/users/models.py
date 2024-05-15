@@ -414,54 +414,6 @@ def get_default_currency():
     Currency = get_model('billing', 'Currency')
     return Currency.objects.only('pk').get(code=settings.CURRENCY_DEFAULT_CODE)
 
-class YoutubeVideo(BaseModel):
-    yid = models.CharField(_("Youtube ID"), max_length=255, unique=True)
-    url = models.URLField(_("URL"), max_length=255, default='')
-    title = models.CharField(_("Заголовок"), max_length=255, default='')
-    title_photo_url = models.URLField(_("Preview URL"), max_length=255, default='')
-    is_hidden = models.BooleanField(_("Скрыто в списке видео"), default=False)
-
-    def delete(self, *args, **kwargs):
-        YoutubeCaptionVote.objects.filter(
-            youtubecaption__youtubevideo=self
-        ).delete()
-        for model in (YoutubeVote, YoutubeCaption):
-            model.objects.filter(youtubevideo=self).delete()
-        return super(YoutubeVideo, self).delete(*args, **kwargs)
-
-class YoutubeCaption(models.Model):
-    """
-    Субтритры
-    """
-    youtubevideo = models.ForeignKey('users.YoutubeVideo', on_delete=models.CASCADE)
-    num = models.PositiveIntegerField(_("Порядковый номер субтитра"))
-    start = models.FloatField(_("Старт субтитра"))
-    stop = models.FloatField(_("Стоп субтитра"))
-    text = models.TextField(_("Текст"))
-
-class YoutubeVote(BaseModel):
-    """
-    Голосование за youtube видео
-    """
-    LIKE_UP = 'up'
-    LIKE_DOWN = 'down'
-    LIKES = (
-        (LIKE_UP, _("Нравится")),
-        (LIKE_UP, _("Не нравится")),
-    )
-
-    youtubevideo = models.ForeignKey('users.YoutubeVideo', on_delete=models.CASCADE)
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    time = models.PositiveIntegerField(_("Время реакции"), default=0)
-    like = models.CharField(_("Реакция"), max_length=100, choices=LIKES, default=LIKE_UP)
-
-class YoutubeCaptionVote(BaseModel):
-
-    youtubecaption = models.ForeignKey('users.YoutubeCaption', on_delete=models.CASCADE)
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    like = models.CharField(_("Реакция"),
-                max_length=100, choices=YoutubeVote.LIKES, default=YoutubeVote.LIKE_UP)
-
 class Oauth(BaseModel):
     PROVIDER_YANDEX = 'yandex'
     PROVIDER_FACEBOOK = 'facebook'

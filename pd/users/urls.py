@@ -103,23 +103,7 @@ urlpatterns = [
     re_path(r'^api/thank/users/?$', views.api_thank_users, name='api_thank_users'),
     re_path(r'^api/thank/(?P<pk>\d+)/?$', views.api_thank_detail, name='api_thank_detail'),
 
-    re_path(r'^api/videos/?$', views.api_videos, name='api_videos'),
-    re_path(r'^api/videos/(?P<yid>\S+)/votes/?$', views.api_video_votes, name='api_video_votes'),
-    re_path(r'^api/videos/(?P<yid>\S+)/aggregated-votes/?$', views.api_video_aggregated_votes, name='api_video_aggregated_votes'),
-    re_path(r'^api/videos/(?P<yid>\S+)/statistics/?$', views.api_video_statistics, name='api_video_statistics'),
-    re_path(r'^api/videos/(?P<yid>\S+)/statistics/current-user-time-votes/?$',
-        views.api_video_statistics_current_user, name='api_video_statistics_current_user'),
-    re_path(r'^api/videos/(?P<yid>\S+)/subtitles/?$', views.api_video_subtitles, name='api_video_subtitles'),
-    re_path(r'^api/videos/(?P<yid>\S+)/subtitles-votes/?$', views.api_video_subtitles_votes, name='api_video_subtitles_votes'),
-    re_path(r'^api/videos/(?P<yid>\S+)/timestamps/(?P<second>\d+)/voters/?$',
-            views.api_video_timestamps_votes, name='api_video_timestamps_votes'),
-    re_path(r'^videos/?$', views.videos, name='videos'),
-    # Здесь обязательно '/' в конце шаблона, ибо '/' подпадает под \S+
-    re_path(r'^api/videos/(?P<yid>\S+)/$', views.api_video_detail, name='api_video_detail'),
-
     re_path(r'^thanks/?$', views.thanks, name='thanks'),
-
-    re_path(r'^api/vk/bot/(?P<group>\w+)/handler/?$', views.api_vk_bot_handler, name='api_vk_bot_handler'),
 
     re_path(r'^autocomplete/org/$', views.autocomplete_org, name='autocomplete_org'),
     re_path(r'^autocomplete/loru_in_burials/$', views.autocomplete_loru_in_burials, name='autocomplete_loru_in_burials'),
