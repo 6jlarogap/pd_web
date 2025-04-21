@@ -6,7 +6,7 @@
 backports.zoneinfo
 
 cssmin
-Django
+Django==4.2.20
 django-assets
 django-autoslug
 django-cors-headers
@@ -18,7 +18,13 @@ django-qsstats-magic
 redis
 
 django-wkhtmltopdf
-djangorestframework
+
+# Чтоб переход от py 3.8 к py 3.12
+# проходил без лишней миграции
+# (эта версия была последней для py 3.8)
+#
+djangorestframework==3.15.2
+
 djangorestframework-jsonp
 
 LatLon23
