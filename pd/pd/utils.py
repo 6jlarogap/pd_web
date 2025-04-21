@@ -3,7 +3,7 @@ from django.core.validators import RegexValidator, MinLengthValidator
 from django.core.mail import EmailMessage
 from django.utils.translation import gettext_lazy as _
 
-import datetime
+import datetime, sys
 import dateutil.parser
 import re
 import string
@@ -16,7 +16,11 @@ import geoip2.database
 from PIL import Image
 import magic
 
-from backports.zoneinfo import ZoneInfo
+if sys.version_info[1] > 8:
+    from zoneinfo import ZoneInfo
+else:
+    from backports.zoneinfo import ZoneInfo
+
 ZONEINFO_LOCAL = ZoneInfo(settings.TIME_ZONE)
 ZONEINFO_UTC = ZoneInfo('UTC')
 
