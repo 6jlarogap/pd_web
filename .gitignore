@@ -6,4 +6,3 @@ __pycache__/
 ENV*
 pd/media
 pd/static
-pd/asset_src/
