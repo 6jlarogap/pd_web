@@ -8,7 +8,12 @@ import dateutil.parser
 import re
 import string
 import math
-from collections import Sequence, OrderedDict
+
+from collections import OrderedDict
+if sys.version_info[1] >= 10:
+    from collections.abc import Sequence
+else:
+    from collections import Sequence
 
 import ipaddress
 import geoip2.database
@@ -25,7 +30,7 @@ ZONEINFO_LOCAL = ZoneInfo(settings.TIME_ZONE)
 ZONEINFO_UTC = ZoneInfo('UTC')
 
 class DigitsValidator(RegexValidator):
-    regex = '^\d+$'
+    regex = r'^\d+$'
     message = _('Допускаются только цифры')
     code = 'digits'
 

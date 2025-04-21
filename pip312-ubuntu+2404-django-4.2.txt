@@ -12,7 +12,7 @@ django-autoslug
 django-cors-headers
 django-debug-toolbar
 django-google-charts
-django-recaptcha
+django-recaptcha==3.0.0
 django-qsstats-magic
 
 redis
