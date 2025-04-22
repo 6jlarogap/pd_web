@@ -1018,8 +1018,6 @@ class ProductsViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
 class ProductsOptViewSet(ProductCategoryQsMixin, viewsets.ReadOnlyModelViewSet):
     """
     Показ продуктов оптовика-поставщика
-
-    api/optplaces/suppliers/(?P<loru_pk>\d+)/products
     """
     model = Product
 

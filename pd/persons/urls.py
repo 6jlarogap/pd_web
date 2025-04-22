@@ -13,23 +13,23 @@ urlpatterns = [
     re_path(r'^api/persons/autocomplete/?$', views.api_autocomplete_persons, name='api_autocomplete_persons'),
     
     re_path(r'^api/client/places/?$', views.api_client_places, name='api_client_places'),
-    re_path(r'^api/client/places/(?P<pk>\d+)/?$', views.api_client_places_detail, name='api_client_places_detail'),
-    re_path(r'^api/client/places/(?P<pk>\d+)/deadmans/?$', views.api_client_places_deadmans, name='api_client_places_deadmans'),
-    re_path(r'^api/client/places/(?P<pk>\d+)/attachments/?$', views.api_client_places_attachments, name='api_client_places_attachments'),
-    re_path(r'^api/client/places/(?P<pk>\d+)/deadmans/(?P<deadman_pk>\d+)/?$',
+    re_path(r'^api/client/places/(?P<pk>[0-9]+)/?$', views.api_client_places_detail, name='api_client_places_detail'),
+    re_path(r'^api/client/places/(?P<pk>[0-9]+)/deadmans/?$', views.api_client_places_deadmans, name='api_client_places_deadmans'),
+    re_path(r'^api/client/places/(?P<pk>[0-9]+)/attachments/?$', views.api_client_places_attachments, name='api_client_places_attachments'),
+    re_path(r'^api/client/places/(?P<pk>[0-9]+)/deadmans/(?P<deadman_pk>[0-9]+)/?$',
                     views.api_client_places_deadmans_detail, name='api_client_places_deadmans_detail'),
-    re_path(r'^api/client/places/(?P<pk>\d+)/orders/?$', views.api_client_places_orders, name='api_client_places_orders'),
+    re_path(r'^api/client/places/(?P<pk>[0-9]+)/orders/?$', views.api_client_places_orders, name='api_client_places_orders'),
 
     re_path(r'^api/client/deadmans/?$', views.api_client_deadmans, name='api_client_deadmans'),
 
     re_path(r'^api/client/persons/?$', views.api_client_persons, name='api_client_persons'),
-    re_path(r'^api/client/persons/(?P<pk>\d+)/?$', views.api_client_persons_detail, name='api_client_persons_detail'),
+    re_path(r'^api/client/persons/(?P<pk>[0-9]+)/?$', views.api_client_persons_detail, name='api_client_persons_detail'),
 
-    re_path(r'^api/custompersons/(?P<pk>\d+)/?$', views.api_customperson_detail, name='api_customperson_detail'),
-    re_path(r'^api/custompersons/(?P<pk>\d+)/memories/?$', views.api_customperson_memory_gallery, name='api_customperson_memory_gallery'),
-    re_path(r'^api/custompersons/(?P<pk>\d+)/memories/(?P<memory_pk>\d+)/?$',
+    re_path(r'^api/custompersons/(?P<pk>[0-9]+)/?$', views.api_customperson_detail, name='api_customperson_detail'),
+    re_path(r'^api/custompersons/(?P<pk>[0-9]+)/memories/?$', views.api_customperson_memory_gallery, name='api_customperson_memory_gallery'),
+    re_path(r'^api/custompersons/(?P<pk>[0-9]+)/memories/(?P<memory_pk>[0-9]+)/?$',
         views.api_customperson_memory_gallery_detail, name='api_customperson_memory_gallery_detail'),
 
     re_path(r'^api/oms/burials/?$', views.api_oms_burials, name='api_oms_burials'),
-    re_path(r'^api/oms/burials/(?P<pk>\d+)/?$', views.api_oms_burials_detail, name='api_oms_burials_detail'),
+    re_path(r'^api/oms/burials/(?P<pk>[0-9]+)/?$', views.api_oms_burials_detail, name='api_oms_burials_detail'),
 ]

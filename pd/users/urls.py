@@ -27,11 +27,11 @@ urlpatterns = [
 
     re_path(r'^api/loru/places/?$', views.api_loru_places, name='api_loru_places'),
     re_path(r'^api/(?:org|loru)/stores/?$', views.api_loru_stores, name='api_loru_stores'),
-    re_path(r'^api/(?:org|loru)/stores/(?P<pk>\d+)/?$', views.api_loru_store_detail, name='api_loru_store_detail'),
+    re_path(r'^api/(?:org|loru)/stores/(?P<pk>[0-9]+)/?$', views.api_loru_store_detail, name='api_loru_store_detail'),
 
     re_path(r'^api/loru/favorite_suppliers/?$', views.api_loru_favorite_suppliers, name='api_loru_favorite_suppliers'),
     re_path(
-        r'^api/loru/favorite_suppliers/(?P<supplier_id>\d+)/?$',
+        r'^api/loru/favorite_suppliers/(?P<supplier_id>[0-9]+)/?$',
         views.api_loru_favorite_suppliers_edit,
         name='api_loru_favorite_suppliers_edit'
     ),
@@ -40,12 +40,12 @@ urlpatterns = [
     re_path(r'^api/catalog/suppliers/(?P<org_slug>[\w-]+)/?$', views.api_catalog_suppliers_detail, name='api_catalog_suppliers_detail'),
 
     re_path(r'^api/optplaces/suppliers/?$', views.api_optplaces_suppliers, name='api_optplaces_suppliers'),
-    re_path(r'^api/optplaces/suppliers/(?P<pk>\d+)/?$', views.api_optplaces_suppliers_detail, name='api_optplaces_suppliers_detail'),
+    re_path(r'^api/optplaces/suppliers/(?P<pk>[0-9]+)/?$', views.api_optplaces_suppliers_detail, name='api_optplaces_suppliers_detail'),
 
     re_path(r'^api/shops/?$', views.api_shops, name='api_shops'),
-    re_path(r'^api/shops/(?P<pk>\d+)/gallery/?$', views.api_shops_gallery, name='api_shops_gallery'),
+    re_path(r'^api/shops/(?P<pk>[0-9]+)/gallery/?$', views.api_shops_gallery, name='api_shops_gallery'),
     re_path(r'^api/shops/(?P<pk>[\w-]+)/?$', views.api_shops_detail, name='api_shops_detail'),
-    re_path(r'^api/shops/(?P<pk>\d+)/reviews/?$', views.api_shops_reviews, name='api_shops_reviews'),
+    re_path(r'^api/shops/(?P<pk>[0-9]+)/reviews/?$', views.api_shops_reviews, name='api_shops_reviews'),
 
     re_path(r'^api/org/signup/?$', views.api_org_signup, name='api_org_signup'),
 
@@ -62,9 +62,9 @@ urlpatterns = [
     re_path(r'^tutorial/$', views.tutorial, name='tutorial'),
     
     re_path(r'^registrants/$', views.registrants, name='registrants'),
-    re_path(r'^registrant/(?P<pk>\d+)/delete/$', views.registrant_delete, name='registrant_delete'),
-    re_path(r'^registrant/(?P<pk>\d+)/approve/$', views.registrant_approve, name='registrant_approve'),
-    re_path(r'^registrant/(?P<pk>\d+)/decline/$', views.registrant_decline, name='registrant_decline'),
+    re_path(r'^registrant/(?P<pk>[0-9]+)/delete/$', views.registrant_delete, name='registrant_delete'),
+    re_path(r'^registrant/(?P<pk>[0-9]+)/approve/$', views.registrant_approve, name='registrant_approve'),
+    re_path(r'^registrant/(?P<pk>[0-9]+)/decline/$', views.registrant_decline, name='registrant_decline'),
     
     re_path(r'^oms_burialstats/', views.oms_burial_stats, name='oms_burial_stats'),
     re_path(r'^oms_currentstats/', views.oms_current_stats, name='oms_current_stats'),
@@ -76,10 +76,10 @@ urlpatterns = [
     re_path(r'^loruregistry/$', views.loru_registry, name='loru_registry'),
 
     re_path(r'^userprofile/$', views.edit_profile, {'my_profile': True}, name='user_profile'),
-    re_path(r'^profile/(?P<pk>\d+)/edit/$', views.edit_profile, name='edit_profile'),
+    re_path(r'^profile/(?P<pk>[0-9]+)/edit/$', views.edit_profile, name='edit_profile'),
     re_path(r'^profile/create/$', views.edit_profile, name='create_profile'),
 
-    re_path(r'^org/(?P<pk>\d+)/edit/$', views.edit_org, name='edit_org'),
+    re_path(r'^org/(?P<pk>[0-9]+)/edit/$', views.edit_org, name='edit_org'),
     re_path(r'^org/log/$', views.org_log, name='org_log'),
     re_path(r'^org/log_org/$', views.org_log_org, name='org_log_org'),
 
@@ -93,15 +93,15 @@ urlpatterns = [
 
     re_path(r'^api/cabinet/getcode/?$', views.api_cabinet_getcode, name='api_cabinet_getcode'),
     re_path(r'^api/cabinet/tokens/?$', views.api_cabinet_tokens, name='api_cabinet_tokens'),
-    re_path(r'^api/cabinet/users/(?P<pk>\d+)/?$', views.api_cabinet_users, name='api_cabinet_users'),
+    re_path(r'^api/cabinet/users/(?P<pk>[0-9]+)/?$', views.api_cabinet_users, name='api_cabinet_users'),
 
-    re_path(r'^api/cabinet/users/(?P<pk>\d+)/oauth-providers/?$', views.api_cabinet_oauth, name='api_cabinet_oauth'),
-    re_path(r'^api/cabinet/users/(?P<user_id>\d+)/oauth-providers/(?P<oauth_id>\d+)/?$',
+    re_path(r'^api/cabinet/users/(?P<pk>[0-9]+)/oauth-providers/?$', views.api_cabinet_oauth, name='api_cabinet_oauth'),
+    re_path(r'^api/cabinet/users/(?P<user_id>[0-9]+)/oauth-providers/(?P<oauth_id>[0-9]+)/?$',
         views.api_cabinet_oauth_detail, name='api_cabinet_oauth_detail'),
 
     re_path(r'^api/thank/users_count/?$', views.api_thank_users_count, name='api_thank_users_count'),
     re_path(r'^api/thank/users/?$', views.api_thank_users, name='api_thank_users'),
-    re_path(r'^api/thank/(?P<pk>\d+)/?$', views.api_thank_detail, name='api_thank_detail'),
+    re_path(r'^api/thank/(?P<pk>[0-9]+)/?$', views.api_thank_detail, name='api_thank_detail'),
 
     re_path(r'^thanks/?$', views.thanks, name='thanks'),
 

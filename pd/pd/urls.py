@@ -43,7 +43,7 @@ router.register(r'^api/placesize', PlaceSizeViewSet, basename='api-placesize-vie
 # Orders
 router.register(r'^api/catalog/products/?$', ProductsViewSet, basename='api-catalog-categories-viewset')
 router.register(r'^api/loru/products', UghPublishedProductsViewSet)
-router.register(r'^api/optplaces/suppliers/(?P<loru_pk>\d+)/products/?$', ProductsOptViewSet, basename='api-optplaces-suppliers-viewset')
+router.register(r'^api/optplaces/suppliers/(?P<loru_pk>[0-9]+)/products/?$', ProductsOptViewSet, basename='api-optplaces-suppliers-viewset')
 
 # Geo
 router.register(r'^api/geo/location', LocationViewSet, basename='api-geo-location-viewset')
