@@ -16,7 +16,6 @@ install-readme.txt, utf8 code page
         - средства разработки:
             * python3, не ниже 3.8
                 * sudo apt install python3-all-dev python3-virtualenv
-                * sudo apt install g++
                 * sudo apt install software-properties-common libcurl4-gnutls-dev librtmp-dev
 
         - redis-server
@@ -28,7 +27,7 @@ install-readme.txt, utf8 code page
                 см. Приложение B
 
             * в т.ч. для разработчика, ubuntu:
-                sudo apt-get install postgresql postgresql-server-dev-all
+                sudo apt install postgresql postgresql-server-dev-all
 
                 полагаем, что используется база postgresql на localhost,
                 в которой пользователю postgres всё дозволено. Это достигается
@@ -45,23 +44,13 @@ install-readme.txt, utf8 code page
         - библиотеки для графики, включая jpeg, в Ubuntu: 
             sudo apt install libjpeg-dev
 
-        - bower
-            ubuntu 16.4:
-                * скачать NodeJS: http://nodejs.org/
-                * распаковать, cd node-<VERSION>; ./configure && make && sudo make install
-                * sudo npm install -g bower
-            ubuntu 18.4:
-                sudo apt install nodejs
-                sudo apt install npm
-                sudo npm install -g bower
-
         - программы:
             * wkhtmltopdf (конвертация в pdf, от Google):
                 - для ubuntu 16.04 можно довольствоваться
                   архивной версией 0.12.0, в которой распространяется архив, его
                   распаковываешь куда-то и программа готова к запуску.
-                    * (ubuntu 16.04) sudo apt-get install fontconfig
-                    * (ubuntu 16.04) sudo apt-get install libxrender1
+                    * (ubuntu 16.04) sudo apt install fontconfig
+                    * (ubuntu 16.04) sudo aptt install libxrender1
                     * скачать wkhtmltopdf-архив для 32 или 64 bit,
                       http://sourceforge.net/projects/wkhtmltopdf/files/archive/0.12.0/
                     * tar xf wkhtmltox-linux-<i386|amd64>_<версия>.tar.xz
@@ -71,8 +60,8 @@ install-readme.txt, utf8 code page
                     (приходится таки ставить wkhtmltopdf из дистрибутива, и это всё потянуло кучу
                      инсталяций для X server'a):
                     sudo -i
-                    apt-get install wkhtmltopdf
-                    apt-get install xvfb
+                    apt install wkhtmltopdf
+                    apt install xvfb
                     echo -e '#!/bin/bash\nxvfb-run -a --server-args="-screen 0, 1024x768x24" /usr/bin/wkhtmltopdf -q $*' > /usr/local/bin/wkhtmltopdf.sh
                     chmod a+x /usr/local/bin/wkhtmltopdf.sh
                     ln -s /usr/local/bin/wkhtmltopdf.sh /usr/local/bin/wkhtmltopdf
@@ -82,9 +71,9 @@ install-readme.txt, utf8 code page
                     ~/musor.pdf должен демонстрировать начальную страницу Google
 
          - web сервер apache2:
-            (ubuntu: sudo apt-get install apache2  apache2-utils)
+            (ubuntu: sudo apt install apache2  apache2-utils)
 
-         -git (ubuntu: sudo apt-get install git)
+         -git (ubuntu: sudo apt install git)
 
     * Должен быть запущен postgresql сервер
 
@@ -93,9 +82,6 @@ install-readme.txt, utf8 code page
     * mkdir ~/projects; cd ~/projects
     * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
     * cd ~/projects/pd_web
-    * bower install
-        Там выбрать пункт 1:
-            1) angular#1.0.8 which resolved to 1.0.8 and is required by angular-cookies#1.0.8, angular-resource#1.0.8, PD
     * source ~/venv/pdweb/bin/activate
     * pip install --no-cache-dir -r pip.txt
         ! --no-cache-dir :  избегает проблему с локалью, когда стандартные
@@ -125,7 +111,7 @@ install-readme.txt, utf8 code page
 
     * Должен быть установлен Apache mod_wsgi и mod_xsendfile.
         - В ubuntu выполнить:
-            sudo apt-get install libapache2-mod-xsendfile libapache2-mod-wsgi-py3
+            sudo apt install libapache2-mod-xsendfile libapache2-mod-wsgi-py3
 
     * При использовании ssl: sudo a2enmod ssl
     * sudo a2enmod rewrite
@@ -212,7 +198,7 @@ install-readme.txt, utf8 code page
             * слушает только localhost
             * пересылает почту только от localhost
         Установка:
-            - sudo apt-get install postfix
+            - sudo apt install postfix
               (Если спросит, в какой конфигурации, выбираем local only)
             - подправить /etc/postfix в соответствии с contrib/email-server/postfix/main.cf,
               для сравнения там есть оригинальный mail.cf.Orig
