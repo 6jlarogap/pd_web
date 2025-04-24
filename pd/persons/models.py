@@ -15,6 +15,8 @@ from pd.models import UnclearDate, UnclearDateModelField, BaseModel, Files, \
 from pd.utils import utcisoformat, capitalize
 from users.models import Org, PhonesMixin
 
+from django.conf import settings
+
 class IDDocumentType(models.Model):
     name = models.CharField(_("Тип документа"), max_length=255, db_index=True)
 
@@ -162,6 +164,18 @@ class BasePerson(PersonMixin, models.Model):
     def unclear_birth_date_str(self):
         return self.unclear_birth_date and self.unclear_birth_date.strftime('%d.%m.%Y') or ''
 
+    def export_dict(self):
+        result = dict(
+            last_name=self.last_name,
+            first_name=self.first_name,
+            middle_name=self.middle_name,
+            birth_date=self.birth_date and self.birth_date.str_safe() or None,
+            address=self.address and self.address.export_dict() or None,
+        )
+        if settings.DEADMAN_IDENT_NUMBER_ALLOW:
+            result.update(ident_number=ident_number)
+        return result
+
     class Meta:
         ordering = ['last_name', 'first_name', 'middle_name', ]
         verbose_name = _("физ. лицо")
@@ -206,6 +220,11 @@ class DeadPerson(DeadPersonMixin, BasePerson):
         except (ProtectedError, BasePerson.DoesNotExist,):
             pass
 
+    def export_dict(self):
+        result = super(DeadPerson, self).export_dict()
+        result.update(death_date=self.death_date and self.death_date.str_safe() or None)
+        return result
+
 class OrderDeadPerson(DeadPersonMixin, BasePerson):
     """
     Усопший, указываемый при заказе, для которого еще не сделано захоронение
@@ -242,6 +261,11 @@ class AlivePerson(BasePerson, PhonesMixin):
             super(AlivePerson, self).delete()
         except (ProtectedError, BasePerson.DoesNotExist,):
             pass
+
+    def export_dict(self):
+        result = super(AlivePerson, self).export_dict()
+        result.update(phones=self.phones)
+        return result
 
 class DocumentSource(models.Model):
     name = models.CharField(_("Наименование органа"), max_length=255, unique=True)

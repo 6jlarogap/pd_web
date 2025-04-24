@@ -1581,6 +1581,46 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
         files = BurialFiles.objects.filter(burial=self).order_by('-pk')
         return [ f.comment for f in files if f.comment ]
 
+    def export_dict(self):
+        result = dict(
+            id=self.pk,
+            burial_type=self.get_burial_type_display(),
+            burial_container = self.get_burial_container_display(),
+            account_number=self.account_number,
+            grave_number=self.grave_number,
+            fact_date=self.fact_date and self.fact_date.str_safe() or None,
+        )
+        place = self.place
+        exhumated = None
+        if self.is_exhumated():
+            exh = self.exhumated
+            place = exh.place or self.get_place() or None
+            place_id = place and place.pk or None
+            exhumated= dict(
+                fact_date=exh.fact_date and str(exh.fact_date) or None,
+                applicant = exh.applicant and exh.applicant.export_dict() or None,
+            )
+        else:
+            place_id=self.place_id
+        result.update(place_id=place_id, exhumated=exhumated)
+
+        deadman = None
+        if self.deadman:
+            deadman = self.deadman.export_dict()
+        result.update(deadman=deadman)
+
+        applicant = None
+        if self.applicant:
+            applicant = self.applicant.export_dict()
+        result.update(applicant=applicant)
+
+        responsible = None
+        if self.responsible:
+            responsible = self.responsible.export_dict()
+        result.update(responsible=responsible)
+
+        return result
+
 class BurialComment(BaseModel):
 
     burial = models.ForeignKey(Burial, verbose_name=_("Захоронение"), on_delete=models.CASCADE)

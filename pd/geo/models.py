@@ -347,6 +347,33 @@ class Location(models.Model):
                 pass
         return location
 
+    def export_dict(self):
+        if self.country or self.gps_x or self.addr_str:
+            result = dict()
+            if self.addr_str:
+                result.update(addr_str=addr_str)
+            elif self.country:
+                result.update(
+                    country=self.country.name,
+                    region=self.region and self.region.name or None,
+                    city=self.city and self.city.name or None,
+                    street=self.street and self.street.name or None,
+                    post_index=self.post_index,
+                    house=self.house,
+                    block=self.block,
+                    building=self.building,
+                    flat=self.flat,
+                    info=self.info,
+                )
+            if self.gps_x:
+                result.update(
+                    latitude=self.gps_x,
+                    longitude=self.gps_y,
+                )
+        else:
+            result = None
+        return result
+
 class LocationMixin(object):
 
     def location_dict(self):
