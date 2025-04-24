@@ -83,10 +83,7 @@ install-readme.txt, utf8 code page
     * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
     * cd ~/projects/pd_web
     * source ~/venv/pdweb/bin/activate
-    * pip install --no-cache-dir -r pip.txt
-        ! --no-cache-dir :  избегает проблему с локалью, когда стандартные
-                            сообщения django (например, "пароль")
-                            вдруг печатаются по английски (password)
+    * pip install -r pip.txt
     * cd ~/projects/pd_web/pd/pd
     * cp local_settings.py.example local_settings.py
     * внести правки в local_settings.py, но если почти без правок, то:
