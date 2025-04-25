@@ -171,6 +171,14 @@ class Cemetery(GetLogsMixin, BaseModelManualDtCreated, PhonesMixin):
             return user.profile.cemeteries.all()
         return result
 
+    def export_dict(self):
+        result = dict(
+            id=self.pk,
+            name=self.name,
+            address=self.address and self.address.export_dict() or None,
+        )
+        return result
+
 class CemeteryPhoto(PhotoFiles, GeoPointModel):
     cemetery = models.OneToOneField(Cemetery, on_delete=models.CASCADE)
 
@@ -271,6 +279,19 @@ class Area(BaseModelManualDtCreated):
     def is_columbarium(self):
         return self.kind != Area.KIND_GRAVES
 
+    def export_dict(self):
+        result = dict(
+            id=self.pk,
+            cemetery_id=self.cemetery_id,
+            name=self.name,
+            availability=self.get_availability_display(),
+            kind=self.get_kind_display(),
+            purpose=self.purpose.name if self.purpose else None,
+            places_count=self.places_count,
+        )
+        return result
+
+
 class AreaCoordinates(CoordinatesModel):
     area = models.ForeignKey(Area, verbose_name=_("Участок"), on_delete=models.PROTECT, related_name='coordinates')
 
@@ -324,6 +345,28 @@ class Place(SafeDeleteMixin, GeoPointModel, BaseModelManualDtCreated):
         verbose_name_plural = _("Места")
         unique_together = ('cemetery', 'area', 'row', 'place',)
         ordering = ['row', 'place']
+
+    def export_dict(self):
+        result = dict(
+            id=self.pk,
+            area_id=self.area_id,
+            row=self.row,
+            number=self.place,
+            width=self.place_width and float(self.place_width) or None,
+            length=self.place_length and float(self.place_length) or None,
+            responsible=self.responsible and self.responsible.export_dict() or None,
+            latitude=self.lat,
+            longitude=self.lng,
+            is_crypt=self.kind_crypt,
+            is_illegible_fio=bool(self.dt_wrong_fio),
+            is_military=bool(self.dt_military),
+            is_size_violated=bool(self.dt_size_violated),
+            is_abandoned=bool(self.dt_unowned),
+            is_free=bool(self.dt_free),
+            is_unindentified=bool(self.dt_unindentified),
+        )
+        return result
+
 
     def __str__(self):
         if self.is_columbarium():
@@ -1584,11 +1627,14 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
     def export_dict(self):
         result = dict(
             id=self.pk,
-            burial_type=self.get_burial_type_display(),
-            burial_container = self.get_burial_container_display(),
+            type=self.get_burial_type_display(),
+            container=self.get_burial_container_display(),
+            source=self.get_source_type_display(),
             account_number=self.account_number,
             grave_number=self.grave_number,
             fact_date=self.fact_date and self.fact_date.str_safe() or None,
+            dt_created=self.dt_created and utcisoformat(self.dt_created) or None,
+            dt_modified=self.dt_modified and utcisoformat(self.dt_modified) or None,
         )
         place = self.place
         exhumated = None
@@ -1614,11 +1660,6 @@ class Burial(SafeDeleteMixin, GetLogsMixin, BaseModel):
             applicant = self.applicant.export_dict()
         result.update(applicant=applicant)
 
-        responsible = None
-        if self.responsible:
-            responsible = self.responsible.export_dict()
-        result.update(responsible=responsible)
-
         return result
 
 class BurialComment(BaseModel):
@@ -1638,6 +1679,13 @@ class BurialComment(BaseModel):
         Владелец, тот, кто модифицировал или тот кто создал
         """
         return self.modifier if self.modifier else self.creator
+
+    def export_dict(self):
+        return dict(
+            comment=self.comment,
+            dt_created=self.dt_created and utcisoformat(self.dt_created) or None,
+            dt_modified=self.dt_modified and utcisoformat(self.dt_modified) or None,
+        ) if self.comment.strip() else None
 
 class BurialFiles(Files):
     """

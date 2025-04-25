@@ -270,8 +270,13 @@ class AlivePerson(BasePerson, PhonesMixin):
             pass
 
     def export_dict(self):
+        document = None
+        try:
+            document = self.personid.export_dict()
+        except (AttributeError, DeathCertificateScan.DoesNotExist,):
+            pass
         result = super(AlivePerson, self).export_dict()
-        result.update(phones=self.phones)
+        result.update(phones=self.phones, document=document)
         return result
 
 class DocumentSource(models.Model):
@@ -303,6 +308,22 @@ class PersonID(models.Model):
     def save(self, *args, **kwargs):
         self.series = self.series.upper()
         super(PersonID, self).save(*args, **kwargs)
+
+    def export_dict(self):
+        result = dict(
+            id_type=self.id_type.name if self.id_type else None,
+            series=self.series,
+            number=self.number,
+            source=self.source.name if self.source else None,
+            date=self.date and str(self.date) or None,
+            date_expire=self.date_expire and str(self.date_expire) or None,
+        )
+        for k in result:
+            if result[k]:
+                break
+        else:
+            result = None
+        return result
 
 class DeathCertificate(BaseModel):
     """
@@ -358,7 +379,6 @@ class DeathCertificate(BaseModel):
         except (AttributeError, DeathCertificateScan.DoesNotExist,):
             pass
         result.update(scan=scan)
-
         return result
 
     def get_burial(self):
