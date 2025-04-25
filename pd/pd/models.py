@@ -12,6 +12,9 @@ get_model = apps.get_model
 from django.db.models.deletion import ProtectedError
 from django.utils.translation import gettext as _
 from django.core.exceptions import ValidationError
+
+from pd.utils import utcisoformat
+
 from logs.models import Log
 from pd.views import ServiceException
 
@@ -509,6 +512,26 @@ class FilesMixin(object):
         else:
             file_ = None
         return file_
+
+    def dt_created_field(self):
+        if hasattr(self, 'dt_created'):
+            dt_created = self.dt_created
+        elif hasattr(self, 'date_of_creation'):
+            dt_created = self.date_of_creation
+        else:
+            dt_created = None
+        return dt_created
+
+    def export_dict(self):
+        file_field = self.file_field()
+        dt_created = self.dt_created_field()
+        result = dict(
+            path=str(file_field or ''),
+            dt_created=dt_created and utcisoformat(dt_created) or None,
+        )
+        if getattr(self, 'comment', None):
+            result.update(comment=self.comment)
+        return result
 
     def delete_from_media(self):
         file_ = self.file_field()

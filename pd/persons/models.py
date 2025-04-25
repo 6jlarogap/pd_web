@@ -223,6 +223,13 @@ class DeadPerson(DeadPersonMixin, BasePerson):
     def export_dict(self):
         result = super(DeadPerson, self).export_dict()
         result.update(death_date=self.death_date and self.death_date.str_safe() or None)
+        deathcertificate = None
+        try:
+            deathcertificate = self.deathcertificate.export_dict()
+        except (AttributeError, DeathCertificate.DoesNotExist,):
+            pass
+        result.update(death_certificate=deathcertificate)
+
         return result
 
 class OrderDeadPerson(DeadPersonMixin, BasePerson):
@@ -336,6 +343,23 @@ class DeathCertificate(BaseModel):
             super(DeathCertificate, self).delete()
         except ProtectedError:
             pass
+
+    def export_dict(self):
+        result = dict(
+            type=self.get_type_display(),
+            number=self.s_number,
+            series=self.series,
+            release_date=str(self.release_date),
+            org=self.zags.name,
+        )
+        scan = None
+        try:
+            scan = self.deathcertificatescan.export_dict()
+        except (AttributeError, DeathCertificateScan.DoesNotExist,):
+            pass
+        result.update(scan=scan)
+
+        return result
 
     def get_burial(self):
         """

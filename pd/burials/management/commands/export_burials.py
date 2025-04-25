@@ -25,19 +25,15 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('ugh_pk', type=str)
         parser.add_argument('export_path', type=str)
-        parser.add_argument('url_media', type=str)
 
     def handle(self, *args, **kwargs):
         ugh_pk = kwargs['ugh_pk']
         export_path = kwargs['export_path']
-        url_media = kwargs['url_media']
-        url_media = url_media.rstrip('/')
-        if not url_media:
-            url_media = 'https://org.pohoronnoedelo.ru/media'
 
         ugh = Org.objects.get(pk=ugh_pk)
 
-        print('BurialFiles')
+        media_txt = open(f'{export_path}/media.txt', 'w')
+
         burialfile = dict()
         burialfile_qs = BurialFiles.objects.filter(
             burial__ugh=ugh,
@@ -49,14 +45,12 @@ class Command(BaseCommand):
             if f.bfile:
                 if burialfile.get(f.burial_id) == None:
                     burialfile[f.burial_id] = []
-                burialfile[f.burial_id].append(dict(
-                    path=f'{url_media}/{f.bfile}',
-                    comment=f.comment
-                ))
+                f_export = f.export_dict()
+                media_txt.write(f'{f_export["path"]}\n')
+                burialfile[f.burial_id].append(f.export_dict())
                 if n and n % 1000 == 0:
                     print(f'{n} burial files processed')
                 n += 1
-        print(burialfile)
         print(f'{n} burial files total')
 
         burial_qs = Burial.objects.filter(
@@ -85,15 +79,19 @@ class Command(BaseCommand):
         for b in burial_qs.iterator(chunk_size=100):
             r = b.export_dict()
             if burialfile.get(b.pk):
-                print(burialfile[b.pk])
+                r.update(file=burialfile[b.pk])
+            try:
+                media_txt.write(f'{r["deadman"]["death_certificate"]["scan"]["path"]}\n')
+            except TypeError:
+                pass
             burial.append(r)
             if n and n % 1000 == 0:
                 print(f'{n} burials processed')
             n += 1
         print(f'{n} burials total')
 
-        for v in (
-                    'burial',
-                 ):
+        media_txt.close()
+
+        for v in ('burial', ):
             with open(f'{export_path}/{v}.json', 'w') as f:
                 f.write(json.dumps(eval(v), indent=4, ensure_ascii=False,))
