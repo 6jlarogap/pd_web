@@ -56,8 +56,7 @@ class Command(BaseCommand):
                 if burialfile.get(f.burial_id) == None:
                     burialfile[f.burial_id] = []
                 f_export = f.export_dict()
-                f_export["path"] = f'{url_media}/{f_export["path"]}'
-                media_txt.write(f'{f_export["path"]}\n')
+                media_txt.write(f'{url_media}/{f_export["path"]}\n')
                 burialfile[f.burial_id].append(f_export)
                 if n and n % 1000 == 0:
                     print(f'{n} burial files processed')
@@ -127,9 +126,7 @@ class Command(BaseCommand):
 
             try:
                 scan_path = r["deadman"]["death_certificate"]["scan"]["path"]
-                scan_path = f'{url_media}/{scan_path}'
-                r["deadman"]["death_certificate"]["scan"]["path"] = scan_path
-                media_txt.write(f'{scan_path}\n')
+                media_txt.write(f'{url_media}/{scan_path}\n')
             except TypeError:
                 pass
 
@@ -150,8 +147,7 @@ class Command(BaseCommand):
                 if cemeteryphoto.get(f.cemetery_id) == None:
                     cemeteryphoto[f.cemetery_id] = []
                 f_export = f.export_dict()
-                f_export["path"] = f'{url_media}/{f_export["path"]}'
-                media_txt.write(f'{f_export["path"]}\n')
+                media_txt.write(f'{url_media}/{f_export["path"]}\n')
                 cemeteryphoto[f.cemetery_id].append(f_export)
                 if n and n % 1000 == 0:
                     print(f'{n} cemetery photos processed')
@@ -191,8 +187,7 @@ class Command(BaseCommand):
                 if areaphoto.get(f.area_id) == None:
                     areaphoto[f.area_id] = []
                 f_export = f.export_dict()
-                f_export["path"] = f'{url_media}/{f_export["path"]}'
-                media_txt.write(f'{f_export["path"]}\n')
+                media_txt.write(f'{url_media}/{f_export["path"]}\n')
                 areaphoto[f.area_id].append(f_export)
                 if n and n % 1000 == 0:
                     print(f'{n} area photos processed')
@@ -235,8 +230,7 @@ class Command(BaseCommand):
                 if placephoto.get(f.place_id) == None:
                     placephoto[f.place_id] = []
                 f_export = f.export_dict()
-                f_export["path"] = f'{url_media}/{f_export["path"]}'
-                media_txt.write(f'{f_export["path"]}\n')
+                media_txt.write(f'{url_media}/{f_export["path"]}\n')
                 placephoto[f.place_id].append(f_export)
                 if n and n % 1000 == 0:
                     print(f'{n} place photos processed')
