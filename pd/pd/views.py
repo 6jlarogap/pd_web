@@ -155,13 +155,13 @@ def media_xsendfile(request, path, document_root):
         #
         # Например: death-certificates/2013/11/06/5998/1376137215179.jpg
         # Или:      org-data/<org_pk>/org-data.zip
-        # Должны получить две группы: 'death-certificates' и  '5998'
+        # Должны получить две группы: 'death-certificates' и  '5998'ы
         #
         m = re.search(r'^/?([^/]+).*/(\d+)/[^/]+$',path)
         if m:
             what = m.group(1)
             pk = m.group(2)
-            if re.search(r'^/?(?:{settings.ANONYMOUS_MEDIA_PATH})', path):
+            if re.search(fr'^/?(?:{settings.ANONYMOUS_MEDIA_PATH})', path):
                 # Оставляем это для оперативного открытия файлов медии через local_settings.py
                 pass
             elif what == 'death-certificates':
