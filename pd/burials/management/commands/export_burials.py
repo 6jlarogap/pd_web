@@ -29,10 +29,17 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('ugh_pk', type=str)
         parser.add_argument('export_path', type=str)
+        parser.add_argument('url_media', type=str)
 
     def handle(self, *args, **kwargs):
         ugh_pk = kwargs['ugh_pk']
         export_path = kwargs['export_path']
+        export_path = export_path.rstrip('/')
+        url_media = kwargs['url_media']
+        if not url_media:
+            url_media = 'https://org.pohoronnoedelo.ru/media'
+        url_media = url_media.rstrip('/')
+
         ugh = Org.objects.get(pk=ugh_pk)
         media_txt = open(f'{export_path}/media.txt', 'w')
 
@@ -49,6 +56,7 @@ class Command(BaseCommand):
                 if burialfile.get(f.burial_id) == None:
                     burialfile[f.burial_id] = []
                 f_export = f.export_dict()
+                f_export["path"] = f'{url_media}/{f_export["path"]}'
                 media_txt.write(f'{f_export["path"]}\n')
                 burialfile[f.burial_id].append(f_export)
                 if n and n % 1000 == 0:
@@ -118,7 +126,10 @@ class Command(BaseCommand):
             r.update(comments=comments)
 
             try:
-                media_txt.write(f'{r["deadman"]["death_certificate"]["scan"]["path"]}\n')
+                scan_path = r["deadman"]["death_certificate"]["scan"]["path"]
+                scan_path = f'{url_media}/{scan_path}'
+                r["deadman"]["death_certificate"]["scan"]["path"] = scan_path
+                media_txt.write(f'{scan_path}\n')
             except TypeError:
                 pass
 
@@ -139,6 +150,7 @@ class Command(BaseCommand):
                 if cemeteryphoto.get(f.cemetery_id) == None:
                     cemeteryphoto[f.cemetery_id] = []
                 f_export = f.export_dict()
+                f_export["path"] = f'{url_media}/{f_export["path"]}'
                 media_txt.write(f'{f_export["path"]}\n')
                 cemeteryphoto[f.cemetery_id].append(f_export)
                 if n and n % 1000 == 0:
@@ -179,6 +191,7 @@ class Command(BaseCommand):
                 if areaphoto.get(f.area_id) == None:
                     areaphoto[f.area_id] = []
                 f_export = f.export_dict()
+                f_export["path"] = f'{url_media}/{f_export["path"]}'
                 media_txt.write(f'{f_export["path"]}\n')
                 areaphoto[f.area_id].append(f_export)
                 if n and n % 1000 == 0:
@@ -222,6 +235,7 @@ class Command(BaseCommand):
                 if placephoto.get(f.place_id) == None:
                     placephoto[f.place_id] = []
                 f_export = f.export_dict()
+                f_export["path"] = f'{url_media}/{f_export["path"]}'
                 media_txt.write(f'{f_export["path"]}\n')
                 placephoto[f.place_id].append(f_export)
                 if n and n % 1000 == 0:
