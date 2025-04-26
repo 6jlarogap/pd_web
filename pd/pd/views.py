@@ -161,7 +161,10 @@ def media_xsendfile(request, path, document_root):
         if m:
             what = m.group(1)
             pk = m.group(2)
-            if what == 'death-certificates':
+            if re.search(r'^/?(?:{settings.ANONYMOUS_MEDIA_PATH})', path):
+                # Оставляем это для оперативного открытия файлов медии через local_settings.py
+                pass
+            elif what == 'death-certificates':
                 try:
                     burial = get_model('burials', 'Burial').objects.filter(deadman__pk=pk)[0]
                     if not burial.is_accessible(request.user):

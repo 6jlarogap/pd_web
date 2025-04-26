@@ -211,11 +211,15 @@ REGISTER_URLS_REGEX = r'^/?register(?:/|$)'
 SUPPORT_URLS_REGEX = r'^/?support(?:/|$)'
 # URLs, доступ к которым регулируется в соответствующих классах.as_view():
 API_URLS_REGEX = r'^/?api(?:/|$)'
-# URLs, доступные анонимным пользователям, например в публичном каталоге, 
-# а также общедоступные, например, из front-end, скрипты:
-ANONYMOUS_URLS_REGEX = r'^/?(?:(?:thumb|media)/(?:product\-photo|support|user\-photos|store\-photos|cemetery\-photos))|jsi18n/'
-# URLs, доступные анонимным пользователям, но при определенных условиях
-ANONYMOUS_LIMITED_URLS_REGEX = r'^/?(?:thumb|media)/place\-photos/'
+
+# Пути из медии, доступные анонимным пользователям, например в публичном каталоге, 
+# а также общедоступные, например, из front-end, скриптов
+#
+# NB:
+#   После (!) local_settings формируется ANONYMOUS_URLS_REGEX,
+#   и ANONYMOUS_MEDIA_PATH в этом участвует
+#
+ANONYMOUS_MEDIA_PATH = r'product\-photo|support|user\-photos|store\-photos|cemetery\-photos'
 
 LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = "/"
@@ -527,6 +531,8 @@ try:
     from .local_settings import *
 except ImportError:
     pass
+
+ANONYMOUS_URLS_REGEX = fr'^/?(?:(?:thumb|media)/(?:{ANONYMOUS_MEDIA_PATH}))|jsi18n/'
 
 for t in TEMPLATES:
     t['OPTIONS']['debug'] = DEBUG
