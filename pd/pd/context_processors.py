@@ -58,6 +58,10 @@ def context_processor(request):
             'global_context_UHOD_MOGIL_URL': settings.UHOD_MOGIL_URL,
             'global_context_HRAM_PREDKOV_URL': settings.HRAM_PREDKOV_URL,
             'global_context_YEAR_OVER_DAYS': settings.YEAR_OVER_DAYS,
-            'global_context_SHOW_OPER_STATS': settings.SHOW_OPER_STATS,
             'global_context_SHOW_HALLS': Role.objects.filter(name=Role.ROLE_HALL_MANAGER).exists(),
+            'global_context_PERMIT_LORU_OPER_STATS': settings.SHOW_OPER_STATS,
+            'global_context_PERMIT_UGH_OPER_STATS':
+                settings.SHOW_OPER_STATS and \
+                getattr(request.user, 'profile', None) and \
+                request.user.profile.looks_oper_stats()
            }

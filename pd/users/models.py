@@ -72,6 +72,10 @@ class Role(models.Model):
     #
     ROLE_REGISTRY = 'registry_handler'
 
+    # Может просматривать статистику
+    #
+    ROLE_LOOKS_OPER_STATS = 'looks_oper_stats'
+
     name = models.CharField(_("Код"), max_length=255)
     title = models.CharField(_("Название"), max_length=255)
 
@@ -301,6 +305,12 @@ class Profile(CommonProfile):
     def is_hall_admin(self):
         return self.is_loru() or \
             self.is_ugh() and self.role.filter(name=Role.ROLE_HALL_ADMIN).exists()
+
+    def looks_oper_stats(self):
+        return \
+            not Role.objects.filter(name=Role.ROLE_LOOKS_OPER_STATS).exists() or \
+            self.is_loru() or \
+            self.role.filter(name=Role.ROLE_LOOKS_OPER_STATS).exists()
 
     def has_all_cemeteries(self):
         Cemetery = get_model('burials', 'Cemetery')

@@ -155,10 +155,10 @@
                                             {% if user.profile.org.pk %}
                                                 <li><a href="{% url 'org_log' %}">{% trans "Журнал" %}</a></li>
                                             {% endif %}
-                                            {% if user.profile.is_ugh and global_context_SHOW_OPER_STATS %}
+                                            {% if user.profile.is_ugh and global_context_PERMIT_UGH_OPER_STATS %}
                                                 <li><a href="{% url 'oms_oper_stats' %}">{% trans "Статистика операций" %}</a></li>
                                             {% endif %}
-                                            {% if user.profile.is_loru and global_context_SHOW_OPER_STATS %}
+                                            {% if user.profile.is_loru and global_context_PERMIT_LORU_OPER_STATS %}
                                                 <li><a href="{% url 'loru_oper_stats' %}">{% trans "Статистика операций" %}</a></li>
                                             {% endif %}
                                             <li class="divider"></li>

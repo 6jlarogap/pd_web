@@ -1840,7 +1840,7 @@ class OmsOperStatsView(UGHRequiredMixin, OperStatsMixin, ReportDatesMixin, Pagin
     context_object_name = 'dates'
 
     def dispatch(self, request, *args, **kwargs):
-        if not settings.SHOW_OPER_STATS:
+        if not settings.SHOW_OPER_STATS or not self.request.user.profile.looks_oper_stats():
             raise Http404
         return super(OmsOperStatsView, self).dispatch(request, *args, **kwargs)
 
