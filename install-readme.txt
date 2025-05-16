@@ -1,17 +1,20 @@
 install-readme.txt, utf8 code page
 -------------------
 
-Инструкции, точнее опыт установки одного из разработчиков:
+Инструкции по установке на Ubuntu 24.04 lts
  
     * Примечания:
-        - ~/venv/pdweb:         virtual environment проекта
-        - ~/projects/pd_web:    проект, в соответствии с именем на bitbucket.org
-        - USERNAME:             имя пользователя на bitbucket.org
+        -   /home/www-data/             $ROOT_DIR, там всё внутри
+                                        Все каталоги полагаются внутри этой папки
+                                            На период установки сделать её доступной по записи
+                                            пользователю. Пусть это будет $USER
+        -   venv/pd_web/                virtual environment проекта
+        -   django/pd_web/              код проекта
+        -   register.org.com            адрес сервера
 
-        - ubuntu:               ubuntu 16.04 и выше, если не уточняется
-                    !!! ubuntu 16.04, 18.04 имеют python3 версии ниже 3.8
-                        Как установить там python 3.8, см. Приложение A
- 
+        -   Резервная копия пусть лежит на $BACKUP (например, внутри организации
+            на archive@192.168.0.158:/mnt/backup/org.com/)
+
     * Д.б. установлено на Linux:
         - средства разработки:
             * python3, не ниже 3.8
@@ -22,10 +25,6 @@ install-readme.txt, utf8 code page
                   * sudo apt install redis-server
 
         - postgresql,
-            !!! версии не ниже 10. Если установлена более старая версия,
-                например, в Ubuntu 16.04, то действовать по инструкции,
-                см. Приложение B
-
             * в т.ч. для разработчика, ubuntu:
                 sudo apt install postgresql postgresql-server-dev-all
 
@@ -38,8 +37,6 @@ install-readme.txt, utf8 code page
                 на:
                     local all postgres trust
                 с перезагрузкой postgresql (service postgresql restart)
-
-        - geoipupdate, инструкции, см. Приложение C
 
         - библиотеки для графики, включая jpeg, в Ubuntu: 
             sudo apt install libjpeg-dev
@@ -71,40 +68,55 @@ install-readme.txt, utf8 code page
                     ~/musor.pdf должен демонстрировать начальную страницу Google
 
          - web сервер apache2:
-            (ubuntu: sudo apt install apache2  apache2-utils)
+            sudo apt install apache2  apache2-utils
 
-         -git (ubuntu: sudo apt install git)
+         -git
+            sudo apt install git
 
-    * Должен быть запущен postgresql сервер
+    - Должен быть запущен postgresql сервер
 
-    * mkdir ~/venv; cd ~/venv
-    * virtualenv -p `which python3` pdweb
-    * mkdir ~/projects; cd ~/projects
-    * git clone https://USERNAME@bitbucket.org/USERNAME/pd_web.git
-    * cd ~/projects/pd_web
-    * source ~/venv/pdweb/bin/activate
-    * pip install -r pip.txt
-    * cd ~/projects/pd_web/pd/pd
-    * cp local_settings.py.example local_settings.py
-    * внести правки в local_settings.py, но если почти без правок, то:
+    - Установим все необходимые библиотеки:
+        * cd $ROOT_DIR/venv
+        * virtualenv -p `which python3` pd_web
+        * cd $ROOT_DIR/venv/pd_web
+        * rsync -av $BACKUP/pip.txt pip.txt
+        * source ./bin/activate
+        * pip install -r pip.txt
+        * deactivate
 
-        - получить у руководителя проекта dump базы данных pd
-          (пусть это: pd.psql.gz)
-            createdb pd
-            zcat pd.psql.gz | psql -U postgres pd
-        - MEDIA_ROOT:
-            это дело вкуса, но в соответствии с local_settings.py.example:
-            mkdir -p ~/projects/MEDIA/pd_web
+    - Установим код проекта:
+        * cd $ROOT_DIR/django/pd_web
+        * mkdir pd
+        * rsync -av $BACKUP/code/pd/ pd/
+        * ln -s $ROOT_DIR/venv/pd_web ENV
 
-    * cd ~/projects/pd_web
-      ln -s /home/LINUX-USER-NAME/venv/pdweb ENV
-            : virtual env, запускаемое из ./manage.py
-    * deactivate
-    !!! Можно запускать и отлаживать:
-        cd ~/projects/pd_web/pd
-        ./manage.py runserver <параметры>
+    - Выгрузим базу данных из последней резервной копии:
+        * rsync -av $BACKUP/database/today/<LAST_COPY>.psql.gz /tmp/<LAST_COPY>.pg.gz
+            -   <LAST_COPY> имеет вид, например, pd-20250515200301
+        * createdb -U postgres pd
+        * zcat /tmp/<LAST_COPY>.pg.gz | psql -U postgres pd
+
+    - Подготовим и выгрузим каталог для медии: фото мест, файлов захоронений и т.п.:
+        NB!
+            файлы медии желательно держать в разделе отдельного диска,
+            чтоб была возможность его увеличивать, не трогая систему.
+            Пусть этот раздел смонтирован как /mnt/media
+        * sudo mkdir /mnt/media/pd_web
+        * sudo chown $USER:$USER /mnt/media/pd_web
+        * ln -s /mnt/media/pd_web $ROOT_DIR/django/pd_web/MEDIA
+        * rsync -av $BACKUP/media/ /mnt/media/pd_web/
+        *** пошел долгий процесс. Можно параллельно продолжать
+            другие работы в другом окне терминала
+
+    - Можно проверить, как оно работает в тестовом режиме
+        cd $ROOT_DIR/django/pd_web/pd
+        ./manage.py runserver 0.0.0.0:8000
+        http://register.org.com:8000,
+            что-то можно посмотреть.
+            ! Но пока копируется медия, не все файлы картинки увидите
 
 Настройка сервера Apache:
+    (ваш настроенный
 
     * Должен быть установлен Apache mod_wsgi и mod_xsendfile.
         - В ubuntu выполнить:
@@ -117,15 +129,14 @@ install-readme.txt, utf8 code page
         (имя сервера, каталоги могут отличаться)
 
         <VirtualHost *:80>
-            ServerName SERVER.ORG.COM
-            ServerAlias SERVER.ORG.COM
+            ServerName register.org.com
 
             XSendFile On
             # Каталог media должен быть доступен пользователю,
             # исполняющему Apache, по чтению-записи.
 
             # Для свежих версий mod_xsendfile:
-            XSendFilePath /home/www-data/media/pd_web
+            XSendFilePath /home/www-data/django/media/pd_web
 
             Alias /static/          /home/www-data/static/pd_web/
             Alias /robots.txt       /home/www-data/static/pd_web/system/robots.txt

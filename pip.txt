@@ -1,1 +1,1 @@
-pip3-ubuntu+1604-django-4.2.txt
+pip312-ubuntu+2404-django-4.2.txt
