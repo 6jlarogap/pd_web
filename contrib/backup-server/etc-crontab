@@ -1,0 +1,5 @@
+01 20 * * * archive cd /mnt/backup/register.org.com/ && ./truncate_log.sh            backup_db.log 10000000 >/dev/null 2>&1
+03 20 * * * archive cd /mnt/backup/register.org.com/ && python3 -B backup_psql.py >> backup_db.log 2>&1
+
+21 2 * * * archive cd /mnt/backup/register.org.com/ && ./truncate_log.sh backup_sync.log 10000000 >/dev/null 2>&1
+23 2 * * * archive cd /mnt/backup/register.org.com/ && ./rsyncs.sh >>    backup_sync.log 2>&1
