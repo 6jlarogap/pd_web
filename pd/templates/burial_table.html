@@ -28,18 +28,14 @@
             {% endif %}
         {% endif %}
     </th>
-    {% if user.profile.is_ugh %}
+    {% if user.profile.is_ugh and not request.GET.print %}
         <th>
-            {% if request.GET.print %}
-                {% trans "Источник" %}
+            {% if sort == 'source' %}
+                {% if sort == 'source' %}<i class="icon icon-arrow-up"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=-source">{% trans "Источник" %}</a>
             {% else %}
-                {% if sort == 'source' %}
-                    {% if sort == 'source' %}<i class="icon icon-arrow-up"></i>{% endif %}
-                    <a href="?{{ GET_PARAMS }}&sort=-source">{% trans "Источник" %}</a>
-                {% else %}
-                    {% if sort == '-source' %}<i class="icon icon-arrow-down"></i>{% endif %}
-                    <a href="?{{ GET_PARAMS }}&sort=source">{% trans "Источник" %}</a>
-                {% endif %}
+                {% if sort == '-source' %}<i class="icon icon-arrow-down"></i>{% endif %}
+                <a href="?{{ GET_PARAMS }}&sort=source">{% trans "Источник" %}</a>
             {% endif %}
         </th>
     {% endif %}
@@ -149,7 +145,7 @@
             <td>{{ b.pk }}</td>
         {% endif %}
             <td>{{ b.account_number|default:"" }}</td>
-            {% if user.profile.is_ugh %}
+            {% if user.profile.is_ugh and not request.GET.print %}
                 <td>{{ b.get_source_type_display }}
                     {% if b.loru %}
                         <br /> ({{ b.loru }})
