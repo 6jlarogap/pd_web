@@ -129,7 +129,9 @@
             {% trans "Заказ(ы)" %}
         </th>
     {% endif %}
-    <th class="no-print"></th>
+    {% if not request.GET.print %}
+        <th></th>
+    {% endif %}
 </tr>
 {% for b1 in burials %}
     {% with b=b1.burial1_to_burial %}
@@ -176,8 +178,8 @@
             </td>
             <td>
                 {% with burial=b %}{% include "burial_place.html" %}{% endwith %}
-                {% if b.get_place %}
-                    <br /><a class="no-print" href="{% url 'burial_list' %}?cemetery={{ b.cemetery.name }}&area={{ b.area.name }}&row={{ b.row|default_if_none:"" }}&place={{ b.place_number }}&per_page={{ paginator.per_page|default_if_none:"" }}">{% trans "Поиск по участку (месту)" %}</a>
+                {% if b.get_place and not request.GET.print %}
+                    <br /><a href="{% url 'burial_list' %}?cemetery={{ b.cemetery.name }}&area={{ b.area.name }}&row={{ b.row|default_if_none:"" }}&place={{ b.place_number }}&per_page={{ paginator.per_page|default_if_none:"" }}">{% trans "Поиск по участку (месту)" %}</a>
                 {% endif %}
             </td>
             <td><b>{{ b.deadman_or_bio }}</b>
@@ -218,48 +220,50 @@
                     {% with burial=b %}{% include "burial_orders.html" %}{% endwith %}
                 </td>
             {% endif %}
-            <td class="no-print">
-                {% if user.profile.is_loru %}
-                    {# Планируется, что лору будет видеть и зх других лору, а также зх от угх, #}
-                    {# но редактировать может только свои зх #}
-                    {% if b.is_full and b.is_edit and b.loru and b.loru == user.profile.org and not b.is_annulated %}
-                        <a class="btn" href="{% url 'edit_burial' b.pk %}" target="_blank">{% trans "правка" %}</a>
-                    {% else %}
+            {% if not request.GET.print %}
+                <td>
+                    {% if user.profile.is_loru %}
+                        {# Планируется, что лору будет видеть и зх других лору, а также зх от угх, #}
+                        {# но редактировать может только свои зх #}
+                        {% if b.is_full and b.is_edit and b.loru and b.loru == user.profile.org and not b.is_annulated %}
+                            <a class="btn" href="{% url 'edit_burial' b.pk %}" target="_blank">{% trans "правка" %}</a>
+                        {% else %}
+                            <a class="btn" href="{% url 'view_burial' b.pk %}" target="_blank">{% trans "просмотр" %}</a>
+                        {% endif %}
+                    {% elif user.profile.is_ugh %}
                         <a class="btn" href="{% url 'view_burial' b.pk %}" target="_blank">{% trans "просмотр" %}</a>
-                    {% endif %}
-                {% elif user.profile.is_ugh %}
-                    <a class="btn" href="{% url 'view_burial' b.pk %}" target="_blank">{% trans "просмотр" %}</a>
-                    {# (Ручные, архивные), перенесенные, закрытые: #}
-                    {% if b.is_ugh or b.is_transferred or b.is_closed %}
-                        {% if not b.cemetery or b.cemetery in editable_ugh_cemeteries %}
-                            {% if user.profile.is_caretaker_only and b.is_closed %}
-                            {% else %}
-                                <br /><a class="btn" href="{% url 'edit_burial' b.pk %}" target="_blank">{% trans "правка" %}</a>
+                        {# (Ручные, архивные), перенесенные, закрытые: #}
+                        {% if b.is_ugh or b.is_transferred or b.is_closed %}
+                            {% if not b.cemetery or b.cemetery in editable_ugh_cemeteries %}
+                                {% if user.profile.is_caretaker_only and b.is_closed %}
+                                {% else %}
+                                    <br /><a class="btn" href="{% url 'edit_burial' b.pk %}" target="_blank">{% trans "правка" %}</a>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                        {% if b.get_place %}
+                            {# Эксгумированое зх не имеет b.place, но его место можно найти как b.get_place #}
+                            <br />
+                            <a class="btn" href="{{ b.get_place.url }}" target="_blank">{{ b.place_name }}</a>
+                            {% if b.cemetery and b.cemetery in editable_ugh_cemeteries %}
+                                <a class="btn" href="{% url 'create_burial' %}?place_id={{ b.get_place.pk }}&burial_add=1" target="_blank" title="{% trans "Подзахоронение в то же место" %}">+</a>
                             {% endif %}
                         {% endif %}
                     {% endif %}
-                    {% if b.get_place %}
-                        {# Эксгумированое зх не имеет b.place, но его место можно найти как b.get_place #}
-                        <br />
-                        <a class="btn" href="{{ b.get_place.url }}" target="_blank">{{ b.place_name }}</a>
-                        {% if b.cemetery and b.cemetery in editable_ugh_cemeteries %}
-                            <a class="btn" href="{% url 'create_burial' %}?place_id={{ b.get_place.pk }}&burial_add=1" target="_blank" title="{% trans "Подзахоронение в то же место" %}">+</a>
-                        {% endif %}
+                    {% if not b.is_bio and not b.dc_filled and b.can_personal_data and global_context_DEATH_CERTIFICATE_REQUIRED %}
+                        <br/><span style="color:red">{% trans "Нет ДоС!" %}</span>
                     {% endif %}
-                {% endif %}
-                {% if not b.is_bio and not b.dc_filled and b.can_personal_data and global_context_DEATH_CERTIFICATE_REQUIRED %}
-                    <br/><span style="color:red">{% trans "Нет ДоС!" %}</span>
-                {% endif %}
-                {% if b.burialfiles_set.all or b.get_place.placephoto_set.all %}
-                    <br /><br />
-                {% endif %}
-                {% if b.burialfiles_set.all %}
-                    <span class="badge" title="{% trans "Файл(ы):" %}{% for fc in b.file_comment_list %}&#10; {{ fc }}{% endfor %}"><i class="icon-book icon-white"></i></span>
-                {% endif %}
-                {% if b.get_place.placephoto_set.all %}
-                    <span class="badge" title="{% trans "Место имеет фото" %}"><i class="icon-camera icon-white"></i></span>
-                {% endif %}
-            </td>
+                    {% if b.burialfiles_set.all or b.get_place.placephoto_set.all %}
+                        <br /><br />
+                    {% endif %}
+                    {% if b.burialfiles_set.all %}
+                        <span class="badge" title="{% trans "Файл(ы):" %}{% for fc in b.file_comment_list %}&#10; {{ fc }}{% endfor %}"><i class="icon-book icon-white"></i></span>
+                    {% endif %}
+                    {% if b.get_place.placephoto_set.all %}
+                        <span class="badge" title="{% trans "Место имеет фото" %}"><i class="icon-camera icon-white"></i></span>
+                    {% endif %}
+                </td>
+            {% endif %}
         </tr>
     {% endwith %}
 {% endfor %}
