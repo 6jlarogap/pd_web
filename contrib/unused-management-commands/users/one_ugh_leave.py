@@ -33,7 +33,7 @@ class Command(BaseCommand):
         parser.add_argument('ugh_pk', type=str, help='Organization pk')
         parser.add_argument('media_list', type=str, help='File into which media files paths are written')
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **kwargs):
 
         ugh_pk = kwargs['ugh_pk']
         try:
@@ -58,7 +58,7 @@ class Command(BaseCommand):
             DeathCertificateScan,
             Q(deathcertificate__person__burial__ugh=ugh_one)
         )
-        self.collect_media(CemeteryPhoto, Q(cemetery__ugh=ugh_one))
+        self.collect_media(CemeteryPhoto, Q(cemetery__ugh=ugh_one), field='photo')
         self.collect_media(AreaPhoto, Q(area__cemetery__ugh=ugh_one))
         self.collect_media(PlacePhoto, Q(place__cemetery__ugh=ugh_one))
         self.collect_media(
