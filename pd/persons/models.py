@@ -109,7 +109,7 @@ class BasePerson(PersonMixin, models.Model):
         else:
             try:
                 self.address.delete()
-            except (AttributeError, ProtectedError):
+            except (AttributeError, ProtectedError, Location.DoesNotExist):
                 pass
 
     def deep_copy(self):
