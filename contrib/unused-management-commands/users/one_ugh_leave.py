@@ -70,7 +70,7 @@ class Command(BaseCommand):
         self.media_file.close()
         print(('\n%s total media recs written\n' % self.count_media))
         
-        ugh_qs = Q(type=Org.PROFILE_UGH) & ~Q(pk=ugh_pk)
+        ugh_qs = Q(type=Org.PROFILE_UGH) & ~Q(pk=ugh_pk) & ~Q(pk=1)
 
         print('Looking for UGHs to be removed')
         for ugh in Org.objects.filter(ugh_qs):
