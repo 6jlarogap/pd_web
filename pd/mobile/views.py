@@ -446,7 +446,7 @@ class ApiAreaUpload(APIView):
         if isGPSChange == True :
             AreaCoordinates.objects.filter(area=area).delete()
             for gps in listGPS:
-                areaCoordinates = AreaCoordinates(**gps)
+                areaCoordinates = AreaCoordinates(area=area, **gps)  # Передаем area при создании
                 areaCoordinates.save()                 
         serializer = AreaWithNestedObjectSerializer(listInsertedArea, many=True)
         return Response(serializer.data)
