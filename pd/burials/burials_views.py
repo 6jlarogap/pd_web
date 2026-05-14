@@ -1464,7 +1464,7 @@ class RegistryView(FormInvalidMixin, ManualEncodedCsvMixin, UpdateView):
     form_class = RegistryForm
 
     def get_object(self):
-        if not settings.DEADMAN_IDENT_NUMBER_ALLOW or not is_ugh_user(self.request.user):
+        if not is_ugh_user(self.request.user):
             raise Http404
         if not self.request.user.profile.is_registry_handler():
             raise PermissionDenied
